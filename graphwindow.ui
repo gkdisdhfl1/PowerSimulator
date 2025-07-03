@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>GraphWindow</string>
   </property>
   <widget class="QGraphicsView" name="chartView">
    <property name="geometry">

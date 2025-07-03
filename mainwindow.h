@@ -2,6 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include "graphwindow.h"
+#include "settingsdialog.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -17,7 +19,11 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+private slots:
+    void on_settingButton_clicked();
+
 private:
+    graphwindow *m_graphWindow; // 멤버 변수로 선언
     Ui::MainWindow *ui;
 };
 #endif // MAINWINDOW_H
