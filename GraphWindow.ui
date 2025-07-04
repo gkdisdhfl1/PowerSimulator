@@ -13,16 +13,11 @@
   <property name="windowTitle">
    <string>GraphWindow</string>
   </property>
-  <widget class="QGraphicsView" name="chartView">
-   <property name="geometry">
-    <rect>
-     <x>40</x>
-     <y>10</y>
-     <width>331</width>
-     <height>231</height>
-    </rect>
-   </property>
-  </widget>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="0" column="0">
+    <widget class="QGraphicsView" name="chartView"/>
+   </item>
+  </layout>
  </widget>
  <resources/>
  <connections/>
