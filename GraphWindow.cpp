@@ -1,14 +1,14 @@
-#include "graphwindow.h"
-#include "ui_graphwindow.h"
+#include "GraphWindow.h"
+#include "ui_GraphWindow.h"
 
-graphwindow::graphwindow(QWidget *parent)
+GraphWindow::GraphWindow(QWidget *parent)
     : QDialog(parent)
-    , ui(new Ui::graphwindow)
+    , ui(new Ui::GraphWindow)
 {
     ui->setupUi(this);
 }
 
-graphwindow::~graphwindow()
+GraphWindow::~GraphWindow()
 {
     delete ui;
 }

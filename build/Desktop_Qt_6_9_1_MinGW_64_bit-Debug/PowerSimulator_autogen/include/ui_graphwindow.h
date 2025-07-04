@@ -16,34 +16,34 @@
 
 QT_BEGIN_NAMESPACE
 
-class Ui_graphwindow
+class Ui_GraphWindow
 {
 public:
     QGraphicsView *chartView;
 
-    void setupUi(QDialog *graphwindow)
+    void setupUi(QDialog *GraphWindow)
     {
-        if (graphwindow->objectName().isEmpty())
-            graphwindow->setObjectName("graphwindow");
-        graphwindow->resize(400, 300);
-        chartView = new QGraphicsView(graphwindow);
+        if (GraphWindow->objectName().isEmpty())
+            GraphWindow->setObjectName("GraphWindow");
+        GraphWindow->resize(400, 300);
+        chartView = new QGraphicsView(GraphWindow);
         chartView->setObjectName("chartView");
         chartView->setGeometry(QRect(40, 10, 331, 231));
 
-        retranslateUi(graphwindow);
+        retranslateUi(GraphWindow);
 
-        QMetaObject::connectSlotsByName(graphwindow);
+        QMetaObject::connectSlotsByName(GraphWindow);
     } // setupUi
 
-    void retranslateUi(QDialog *graphwindow)
+    void retranslateUi(QDialog *GraphWindow)
     {
-        graphwindow->setWindowTitle(QCoreApplication::translate("graphwindow", "GraphWindow", nullptr));
+        GraphWindow->setWindowTitle(QCoreApplication::translate("GraphWindow", "GraphWindow", nullptr));
     } // retranslateUi
 
 };
 
 namespace Ui {
-    class graphwindow: public Ui_graphwindow {};
+    class GraphWindow: public Ui_GraphWindow {};
 } // namespace Ui
 
 QT_END_NAMESPACE

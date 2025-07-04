@@ -2,8 +2,8 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include "graphwindow.h"
-#include "settingsdialog.h"
+#include "GraphWindow.h"
+#include "SettingsDialog.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -21,9 +21,13 @@ public:
 
 private slots:
     void on_settingButton_clicked();
+    void onDialValueChanged(int value);
+    void onSpinBoxValueChanged(double value);
 
 private:
-    graphwindow *m_graphWindow; // 멤버 변수로 선언
+    GraphWindow *m_graphWindow; // 멤버 변수로 선언
     Ui::MainWindow *ui;
+
+    double m_currentVoltageValue = 220.0;
 };
 #endif // MAINWINDOW_H

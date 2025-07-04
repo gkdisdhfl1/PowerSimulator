@@ -1,5 +1,5 @@
 /********************************************************************************
-** Form generated from reading UI file 'settingsdialog.ui'
+** Form generated from reading UI file 'SettingsDialog.ui'
 **
 ** Created by: Qt User Interface Compiler version 6.9.1
 **
@@ -18,7 +18,7 @@
 
 QT_BEGIN_NAMESPACE
 
-class Ui_settingsdialog
+class Ui_SettingsDialog
 {
 public:
     QPushButton *pushButton;
@@ -26,44 +26,44 @@ public:
     QLabel *label;
     QDoubleSpinBox *doubleSpinBox;
 
-    void setupUi(QDialog *settingsdialog)
+    void setupUi(QDialog *SettingsDialog)
     {
-        if (settingsdialog->objectName().isEmpty())
-            settingsdialog->setObjectName("settingsdialog");
-        settingsdialog->resize(400, 300);
-        pushButton = new QPushButton(settingsdialog);
+        if (SettingsDialog->objectName().isEmpty())
+            SettingsDialog->setObjectName("SettingsDialog");
+        SettingsDialog->resize(400, 300);
+        pushButton = new QPushButton(SettingsDialog);
         pushButton->setObjectName("pushButton");
         pushButton->setGeometry(QRect(220, 260, 75, 24));
-        pushButton_2 = new QPushButton(settingsdialog);
+        pushButton_2 = new QPushButton(SettingsDialog);
         pushButton_2->setObjectName("pushButton_2");
         pushButton_2->setGeometry(QRect(310, 260, 75, 24));
-        label = new QLabel(settingsdialog);
+        label = new QLabel(SettingsDialog);
         label->setObjectName("label");
         label->setGeometry(QRect(30, 80, 71, 31));
         QFont font;
         font.setPointSize(12);
         label->setFont(font);
-        doubleSpinBox = new QDoubleSpinBox(settingsdialog);
+        doubleSpinBox = new QDoubleSpinBox(SettingsDialog);
         doubleSpinBox->setObjectName("doubleSpinBox");
         doubleSpinBox->setGeometry(QRect(130, 80, 211, 31));
 
-        retranslateUi(settingsdialog);
+        retranslateUi(SettingsDialog);
 
-        QMetaObject::connectSlotsByName(settingsdialog);
+        QMetaObject::connectSlotsByName(SettingsDialog);
     } // setupUi
 
-    void retranslateUi(QDialog *settingsdialog)
+    void retranslateUi(QDialog *SettingsDialog)
     {
-        settingsdialog->setWindowTitle(QCoreApplication::translate("settingsdialog", "SettingDialog", nullptr));
-        pushButton->setText(QCoreApplication::translate("settingsdialog", "Okay", nullptr));
-        pushButton_2->setText(QCoreApplication::translate("settingsdialog", "Cancel", nullptr));
-        label->setText(QCoreApplication::translate("settingsdialog", "\354\213\234\352\260\204 \352\260\204\352\262\251", nullptr));
+        SettingsDialog->setWindowTitle(QCoreApplication::translate("SettingsDialog", "SettingDialog", nullptr));
+        pushButton->setText(QCoreApplication::translate("SettingsDialog", "Okay", nullptr));
+        pushButton_2->setText(QCoreApplication::translate("SettingsDialog", "Cancel", nullptr));
+        label->setText(QCoreApplication::translate("SettingsDialog", "\354\213\234\352\260\204 \352\260\204\352\262\251", nullptr));
     } // retranslateUi
 
 };
 
 namespace Ui {
-    class settingsdialog: public Ui_settingsdialog {};
+    class SettingsDialog: public Ui_SettingsDialog {};
 } // namespace Ui
 
 QT_END_NAMESPACE

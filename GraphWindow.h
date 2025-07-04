@@ -4,19 +4,19 @@
 #include <QDialog>
 
 namespace Ui {
-class graphwindow;
+class GraphWindow;
 }
 
-class graphwindow : public QDialog
+class GraphWindow : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit graphwindow(QWidget *parent = nullptr);
-    ~graphwindow();
+    explicit GraphWindow(QWidget *parent = nullptr);
+    ~GraphWindow();
 
 private:
-    Ui::graphwindow *ui;
+    Ui::GraphWindow *ui;
 };
 
 #endif // GRAPHWINDOW_H

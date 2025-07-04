@@ -14,7 +14,7 @@
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>100</x>
@@ -53,7 +53,7 @@
      </item>
     </layout>
    </widget>
-   <widget class="QWidget" name="">
+   <widget class="QWidget" name="layoutWidget">
     <property name="geometry">
      <rect>
       <x>60</x>
@@ -76,7 +76,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QDoubleSpinBox" name="doubleSpinBox"/>
+      <widget class="QDoubleSpinBox" name="valueSpinBox"/>
      </item>
      <item>
       <widget class="QLabel" name="label_2">
@@ -91,7 +91,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QDial" name="dial"/>
+      <widget class="QDial" name="valueDial"/>
      </item>
     </layout>
    </widget>

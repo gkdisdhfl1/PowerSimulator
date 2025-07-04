@@ -28,17 +28,17 @@ class Ui_MainWindow
 {
 public:
     QWidget *centralwidget;
-    QWidget *widget;
+    QWidget *layoutWidget;
     QHBoxLayout *horizontalLayout;
     QPushButton *startStopButton;
     QSpacerItem *horizontalSpacer;
     QPushButton *settingButton;
-    QWidget *widget1;
+    QWidget *layoutWidget1;
     QHBoxLayout *horizontalLayout_2;
     QLabel *label;
-    QDoubleSpinBox *doubleSpinBox;
+    QDoubleSpinBox *valueSpinBox;
     QLabel *label_2;
-    QDial *dial;
+    QDial *valueDial;
     QMenuBar *menubar;
     QStatusBar *statusbar;
 
@@ -49,13 +49,13 @@ public:
         MainWindow->resize(473, 260);
         centralwidget = new QWidget(MainWindow);
         centralwidget->setObjectName("centralwidget");
-        widget = new QWidget(centralwidget);
-        widget->setObjectName("widget");
-        widget->setGeometry(QRect(100, 20, 263, 26));
-        horizontalLayout = new QHBoxLayout(widget);
+        layoutWidget = new QWidget(centralwidget);
+        layoutWidget->setObjectName("layoutWidget");
+        layoutWidget->setGeometry(QRect(100, 20, 263, 26));
+        horizontalLayout = new QHBoxLayout(layoutWidget);
         horizontalLayout->setObjectName("horizontalLayout");
         horizontalLayout->setContentsMargins(0, 0, 0, 0);
-        startStopButton = new QPushButton(widget);
+        startStopButton = new QPushButton(layoutWidget);
         startStopButton->setObjectName("startStopButton");
 
         horizontalLayout->addWidget(startStopButton);
@@ -64,18 +64,18 @@ public:
 
         horizontalLayout->addItem(horizontalSpacer);
 
-        settingButton = new QPushButton(widget);
+        settingButton = new QPushButton(layoutWidget);
         settingButton->setObjectName("settingButton");
 
         horizontalLayout->addWidget(settingButton);
 
-        widget1 = new QWidget(centralwidget);
-        widget1->setObjectName("widget1");
-        widget1->setGeometry(QRect(60, 60, 351, 102));
-        horizontalLayout_2 = new QHBoxLayout(widget1);
+        layoutWidget1 = new QWidget(centralwidget);
+        layoutWidget1->setObjectName("layoutWidget1");
+        layoutWidget1->setGeometry(QRect(60, 60, 351, 102));
+        horizontalLayout_2 = new QHBoxLayout(layoutWidget1);
         horizontalLayout_2->setObjectName("horizontalLayout_2");
         horizontalLayout_2->setContentsMargins(0, 0, 0, 0);
-        label = new QLabel(widget1);
+        label = new QLabel(layoutWidget1);
         label->setObjectName("label");
         QFont font;
         font.setPointSize(14);
@@ -83,21 +83,21 @@ public:
 
         horizontalLayout_2->addWidget(label);
 
-        doubleSpinBox = new QDoubleSpinBox(widget1);
-        doubleSpinBox->setObjectName("doubleSpinBox");
+        valueSpinBox = new QDoubleSpinBox(layoutWidget1);
+        valueSpinBox->setObjectName("valueSpinBox");
 
-        horizontalLayout_2->addWidget(doubleSpinBox);
+        horizontalLayout_2->addWidget(valueSpinBox);
 
-        label_2 = new QLabel(widget1);
+        label_2 = new QLabel(layoutWidget1);
         label_2->setObjectName("label_2");
         label_2->setFont(font);
 
         horizontalLayout_2->addWidget(label_2);
 
-        dial = new QDial(widget1);
-        dial->setObjectName("dial");
+        valueDial = new QDial(layoutWidget1);
+        valueDial->setObjectName("valueDial");
 
-        horizontalLayout_2->addWidget(dial);
+        horizontalLayout_2->addWidget(valueDial);
 
         MainWindow->setCentralWidget(centralwidget);
         menubar = new QMenuBar(MainWindow);

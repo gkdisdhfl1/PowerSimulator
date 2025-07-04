@@ -23,8 +23,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(PowerSimulator
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        graphwindow.h graphwindow.cpp graphwindow.ui
-        settingsdialog.h settingsdialog.cpp settingsdialog.ui
+        GraphWindow.h GraphWindow.cpp GraphWindow.ui
+        SettingsDialog.h SettingsDialog.cpp SettingsDialog.ui
 
     )
 # Define target properties for Android with Qt 6 as:
