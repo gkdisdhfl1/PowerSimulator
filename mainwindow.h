@@ -21,13 +21,13 @@ public:
 
 private slots:
     void on_settingButton_clicked();
-    void onDialValueChanged(int value);
-    void onSpinBoxValueChanged(double value);
+    void onDialMoved(int newDialValue);
 
 private:
     GraphWindow *m_graphWindow; // 멤버 변수로 선언
     Ui::MainWindow *ui;
 
-    double m_currentVoltageValue = 220.0;
+    double m_currentVoltageValue;
+    int m_lastDialValue; // 이전 다이얼 위치를 저장할 변수
 };
 #endif // MAINWINDOW_H
