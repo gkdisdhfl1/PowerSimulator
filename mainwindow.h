@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include "GraphWindow.h"
 #include "SettingsDialog.h"
+#include "datapoint.h"
 
 #include <QPointF>
 #include <deque>
@@ -38,7 +39,8 @@ private:
     QTimer *m_captureTimer; // 데이터 캡처 타이머
     QElapsedTimer *m_elapsedTimer; // 경과 시간 측정 타이머
 
-    std::deque<QPointF> m_data; // 데이터 저장 컨테이너
+    std::deque<DataPoint> m_data; // 데이터 저장
+    const int m_maxDataSize = 10; // 데이터 최대 저장 개수
 
     double m_currentVoltageValue;
     int m_lastDialValue; // 이전 다이얼 위치를 저장할 변수
