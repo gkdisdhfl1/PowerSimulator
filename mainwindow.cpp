@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
+#include "graphwindow.h"
 
 #include <QTimer>
 #include <QElapsedTimer>
@@ -12,8 +13,13 @@ MainWindow::MainWindow(QWidget *parent)
     , m_lastDialValue(0)
     , m_captureTimer(new QTimer(this))
     , m_elapsedTimer(new QElapsedTimer())
+    , m_maxDataSize(100)
 {
     ui->setupUi(this);
+
+    m_captureTimer->setInterval(100); // 초기값은 100ms
+
+    // GraphWindow 생성 및 표시
     m_graphWindow = new GraphWindow(this);
     m_graphWindow->show();
 
@@ -30,12 +36,15 @@ MainWindow::MainWindow(QWidget *parent)
     m_lastDialValue = ui->valueDial->value(); // 현재 다이얼 위치로 초기화
     ui->valueSpinBox->setValue(m_currentVoltageValue); // 스핀 박스에 초기 전압 표시
 
+    // 연결
     connect(ui->valueDial, &QDial::sliderMoved, this, &MainWindow::onDialMoved);
     connect(ui->valueSpinBox, &QDoubleSpinBox::valueChanged, this, [this](double value) {
         m_currentVoltageValue = value;
     });
 
     connect(m_captureTimer, &QTimer::timeout, this, &MainWindow::captureData);
+
+    connect(this, &MainWindow::dataUpdated, m_graphWindow, &GraphWindow::updateGraph);
 }
 
 MainWindow::~MainWindow()
@@ -46,10 +55,14 @@ MainWindow::~MainWindow()
 void MainWindow::on_settingButton_clicked()
 {
     SettingsDialog dialog(this);
-    // dialog.setInitialValues(...); 나중에 추가할 부분
 
-    // 이 부분도 나중에 추가
-    // connect(&dialog, &SettingsDialog::settingsApplied, this, &MainWindow::applySettings);
+    // 다이얼 로그에 현재 설정값을 전달하여 초기화
+    double currentInterval = m_captureTimer->interval() / 1000.0;
+    dialog.setInitialValues(currentInterval, m_maxDataSize);
+
+    // 다이얼로그 시그널을 MainWindow 슬릇에 연결
+    connect(&dialog, &SettingsDialog::settingsApplied, this, &MainWindow::applySettings);
+
     dialog.exec();
 }
 
@@ -84,13 +97,14 @@ void MainWindow::on_startStopButton_clicked()
     } else {
         // m_data.clear();
         // double interval = ui->intervalSpinBox->value() * 1000; // 나중에 설정창에서
-        m_captureTimer->setInterval(100); // 우선 100ms로 고정
+        // m_captureTimer->setInterval(100); // 우선 100ms로 고정
         m_elapsedTimer->start();
         m_captureTimer->start();
         ui->startStopButton->setText("중지");
         qDebug() << "Timer started.";
     }
 }
+
 
 void MainWindow::captureData()
 {
@@ -123,6 +137,29 @@ void MainWindow::captureData()
 
     // 그래프 업데이트 신호 발생
     // DataPoint를 QPointF로 변환하여 시그널 발생
-    // Qlist ...
+    if(!m_data.empty()) {
+        QList<QPointF> points;
+        points.reserve(m_data.size()); // 미리 메모리 할당
+        for(const auto& dp : m_data) {
+            // x축: 시간 y축: 전압
+            points.append(QPointF(dp.timestampMs / 1000.0, dp.voltage));
+        }
 
+        emit dataUpdated(points);
+    }
+}
+
+void MainWindow::applySettings(double interval, int maxSize)
+{
+    // 타이머 간격 업데이트
+    m_captureTimer->setInterval(static_cast<int>(interval * 1000));
+
+    // 크기 업데이트
+    m_maxDataSize = maxSize;
+
+    // deque 크기 재조정
+    while(m_data.size() > static_cast<size_t>(m_maxDataSize))
+        m_data.pop_front();
+
+    qDebug() << "설정 반영 완료. Interval: " << interval << " Max Size: " << maxSize;
 }

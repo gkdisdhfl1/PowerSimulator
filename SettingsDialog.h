@@ -15,6 +15,14 @@ public:
     explicit SettingsDialog(QWidget *parent = nullptr);
     ~SettingsDialog();
 
+    // MainWindow에서 초기값을 설정해주기 위한 함수
+    void setInitialValues(double interval, int maxSize);
+    void accept() override;
+    // void reject() override;
+
+signals:
+    void settingsApplied(double interval, int maxSize);
+
 private:
     Ui::SettingsDialog *ui;
 };

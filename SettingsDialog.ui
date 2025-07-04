@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>SettingDialog</string>
   </property>
-  <widget class="QPushButton" name="pushButton">
+  <widget class="QPushButton" name="OkButton">
    <property name="geometry">
     <rect>
      <x>220</x>
@@ -22,11 +22,14 @@
      <height>24</height>
     </rect>
    </property>
+   <property name="cursor">
+    <cursorShape>ArrowCursor</cursorShape>
+   </property>
    <property name="text">
-    <string>Okay</string>
+    <string>Ok</string>
    </property>
   </widget>
-  <widget class="QPushButton" name="pushButton_2">
+  <widget class="QPushButton" name="CancelButton">
    <property name="geometry">
     <rect>
      <x>310</x>
@@ -57,7 +60,7 @@
     <string>시간 간격</string>
    </property>
   </widget>
-  <widget class="QDoubleSpinBox" name="doubleSpinBox">
+  <widget class="QDoubleSpinBox" name="intervalSpinBox">
    <property name="geometry">
     <rect>
      <x>130</x>
@@ -67,7 +70,68 @@
     </rect>
    </property>
   </widget>
+  <widget class="QLabel" name="label_2">
+   <property name="geometry">
+    <rect>
+     <x>30</x>
+     <y>130</y>
+     <width>71</width>
+     <height>31</height>
+    </rect>
+   </property>
+   <property name="font">
+    <font>
+     <pointsize>12</pointsize>
+    </font>
+   </property>
+   <property name="text">
+    <string>저장 크기</string>
+   </property>
+  </widget>
+  <widget class="QSpinBox" name="maxSizeSpinBox">
+   <property name="geometry">
+    <rect>
+     <x>130</x>
+     <y>130</y>
+     <width>211</width>
+     <height>31</height>
+    </rect>
+   </property>
+  </widget>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>OkButton</sender>
+   <signal>clicked()</signal>
+   <receiver>SettingsDialog</receiver>
+   <slot>accept()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>241</x>
+     <y>272</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>171</x>
+     <y>222</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>CancelButton</sender>
+   <signal>clicked()</signal>
+   <receiver>SettingsDialog</receiver>
+   <slot>reject()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>357</x>
+     <y>276</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>343</x>
+     <y>199</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

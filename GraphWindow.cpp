@@ -22,6 +22,8 @@ GraphWindow::GraphWindow(QWidget *parent)
     ui->gridLayout->addWidget(m_chartView);
     m_chartView->setRenderHint(QPainter::Antialiasing);
 
+    m_series->setPointsVisible(true); // 그래프에 점 표시
+
     setupChart();
 }
 
@@ -54,8 +56,34 @@ void GraphWindow::setupChart()
     m_series->attachAxis(m_axisY);
 }
 
-void GraphWindow::updateGraph(const QList<QPointF>& data)
+void GraphWindow::updateGraph(const QList<QPointF>& points)
 {
-    // 나중에 구현
-    Q_UNUSED(data);
+    if (points.isEmpty()) {
+        m_series->clear();
+        return;
+    }
+
+    // 시리즈의 데이터를 전달받은 포인트들로 한 번에 교체
+    m_series->replace(points);
+
+    // x, y축 범위를 데이터에 맞게 조절
+    double minX = points.first().x();
+    double maxX = points.last().x();
+
+    double minY = points.first().y();
+    double maxY = points.first().y();
+
+    for (const auto& p : points) {
+        if (p.y() < minY) minY = p.y();
+        if (p.y() > maxY) maxY = p.y();
+    }
+
+    // 그래프가 위아래에 꽉 끼지 않도록 약간의 여백 줌
+    // double y_padding = (maxY - minY) * 0.1;
+    // if (y_padding < 5) y_padding = 5; // 최소 여백 확보
+
+    // 계산된 범위로 축을 설정
+    m_axisX->setRange(minX, maxX);
+    // m_axisY->setRange(minY - y_padding, maxY + y_padding);
+
 }
