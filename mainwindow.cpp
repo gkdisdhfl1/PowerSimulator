@@ -27,7 +27,7 @@ MainWindow::MainWindow(QWidget *parent)
     // connect(ui->valueSpinBox, &QDoubleSpinBox::valueChanged, this, &MainWindow::onSpinBoxValueChanged);
 
     // 속성 설정
-    ui->valueDial->setRange(0, 359); // 예: 0~400V
+    ui->valueDial->setRange(0, 359);
     ui->valueDial->setWrapping(true);
     ui->valueDial->setNotchesVisible(true);
     ui->valueSpinBox->setRange(-500.0, 500.0);
@@ -76,8 +76,13 @@ void MainWindow::onDialMoved(int newDialValue)
     else if(diff > 180) // 0 -> 359 로 넘어갈 때(반시계 방향)
         diff -= 360;
 
+    double nextVoltage = m_currentVoltageValue + static_cast<double>(diff);
+
+    double minVoltage = ui->valueSpinBox->minimum();
+    double maxVoltage = ui->valueSpinBox->maximum();
+
     // 실제 전압 값 업데이트
-    m_currentVoltageValue += static_cast<double>(diff);
+    m_currentVoltageValue = std::clamp(nextVoltage, minVoltage, maxVoltage);
 
     // 스핀박스에 반영
     bool oldState = ui->valueSpinBox->blockSignals(true);

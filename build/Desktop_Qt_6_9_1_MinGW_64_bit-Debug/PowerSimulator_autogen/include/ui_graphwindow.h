@@ -13,14 +13,12 @@
 #include <QtWidgets/QApplication>
 #include <QtWidgets/QDialog>
 #include <QtWidgets/QGraphicsView>
-#include <QtWidgets/QGridLayout>
 
 QT_BEGIN_NAMESPACE
 
 class Ui_GraphWindow
 {
 public:
-    QGridLayout *gridLayout;
     QGraphicsView *chartView;
 
     void setupUi(QDialog *GraphWindow)
@@ -28,13 +26,9 @@ public:
         if (GraphWindow->objectName().isEmpty())
             GraphWindow->setObjectName("GraphWindow");
         GraphWindow->resize(400, 300);
-        gridLayout = new QGridLayout(GraphWindow);
-        gridLayout->setObjectName("gridLayout");
         chartView = new QGraphicsView(GraphWindow);
         chartView->setObjectName("chartView");
-
-        gridLayout->addWidget(chartView, 0, 0, 1, 1);
-
+        chartView->setGeometry(QRect(9, 9, 256, 192));
 
         retranslateUi(GraphWindow);
 

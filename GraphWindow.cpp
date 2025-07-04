@@ -19,8 +19,15 @@ GraphWindow::GraphWindow(QWidget *parent)
     ui->setupUi(this);
 
     m_chartView = new QChartView(m_chart);
-    ui->gridLayout->addWidget(m_chartView);
+    // ui->gridLayout->addWidget(m_chartView);
     m_chartView->setRenderHint(QPainter::Antialiasing);
+
+    // 레이아웃 설정
+    QGridLayout *mainLayout = new QGridLayout;
+    mainLayout->setContentsMargins(0,0,0,0);
+    mainLayout->addWidget(m_chartView);
+    this->setLayout(mainLayout);
+
 
     m_series->setPointsVisible(true); // 그래프에 점 표시
 
