@@ -102,11 +102,14 @@ void MainWindow::on_startStopButton_clicked()
         qDebug() << "Timer stopped";
     } else {
         // m_data.clear();
-        // double interval = ui->intervalSpinBox->value() * 1000; // 나중에 설정창에서
-        // m_captureTimer->setInterval(100); // 우선 100ms로 고정
-        m_elapsedTimer->start();
+
+        // m_elapsedTimer->start();는 타이머가 한 번도 시작된 적 없을 때만 호출
+        if (!m_elapsedTimer->isValid()) {
+            m_elapsedTimer->start();
+        }
+
         m_captureTimer->start();
-        ui->startStopButton->setText("중지");
+        ui->startStopButton->setText("일시정지");
         qDebug() << "Timer started.";
     }
 }
