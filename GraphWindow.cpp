@@ -4,8 +4,8 @@
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QValueAxis>
 #include <QGridLayout>
-#include <QList>
 #include <QPointF>
+#include <QVector>
 
 GraphWindow::GraphWindow(QWidget *parent)
     : QDialog(parent)

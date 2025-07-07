@@ -23,7 +23,7 @@ public:
     ~GraphWindow();
 
 public slots:
-    void updateGraph(const QList<QPointF>& data);
+    void updateGraph(const QVector<QPointF>& data);
 
 private:
     Ui::GraphWindow *ui;

@@ -5,6 +5,7 @@
 #include <QTimer>
 #include <QElapsedTimer>
 #include <QDebug>
+#include <QVector>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -143,7 +144,7 @@ void MainWindow::captureData()
     // 그래프 업데이트 신호 발생
     // DataPoint를 QPointF로 변환하여 시그널 발생
     if(!m_data.empty()) {
-        QList<QPointF> points;
+        QVector<QPointF> points;
         points.reserve(m_data.size()); // 미리 메모리 할당
         for(const auto& dp : m_data) {
             // x축: 시간 y축: 전압
