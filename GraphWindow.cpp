@@ -88,7 +88,7 @@ void GraphWindow::updateGraph(const std::deque<DataPoint>& data)
     double minY = points.first().y();
     double maxY = points.first().y();
 
-    for (const auto& p : points) {
+    for (const auto& p : std::as_const(points)) {
         if (p.y() < minY) minY = p.y();
         if (p.y() > maxY) maxY = p.y();
     }
