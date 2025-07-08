@@ -15,8 +15,7 @@ public:
 
     bool isRunning() const;
 
-    // Getters for current settings
-    double getCaptureIntervalSec() const;
+    double getCaptureIntervalSec() const; // 현재 설정값을 읽음
     int getMaxDataSize() const;
 
 public slots:

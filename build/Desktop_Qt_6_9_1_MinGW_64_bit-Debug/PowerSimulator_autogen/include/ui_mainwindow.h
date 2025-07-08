@@ -20,6 +20,7 @@
 #include <QtWidgets/QPushButton>
 #include <QtWidgets/QSpacerItem>
 #include <QtWidgets/QStatusBar>
+#include <QtWidgets/QVBoxLayout>
 #include <QtWidgets/QWidget>
 
 QT_BEGIN_NAMESPACE
@@ -28,12 +29,13 @@ class Ui_MainWindow
 {
 public:
     QWidget *centralwidget;
-    QWidget *layoutWidget;
+    QVBoxLayout *verticalLayout_2;
+    QVBoxLayout *verticalLayout;
     QHBoxLayout *horizontalLayout;
-    QPushButton *startStopButton;
     QSpacerItem *horizontalSpacer;
+    QPushButton *startStopButton;
     QPushButton *settingButton;
-    QWidget *layoutWidget1;
+    QSpacerItem *horizontalSpacer_2;
     QHBoxLayout *horizontalLayout_2;
     QLabel *label;
     QDoubleSpinBox *valueSpinBox;
@@ -46,63 +48,89 @@ public:
     {
         if (MainWindow->objectName().isEmpty())
             MainWindow->setObjectName("MainWindow");
-        MainWindow->resize(473, 260);
+        MainWindow->resize(505, 259);
         centralwidget = new QWidget(MainWindow);
         centralwidget->setObjectName("centralwidget");
-        layoutWidget = new QWidget(centralwidget);
-        layoutWidget->setObjectName("layoutWidget");
-        layoutWidget->setGeometry(QRect(100, 20, 263, 26));
-        horizontalLayout = new QHBoxLayout(layoutWidget);
+        verticalLayout_2 = new QVBoxLayout(centralwidget);
+        verticalLayout_2->setObjectName("verticalLayout_2");
+        verticalLayout = new QVBoxLayout();
+        verticalLayout->setObjectName("verticalLayout");
+        horizontalLayout = new QHBoxLayout();
         horizontalLayout->setObjectName("horizontalLayout");
-        horizontalLayout->setContentsMargins(0, 0, 0, 0);
-        startStopButton = new QPushButton(layoutWidget);
-        startStopButton->setObjectName("startStopButton");
-
-        horizontalLayout->addWidget(startStopButton);
-
         horizontalSpacer = new QSpacerItem(40, 20, QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Minimum);
 
         horizontalLayout->addItem(horizontalSpacer);
 
-        settingButton = new QPushButton(layoutWidget);
+        startStopButton = new QPushButton(centralwidget);
+        startStopButton->setObjectName("startStopButton");
+
+        horizontalLayout->addWidget(startStopButton);
+
+        settingButton = new QPushButton(centralwidget);
         settingButton->setObjectName("settingButton");
 
         horizontalLayout->addWidget(settingButton);
 
-        layoutWidget1 = new QWidget(centralwidget);
-        layoutWidget1->setObjectName("layoutWidget1");
-        layoutWidget1->setGeometry(QRect(60, 60, 351, 102));
-        horizontalLayout_2 = new QHBoxLayout(layoutWidget1);
+        horizontalSpacer_2 = new QSpacerItem(40, 20, QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Minimum);
+
+        horizontalLayout->addItem(horizontalSpacer_2);
+
+
+        verticalLayout->addLayout(horizontalLayout);
+
+        horizontalLayout_2 = new QHBoxLayout();
         horizontalLayout_2->setObjectName("horizontalLayout_2");
-        horizontalLayout_2->setContentsMargins(0, 0, 0, 0);
-        label = new QLabel(layoutWidget1);
+        label = new QLabel(centralwidget);
         label->setObjectName("label");
+        QSizePolicy sizePolicy(QSizePolicy::Policy::Minimum, QSizePolicy::Policy::Minimum);
+        sizePolicy.setHorizontalStretch(0);
+        sizePolicy.setVerticalStretch(0);
+        sizePolicy.setHeightForWidth(label->sizePolicy().hasHeightForWidth());
+        label->setSizePolicy(sizePolicy);
         QFont font;
         font.setPointSize(14);
         label->setFont(font);
 
         horizontalLayout_2->addWidget(label);
 
-        valueSpinBox = new QDoubleSpinBox(layoutWidget1);
+        valueSpinBox = new QDoubleSpinBox(centralwidget);
         valueSpinBox->setObjectName("valueSpinBox");
+        QSizePolicy sizePolicy1(QSizePolicy::Policy::MinimumExpanding, QSizePolicy::Policy::Fixed);
+        sizePolicy1.setHorizontalStretch(0);
+        sizePolicy1.setVerticalStretch(0);
+        sizePolicy1.setHeightForWidth(valueSpinBox->sizePolicy().hasHeightForWidth());
+        valueSpinBox->setSizePolicy(sizePolicy1);
 
         horizontalLayout_2->addWidget(valueSpinBox);
 
-        label_2 = new QLabel(layoutWidget1);
+        label_2 = new QLabel(centralwidget);
         label_2->setObjectName("label_2");
+        QSizePolicy sizePolicy2(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Fixed);
+        sizePolicy2.setHorizontalStretch(0);
+        sizePolicy2.setVerticalStretch(0);
+        sizePolicy2.setHeightForWidth(label_2->sizePolicy().hasHeightForWidth());
+        label_2->setSizePolicy(sizePolicy2);
         label_2->setFont(font);
 
         horizontalLayout_2->addWidget(label_2);
 
-        valueDial = new QDial(layoutWidget1);
+        valueDial = new QDial(centralwidget);
         valueDial->setObjectName("valueDial");
+        sizePolicy.setHeightForWidth(valueDial->sizePolicy().hasHeightForWidth());
+        valueDial->setSizePolicy(sizePolicy);
 
         horizontalLayout_2->addWidget(valueDial);
+
+
+        verticalLayout->addLayout(horizontalLayout_2);
+
+
+        verticalLayout_2->addLayout(verticalLayout);
 
         MainWindow->setCentralWidget(centralwidget);
         menubar = new QMenuBar(MainWindow);
         menubar->setObjectName("menubar");
-        menubar->setGeometry(QRect(0, 0, 473, 22));
+        menubar->setGeometry(QRect(0, 0, 505, 22));
         MainWindow->setMenuBar(menubar);
         statusbar = new QStatusBar(MainWindow);
         statusbar->setObjectName("statusbar");

@@ -60,7 +60,7 @@ void SimulationEngine::applySettings(double interval, int maxSize)
     while(m_data.size() > static_cast<size_t>(m_maxDataSize))
         m_data.pop_front();
 
-    qDebug() << "Engine settings applied. Interval:" << interval << "s, Max Size:" << maxSize;
+    qDebug() << "설정 반영 완료. Interval:" << interval << "s, Max Size:" << maxSize;
 }
 
 void SimulationEngine::updateVoltage(int newDialValue)
@@ -100,6 +100,8 @@ void SimulationEngine::captureData()
 
     // 최대 개수 관리
     if(m_data.size() > m_maxDataSize) {
+        qDebug() << m_data.front().timestampMs << "ms, "
+                 << m_data.front().voltage << "V 가 삭제될 예정";
         m_data.pop_front();
     }
 
