@@ -7,7 +7,6 @@
 
 #include "datapoint.h"
 #include <deque>
-#include <QList>
 
 class QTimer;
 class QElapsedTimer;
