@@ -30,8 +30,16 @@ void SettingsDialog::accept()
     int size = ui->maxSizeSpinBox->value();
 
     // 유효성 검사
-    if(!(interval >= 0.1) && (size >= 1)) {
-        QMessageBox::warning(this, "경고", "잘못된 입력입니다.");
+    QString errorMessage;
+    if (interval < 0.1) {
+        errorMessage += "간격은 0.1초 이상이어야 합니다.\n";
+    }
+    if (size < 1)
+    {
+        errorMessage += "최대 데이터 크기는 1 이상이어야 합니다.\n";
+    }
+    if(!errorMessage.isEmpty()) {
+        QMessageBox::warning(this, "입력 오류", errorMessage);
         return;
     }
 

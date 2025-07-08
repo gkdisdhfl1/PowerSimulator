@@ -40,7 +40,6 @@ MainWindow::MainWindow(QWidget *parent)
     connect(m_engine, &SimulationEngine::statusChanged, ui->startStopButton, &QPushButton::setText);
     connect(m_engine, &SimulationEngine::voltageChanged, ui->valueSpinBox, &QDoubleSpinBox::setValue);
 
-    // 기타 UI 연결 (settingButton은 auto-connection 사용)
 }
 
 MainWindow::~MainWindow()

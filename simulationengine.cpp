@@ -1,6 +1,5 @@
 #include "simulationengine.h"
 #include <QDebug>
-#include <algorithm> // For std::clamp
 
 namespace {
     constexpr int FullCircleDegrees = 360;
@@ -68,6 +67,7 @@ void SimulationEngine::updateVoltage(int newDialValue)
 {
     int diff = newDialValue - m_lastDialValue;
 
+    // Wrapping 처리
     if(diff < -HalfCircleDegrees)
         diff += FullCircleDegrees;
     else if(diff > HalfCircleDegrees)
@@ -75,11 +75,12 @@ void SimulationEngine::updateVoltage(int newDialValue)
 
     double nextVoltage = m_currentVoltageValue + static_cast<double>(diff);
 
-    // Min/Max는 UI에 있으므로 여기서는 일단 넓은 범위로 제한
+    // 실제 전압 값 업데이트
     m_currentVoltageValue = std::clamp(nextVoltage, -500.0, 500.0);
 
     emit voltageChanged(m_currentVoltageValue);
 
+    // 다음 계산을 위한 현재 위치 저장
     m_lastDialValue = newDialValue;
 }
 
@@ -90,11 +91,14 @@ void SimulationEngine::setCurrentVoltage(double voltage)
 
 void SimulationEngine::captureData()
 {
+    // 데이터 생성
     qint64 currentTimeMs = m_elapsedTimer.elapsed();
     double currentVoltage = m_currentVoltageValue;
 
+    // DataPoint 객체를 생성하여 저장
     m_data.push_back(DataPoint{currentTimeMs, currentVoltage});
 
+    // 최대 개수 관리
     if(m_data.size() > m_maxDataSize) {
         m_data.pop_front();
     }
