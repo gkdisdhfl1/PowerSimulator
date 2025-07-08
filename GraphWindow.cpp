@@ -18,7 +18,7 @@ GraphWindow::GraphWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    m_chartView = new QChartView(m_chart);
+    // m_chartView = new QChartView(m_chart);
     // ui->gridLayout->addWidget(m_chartView);
     m_chartView->setRenderHint(QPainter::Antialiasing);
 
@@ -63,7 +63,7 @@ void GraphWindow::setupChart()
     m_series->attachAxis(m_axisY);
 }
 
-void GraphWindow::updateGraph(const QList<QPointF>& points)
+void GraphWindow::updateGraph(const QVector<QPointF>& points)
 {
     if (points.isEmpty()) {
         m_series->clear();

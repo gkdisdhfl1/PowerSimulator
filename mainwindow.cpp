@@ -102,6 +102,10 @@ void MainWindow::on_startStopButton_clicked()
         qDebug() << "Timer stopped";
     } else {
         // m_data.clear();
+        if(!m_graphWindow) {
+
+        }
+
 
         // m_elapsedTimer->start();는 타이머가 한 번도 시작된 적 없을 때만 호출
         if (!m_elapsedTimer->isValid()) {
