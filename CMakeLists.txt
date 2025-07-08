@@ -25,6 +25,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         ${PROJECT_SOURCES}
         GraphWindow.h GraphWindow.cpp GraphWindow.ui
         SettingsDialog.h SettingsDialog.cpp SettingsDialog.ui
+        simulationengine.h simulationengine.cpp
         datapoint.h
 
     )
