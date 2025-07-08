@@ -32,7 +32,9 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
         }
     });
     connect(ui->valueDial, &QDial::sliderMoved, m_engine, &SimulationEngine::updateVoltage);
-    connect(ui->valueSpinBox, QOverload<double>::of(&QDoubleSpinBox::valueChanged), m_engine, &SimulationEngine::setCurrentVoltage);
+    connect(ui->valueSpinBox, &QDoubleSpinBox::editingFinished, this, [=, this]() {
+        m_engine->setCurrentVoltage(ui->valueSpinBox->value());
+    });
     connect(m_settingsDialog, &SettingsDialog::settingsApplied, m_engine, &SimulationEngine::applySettings);
 
     // SimulationEngine 시그널 -> UI 슬롯

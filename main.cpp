@@ -2,7 +2,7 @@
 #include "simulationengine.h"
 
 #include <QApplication>
-#include <memory> // For std::unique_ptr
+#include <memory>
 
 int main(int argc, char *argv[])
 {
