@@ -19,7 +19,7 @@ class MainWindow : public QMainWindow
     Q_OBJECT
 
 public:
-    MainWindow(QWidget *parent = nullptr);
+    explicit MainWindow(SimulationEngine *engine, QWidget *parent = nullptr);
     ~MainWindow();
 
 private slots:

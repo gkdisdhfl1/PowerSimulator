@@ -4,12 +4,12 @@
 #include "settingsdialog.h"
 #include "simulationengine.h"
 
-MainWindow::MainWindow(QWidget *parent)
+MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , m_graphWindow(new GraphWindow(this))
     , m_settingsDialog(new SettingsDialog(this))
-    , m_engine(new SimulationEngine(this))
+    , m_engine(engine)
 {
     ui->setupUi(this);
     m_graphWindow->show();

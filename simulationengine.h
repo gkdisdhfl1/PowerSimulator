@@ -11,7 +11,7 @@ class SimulationEngine : public QObject
 {
     Q_OBJECT
 public:
-    explicit SimulationEngine(QObject *parent = nullptr);
+    explicit SimulationEngine();
 
     bool isRunning() const;
 

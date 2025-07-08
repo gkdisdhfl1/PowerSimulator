@@ -6,8 +6,8 @@ namespace {
     constexpr int HalfCircleDegrees = 180;
 }
 
-SimulationEngine::SimulationEngine(QObject *parent)
-    : QObject(parent)
+SimulationEngine::SimulationEngine()
+    : QObject()
     , m_maxDataSize(100)
     , m_currentVoltageValue(220.0)
     , m_lastDialValue(0)
