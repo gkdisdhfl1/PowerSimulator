@@ -7,6 +7,8 @@
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QValueAxis>
 #include <QtCharts/QChartView>
+#include <deque>
+#include "datapoint.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -23,7 +25,7 @@ public:
     ~GraphWindow();
 
 public slots:
-    void updateGraph(const QVector<QPointF>& data);
+    void updateGraph(const std::deque<DataPoint>& data);
 
 private:
     Ui::GraphWindow *ui;

@@ -28,7 +28,7 @@ public:
     ~MainWindow();
 
 signals:
-    void dataUpdated(const QVector<QPointF>& points); // 그래프에 전달할 시그널
+    void dataUpdated(const std::deque<DataPoint>& data); // 그래프에 전달할 시그널
 
 private slots:
     void on_settingButton_clicked();

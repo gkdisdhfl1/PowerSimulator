@@ -63,11 +63,19 @@ void GraphWindow::setupChart()
     m_series->attachAxis(m_axisY);
 }
 
-void GraphWindow::updateGraph(const QVector<QPointF>& points)
+void GraphWindow::updateGraph(const std::deque<DataPoint>& data)
 {
-    if (points.isEmpty()) {
+    if (data.empty()) {
         m_series->clear();
         return;
+    }
+
+    // DataPoint를 QPointF로 변환
+    QVector<QPointF> points;
+    points.reserve(data.size()); // 미리 메모리 할당
+    for(const auto& dp : data) {
+        // x축: 시간 y축: 전압
+        points.append(QPointF(dp.timestampMs / 1000.0, dp.voltage));
     }
 
     // 시리즈의 데이터를 전달받은 포인트들로 한 번에 교체
