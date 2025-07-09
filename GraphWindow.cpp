@@ -69,28 +69,25 @@ void GraphWindow::updateGraph(const std::deque<DataPoint>& data)
         return;
     }
 
+    double minY = data.front().voltage;
+    double maxY = data.front().voltage;
+
     // DataPoint를 QPointF로 변환
     QList<QPointF> points;
     points.reserve(data.size()); // 미리 메모리 할당
     for(const auto& dp : data) {
         // x축: 시간 y축: 전압
         points.append(QPointF(dp.timestampMs / 1000.0, dp.voltage));
+        if (dp.voltage < minY) minY = dp.voltage;
+        if (dp.voltage > maxY) maxY = dp.voltage;
     }
 
-    // 시리즈의 데이터를 전달받은 포인트들로 한 번에 교체
+    // 시리즈의 데이터를 전k달받은 포인트들로 한 번에 교체
     m_series->replace(points);
 
     // x, y축 범위를 데이터에 맞게 조절
     double minX = points.first().x();
     double maxX = points.last().x();
-
-    double minY = points.first().y();
-    double maxY = points.first().y();
-
-    for (const auto& p : std::as_const(points)) {
-        if (p.y() < minY) minY = p.y();
-        if (p.y() > maxY) maxY = p.y();
-    }
 
     // 그래프가 위아래에 꽉 끼지 않도록 약간의 여백 줌
     // double y_padding = (maxY - minY) * 0.1;
