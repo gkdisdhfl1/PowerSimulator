@@ -71,7 +71,7 @@ void GraphWindow::updateGraph(const std::deque<DataPoint>& data)
     }
 
     // DataPoint를 QPointF로 변환
-    QVector<QPointF> points;
+    QList<QPointF> points;
     points.reserve(data.size()); // 미리 메모리 할당
     for(const auto& dp : data) {
         // x축: 시간 y축: 전압
