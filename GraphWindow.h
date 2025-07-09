@@ -32,7 +32,7 @@ private:
     void setupChart(); // 차트 초기 설정을 위한 함수
 
     // 차트 관련 객체 소유
-    QChart *m_chart;
+    QChart m_chart;
     QLineSeries *m_series;
     QValueAxis *m_axisX;
     QValueAxis *m_axisY;
