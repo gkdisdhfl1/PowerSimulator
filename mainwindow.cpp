@@ -35,7 +35,13 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     connect(ui->valueSpinBox, &QDoubleSpinBox::editingFinished, this, [=, this]() {
         m_engine->setCurrentVoltage(ui->valueSpinBox->value());
     });
-    connect(m_settingsDialog, &SettingsDialog::settingsApplied, m_engine, &SimulationEngine::applySettings);
+
+    // 설정 다이얼로그의 변경사항을 엔진과 그래프 윈도우에 각각 전달
+    connect(m_settingsDialog, &SettingsDialog::settingsApplied, this,
+            [this](double interval, int maxSize, double graphWidth) {
+        m_engine->applySettings(interval, maxSize);
+        m_graphWindow->setGraphWidth(graphWidth);
+    });
 
     // SimulationEngine 시그널 -> UI 슬롯
     connect(m_engine, &SimulationEngine::dataUpdated, m_graphWindow, &GraphWindow::updateGraph);
@@ -54,7 +60,8 @@ void MainWindow::on_settingButton_clicked()
     // 다이얼로그를 열기 전에 현재 설정값으로 초기화
     m_settingsDialog->setInitialValues(
         m_engine->getCaptureIntervalSec(),
-        m_engine->getMaxDataSize()
+        m_engine->getMaxDataSize(),
+        m_graphWindow->getGraphWidth()
     );
     m_settingsDialog->open();
 }

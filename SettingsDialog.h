@@ -3,6 +3,8 @@
 
 #include <QDialog>
 
+class QDoubleSpinBox;
+
 namespace Ui {
 class SettingsDialog;
 }
@@ -16,15 +18,15 @@ public:
     ~SettingsDialog();
 
     // MainWindow에서 초기값을 설정해주기 위한 함수
-    void setInitialValues(double interval, int maxSize);
+    void setInitialValues(double interval, int maxSize, double graphWidth);
     void accept() override;
-    // void reject() override;
 
 signals:
-    void settingsApplied(double interval, int maxSize);
+    void settingsApplied(double interval, int maxSize, double graphWidth);
 
 private:
     Ui::SettingsDialog *ui;
+    QDoubleSpinBox *m_graphWidthSpinBox;
 };
 
 #endif // SETTINGSDIALOG_H

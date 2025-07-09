@@ -23,9 +23,11 @@ class GraphWindow : public QDialog
 public:
     explicit GraphWindow(QWidget *parent = nullptr);
     ~GraphWindow();
+    double getGraphWidth() const;
 
 public slots:
     void updateGraph(const std::deque<DataPoint>& data);
+    void setGraphWidth(double width);
 
 private:
     Ui::GraphWindow *ui;
@@ -37,6 +39,7 @@ private:
     QValueAxis *m_axisX;
     QValueAxis *m_axisY;
     QChartView * m_chartView;
+    double m_graphWidthSec;
 };
 
 #endif // GRAPHWINDOW_H
