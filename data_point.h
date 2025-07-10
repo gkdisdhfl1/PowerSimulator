@@ -1,5 +1,5 @@
-#ifndef DATAPOINT_H
-#define DATAPOINT_H
+#ifndef DATA_POINT_H
+#define DATA_POINT_H
 
 #include <QtGlobal> // qint64 타입을 위해
 
@@ -8,4 +8,4 @@ struct DataPoint {
     double voltage; // 전압
 };
 
-#endif // DATAPOINT_H
+#endif // DATA_POINT_H

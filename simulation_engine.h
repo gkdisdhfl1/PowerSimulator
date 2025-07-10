@@ -1,11 +1,11 @@
-#ifndef SIMULATIONENGINE_H
-#define SIMULATIONENGINE_H
+#ifndef SIMULATION_ENGINE_H
+#define SIMULATION_ENGINE_H
 
 #include <QObject>
 #include <QTimer>
 #include <QElapsedTimer>
 #include <deque>
-#include "datapoint.h"
+#include "data_point.h"
 
 class SimulationEngine : public QObject
 {
@@ -43,4 +43,4 @@ private:
     int m_lastDialValue;
 };
 
-#endif // SIMULATIONENGINE_H
+#endif // SIMULATION_ENGINE_H

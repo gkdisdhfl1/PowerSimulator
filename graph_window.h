@@ -1,5 +1,5 @@
-#ifndef GRAPHWINDOW_H
-#define GRAPHWINDOW_H
+#ifndef GRAPH_WINDOW_H
+#define GRAPH_WINDOW_H
 
 // #include <QWidget>
 #include <QDialog>
@@ -8,7 +8,7 @@
 #include <QtCharts/QValueAxis>
 #include <QtCharts/QChartView>
 #include <deque>
-#include "datapoint.h"
+#include "data_point.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -44,4 +44,4 @@ private:
     double m_graphWidthSec;
 };
 
-#endif // GRAPHWINDOW_H
+#endif // GRAPH_WINDOW_H

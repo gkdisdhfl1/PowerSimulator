@@ -1,8 +1,8 @@
-#include "mainwindow.h"
-#include "./ui_mainwindow.h"
+#include "main_window.h"
+#include "./ui_main_window.h"
 #include "graphwindow.h"
 #include "settingsdialog.h"
-#include "simulationengine.h"
+#include "simulation_engine.h"
 
 MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     : QMainWindow(parent)

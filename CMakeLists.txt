@@ -14,19 +14,19 @@ find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts)
 
 set(PROJECT_SOURCES
         main.cpp
-        mainwindow.cpp
-        mainwindow.h
-        mainwindow.ui
+        main_window.cpp
+        main_window.h
+        main_window.ui
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(PowerSimulator
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        GraphWindow.h GraphWindow.cpp GraphWindow.ui
-        SettingsDialog.h SettingsDialog.cpp SettingsDialog.ui
-        simulationengine.h simulationengine.cpp
-        datapoint.h
+        graph_window.h graph_window.cpp graph_window.ui
+        settings_dialog.h settings_dialog.cpp settings_dialog.ui
+        simulation_engine.h simulation_engine.cpp
+        data_point.h
 
     )
 # Define target properties for Android with Qt 6 as:

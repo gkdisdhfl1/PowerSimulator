@@ -1,5 +1,5 @@
-#include "GraphWindow.h"
-#include "ui_GraphWindow.h"
+#include "graph_window.h"
+#include "ui_graph_window.h"
 #include <QtCharts/QChartView>
 #include <QtCharts/QLineSeries>
 #include <QtCharts/QValueAxis>

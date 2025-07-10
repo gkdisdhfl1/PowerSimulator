@@ -1,5 +1,5 @@
-#include "SettingsDialog.h"
-#include "ui_SettingsDialog.h"
+#include "settings_dialog.h"
+#include "ui_settings_dialog.h"
 
 #include <QMessageBox>
 #include <QHBoxLayout>
@@ -17,7 +17,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 
     ui->graphWidthSpinBox->setSuffix(" s");
     ui->graphWidthSpinBox->setRange(1.0, 300.0); // 1초 ~ 5분
-    ui->graphWidthSpinBox->setValue(10.0); // 기본값 10초
+    ui->graphWidthSpinBox->setValue(10.0); // 기본값 10초/
 }
 
 SettingsDialog::~SettingsDialog()
