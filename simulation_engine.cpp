@@ -1,5 +1,7 @@
 #include "simulation_engine.h"
+#include "config.h"
 #include <QDebug>
+#include <algorithm> // for std::clamp
 
 namespace {
     constexpr int FullCircleDegrees = 360;
@@ -8,11 +10,11 @@ namespace {
 
 SimulationEngine::SimulationEngine()
     : QObject()
-    , m_maxDataSize(100)
-    , m_currentVoltageValue(220.0)
+    , m_maxDataSize(config::DefaultDataSize)
+    , m_currentVoltageValue(config::DefaultVoltage)
     , m_lastDialValue(0)
 {
-    m_captureTimer.setInterval(100); // 초기값 100ms
+    m_captureTimer.setInterval(config::DefaultIntervalMs); // 초기값
     connect(&m_captureTimer, &QTimer::timeout, this, &SimulationEngine::captureData);
 }
 
@@ -76,7 +78,7 @@ void SimulationEngine::updateVoltage(int newDialValue)
     double nextVoltage = m_currentVoltageValue + static_cast<double>(diff);
 
     // 실제 전압 값 업데이트
-    m_currentVoltageValue = std::clamp(nextVoltage, -500.0, 500.0);
+    m_currentVoltageValue = std::clamp(nextVoltage, config::MinVoltage, config::MaxVoltage);
 
     emit voltageChanged(m_currentVoltageValue);
 
@@ -86,7 +88,7 @@ void SimulationEngine::updateVoltage(int newDialValue)
 
 void SimulationEngine::setCurrentVoltage(double voltage)
 {
-    m_currentVoltageValue = voltage;
+    m_currentVoltageValue = std::clamp(voltage, config::MinVoltage, config::MaxVoltage);
 }
 
 void SimulationEngine::captureData()
@@ -99,9 +101,7 @@ void SimulationEngine::captureData()
     m_data.push_back({currentTimeMs, currentVoltage});
 
     // 최대 개수 관리
-    if(m_data.size() > m_maxDataSize) {
-        qDebug() << m_data.front().timestampMs << "ms, "
-                 << m_data.front().voltage << "V 가 삭제될 예정";
+    if(m_data.size() > static_cast<size_t>(m_maxDataSize)) {
         m_data.pop_front();
     }
 

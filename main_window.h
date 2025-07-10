@@ -3,7 +3,7 @@
 
 #include <QMainWindow>
 
-// Forward declarations
+// 전방 선언
 class GraphWindow;
 class SettingsDialog;
 class SimulationEngine;

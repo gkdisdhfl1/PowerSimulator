@@ -1,10 +1,11 @@
 #include "settings_dialog.h"
+#include "config.h"
 #include "ui_settings_dialog.h"
 
-#include <QMessageBox>
+#include <QDoubleSpinBox>
 #include <QHBoxLayout>
 #include <QLabel>
-#include <QDoubleSpinBox>
+#include <QMessageBox>
 #include <QVBoxLayout>
 
 SettingsDialog::SettingsDialog(QWidget *parent)
@@ -13,11 +14,15 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 {
     ui->setupUi(this);
 
-    ui->maxSizeSpinBox->setRange(1, 10000);
+    ui->maxSizeSpinBox->setRange(config::MinDataSize, config::MaxDataSize);
 
     ui->graphWidthSpinBox->setSuffix(" s");
-    ui->graphWidthSpinBox->setRange(1.0, 300.0); // 1초 ~ 5분
-    ui->graphWidthSpinBox->setValue(10.0); // 기본값 10초/
+    ui->graphWidthSpinBox->setRange(config::MinGraphWidthSec, config::MaxGraphWidthSec);
+    ui->graphWidthSpinBox->setValue(config::DefaultGraphWidthSec);
+
+    ui->intervalSpinBox->setRange(config::MinIntervalSec, 60.0); // 최대 1분
+    ui->intervalSpinBox->setSingleStep(0.1);
+    ui->intervalSpinBox->setValue(config::DefaultIntervalMs / 1000.0);
 }
 
 SettingsDialog::~SettingsDialog()
@@ -41,16 +46,16 @@ void SettingsDialog::accept()
 
     // 유효성 검사
     QString errorMessage;
-    if (interval < 0.1) {
-        errorMessage += "간격은 0.1초 이상이어야 합니다.\n";
+    if (interval < config::MinIntervalSec) {
+        errorMessage += QString("간격은 %1초 이상이어야 합니다.\n").arg(config::MinIntervalSec);
     }
-    if (size < 1)
+    if (size < config::MinDataSize)
     {
-        errorMessage += "최대 데이터 크기는 1 이상이어야 합니다.\n";
+        errorMessage += QString("최대 데이터 크기는 %1 이상이어야 합니다.\n").arg(config::MinDataSize);
     }
-    if (graphWidth < 1.0)
+    if (graphWidth < config::MinGraphWidthSec)
     {
-        errorMessage += "그래프 폭은 1초 이상이어야 합니다.\n";
+        errorMessage += QString("그래프 폭은 %1초 이상이어야 합니다.\n").arg(config::MinGraphWidthSec);
     }
 
     if(!errorMessage.isEmpty()) {

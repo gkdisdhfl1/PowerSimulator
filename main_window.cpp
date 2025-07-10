@@ -1,7 +1,8 @@
 #include "main_window.h"
 #include "./ui_main_window.h"
-#include "graphwindow.h"
-#include "settingsdialog.h"
+#include "config.h"
+#include "graph_window.h"
+#include "settings_dialog.h"
 #include "simulation_engine.h"
 
 MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
@@ -15,11 +16,11 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     m_graphWindow->show();
 
     // UI 초기값 설정
-    ui->valueDial->setRange(0, 359);
+    ui->valueDial->setRange(config::DialMin, config::DialMax);
     ui->valueDial->setWrapping(true);
     ui->valueDial->setNotchesVisible(true);
-    ui->valueSpinBox->setRange(-500.0, 500.0);
-    ui->valueSpinBox->setValue(220.0);
+    ui->valueSpinBox->setRange(config::MinVoltage, config::MaxVoltage);
+    ui->valueSpinBox->setValue(config::DefaultVoltage);
 
     // --- 시그널/슬롯 연결 ---
 

@@ -27,6 +27,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         settings_dialog.h settings_dialog.cpp settings_dialog.ui
         simulation_engine.h simulation_engine.cpp
         data_point.h
+        config.h
 
     )
 # Define target properties for Android with Qt 6 as:
