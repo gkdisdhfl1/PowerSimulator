@@ -13,6 +13,7 @@ SimulationEngine::SimulationEngine()
     , m_maxDataSize(config::DefaultDataSize)
     , m_currentVoltageValue(config::DefaultVoltage)
     , m_lastDialValue(0)
+    , m_accumulatedTime(0)
 {
     m_captureTimer.setInterval(config::DefaultIntervalMs); // 초기값
     connect(&m_captureTimer, &QTimer::timeout, this, &SimulationEngine::captureData);
@@ -50,6 +51,9 @@ void SimulationEngine::stop()
     if (!isRunning()) return;
 
     m_captureTimer.stop();
+    m_accumulatedTime += m_elapsedTimer.elapsed();
+    m_elapsedTimer.invalidate(); // 타이머 정지
+
     emit statusChanged("시작");
     qDebug() << "Engine stopped.";
 }
@@ -94,7 +98,7 @@ void SimulationEngine::setCurrentVoltage(double voltage)
 void SimulationEngine::captureData()
 {
     // 데이터 생성
-    qint64 currentTimeMs = m_elapsedTimer.elapsed();
+    qint64 currentTimeMs = m_elapsedTimer.elapsed() + m_accumulatedTime;
     double currentVoltage = m_currentVoltageValue;
 
     // DataPoint 객체를 생성하여 저장

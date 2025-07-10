@@ -41,6 +41,7 @@ private:
     int m_maxDataSize;
     double m_currentVoltageValue;
     int m_lastDialValue;
+    qint64 m_accumulatedTime; // 총 경과 시간
 };
 
 #endif // SIMULATION_ENGINE_H
