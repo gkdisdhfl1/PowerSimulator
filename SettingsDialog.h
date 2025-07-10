@@ -26,7 +26,6 @@ signals:
 
 private:
     Ui::SettingsDialog *ui;
-    QDoubleSpinBox *m_graphWidthSpinBox;
 };
 
 #endif // SETTINGSDIALOG_H

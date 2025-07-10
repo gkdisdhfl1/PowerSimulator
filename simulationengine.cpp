@@ -96,7 +96,7 @@ void SimulationEngine::captureData()
     double currentVoltage = m_currentVoltageValue;
 
     // DataPoint 객체를 생성하여 저장
-    m_data.push_back(DataPoint{currentTimeMs, currentVoltage});
+    m_data.push_back({currentTimeMs, currentVoltage});
 
     // 최대 개수 관리
     if(m_data.size() > m_maxDataSize) {

@@ -10,31 +10,14 @@
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::SettingsDialog)
-    , m_graphWidthSpinBox(new QDoubleSpinBox(this))
 {
     ui->setupUi(this);
 
     ui->maxSizeSpinBox->setRange(1, 10000);
 
-    // '그래프 폭' 설정을 위한 위젯 생성 및 설정
-    QLabel *graphWidthLabel = new QLabel("그래프 폭", this);
-    QFont font = graphWidthLabel->font();
-    font.setPointSize(12);
-    graphWidthLabel->setFont(font);
-
-    m_graphWidthSpinBox->setSuffix(" s");
-    m_graphWidthSpinBox->setRange(1.0, 300.0); // 1초 ~ 5분
-    m_graphWidthSpinBox->setValue(10.0); // 기본값 10초
-
-    // 새 위젯들을 담을 레이아웃 생성
-    QHBoxLayout *graphWidthLayout = new QHBoxLayout();
-    graphWidthLayout->addWidget(graphWidthLabel);
-    graphWidthLayout->addWidget(m_graphWidthSpinBox);
-
-    // .ui 파일의 QVBoxLayout의 이름은 "verticalLayout"
-    // 버튼들이 포함된 레이아웃(horizontalLayout_2) 앞에 새로운 레이아웃을 삽입
-    int buttonLayoutIndex = ui->verticalLayout->count() - 1;
-    ui->verticalLayout->insertLayout(buttonLayoutIndex, graphWidthLayout);
+    ui->graphWidthSpinBox->setSuffix(" s");
+    ui->graphWidthSpinBox->setRange(1.0, 300.0); // 1초 ~ 5분
+    ui->graphWidthSpinBox->setValue(10.0); // 기본값 10초
 }
 
 SettingsDialog::~SettingsDialog()
@@ -46,7 +29,7 @@ void SettingsDialog::setInitialValues(double interval, int maxSize, double graph
 {
     ui->intervalSpinBox->setValue(interval);
     ui->maxSizeSpinBox->setValue(maxSize);
-    m_graphWidthSpinBox->setValue(graphWidth);
+    ui->graphWidthSpinBox->setValue(graphWidth);
 }
 
 void SettingsDialog::accept()
@@ -54,7 +37,7 @@ void SettingsDialog::accept()
     // ui에서 값을 읽어옴
     double interval = ui->intervalSpinBox->value();
     int size = ui->maxSizeSpinBox->value();
-    double graphWidth = m_graphWidthSpinBox->value();
+    double graphWidth = ui->graphWidthSpinBox->value();
 
     // 유효성 검사
     QString errorMessage;

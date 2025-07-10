@@ -39,6 +39,8 @@ private:
     QValueAxis *m_axisX;
     QValueAxis *m_axisY;
     QChartView * m_chartView;
+
+    // 그래프 폭 조절
     double m_graphWidthSec;
 };
 
