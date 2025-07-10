@@ -20,6 +20,7 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     ui->graphWidthSpinBox->setRange(config::MinGraphWidthSec, config::MaxGraphWidthSec);
     ui->graphWidthSpinBox->setValue(config::DefaultGraphWidthSec);
 
+    // ui->intervalSpinBox->setDecimals(3);
     ui->intervalSpinBox->setRange(config::MinIntervalSec, 60.0); // 최대 1분
     ui->intervalSpinBox->setSingleStep(0.1);
     ui->intervalSpinBox->setValue(config::DefaultIntervalMs / 1000.0);

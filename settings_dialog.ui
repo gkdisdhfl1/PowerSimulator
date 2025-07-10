@@ -79,7 +79,7 @@
       </widget>
      </item>
      <item>
-      <widget class="QSpinBox" name="graphWidthSpinBox"/>
+      <widget class="QDoubleSpinBox" name="graphWidthSpinBox"/>
      </item>
     </layout>
    </item>
