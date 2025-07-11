@@ -13,10 +13,8 @@ ValueControlWidget::ValueControlWidget(QWidget *parent)
     ui->valueSlider->setSingleStep(m_singleStep * m_multiplier);
     ui->valueSlider->setPageStep(m_singleStep * m_multiplier * 10);
 
-    // 슬라이더가 움직이는 중이면
-    connect(ui->valueSlider, &QSlider::sliderMoved, this, &ValueControlWidget::onSliderMoved);
-    // 슬라이더에서 마우스를 떼면
-    connect(ui->valueSlider, &QSlider::sliderReleased, this, &ValueControlWidget::onSliderReleased);
+    // 슬라이더가 움직이면 onSliderValueChanged 슬롯 호출
+    connect(ui->valueSlider, &QSlider::valueChanged, this, &ValueControlWidget::onSpinBoxValueChanged);
 
     // 스핀박스 값을 바꾸면 onSpinBoxValueChanged 슬롯 호출
     connect(ui->valueSpinBox, &QDoubleSpinBox::editingFinished, this, [this]() {
@@ -83,11 +81,15 @@ void ValueControlWidget::onSliderValueChanged(int value)
 
 void ValueControlWidget::onSpinBoxValueChanged(double value)
 {
-    const int intValue = qRound(value * m_multiplier);
+    // 스핀박스의 정수 값을 int로 변환
+    int intValue = value * m_multiplier;
 
-    ui->valueSlider->blockSignals(true);
+    // 값이 다를 때만 업데이트
+    if(ui->valueSlider->value() == intValue)
+        return;
+
+    // slider 값 업데이트
     ui->valueSlider->setValue(intValue);
-    ui->valueSlider->blockSignals(false);
 
     emit valueChanged(value);
 }
@@ -114,18 +116,4 @@ void ValueControlWidget::updateUiForTuningMode()
         // 배경색 변경
         ui->valueSpinBox->setStyleSheet("");
     }
-}
-
-void ValueControlWidget::onSliderMoved(int position)
-{
-    const double doubleValue= static_cast<double>(position) / m_multiplier;
-
-    ui->valueSpinBox->blockSignals(true);
-    ui->valueSpinBox->setValue(doubleValue);
-    ui->valueSpinBox->blockSignals(false);
-}
-
-void ValueControlWidget::onSliderReleased()
-{
-    emit valueChanged(ui->valueSpinBox->value());
 }

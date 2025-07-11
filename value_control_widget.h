@@ -27,8 +27,6 @@ protected:
 private slots:
     void onSliderValueChanged(int value);
     void onSpinBoxValueChanged(double value);
-    void onSliderMoved(int position); // 슬라이더가 움직이는 중일 때
-    void onSliderReleased(); // 마우스 뗐을 대
 
 signals:
     void valueChanged(double newValue);
