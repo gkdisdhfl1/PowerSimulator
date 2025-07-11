@@ -30,6 +30,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         config.h
         fine_tuning_dial.h
         fine_tuning_dial.cpp
+        value_control_widget.h value_control_widget.cpp value_control_widget.ui
 
     )
 # Define target properties for Android with Qt 6 as:
