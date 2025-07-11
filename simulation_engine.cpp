@@ -3,16 +3,10 @@
 #include <QDebug>
 #include <algorithm> // for std::clamp
 
-namespace {
-    constexpr int FullCircleDegrees = 360;
-    constexpr int HalfCircleDegrees = 180;
-}
-
 SimulationEngine::SimulationEngine()
     : QObject()
     , m_maxDataSize(config::DefaultDataSize)
     , m_currentVoltageValue(config::DefaultVoltage)
-    , m_lastDialValue(0)
     , m_accumulatedTime(0)
 {
     m_captureTimer.setInterval(config::DefaultIntervalMs); // 초기값
@@ -69,25 +63,19 @@ void SimulationEngine::applySettings(double interval, int maxSize)
     qDebug() << "설정 반영 완료. Interval:" << interval << "s, Max Size:" << maxSize;
 }
 
-void SimulationEngine::updateVoltage(int newDialValue)
+void SimulationEngine::updateVoltage(int diff, bool isFineTuning)
 {
-    int diff = newDialValue - m_lastDialValue;
+    double changeAmount = static_cast<double>(diff);
+    if(isFineTuning) {
+        changeAmount *= 0.01;
+    }
 
-    // Wrapping 처리
-    if(diff < -HalfCircleDegrees)
-        diff += FullCircleDegrees;
-    else if(diff > HalfCircleDegrees)
-        diff -= FullCircleDegrees;
-
-    double nextVoltage = m_currentVoltageValue + static_cast<double>(diff);
+    double nextVoltage = m_currentVoltageValue + changeAmount;
 
     // 실제 전압 값 업데이트
     m_currentVoltageValue = std::clamp(nextVoltage, config::MinVoltage, config::MaxVoltage);
 
     emit voltageChanged(m_currentVoltageValue);
-
-    // 다음 계산을 위한 현재 위치 저장
-    m_lastDialValue = newDialValue;
 }
 
 void SimulationEngine::setCurrentVoltage(double voltage)

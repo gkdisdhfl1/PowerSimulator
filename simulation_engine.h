@@ -22,7 +22,7 @@ public slots:
     void start();
     void stop();
     void applySettings(double interval, int maxSize);
-    void updateVoltage(int newDialValue);
+    void updateVoltage(int newDialValue, bool isFineTuning);
     void setCurrentVoltage(double voltage);
 
 signals:
@@ -40,7 +40,6 @@ private:
     std::deque<DataPoint> m_data;
     int m_maxDataSize;
     double m_currentVoltageValue;
-    int m_lastDialValue;
     qint64 m_accumulatedTime; // 총 경과 시간
 };
 

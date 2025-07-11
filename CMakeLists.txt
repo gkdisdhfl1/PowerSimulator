@@ -28,6 +28,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         simulation_engine.h simulation_engine.cpp
         data_point.h
         config.h
+        fine_tuning_dial.h
+        fine_tuning_dial.cpp
 
     )
 # Define target properties for Android with Qt 6 as:
@@ -47,6 +49,8 @@ else()
         )
     endif()
 endif()
+
+target_include_directories(PowerSimulator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(PowerSimulator PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Charts)
 
