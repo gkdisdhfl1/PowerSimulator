@@ -17,7 +17,9 @@ ValueControlWidget::ValueControlWidget(QWidget *parent)
     connect(ui->valueSlider, &QSlider::valueChanged, this, &ValueControlWidget::onSpinBoxValueChanged);
 
     // 스핀박스 값을 바꾸면 onSpinBoxValueChanged 슬롯 호출
-    connect(ui->valueSpinBox, &QDoubleSpinBox::editingFinished, this, &ValueControlWidget::onSliderValueChanged);
+    connect(ui->valueSpinBox, &QDoubleSpinBox::editingFinished, this, [this]() {
+        onSpinBoxValueChanged(ui->valueSpinBox->value());
+    });
 }
 
 ValueControlWidget::~ValueControlWidget()
