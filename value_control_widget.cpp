@@ -13,7 +13,7 @@ ValueControlWidget::ValueControlWidget(QWidget *parent)
     ui->valueSpinBox->setSingleStep(m_singleStep);
 
     // 슬라이더가 움직이는 중이면
-    connect(ui->valueSlider, &QSlider::sliderMoved, this, &ValueControlWidget::onSliderMoved);
+    connect(ui->valueSlider, &QSlider::valueChanged, this, &ValueControlWidget::onSliderMoved);
     // 슬라이더에서 마우스를 떼면
     connect(ui->valueSlider, &QSlider::sliderReleased, this, &ValueControlWidget::onSliderReleased);
 
@@ -89,47 +89,8 @@ void ValueControlWidget::onSpinBoxValueChanged(double value)
 
 void ValueControlWidget::onSliderMoved(int position)
 {
-    // double currentValue = ui->valueSpinBox->value();
     double newValue = calculateNewValue(position);
 
-    // if(m_isFineTuningMode) { // 집중 모드일 때
-    //     double intPart = std::trunc(currentValue);
-    //     qDebug() << "intPart: " << intPart;
-
-    //     if (intPart >= 0) {
-    //         newValue = intPart + static_cast<double>(position) * 0.01;
-    //         qDebug() << "newValue = " << intPart << " + " << static_cast<double>(position) << "*" << 0.01;
-    //     } else {
-    //         newValue = intPart - static_cast<double>(position) * 0.01;
-    //         qDebug() << "newValue = " << intPart << " - " << static_cast<double>(position) << "*" << 0.01;
-    //     }
-    // } else { // 일반 모드일 때
-    //     // 현재 spinBox의 소수 부분을 유지하면서 정수 부분만 슬라이더 값으로 변경
-    //     double fracPart = currentValue - std::trunc(currentValue);
-    //     // 오차 제거
-    //     fracPart = std::round(fracPart * 100.0) / 100.0;
-    //     qDebug() << "FracPart: " << fracPart;
-
-    //     if(position >= 0) {
-    //         if(fracPart < 0) {
-    //             newValue = static_cast<double>(position) - fracPart;
-    //             qDebug() << "newValue = " << static_cast<double>(position) << " - " << fracPart;
-    //         } else {
-    //             newValue = static_cast<double>(position) + fracPart;
-    //             qDebug() << "newValue = " << static_cast<double>(position) << " + " << fracPart;
-    //         }
-    //     } else {
-    //         if(fracPart < 0) {
-    //             newValue = static_cast<double>(position) + fracPart;
-    //             qDebug() << "newValue = " << static_cast<double>(position) << " + " << fracPart;
-    //         } else {
-    //             newValue = static_cast<double>(position) - fracPart;
-    //             qDebug() << "newValue = " << static_cast<double>(position) << " - " << fracPart;
-    //         }
-    //     }
-
-    // }
-    // newValue = std::round(newValue * 100.0) / 100.0;
     ui->valueSpinBox->blockSignals(true);
     ui->valueSpinBox->setValue(newValue);
     ui->valueSpinBox->blockSignals(false);
