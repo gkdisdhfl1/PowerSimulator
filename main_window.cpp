@@ -34,6 +34,9 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     // voltageControlWidget의 값이 바뀌면, 엔진의 현재 전압을 설정
     connect(ui->voltageControlWidget, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setAmplitude);
 
+    // phaseDial의 값이 바뀌면, 엔진의 위상을 설정
+    connect(ui->phaseDial, &QDial::valueChanged, m_engine, &SimulationEngine::setPhase);
+
     // 설정 다이얼로그의 변경사항을 엔진과 그래프 윈도우에 각각 전달
     connect(m_settingsDialog, &SettingsDialog::settingsApplied, this,
             [this](double interval, int maxSize, double graphWidth) {
@@ -44,7 +47,6 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     // SimulationEngine 시그널 -> UI 슬롯
     connect(m_engine, &SimulationEngine::dataUpdated, m_graphWindow, &GraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::statusChanged, ui->startStopButton, &QPushButton::setText);
-    connect(m_engine, &SimulationEngine::voltageChanged, ui->voltageControlWidget, &ValueControlWidget::setValue);
 
 }
 

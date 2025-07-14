@@ -22,7 +22,6 @@ public slots:
     void start();
     void stop();
     void applySettings(double interval, int maxSize);
-    void updateVoltage(int newDialValue, bool isFineTuning);
     void setAmplitude(double amplitude);
     void setPhase(int degrees);
 
