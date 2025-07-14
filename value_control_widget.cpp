@@ -69,19 +69,6 @@ void ValueControlWidget::mouseDoubleClickEvent(QMouseEvent *event)
 }
 
 // --- private 구현 ---
-// void ValueControlWidget::onSliderValueChanged(int value)
-// {
-//     // 슬라이더 정수 값을 double로 변환
-//     double doubleValue = value / m_multiplier;
-
-//     // 스핀 박스의 현재 값과 다를 때만 업데이트
-//     if(qFuzzyCompare(ui->valueSpinBox->value(), doubleValue))
-//         return;
-
-//     // 스핀 박스의 값 업데이트
-//     ui->valueSpinBox->setValue(doubleValue);
-// }
-
 void ValueControlWidget::onSpinBoxValueChanged(double value)
 {
     // 사용자가 직접 입력한 값으로 슬라이더 위치 동기화 및 외부 알림
@@ -96,6 +83,8 @@ void ValueControlWidget::onSliderMoved(int position)
     ui->valueSpinBox->blockSignals(true);
     ui->valueSpinBox->setValue(newValue);
     ui->valueSpinBox->blockSignals(false);
+
+    emit valueChanged(ui->valueSpinBox->value());
 }
 
 void ValueControlWidget::onSliderReleased()
