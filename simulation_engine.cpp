@@ -79,11 +79,9 @@ void SimulationEngine::captureData()
 {
     // 데이터 생성
     qint64 currentTimeMs = m_elapsedTimer.elapsed() + m_accumulatedTime;
-    double timeSec = static_cast<double>(currentTimeMs) / 1000.0;
 
     // AC 전압 계산 V = A * sin(2 * pi * f * t + phase)
-    double angularFrequency = 2.0 * config::PI * config::Frequency;
-    double currentVoltage = m_amplitude * std::sin(angularFrequency * timeSec + m_phaseRadians);
+    double currentVoltage = m_amplitude * sin(m_phaseRadians);
 
     // DataPoint 객체를 생성하여 저장
     m_data.push_back({currentTimeMs, currentVoltage});
