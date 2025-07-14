@@ -1,5 +1,6 @@
 #include "value_control_widget.h"
 #include "ui_value_control_widget.h"
+#include "config.h"
 #include <QDebug>
 
 ValueControlWidget::ValueControlWidget(QWidget *parent)
@@ -33,14 +34,15 @@ ValueControlWidget::~ValueControlWidget()
 void ValueControlWidget::setRange(double min, double max)
 {
     ui->valueSpinBox->setRange(min, max);
-    // 슬라이더는 정수 범위만 허용하므로, m_multiplier를 곱해서 범위 확장
-    ui->valueSlider->setRange(min * m_multiplier, max * m_multiplier);
+    ui->valueSlider->setRange(static_cast<int>(min), static_cast<int>(max));
+    m_firstSlideMax = max;
+    m_firstSlideMin = min;
 }
 
 void ValueControlWidget::setValue(double value)
 {
     // spinBox와 slider의 값을 동시에 설정
-    ui->valueSlider->setValue(value * m_multiplier);
+    ui->valueSlider->setValue(qRound(value));
     ui->valueSpinBox->setValue(value);
 }
 
@@ -83,7 +85,17 @@ void ValueControlWidget::onSliderValueChanged(int value)
 
 void ValueControlWidget::onSpinBoxValueChanged(double value)
 {
-    const int intValue = qRound(value * m_multiplier);
+    // 사용자가 직접 입력한 값도 정밀도에 맞춰 정리
+    double sanitizedValue = std::round(value * 100.0)/ 100.0;
+
+    // 스핀박스의 표시 값도 정리된 값으로 업데이트
+    if(!qFuzzyCompare(value, sanitizedValue)) {
+        ui->valueSpinBox->blockSignals(true);
+        ui->valueSpinBox->setValue(sanitizedValue);
+        ui->valueSpinBox->blockSignals(false);
+    }
+
+    const int intValue = qRound(value);
 
     ui->valueSlider->blockSignals(true);
     ui->valueSlider->setValue(intValue);
@@ -94,13 +106,30 @@ void ValueControlWidget::onSpinBoxValueChanged(double value)
 
 void ValueControlWidget::updateUiForTuningMode()
 {
+    double currentValue = ui->valueSpinBox->value();
+
     if(m_isFineTuningMode) {
         qDebug() << "Fine-tuning mode: ON";
+        qDebug() << "currentValue: " << currentValue;
+
 
         // 집중 모드일 때 step을 fineStep으로 변경
         ui->valueSpinBox->setSingleStep(m_fineStep);
-        ui->valueSlider->setSingleStep(m_fineStep * m_multiplier);
-        ui->valueSlider->setPageStep(m_fineStep * m_multiplier * 10);
+
+        qDebug() << "previous sliderValue: " << ui->valueSlider->value();
+
+        int intPart = static_cast<int>(std::trunc(currentValue));
+        double fracPart = std::round((currentValue - static_cast<double>(intPart)) * 100.0);
+        int sliderValueForFrac = static_cast<int>(fracPart);
+        qDebug() << "intPart: " << intPart;
+        qDebug() << "fractionalPart: " << fracPart;
+
+        ui->valueSlider->setRange(0,99); // 소수점 범위로.
+        ui->valueSlider->setValue(abs(sliderValueForFrac));
+        qDebug() << "abs(static_cast<int>(fracPart)): " << abs(static_cast<int>(fracPart));
+        qDebug() << "current sliderValue: " << ui->valueSlider->value();
+        ui->valueSlider->setSingleStep(1); //
+        ui->valueSlider->setPageStep(10); //
 
         // 배경색 변경
         ui->valueSpinBox->setStyleSheet("background-color: #e0f0ff;");
@@ -108,8 +137,12 @@ void ValueControlWidget::updateUiForTuningMode()
         // 일반모드 일 때 step을 singleStep으로 변경
         qDebug() << "Fine-tuning mode: OFF";
         ui->valueSpinBox->setSingleStep(m_singleStep);
-        ui->valueSlider->setSingleStep(m_singleStep * m_multiplier);
-        ui->valueSlider->setPageStep(m_singleStep * m_multiplier * 10);
+        ui->valueSlider->setRange(m_firstSlideMin, m_firstSlideMax); // 범위 원래대로
+
+        qDebug() << "abs(static_cast<int>(currentValue)): " << abs(static_cast<int>(currentValue));
+        ui->valueSlider->setValue(static_cast<int>(currentValue));
+        ui->valueSlider->setSingleStep(1); //
+        ui->valueSlider->setPageStep(10); //
 
         // 배경색 변경
         ui->valueSpinBox->setStyleSheet("");
@@ -118,14 +151,58 @@ void ValueControlWidget::updateUiForTuningMode()
 
 void ValueControlWidget::onSliderMoved(int position)
 {
-    const double doubleValue= static_cast<double>(position) / m_multiplier;
+    qDebug() << "Position: " << position;
+    double currentValue = ui->valueSpinBox->value();
+    qDebug() << "CurrentValue: " << currentValue;
+    double newValue;
 
+    if(m_isFineTuningMode) { // 집중 모드일 때
+        double intPart = std::trunc(currentValue);
+        qDebug() << "intPart: " << intPart;
+
+        if (intPart >= 0) {
+            newValue = intPart + static_cast<double>(position) * 0.01;
+            qDebug() << "newValue = " << intPart << " + " << static_cast<double>(position) << "*" << 0.01;
+        } else {
+            newValue = intPart - static_cast<double>(position) * 0.01;
+            qDebug() << "newValue = " << intPart << " - " << static_cast<double>(position) << "*" << 0.01;
+        }
+    } else { // 일반 모드일 때
+        // 현재 spinBox의 소수 부분을 유지하면서 정수 부분만 슬라이더 값으로 변경
+        double fracPart = currentValue - std::trunc(currentValue);
+        // 오차 제거
+        fracPart = std::round(fracPart * 100.0) / 100.0;
+        qDebug() << "FracPart: " << fracPart;
+
+        if(position >= 0) {
+            if(fracPart < 0) {
+                newValue = static_cast<double>(position) - fracPart;
+                qDebug() << "newValue = " << static_cast<double>(position) << " - " << fracPart;
+            } else {
+                newValue = static_cast<double>(position) + fracPart;
+                qDebug() << "newValue = " << static_cast<double>(position) << " + " << fracPart;
+            }
+        } else {
+            if(fracPart < 0) {
+                newValue = static_cast<double>(position) + fracPart;
+                qDebug() << "newValue = " << static_cast<double>(position) << " + " << fracPart;
+            } else {
+                newValue = static_cast<double>(position) - fracPart;
+                qDebug() << "newValue = " << static_cast<double>(position) << " - " << fracPart;
+            }
+        }
+
+    }
+    newValue = std::round(newValue * 100.0) / 100.0;
     ui->valueSpinBox->blockSignals(true);
-    ui->valueSpinBox->setValue(doubleValue);
+    ui->valueSpinBox->setValue(newValue);
     ui->valueSpinBox->blockSignals(false);
 }
 
 void ValueControlWidget::onSliderReleased()
 {
+
+    qDebug() << "onSliderReleased() slider value: " << ui->valueSlider->value();
+    qDebug() << "onSliderReleased() spinbox value: " << ui->valueSpinBox->value();
     emit valueChanged(ui->valueSpinBox->value());
 }

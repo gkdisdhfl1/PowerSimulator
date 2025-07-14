@@ -39,13 +39,20 @@ private:
     // UI를 현재 모드에 맞게 업데이트하는 내부 함수
     void updateUiForTuningMode();
 
+    //
+
     // 스케일 조정을 위한 변수
     double m_multiplier = 100.0;
 
     // 집중 모드 관련 멤버 변수들
     bool m_isFineTuningMode = false;
     double m_singleStep = 1.0;
-    double m_fineStep = 0.1;
+    double m_fineStep = 0.01;
+
+    double m_firstSlideMin;
+    double m_firstSlideMax;
+
+    int decimalPosition = 0;
 };
 
 #endif // VALUE_CONTROL_WIDGET_H
