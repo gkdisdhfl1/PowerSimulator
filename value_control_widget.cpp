@@ -1,6 +1,5 @@
 #include "value_control_widget.h"
 #include "ui_value_control_widget.h"
-#include "config.h"
 #include <QDebug>
 
 ValueControlWidget::ValueControlWidget(QWidget *parent)
@@ -60,8 +59,11 @@ void ValueControlWidget::setSteps(double singleStep, double fineStep)
 void ValueControlWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
     m_isFineTuningMode = !m_isFineTuningMode; // 상태 반전
+
+    ui->valueSlider->blockSignals(true);
     updateUiAppearance(); // UI 모양 업데이트
     syncSliderToValue(); // 새 모드에 맞게 슬라이더 위치 재설정
+    ui->valueSlider->blockSignals(false);
 
     QWidget::mouseDoubleClickEvent(event);
 }
