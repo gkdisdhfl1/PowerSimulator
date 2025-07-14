@@ -1,12 +1,12 @@
 #include "simulation_engine.h"
 #include "config.h"
 #include <QDebug>
-#include <algorithm> // for std::clamp
 
 SimulationEngine::SimulationEngine()
     : QObject()
     , m_maxDataSize(config::DefaultDataSize)
-    , m_currentVoltageValue(config::DefaultVoltage)
+    , m_amplitude(config::DefaultVoltage)
+    , m_phaseRadians(0.0) // 기본 위상 0
     , m_accumulatedTime(0)
 {
     m_captureTimer.setInterval(config::DefaultIntervalMs); // 초기값
@@ -63,31 +63,27 @@ void SimulationEngine::applySettings(double interval, int maxSize)
     qDebug() << "설정 반영 완료. Interval:" << interval << "s, Max Size:" << maxSize;
 }
 
-void SimulationEngine::updateVoltage(int diff, bool isFineTuning)
+void SimulationEngine::setAmplitude(double amplitude)
 {
-    double changeAmount = static_cast<double>(diff);
-    if(isFineTuning) {
-        changeAmount *= 0.01;
-    }
-
-    double nextVoltage = m_currentVoltageValue + changeAmount;
-
-    // 실제 전압 값 업데이트
-    m_currentVoltageValue = std::clamp(nextVoltage, config::MinVoltage, config::MaxVoltage);
-
-    emit voltageChanged(m_currentVoltageValue);
+    m_amplitude = std::clamp(amplitude, config::MinVoltage, config::MaxVoltage);
 }
 
-void SimulationEngine::setCurrentVoltage(double voltage)
+void SimulationEngine::setPhase(int degrees)
 {
-    m_currentVoltageValue = std::clamp(voltage, config::MinVoltage, config::MaxVoltage);
+    // 각도를 라디안으로 변환하여 저장
+    // 360도 = 2 * pi 라디안
+    m_phaseRadians = static_cast<double>(degrees) * (2.0 * config::PI) / 360.0;
 }
 
 void SimulationEngine::captureData()
 {
     // 데이터 생성
     qint64 currentTimeMs = m_elapsedTimer.elapsed() + m_accumulatedTime;
-    double currentVoltage = m_currentVoltageValue;
+    double timeSec = static_cast<double>(currentTimeMs) / 1000.0;
+
+    // AC 전압 계산 V = A * sin(2 * pi * f * t + phase)
+    double angularFrequency = 2.0 * config::PI * config::Frequency;
+    double currentVoltage = m_amplitude * std::sin(angularFrequency * timeSec + m_phaseRadians);
 
     // DataPoint 객체를 생성하여 저장
     m_data.push_back({currentTimeMs, currentVoltage});

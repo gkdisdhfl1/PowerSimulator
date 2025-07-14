@@ -1,6 +1,8 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#include <cmath>
+
 namespace config {
     // 전압 설정
     constexpr double MinVoltage = -500.0;
@@ -23,6 +25,9 @@ namespace config {
     constexpr int DialMin = 0;
     constexpr int DialMax = 359;
 
+    // AC 파형 설정
+    constexpr double Frequency = 60.0; // 60Hz
+    constexpr double PI = M_PI;
 }
 
 #endif // CONFIG_H

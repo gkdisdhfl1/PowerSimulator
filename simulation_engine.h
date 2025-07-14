@@ -23,7 +23,8 @@ public slots:
     void stop();
     void applySettings(double interval, int maxSize);
     void updateVoltage(int newDialValue, bool isFineTuning);
-    void setCurrentVoltage(double voltage);
+    void setAmplitude(double amplitude);
+    void setPhase(int degrees);
 
 signals:
     void dataUpdated(const std::deque<DataPoint>& data);
@@ -39,7 +40,8 @@ private:
 
     std::deque<DataPoint> m_data;
     int m_maxDataSize;
-    double m_currentVoltageValue;
+    double m_amplitude; // 진폭 (최대 전압)
+    double m_phaseRadians; // 위상 (라디안)
     qint64 m_accumulatedTime; // 총 경과 시간
 };
 

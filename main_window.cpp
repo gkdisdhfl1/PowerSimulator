@@ -32,7 +32,7 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     });
 
     // voltageControlWidget의 값이 바뀌면, 엔진의 현재 전압을 설정
-    connect(ui->voltageControlWidget, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setCurrentVoltage);
+    connect(ui->voltageControlWidget, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setAmplitude);
 
     // 설정 다이얼로그의 변경사항을 엔진과 그래프 윈도우에 각각 전달
     connect(m_settingsDialog, &SettingsDialog::settingsApplied, this,
