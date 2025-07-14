@@ -25,7 +25,7 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 private slots:
-    void onSliderValueChanged(int value);
+    // void onSliderValueChanged(int value);
     void onSpinBoxValueChanged(double value);
     void onSliderMoved(int position); // 슬라이더가 움직이는 중일 때
     void onSliderReleased(); // 마우스 뗐을 대
@@ -37,12 +37,10 @@ private:
     Ui::ValueControlWidget *ui;
 
     // UI를 현재 모드에 맞게 업데이트하는 내부 함수
-    void updateUiForTuningMode();
+    void updateUiAppearance();
+    void syncSliderToValue();
+    double calculateNewValue(int sliderPosition) const;
 
-    //
-
-    // 스케일 조정을 위한 변수
-    double m_multiplier = 100.0;
 
     // 집중 모드 관련 멤버 변수들
     bool m_isFineTuningMode = false;
@@ -52,7 +50,6 @@ private:
     double m_firstSlideMin;
     double m_firstSlideMax;
 
-    int decimalPosition = 0;
 };
 
 #endif // VALUE_CONTROL_WIDGET_H
