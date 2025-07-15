@@ -83,29 +83,37 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
         return;
     }
 
-    // DataPoint를 QPointF로 변환
-    QList<QPointF> points;
-    points.reserve(data.size()); // 미리 메모리 할당
-    for (const auto &dp : data) {
-        points.append(QPointF(dp.timestampMs / 1000.0, dp.voltage));
-    }
-
-    // 시리즈의 데이터를 전달받은 포인트들로 한 번에 교체
-    m_series->replace(points);
-
-    // Y축 범위 계산을 위해 현재 보이는 데이터만 필터링
-    double maxX = points.last().x();
+    // 최신 데이터 시간(그래프 오른쪽 끝)
+    double maxX = data.back().timestampMs / 1000.0;
+    // 가장 오래된 시간 (그래프 왼쪽 끝)
     double minX = maxX - m_graphWidthSec;
 
-    double minY = points.last().y();
-    double maxY = points.last().y();
+    QList<QPointF> visiblePoints;
+    visiblePoints.reserve(data.size());
+    // Y축 min/max 초기값을 첫 뎅터로 설정
+    double minY = data.back().voltage;
+    double maxY = data.back().voltage;
 
-    // 뒤에서부터 보이는 범위 내의 데이터만으로 min/max Y 계산
-    for (auto it = points.rbegin(); it != points.rend(); ++it) {
-        if (it->x() < minX) break; // 보이는 범위를 벗어나면 중단
-        if (it->y() < minY) minY = it->y();
-        if (it->y() > maxY) maxY = it->y();
+    // 역순 순회 및 데이터 추출
+    for(auto it = data.rbegin(); it != data.rend(); ++it) {
+        double currentX = it->timestampMs / 1000.0;
+
+        // 보이는 범위를 벗어났는지 체크
+        if(currentX < minX)
+            break;
+
+        // 보이는 점이므로 리스트에 추가
+        visiblePoints.append(QPointF(currentX, it->voltage));
+
+        // Y축 최소/최대값 실시간 업데이트
+        if (it->voltage < minY) minY = it->voltage;
+        if (it->voltage > maxY) maxY = it->voltage;
     }
+
+    std::reverse(visiblePoints.begin(), visiblePoints.end());
+
+    // 시리즈의 데이터를 전달받은 포인트들로 한 번에 교체
+    m_series->replace(visiblePoints);
 
     // 그래프가 위아래에 꽉 끼지 않도록 약간의 여백 줌
     double y_padding = (maxY - minY) * 0.1;
