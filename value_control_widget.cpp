@@ -13,8 +13,6 @@ ValueControlWidget::ValueControlWidget(QWidget *parent)
 
     // 슬라이더가 움직이는 중이면
     connect(ui->valueSlider, &QSlider::valueChanged, this, &ValueControlWidget::onSliderMoved);
-    // 슬라이더에서 마우스를 떼면
-    connect(ui->valueSlider, &QSlider::sliderReleased, this, &ValueControlWidget::onSliderReleased);
 
     // 스핀박스 값을 바꾸면 onSpinBoxValueChanged 슬롯 호출
     connect(ui->valueSpinBox, &QDoubleSpinBox::editingFinished, this, [this]() {
@@ -84,11 +82,6 @@ void ValueControlWidget::onSliderMoved(int position)
     ui->valueSpinBox->setValue(newValue);
     ui->valueSpinBox->blockSignals(false);
 
-    emit valueChanged(ui->valueSpinBox->value());
-}
-
-void ValueControlWidget::onSliderReleased()
-{
     emit valueChanged(ui->valueSpinBox->value());
 }
 
