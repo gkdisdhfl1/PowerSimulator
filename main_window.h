@@ -34,5 +34,7 @@ private:
     SettingsDialog *m_settingsDialog;
     SimulationEngine *m_engine;
     QTimer m_autoRotateTimer;
+
+    double m_rotationSpeedHz = 1.0;
 };
 #endif // MAIN_WINDOW_H

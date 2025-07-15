@@ -24,9 +24,10 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     m_autoRotateTimer.setInterval(16); // 약 60fps
     connect(&m_autoRotateTimer, &QTimer::timeout, this, &MainWindow::updateAutoRotation);
 
-    // --- 시그널/슬롯 연결 ---
 
-    // UI 이벤트 -> SimulationEngine 슬롯
+    // ---- 시그널/슬롯 연결 ----
+
+    // ---- UI 이벤트 -> SimulationEngine 슬롯 ----
     connect(ui->startStopButton, &QPushButton::clicked, this, [this]() {
         if (m_engine->isRunning()) {
             m_engine->stop();
@@ -50,10 +51,12 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
         m_engine->applySettings(interval, maxSize);
         m_graphWindow->setGraphWidth(graphWidth);
     });
+    // ----------------------
 
     // SimulationEngine 시그널 -> UI 슬롯
     connect(m_engine, &SimulationEngine::dataUpdated, m_graphWindow, &GraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::statusChanged, ui->startStopButton, &QPushButton::setText);
+
 
     // Auto 버튼 토글 시
     connect(ui->autoButton, &QPushButton::toggled, this, [this](bool checked) {
@@ -65,6 +68,19 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
             ui->autoButton->setText("자동 회전 시작");
             ui->phaseDial->setEnabled(true);
             m_autoRotateTimer.stop();
+        }
+    });
+
+    // rpmEdit 입력이 끝나면, m_rotationSpeedHz 멤버 변수에 값을 저장
+    connect(ui->rpmEdit, &QLineEdit::editingFinished, this, [this](){
+        bool ok;
+        double speed = ui->rpmEdit->text().toDouble(&ok);
+
+        if(ok && speed >= 0) {
+            m_rotationSpeedHz = speed;
+            qDebug() << "Rotatoin speed set to: " << m_rotationSpeedHz << "Hz";
+        } else {
+            ui->rpmEdit->setText(QString::number(m_rotationSpeedHz));
         }
     });
 
@@ -88,14 +104,10 @@ void MainWindow::on_settingButton_clicked()
 
 void MainWindow::updateAutoRotation()
 {
-    bool ok;
-    double speedHz = ui->rpmEdit->text().toDouble(&ok);
-    if(!ok || speedHz <= 0) {
-        return;
-    }
+    if(m_rotationSpeedHz <= 0) return;
 
     // 1초당 회전할 각도
-    double degreesPerSecond = speedHz * 360.0;
+    double degreesPerSecond = m_rotationSpeedHz * 360.0;
     // 타이머의 현재 간격 만큼 이동할 각도
     double degreesPerInterval = degreesPerSecond * (m_autoRotateTimer.interval() / 1000.0);
     // 현재 다이얼 값에 계산된 각도를 더함
