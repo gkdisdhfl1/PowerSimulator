@@ -31,8 +31,14 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     connect(ui->startStopButton, &QPushButton::clicked, this, [this]() {
         if (m_engine->isRunning()) {
             m_engine->stop();
+
+            if(m_autoRotateTimer.isActive())
+                m_autoRotateTimer.stop();
         } else {
             m_engine->start();
+
+            if(ui->autoButton->isChecked())
+                m_autoRotateTimer.start();
         }
     });
 
