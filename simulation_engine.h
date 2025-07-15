@@ -23,7 +23,7 @@ public slots:
     void stop();
     void applySettings(double interval, int maxSize);
     void setAmplitude(double amplitude);
-    void setPhase(int degrees);
+    void setPhase(double degrees);
 
 signals:
     void dataUpdated(const std::deque<DataPoint>& data);

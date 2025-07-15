@@ -12,6 +12,8 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     , m_graphWindow(new GraphWindow(this))
     , m_settingsDialog(new SettingsDialog(this))
     , m_engine(engine)
+    , m_rotationSpeedHz(1.0)
+    , m_currentPhaseDegrees(0.0)
 {
     ui->setupUi(this);
     m_graphWindow->show();
@@ -46,9 +48,15 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     connect(ui->voltageControlWidget, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setAmplitude);
 
     // phaseDial의 값이 바뀌면, 엔진의 위상을 설정
-    connect(ui->phaseDial, &QDial::valueChanged, m_engine, &SimulationEngine::setPhase);
+    connect(ui->phaseDial, &QDial::valueChanged, this, [this](){
+        if(!m_autoRotateTimer.isActive())
+            m_engine->setPhase(m_currentPhaseDegrees);
+    });
     connect(ui->phaseDial, &QDial::valueChanged, this, [this](int value){
-        ui->phaseLabel->setText(QString::number(value) + "°");
+        if(!m_autoRotateTimer.isActive()) {
+            m_currentPhaseDegrees = static_cast<double>(value);
+            ui->phaseLabel->setText(QString::number(value) + "°");
+        }
     });
 
     // 설정 다이얼로그의 변경사항을 엔진과 그래프 윈도우에 각각 전달
@@ -56,6 +64,7 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
             [this](double interval, int maxSize, double graphWidth) {
         m_engine->applySettings(interval, maxSize);
         m_graphWindow->setGraphWidth(graphWidth);
+        m_autoRotateTimer.setInterval(static_cast<int>(interval * 1000));
     });
     // ----------------------
 
@@ -116,9 +125,16 @@ void MainWindow::updateAutoRotation()
     double degreesPerSecond = m_rotationSpeedHz * 360.0;
     // 타이머의 현재 간격 만큼 이동할 각도
     double degreesPerInterval = degreesPerSecond * (m_autoRotateTimer.interval() / 1000.0);
-    // 현재 다이얼 값에 계산된 각도를 더함
-    double newDialValue = ui->phaseDial->value() + degreesPerInterval;
 
-    newDialValue = std::fmod(newDialValue, 360);
-    ui->phaseDial->setValue(static_cast<int>(newDialValue));
+    // double 멤버 변수에 변화량을 더함
+    m_currentPhaseDegrees += degreesPerInterval;
+    m_currentPhaseDegrees = std::fmod(m_currentPhaseDegrees, 360.0);
+
+    // UI 다이얼에는 정수 부분만 보여줌
+    ui->phaseDial->setValue(static_cast<int>(m_currentPhaseDegrees));
+    // 라벨에도 정수부분만 표시
+    // ui->phaseLabel->setText(QString::number(static_cast<int>(m_currentPhaseDegrees)) + "°");
+    ui->phaseLabel->setText(QString::number(static_cast<int>(m_currentPhaseDegrees)) + "°");
+
+    m_engine->setPhase(m_currentPhaseDegrees);
 }

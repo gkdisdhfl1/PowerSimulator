@@ -14,6 +14,8 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 {
     ui->setupUi(this);
 
+    ui->intervalSpinBox->setDecimals(3);
+
     ui->maxSizeSpinBox->setRange(config::MinDataSize, config::MaxDataSize);
 
     ui->graphWidthSpinBox->setSuffix(" s");

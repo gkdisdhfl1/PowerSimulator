@@ -68,11 +68,11 @@ void SimulationEngine::setAmplitude(double amplitude)
     m_amplitude = std::clamp(amplitude, config::MinVoltage, config::MaxVoltage);
 }
 
-void SimulationEngine::setPhase(int degrees)
+void SimulationEngine::setPhase(double degrees)
 {
     // 각도를 라디안으로 변환하여 저장
     // 360도 = 2 * pi 라디안
-    m_phaseRadians = static_cast<double>(degrees) * (2.0 * config::PI) / 360.0;
+    m_phaseRadians = degrees * (2.0 * config::PI) / 360.0;
 }
 
 void SimulationEngine::captureData()

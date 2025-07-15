@@ -35,6 +35,7 @@ private:
     SimulationEngine *m_engine;
     QTimer m_autoRotateTimer;
 
-    double m_rotationSpeedHz = 1.0;
+    double m_rotationSpeedHz;
+    double m_currentPhaseDegrees; // 현재 위상
 };
 #endif // MAIN_WINDOW_H
