@@ -80,7 +80,7 @@ void SimulationEngine::captureData()
     // 데이터 생성
     qint64 currentTimeMs = m_elapsedTimer.elapsed() + m_accumulatedTime;
 
-    // AC 전압 계산 V = A * sin(2 * pi * f * t + phase)
+    // AC 전압 계산 V = A * sin(phase)
     double currentVoltage = m_amplitude * sin(m_phaseRadians);
 
     // DataPoint 객체를 생성하여 저장
@@ -94,21 +94,3 @@ void SimulationEngine::captureData()
     emit dataUpdated(m_data);
 }
 
-void SimulationEngine::toggleAutoRotation(bool enabled)
-{
-    m_isAutoRotating = enabled;
-
-    // 자동 회전이 시작될 때, 누적된 시간 초기화
-    if(m_isAutoRotating) {
-        m_accumulatedTime = 0;
-        if(m_elapsedTimer.isValid()) {
-            m_elapsedTimer.restart();
-        }
-    }
-}
-
-// void SimulationEngine::setRotationSpeed(double speedHz)
-// {
-//     if(speedHz >= 0)
-//         m_rotationSpeed = speedHz;
-// }
