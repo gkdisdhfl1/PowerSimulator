@@ -93,3 +93,22 @@ void SimulationEngine::captureData()
 
     emit dataUpdated(m_data);
 }
+
+void SimulationEngine::toggleAutoRotation(bool enabled)
+{
+    m_isAutoRotating = enabled;
+
+    // 자동 회전이 시작될 때, 누적된 시간 초기화
+    if(m_isAutoRotating) {
+        m_accumulatedTime = 0;
+        if(m_elapsedTimer.isValid()) {
+            m_elapsedTimer.restart();
+        }
+    }
+}
+
+// void SimulationEngine::setRotationSpeed(double speedHz)
+// {
+//     if(speedHz >= 0)
+//         m_rotationSpeed = speedHz;
+// }

@@ -20,6 +20,10 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     ui->voltageControlWidget->setRange(config::MinVoltage, config::MaxVoltage);
     ui->voltageControlWidget->setValue(config::DefaultVoltage);
 
+    // 자동 회전 타이머 설정
+    m_autoRotateTimer.setInterval(16); // 약 60fps
+    connect(&m_autoRotateTimer, &QTimer::timeout, this, &MainWindow::updateAutoRotation);
+
     // --- 시그널/슬롯 연결 ---
 
     // UI 이벤트 -> SimulationEngine 슬롯
@@ -36,6 +40,9 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
 
     // phaseDial의 값이 바뀌면, 엔진의 위상을 설정
     connect(ui->phaseDial, &QDial::valueChanged, m_engine, &SimulationEngine::setPhase);
+    connect(ui->phaseDial, &QDial::valueChanged, this, [this](int value){
+        ui->phaseLabel->setText(QString::number(value) + "°");
+    });
 
     // 설정 다이얼로그의 변경사항을 엔진과 그래프 윈도우에 각각 전달
     connect(m_settingsDialog, &SettingsDialog::settingsApplied, this,
@@ -47,6 +54,19 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     // SimulationEngine 시그널 -> UI 슬롯
     connect(m_engine, &SimulationEngine::dataUpdated, m_graphWindow, &GraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::statusChanged, ui->startStopButton, &QPushButton::setText);
+
+    // Auto 버튼 토글 시
+    connect(ui->autoButton, &QPushButton::toggled, this, [this](bool checked) {
+        if(checked) {
+            ui->autoButton->setText("자동 회전 정지");
+            ui->phaseDial->setEnabled(false);
+            m_autoRotateTimer.start();
+        } else {
+            ui->autoButton->setText("자동 회전 시작");
+            ui->phaseDial->setEnabled(true);
+            m_autoRotateTimer.stop();
+        }
+    });
 
 }
 
@@ -64,4 +84,23 @@ void MainWindow::on_settingButton_clicked()
         m_graphWindow->getGraphWidth()
     );
     m_settingsDialog->open();
+}
+
+void MainWindow::updateAutoRotation()
+{
+    bool ok;
+    double speedHz = ui->rpmEdit->text().toDouble(&ok);
+    if(!ok || speedHz <= 0) {
+        return;
+    }
+
+    // 1초당 회전할 각도
+    double degreesPerSecond = speedHz * 360.0;
+    // 타이머의 현재 간격 만큼 이동할 각도
+    double degreesPerInterval = degreesPerSecond * (m_autoRotateTimer.interval() / 1000.0);
+    // 현재 다이얼 값에 계산된 각도를 더함
+    double newDialValue = ui->phaseDial->value() + degreesPerInterval;
+
+    newDialValue = std::fmod(newDialValue, 360);
+    ui->phaseDial->setValue(static_cast<int>(newDialValue));
 }

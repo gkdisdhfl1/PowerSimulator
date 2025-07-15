@@ -2,6 +2,7 @@
 #define MAIN_WINDOW_H
 
 #include <QMainWindow>
+#include <QTimer>
 
 // 전방 선언
 class GraphWindow;
@@ -25,11 +26,13 @@ public:
 
 private slots:
     void on_settingButton_clicked();
+    void updateAutoRotation();
 
 private:
     Ui::MainWindow *ui;
     GraphWindow *m_graphWindow;
     SettingsDialog *m_settingsDialog;
     SimulationEngine *m_engine;
+    QTimer m_autoRotateTimer;
 };
 #endif // MAIN_WINDOW_H
