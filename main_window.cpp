@@ -133,7 +133,6 @@ void MainWindow::updateAutoRotation()
     // UI 다이얼에는 정수 부분만 보여줌
     ui->phaseDial->setValue(static_cast<int>(m_currentPhaseDegrees));
     // 라벨에도 정수부분만 표시
-    // ui->phaseLabel->setText(QString::number(static_cast<int>(m_currentPhaseDegrees)) + "°");
     ui->phaseLabel->setText(QString::number(static_cast<int>(m_currentPhaseDegrees)) + "°");
 
     m_engine->setPhase(m_currentPhaseDegrees);
