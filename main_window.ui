@@ -7,14 +7,14 @@
     <x>0</x>
     <y>0</y>
     <width>485</width>
-    <height>272</height>
+    <height>302</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout_5">
+   <layout class="QVBoxLayout" name="verticalLayout_4">
     <item>
      <layout class="QVBoxLayout" name="verticalLayout">
       <item>
@@ -103,6 +103,25 @@
          </widget>
         </item>
        </layout>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <layout class="QHBoxLayout" name="horizontalLayout_4">
+      <item>
+       <widget class="QLabel" name="label_5">
+        <property name="font">
+         <font>
+          <pointsize>11</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>시간 비율</string>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="ValueControlWidget" name="timeScaleWidget" native="true"/>
       </item>
      </layout>
     </item>
