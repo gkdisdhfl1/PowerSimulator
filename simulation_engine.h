@@ -24,7 +24,6 @@ public slots:
     void applySettings(double interval, int maxSize);
     void setAmplitude(double amplitude);
     void setPhase(double degrees);
-    void setTimeScale(double scale);
 
 signals:
     void dataUpdated(const std::deque<DataPoint>& data);
@@ -43,8 +42,6 @@ private:
     double m_amplitude; // 진폭 (최대 전압)
     double m_phaseRadians; // 위상 (라디안)
     qint64 m_accumulatedTime; // 총 경과 시간
-    double m_timeScale = 1.0;
-    qint64 m_simulationTimeMs=  0;
 };
 
 #endif // SIMULATION_ENGINE_H
