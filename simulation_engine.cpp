@@ -1,13 +1,16 @@
 #include "simulation_engine.h"
 #include "config.h"
 #include <QDebug>
+#include <cmath>
 
 SimulationEngine::SimulationEngine()
     : QObject()
     , m_maxDataSize(config::DefaultDataSize)
     , m_amplitude(config::DefaultVoltage)
-    , m_phaseRadians(0.0) // 기본 위상 0
+    , m_frequency(1.0) // 기본 주파수 1.0 Hz
+    , m_phaseDegrees(0.0) // 기본 위상 0
     , m_accumulatedTime(0)
+    , m_isAutoRotating(false) // 자동 회전은 꺼진 상태로 시작
 {
     m_captureTimer.setInterval(config::DefaultIntervalMs); // 초기값
     connect(&m_captureTimer, &QTimer::timeout, this, &SimulationEngine::captureData);
@@ -70,18 +73,45 @@ void SimulationEngine::setAmplitude(double amplitude)
 
 void SimulationEngine::setPhase(double degrees)
 {
-    // 각도를 라디안으로 변환하여 저장
-    // 360도 = 2 * pi 라디안
-    m_phaseRadians = degrees * (2.0 * config::PI) / 360.0;
+    // 각도를 [0, 360) 범위로 정규화
+    m_phaseDegrees = std::fmod(degrees, 360.0);
+    if (m_phaseDegrees < 0) {
+        m_phaseDegrees += 360.0;
+    }
 }
+
+void SimulationEngine::setFrequency(double hertz)
+{
+    if (hertz >= 0) {
+        m_frequency = hertz;
+    }
+}
+
+void SimulationEngine::setAutoRotation(bool enabled)
+{
+    m_isAutoRotating = enabled;
+}
+
 
 void SimulationEngine::captureData()
 {
+    if (m_isAutoRotating && m_frequency > 0) {
+        // 자동 회전 모드일 때만 위상 업데이트
+        double intervalSec = m_captureTimer.interval() / 1000.0;
+        double degreesPerInterval = m_frequency * 360.0 * intervalSec;
+        m_phaseDegrees += degreesPerInterval;
+        m_phaseDegrees = std::fmod(m_phaseDegrees, 360.0);
+
+        emit phaseUpdated(m_phaseDegrees);
+    }
+
     // 데이터 생성
     qint64 currentTimeMs = m_elapsedTimer.elapsed() + m_accumulatedTime;
 
     // AC 전압 계산 V = A * sin(phase)
-    double currentVoltage = m_amplitude * sin(m_phaseRadians);
+    // 위상을 라디안으로 변환하여 계산
+    double phaseRadians = m_phaseDegrees * (config::PI * 2.0) / 360.0;
+    double currentVoltage = m_amplitude * sin(phaseRadians);
 
     // DataPoint 객체를 생성하여 저장
     m_data.push_back({currentTimeMs, currentVoltage});

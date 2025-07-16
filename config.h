@@ -26,7 +26,6 @@ namespace config {
     constexpr int DialMax = 359;
 
     // AC 파형 설정
-    constexpr double Frequency = 60.0; // 60Hz
     constexpr double PI = M_PI;
 }
 

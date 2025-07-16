@@ -24,12 +24,13 @@ public slots:
     void applySettings(double interval, int maxSize);
     void setAmplitude(double amplitude);
     void setPhase(double degrees);
-    void setTimeScale(double scale);
+    void setFrequency(double hertz);
+    void setAutoRotation(bool enabled);
 
 signals:
     void dataUpdated(const std::deque<DataPoint>& data);
     void statusChanged(const QString& statusText);
-    void voltageChanged(double newVoltage);
+    void phaseUpdated(double newPhase);
 
 private slots:
     void captureData();
@@ -41,10 +42,11 @@ private:
     std::deque<DataPoint> m_data;
     int m_maxDataSize;
     double m_amplitude; // 진폭 (최대 전압)
-    double m_phaseRadians; // 위상 (라디안)
+    double m_frequency; // 주파수 (Hz)
+    double m_phaseDegrees; // 위상 (도)
     qint64 m_accumulatedTime; // 총 경과 시간
-    double m_timeScale = 1.0;
-    qint64 m_simulationTimeMs=  0;
+    bool m_isAutoRotating;
+
 };
 
 #endif // SIMULATION_ENGINE_H
