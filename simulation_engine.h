@@ -26,6 +26,7 @@ public slots:
     void setPhase(double degrees);
     void setFrequency(double hertz);
     void setAutoRotation(bool enabled);
+    void setTimeScale(double rate);
 
 signals:
     void dataUpdated(const std::deque<DataPoint>& data);
@@ -36,8 +37,9 @@ private slots:
     void captureData();
 
 private:
+    void updateCaptureTimer(); // 내부 헬퍼 함수
     QTimer m_captureTimer;
-    QElapsedTimer m_elapsedTimer;
+    // QElapsedTimer m_elapsedTimer;
 
     std::deque<DataPoint> m_data;
     int m_maxDataSize;
@@ -47,6 +49,10 @@ private:
     qint64 m_accumulatedTime; // 총 경과 시간
     bool m_isAutoRotating;
 
+    double m_timeScale;
+    double m_captureIntervalsMs;
+    qint64 m_simulationTimeMs;
+    double m_simulationTimeRemainder; // 오차 누적을 위한 변수
 };
 
 #endif // SIMULATION_ENGINE_H

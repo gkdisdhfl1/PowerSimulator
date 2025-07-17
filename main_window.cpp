@@ -20,6 +20,9 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     ui->voltageControlWidget->setRange(config::MinVoltage, config::MaxVoltage);
     ui->voltageControlWidget->setValue(config::DefaultVoltage);
 
+    ui->timeScaleWidget->setRange(1.0, 100.0);
+    ui->timeScaleWidget->setValue(1.0);
+
     // UI의 초기 상태를 엔진에 반영
     m_engine->setFrequency(ui->rpmEdit->text().toDouble());
     m_engine->setPhase(ui->phaseDial->value());
@@ -44,6 +47,9 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
 
     // voltageControlWidget의 값이 바뀌면, 엔진의 현재 전압을 설정
     connect(ui->voltageControlWidget, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setAmplitude);
+
+    // timeScaleWidget 값이 바뀌면 엔진의 setTimeScale 슬롯 호출
+    connect(ui->timeScaleWidget, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setTimeScale);
 
     // phaseDial의 값이 바뀌면, 엔진의 위상을 설정
     connect(ui->phaseDial, &QDial::valueChanged, m_engine, &SimulationEngine::setPhase);
