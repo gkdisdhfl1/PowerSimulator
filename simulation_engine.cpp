@@ -5,13 +5,13 @@
 
 SimulationEngine::SimulationEngine()
     : QObject()
-    , m_maxDataSize(config::DefaultDataSize)
-    , m_amplitude(config::DefaultVoltage)
-    , m_frequency(1.0) // 기본 주파수 1.0 Hz
+    , m_maxDataSize(config::Simulation::DefaultDataSize)
+    , m_amplitude(config::Amplitude::Default)
+    , m_frequency(config::Frequency::Default) // 기본 주파수 1.0 Hz
     , m_phaseDegrees(0.0) // 기본 위상 0
     , m_accumulatedTime(0)
     , m_timeScale(1.0) // 기본 비율은 1.0
-    , m_captureIntervalsMs(config::DefaultIntervalMs) // 기본 시뮬레이션 간격
+    , m_captureIntervalsMs(config::Simulation::DefaultIntervalMs) // 기본 시뮬레이션 간격
     , m_simulationTimeMs(0) // 시뮬레이션 시간은 0에서 시작
     , m_simulationTimeRemainder(0.0)
 {
@@ -68,7 +68,7 @@ void SimulationEngine::applySettings(double interval, int maxSize)
 
 void SimulationEngine::setAmplitude(double amplitude)
 {
-    m_amplitude = std::clamp(amplitude, config::MinVoltage, config::MaxVoltage);
+    m_amplitude = std::clamp(amplitude, config::Amplitude::Min, config::Amplitude::Max);
 }
 
 void SimulationEngine::setPhase(double degrees)
@@ -109,7 +109,7 @@ void SimulationEngine::captureData()
 
     // AC 전압 계산 V = A * sin(phase)
     // 위상을 라디안으로 변환하여 계산
-    double phaseRadians = m_phaseDegrees * (config::PI * 2.0) / 360.0;
+    double phaseRadians = utils::degreesToRadians(m_phaseDegrees);
     double currentVoltage = m_amplitude * sin(phaseRadians);
 
     // DataPoint 객체를 생성하여 저장

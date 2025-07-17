@@ -19,11 +19,11 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     ui->samplesPerCycleSpinBox->setRange(1, 1000);
     ui->samplesPerCycleSpinBox->setValue(10);
 
-    ui->maxSizeSpinBox->setRange(config::MinDataSize, config::MaxDataSize);
+    ui->maxSizeSpinBox->setRange(config::Simulation::MinDataSize, config::Simulation::MaxDataSize);
 
     ui->graphWidthSpinBox->setSuffix(" s");
-    ui->graphWidthSpinBox->setRange(config::MinGraphWidthSec, config::MaxGraphWidthSec);
-    ui->graphWidthSpinBox->setValue(config::DefaultGraphWidthSec);
+    ui->graphWidthSpinBox->setRange(config::GraphWidthSec::Min, config::GraphWidthSec::Max);
+    ui->graphWidthSpinBox->setValue(config::GraphWidthSec::Default);
 
 }
 
@@ -62,13 +62,13 @@ void SettingsDialog::accept()
     }
 
     QString errorMessage;
-    if (size < config::MinDataSize)
+    if (size < config::Simulation::MinDataSize)
     {
-        errorMessage += QString("최대 데이터 크기는 %1 이상이어야 합니다.\n").arg(config::MinDataSize);
+        errorMessage += QString("최대 데이터 크기는 %1 이상이어야 합니다.\n").arg(config::Simulation::MinDataSize);
     }
-    if (graphWidth < config::MinGraphWidthSec)
+    if (graphWidth < config::GraphWidthSec::Min)
     {
-        errorMessage += QString("그래프 폭은 %1초 이상이어야 합니다.\n").arg(config::MinGraphWidthSec);
+        errorMessage += QString("그래프 폭은 %1초 이상이어야 합니다.\n").arg(config::GraphWidthSec::Min);
     }
 
     if(!errorMessage.isEmpty()) {

@@ -53,4 +53,5 @@ private:
     double m_simulationTimeRemainder; // 오차 누적을 위한 변수
 };
 
+enum class Status{ Stopped, Running};
 #endif // SIMULATION_ENGINE_H

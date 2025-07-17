@@ -2,43 +2,61 @@
 #define CONFIG_H
 
 #include <cmath>
+#include <QString>
+#include <string_view>
 
 namespace config {
-    // 전압 설정
-    constexpr double MinVoltage = -500.0;
-    constexpr double MaxVoltage = 500.0;
-    constexpr double DefaultVoltage = 220.0;
+    // std::string_view를 QString으로 변환하는 헬퍼 함수
+inline QString sv_to_q(std::string_view sv) {
+    return QString::fromUtf8(sv.data(), sv.size());
+    }
+
+    // 진폭 설정
+    struct Amplitude {
+        static constexpr double Min = -500.0;
+        static constexpr double Max = 500.0;
+        static constexpr double Default = 220.0;
+
+    };
 
     // 주파수 설정
-    constexpr double MinFrequency = 1.0;
-    constexpr double MaxFrequency = 100.0;
-    constexpr double DefaultFrequency = 1.0;
+    struct Frequency {
+        static constexpr double Min = 1.0;
+        static constexpr double Max = 100.0;
+        static constexpr double Default = 1.0;
+    };
 
-    // Simulation Engine 설정
-    constexpr int DefaultDataSize = 100;
-    constexpr int MinDataSize = 1;
-    constexpr int MaxDataSize = 10000;
-    constexpr int DefaultIntervalMs = 100;
-    constexpr double MinIntervalSec = 0.001;
+    struct Simulation {
+        // Simulation Engine 설정
+        static constexpr int DefaultDataSize = 100;
+        static constexpr int MinDataSize = 1;
+        static constexpr int MaxDataSize = 10000;
+        static constexpr int DefaultIntervalMs = 100;
+        // static constexpr double MinIntervalSec = 0.001;
+    };
 
     // 그래프 설정
-    constexpr double DefaultGraphWidthSec = 10.0;
-    constexpr double MinGraphWidthSec = 0.01;
-    constexpr double MaxGraphWidthSec = 300.0;
+    struct GraphWidthSec {
+        static constexpr double Default = 10.0;
+        static constexpr double Min = 0.01;
+        static constexpr double Max = 300.0;
+    };
 
-    // UI 설정
-    constexpr int DialMin = 0;
-    constexpr int DialMax = 359;
 
     // 샘플링 설정
-    constexpr int DefaultSamplingCycles = 10;
-    constexpr int DefaultSamplesPercle = 10;
-    constexpr int MinSampligValue = 1;
-    constexpr int maxSamplingValue = 1000;
+    struct Sampling {
+        static constexpr double DefaultSamplingCycles = 10;
+        static constexpr int DefaultSamplesPerCycle = 10;
+        static constexpr int MinValue = 1;
+        static constexpr int maxValue = 1000;
+    };
 
+}
 
-    // AC 파형 설정
-    constexpr double PI = M_PI;
+namespace utils {
+    constexpr double degreesToRadians(double degrees) {
+        return degrees * (std::numbers::pi / 180.0);
+    }
 }
 
 #endif // CONFIG_H

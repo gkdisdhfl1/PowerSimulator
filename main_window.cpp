@@ -38,14 +38,14 @@ void MainWindow::on_settingButton_clicked()
 
 void MainWindow::setupUiWidgets()
 {
-    ui->voltageControlWidget->setRange(config::MinVoltage, config::MaxVoltage);
-    ui->voltageControlWidget->setValue(config::DefaultVoltage);
+    ui->voltageControlWidget->setRange(config::Amplitude::Min, config::Amplitude::Max);
+    ui->voltageControlWidget->setValue(config::Amplitude::Default);
 
     ui->timeScaleWidget->setRange(0.1, 100.0);
     ui->timeScaleWidget->setValue(1.0);
 
-    ui->frequencyControlWidget->setRange(config::MinFrequency, config::MaxFrequency);
-    ui->frequencyControlWidget->setValue(config::DefaultFrequency);
+    ui->frequencyControlWidget->setRange(config::Frequency::Min, config::Frequency::Max);
+    ui->frequencyControlWidget->setValue(config::Frequency::Default);
     // ui->frequencyControlWidget->setSteps(1.0, 0.1);
     m_engine->setFrequency(ui->frequencyControlWidget->value()); // 초기값 엔진 전달
 }

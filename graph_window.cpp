@@ -17,7 +17,7 @@ GraphWindow::GraphWindow(QWidget *parent)
     , m_axisX(new QValueAxis(this))
     , m_axisY(new QValueAxis(this))
     , m_chartView(new QChartView(&m_chart))
-    , m_graphWidthSec(config::DefaultGraphWidthSec) // 그래프 폭 기본값으로 초기화
+    , m_graphWidthSec(config::GraphWidthSec::Default) // 그래프 폭 기본값으로 초기화
 {
     ui->setupUi(this);
 
@@ -71,7 +71,7 @@ void GraphWindow::setupChart()
     // Y축 설정
     m_axisY->setLabelFormat(tr("%.2f V")); // 소수점 둘째 자리까지 V 단위로 표시
     m_axisY->setTitleText(tr("전압 (V)"));
-    m_axisY->setRange(config::MinVoltage, config::MaxVoltage);
+    m_axisY->setRange(config::Amplitude::Min, config::Amplitude::Min);
     m_chart.addAxis(m_axisY, Qt::AlignLeft);
     m_series->attachAxis(m_axisY);
 }
