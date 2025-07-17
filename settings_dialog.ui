@@ -24,12 +24,31 @@
         </font>
        </property>
        <property name="text">
-        <string>시간 간격</string>
+        <string>초 당 cycle</string>
        </property>
       </widget>
      </item>
      <item>
-      <widget class="QDoubleSpinBox" name="intervalSpinBox"/>
+      <widget class="QDoubleSpinBox" name="samplingCyclesDoubleSpinBox"/>
+     </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_5">
+     <item>
+      <widget class="QLabel" name="label_3">
+       <property name="font">
+        <font>
+         <pointsize>12</pointsize>
+        </font>
+       </property>
+       <property name="text">
+        <string>cycle 당 sample</string>
+       </property>
+      </widget>
+     </item>
+     <item>
+      <widget class="QSpinBox" name="samplesPerCycleSpinBox"/>
      </item>
     </layout>
    </item>

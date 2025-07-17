@@ -10,7 +10,6 @@ SimulationEngine::SimulationEngine()
     , m_frequency(1.0) // 기본 주파수 1.0 Hz
     , m_phaseDegrees(0.0) // 기본 위상 0
     , m_accumulatedTime(0)
-    , m_isAutoRotating(false) // 자동 회전은 꺼진 상태로 시작
     , m_timeScale(1.0) // 기본 비율은 1.0
     , m_captureIntervalsMs(config::DefaultIntervalMs) // 기본 시뮬레이션 간격
     , m_simulationTimeMs(0) // 시뮬레이션 시간은 0에서 시작
@@ -88,37 +87,26 @@ void SimulationEngine::setFrequency(double hertz)
     }
 }
 
-void SimulationEngine::setAutoRotation(bool enabled)
-{
-    m_isAutoRotating = enabled;
-}
-
-
 void SimulationEngine::captureData()
 {
     double realIntervalMs = static_cast<double>(m_captureTimer.interval());
     double simulationStepDouble = realIntervalMs / m_timeScale;
     simulationStepDouble += m_simulationTimeRemainder;
-    qDebug() << "realIntervalMs = " << realIntervalMs;
-    qDebug() << "simulationStepDouble = " << simulationStepDouble;
     qint64 simulationStepInt = static_cast<qint64>(simulationStepDouble);
     m_simulationTimeRemainder = simulationStepDouble - static_cast<double>(simulationStepInt);
 
-    if (m_isAutoRotating && m_frequency > 0) {
-        // 자동 회전 모드일 때만 위상 업데이트
-        double stepSec = (simulationStepDouble - m_simulationTimeRemainder) / 1000.0;
-        double degreesPerInterval = m_frequency * 360.0 * stepSec;
-        m_phaseDegrees += degreesPerInterval;
-        m_phaseDegrees = std::fmod(m_phaseDegrees, 360.0);
 
-        emit phaseUpdated(m_phaseDegrees);
-    }
+    // 위상 업데이트
+    double stepSec = (simulationStepDouble - m_simulationTimeRemainder) / 1000.0;
+    double degreesPerInterval = m_frequency * 360.0 * stepSec;
+    m_phaseDegrees += degreesPerInterval;
+    m_phaseDegrees = std::fmod(m_phaseDegrees, 360.0);
+    emit phaseUpdated(m_phaseDegrees);
+
 
     // 실제 시간이 아닌 시뮬레이션 시간을 증가시킴
-    qDebug() << "simulationStepInt = " << simulationStepInt;
     m_simulationTimeMs += simulationStepInt;
 
-    qDebug() << "m_simulationTimeMs = " << m_simulationTimeMs;
     // AC 전압 계산 V = A * sin(phase)
     // 위상을 라디안으로 변환하여 계산
     double phaseRadians = m_phaseDegrees * (config::PI * 2.0) / 360.0;

@@ -25,7 +25,6 @@ public slots:
     void setAmplitude(double amplitude);
     void setPhase(double degrees);
     void setFrequency(double hertz);
-    void setAutoRotation(bool enabled);
     void setTimeScale(double rate);
 
 signals:
@@ -47,7 +46,6 @@ private:
     double m_frequency; // 주파수 (Hz)
     double m_phaseDegrees; // 위상 (도)
     qint64 m_accumulatedTime; // 총 경과 시간
-    bool m_isAutoRotating;
 
     double m_timeScale;
     double m_captureIntervalsMs;

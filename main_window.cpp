@@ -23,15 +23,10 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     ui->timeScaleWidget->setRange(1.0, 100.0);
     ui->timeScaleWidget->setValue(1.0);
 
-    // UI의 초기 상태를 엔진에 반영
-    m_engine->setFrequency(ui->rpmEdit->text().toDouble());
-    m_engine->setPhase(ui->phaseDial->value());
-    m_engine->setAutoRotation(ui->autoButton->isChecked());
-    ui->phaseDial->setEnabled(!ui->autoButton->isChecked());
-    if(ui->autoButton->isChecked())
-        ui->autoButton->setText("자동 회전 정지");
-    else
-        ui->autoButton->setText("자동 회전 시작");
+    ui->frequencyControlWidget->setRange(1, 100);
+    ui->frequencyControlWidget->setValue(1.0);
+    ui->frequencyControlWidget->setSteps(1.0, 0.1);
+    m_engine->setFrequency(ui->frequencyControlWidget->value()); // 초기값 엔진 전달
 
 
     // ---- 시그널/슬롯 연결 ----
@@ -51,11 +46,6 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     // timeScaleWidget 값이 바뀌면 엔진의 setTimeScale 슬롯 호출
     connect(ui->timeScaleWidget, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setTimeScale);
 
-    // phaseDial의 값이 바뀌면, 엔진의 위상을 설정
-    connect(ui->phaseDial, &QDial::valueChanged, m_engine, &SimulationEngine::setPhase);
-    connect(ui->phaseDial, &QDial::valueChanged, this, [this](int value){
-        ui->phaseLabel->setText(QString::number(value) + "°");
-    });
 
     // 설정 다이얼로그의 변경사항을 엔진과 그래프 윈도우에 각각 전달
     connect(m_settingsDialog, &SettingsDialog::settingsApplied, this,
@@ -63,46 +53,13 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
         m_engine->applySettings(interval, maxSize);
         m_graphWindow->setGraphWidth(graphWidth);
     });
+
+    connect(ui->frequencyControlWidget, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setFrequency);
     // ----------------------
 
     // SimulationEngine 시그널 -> UI 슬롯
     connect(m_engine, &SimulationEngine::dataUpdated, m_graphWindow, &GraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::statusChanged, ui->startStopButton, &QPushButton::setText);
-
-    // 엔진에서 위상이 업데이트되면 UI 다이얼과 라벨에 반영
-    connect(m_engine, &SimulationEngine::phaseUpdated, this, [this](double newPhase){
-        // 시그널 루프 방지
-        ui->phaseDial->blockSignals(true);
-        ui->phaseDial->setValue(static_cast<int>(newPhase));
-        ui->phaseDial->blockSignals(false);
-        ui->phaseLabel->setText(QString::number(static_cast<int>(newPhase)) + "°");
-    });
-
-
-    // Auto 버튼 토글 시
-    connect(ui->autoButton, &QPushButton::toggled, this, [this](bool checked) {
-        m_engine->setAutoRotation(checked);
-        ui->phaseDial->setEnabled(!checked); // 자동회전 아닐때만 다이얼 활성화
-        if(checked) {
-            ui->autoButton->setText("자동 회전 정지");
-        } else {
-            ui->autoButton->setText("자동 회전 시작");
-        }
-    });
-
-    // rpmEdit 입력이 끝나면, 엔진의 주파수를 설정
-    connect(ui->rpmEdit, &QLineEdit::editingFinished, this, [this](){
-        bool ok;
-        double speed = ui->rpmEdit->text().toDouble(&ok);
-
-        if(ok && speed >= 0) {
-            m_engine->setFrequency(speed);
-            qDebug() << "Rotatoin speed set to: " << speed << "Hz";
-        } else {
-            // 유효하지 않은 값이면, 현재 엔진의 주파수 값으로 UI를 되돌림
-            // ui->rpmEdit->setText(QString::number(m_engine->getFrequency()));
-        }
-    });
 
 }
 
@@ -115,7 +72,6 @@ void MainWindow::on_settingButton_clicked()
 {
     // 다이얼로그를 열기 전에 현재 설정값으로 초기화
     m_settingsDialog->setInitialValues(
-        m_engine->getCaptureIntervalSec(),
         m_engine->getMaxDataSize(),
         m_graphWindow->getGraphWidth()
     );

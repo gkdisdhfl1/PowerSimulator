@@ -18,7 +18,7 @@ public:
     ~SettingsDialog();
 
     // MainWindow에서 초기값을 설정해주기 위한 함수
-    void setInitialValues(double interval, int maxSize, double graphWidth);
+    void setInitialValues(int maxSize, double graphWidth);
     void accept() override;
 
 signals:
