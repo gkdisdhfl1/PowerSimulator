@@ -17,20 +17,41 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     m_graphWindow->show();
 
     // UI 초기값 설정
+    setupUiWidgets();
+    createSignalSotConnections();
+}
+
+MainWindow::~MainWindow()
+{
+    delete ui;
+}
+
+void MainWindow::on_settingButton_clicked()
+{
+    // 다이얼로그를 열기 전에 현재 설정값으로 초기화
+    m_settingsDialog->setInitialValues(
+        m_engine->getMaxDataSize(),
+        m_graphWindow->getGraphWidth()
+    );
+    m_settingsDialog->open();
+}
+
+void MainWindow::setupUiWidgets()
+{
     ui->voltageControlWidget->setRange(config::MinVoltage, config::MaxVoltage);
     ui->voltageControlWidget->setValue(config::DefaultVoltage);
 
-    ui->timeScaleWidget->setRange(1.0, 100.0);
+    ui->timeScaleWidget->setRange(0.1, 100.0);
     ui->timeScaleWidget->setValue(1.0);
 
-    ui->frequencyControlWidget->setRange(1, 100);
-    ui->frequencyControlWidget->setValue(1.0);
-    ui->frequencyControlWidget->setSteps(1.0, 0.1);
+    ui->frequencyControlWidget->setRange(config::MinFrequency, config::MaxFrequency);
+    ui->frequencyControlWidget->setValue(config::DefaultFrequency);
+    // ui->frequencyControlWidget->setSteps(1.0, 0.1);
     m_engine->setFrequency(ui->frequencyControlWidget->value()); // 초기값 엔진 전달
+}
 
-
-    // ---- 시그널/슬롯 연결 ----
-
+void MainWindow::createSignalSotConnections()
+{
     // ---- UI 이벤트 -> SimulationEngine 슬롯 ----
     connect(ui->startStopButton, &QPushButton::clicked, this, [this]() {
         if (m_engine->isRunning()) {
@@ -50,30 +71,15 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     // 설정 다이얼로그의 변경사항을 엔진과 그래프 윈도우에 각각 전달
     connect(m_settingsDialog, &SettingsDialog::settingsApplied, this,
             [this](double interval, int maxSize, double graphWidth) {
-        m_engine->applySettings(interval, maxSize);
-        m_graphWindow->setGraphWidth(graphWidth);
-    });
+                m_engine->applySettings(interval, maxSize);
+                m_graphWindow->setGraphWidth(graphWidth);
+            });
 
     connect(ui->frequencyControlWidget, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setFrequency);
     // ----------------------
 
+
     // SimulationEngine 시그널 -> UI 슬롯
     connect(m_engine, &SimulationEngine::dataUpdated, m_graphWindow, &GraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::statusChanged, ui->startStopButton, &QPushButton::setText);
-
-}
-
-MainWindow::~MainWindow()
-{
-    delete ui;
-}
-
-void MainWindow::on_settingButton_clicked()
-{
-    // 다이얼로그를 열기 전에 현재 설정값으로 초기화
-    m_settingsDialog->setInitialValues(
-        m_engine->getMaxDataSize(),
-        m_graphWindow->getGraphWidth()
-    );
-    m_settingsDialog->open();
 }

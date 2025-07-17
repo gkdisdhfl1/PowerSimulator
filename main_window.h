@@ -31,5 +31,8 @@ private:
     GraphWindow *m_graphWindow;
     SettingsDialog *m_settingsDialog;
     SimulationEngine *m_engine;
+
+    void setupUiWidgets();
+    void createSignalSotConnections();
 };
 #endif // MAIN_WINDOW_H
