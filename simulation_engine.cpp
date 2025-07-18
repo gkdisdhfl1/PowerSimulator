@@ -96,7 +96,7 @@ void SimulationEngine::setTimeScale(double scale)
 
 void SimulationEngine::updateCaptureTimer()
 {
-    m_captureTimer.setInterval(static_cast<int>(m_captureIntervalsMs));
+    m_captureTimer.setInterval(static_cast<int>(std::round(m_captureIntervalsMs)));
 }
 
 void SimulationEngine::setFrequency(double hertz)
@@ -123,6 +123,12 @@ void SimulationEngine::advanceSimulationTime()
     qint64 simulationStepInt = static_cast<qint64>(simulationStepDouble);
     m_simulationTimeRemainder = simulationStepDouble - static_cast<double>(simulationStepInt);
 
+    qDebug() << "---------------------------: ";
+    qDebug() << "realIntervalMs (QTimer actual): " << m_captureTimer.interval();
+    qDebug() << "realIntervalMs: " << realIntervalMs;
+    qDebug() << "simulationStepDouble: " << simulationStepDouble;
+    qDebug() << "simulationStepInt: " << simulationStepInt;
+    qDebug() << "m_simulationTimeRemainder: " << m_simulationTimeRemainder;
 
     // 위상 업데이트
     double stepSec = (simulationStepDouble - m_simulationTimeRemainder) / 1000.0;
@@ -147,6 +153,8 @@ double SimulationEngine::calculateCurrentVoltage()
 void SimulationEngine::addNewDataPoint(double voltage)
 {
     // DataPoint 객체를 생성하여 저장
+    qDebug() << "m_simulationTimeMs: " << m_simulationTimeMs;
+    qDebug() << "voltage: " << voltage;
     m_data.push_back({m_simulationTimeMs, voltage});
 
     // 최대 개수 관리
