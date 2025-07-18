@@ -31,7 +31,9 @@ inline QString sv_to_q(std::string_view sv) {
         static constexpr int DefaultDataSize = 100;
         static constexpr int MinDataSize = 1;
         static constexpr int MaxDataSize = 10000;
-        static constexpr int DefaultIntervalMs = 100;
+        static constexpr double DefaultSamplingCycles = 1.0;
+        static constexpr int DefaultSamplesPerCycle = 10;
+        // static constexpr int DefaultIntervalMs = 100;
         // static constexpr double MinIntervalSec = 0.001;
     };
 

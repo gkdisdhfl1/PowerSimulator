@@ -28,6 +28,9 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_settingButton_clicked()
 {
+    qDebug() << "getMaxDataSize() = " << m_engine->getMaxDataSize();
+    qDebug() << "getGraphWidth() = " << m_graphWindow->getGraphWidth();
+
     // 다이얼로그를 열기 전에 현재 설정값으로 초기화
     m_settingsDialog->setInitialValues(
         m_engine->getMaxDataSize(),

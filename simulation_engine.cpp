@@ -11,10 +11,12 @@ SimulationEngine::SimulationEngine()
     , m_phaseDegrees(0.0) // 기본 위상 0
     , m_accumulatedTime(0)
     , m_timeScale(1.0) // 기본 비율은 1.0
-    , m_captureIntervalsMs(config::Simulation::DefaultIntervalMs) // 기본 시뮬레이션 간격
     , m_simulationTimeMs(0) // 시뮬레이션 시간은 0에서 시작
     , m_simulationTimeRemainder(0.0)
 {
+    double totalSamplesPerSecond = config::Simulation::DefaultSamplingCycles * config::Simulation::DefaultSamplesPerCycle;
+    m_captureIntervalsMs = 1000.0 / totalSamplesPerSecond;
+
     connect(&m_captureTimer, &QTimer::timeout, this, &SimulationEngine::captureData);
     updateCaptureTimer(); // 첫 타이머 간격 설정
 }
@@ -37,6 +39,11 @@ int SimulationEngine::getMaxDataSize() const
 void SimulationEngine::start()
 {
     if (isRunning()) return;
+    qDebug() << "시작";
+    qDebug() << "m_amplitude = " << m_amplitude << " " << "m_frequency = " << m_frequency;
+    qDebug() << "m_maxDataSize = " << m_maxDataSize << "m_timeScale = " << m_timeScale;
+
+
     m_captureTimer.start();
     emit runningStateChanged(true);
     qDebug() << "Engine started.";
@@ -54,6 +61,7 @@ void SimulationEngine::stop()
 
 void SimulationEngine::applySettings(double interval, int maxSize)
 {
+    qDebug() << "interval = " << interval;
     m_captureIntervalsMs = interval * 1000; // 기본 간격 저장
     m_maxDataSize = maxSize;
     updateCaptureTimer();

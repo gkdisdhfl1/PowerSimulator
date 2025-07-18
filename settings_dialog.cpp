@@ -15,9 +15,9 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     ui->setupUi(this);
 
     ui->samplingCyclesDoubleSpinBox->setRange(1, 1000);
-    ui->samplingCyclesDoubleSpinBox->setValue(10);
+    ui->samplingCyclesDoubleSpinBox->setValue(config::Simulation::DefaultSamplingCycles);
     ui->samplesPerCycleSpinBox->setRange(1, 1000);
-    ui->samplesPerCycleSpinBox->setValue(10);
+    ui->samplesPerCycleSpinBox->setValue(config::Simulation::DefaultSamplesPerCycle);
 
     ui->maxSizeSpinBox->setRange(config::Simulation::MinDataSize, config::Simulation::MaxDataSize);
 
