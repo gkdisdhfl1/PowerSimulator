@@ -40,7 +40,7 @@ void SimulationEngine::start()
     m_simulationTimeMs = 0; // 시뮬레이션 시작 시 시간 초기화
     m_data.clear(); // 데이터도 초기화
     m_captureTimer.start();
-    emit statusChanged("일시정지");
+    emit runningStateChanged(true);
     qDebug() << "Engine started.";
 }
 
@@ -50,7 +50,7 @@ void SimulationEngine::stop()
 
     m_captureTimer.stop();
 
-    emit statusChanged("시작");
+    emit runningStateChanged(false);
     qDebug() << "Engine stopped.";
 }
 

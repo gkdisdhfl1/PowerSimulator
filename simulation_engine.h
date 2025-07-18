@@ -29,7 +29,7 @@ public slots:
 
 signals:
     void dataUpdated(const std::deque<DataPoint>& data);
-    void statusChanged(const QString& statusText);
+    void runningStateChanged(bool isRunning);
     void phaseUpdated(double newPhase);
 
 private slots:
@@ -38,7 +38,6 @@ private slots:
 private:
     void updateCaptureTimer(); // 내부 헬퍼 함수
     QTimer m_captureTimer;
-    // QElapsedTimer m_elapsedTimer;
 
     std::deque<DataPoint> m_data;
     int m_maxDataSize;
@@ -53,5 +52,4 @@ private:
     double m_simulationTimeRemainder; // 오차 누적을 위한 변수
 };
 
-enum class Status{ Stopped, Running};
 #endif // SIMULATION_ENGINE_H

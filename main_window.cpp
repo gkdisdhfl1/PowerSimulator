@@ -18,7 +18,7 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
 
     // UI 초기값 설정
     setupUiWidgets();
-    createSignalSotConnections();
+    createSignalSlotConnections();
 }
 
 MainWindow::~MainWindow()
@@ -36,6 +36,13 @@ void MainWindow::on_settingButton_clicked()
     m_settingsDialog->open();
 }
 
+void MainWindow::onEngineRuninngStateChanged(bool isRunning)
+{
+    ui->startStopButton->setText(isRunning ? "일시정지" : "시작");
+}
+
+
+
 void MainWindow::setupUiWidgets()
 {
     ui->voltageControlWidget->setRange(config::Amplitude::Min, config::Amplitude::Max);
@@ -50,7 +57,7 @@ void MainWindow::setupUiWidgets()
     m_engine->setFrequency(ui->frequencyControlWidget->value()); // 초기값 엔진 전달
 }
 
-void MainWindow::createSignalSotConnections()
+void MainWindow::createSignalSlotConnections()
 {
     // ---- UI 이벤트 -> SimulationEngine 슬롯 ----
     connect(ui->startStopButton, &QPushButton::clicked, this, [this]() {
@@ -81,5 +88,5 @@ void MainWindow::createSignalSotConnections()
 
     // SimulationEngine 시그널 -> UI 슬롯
     connect(m_engine, &SimulationEngine::dataUpdated, m_graphWindow, &GraphWindow::updateGraph);
-    connect(m_engine, &SimulationEngine::statusChanged, ui->startStopButton, &QPushButton::setText);
+    connect(m_engine, &SimulationEngine::runningStateChanged, this, &MainWindow::onEngineRuninngStateChanged);
 }

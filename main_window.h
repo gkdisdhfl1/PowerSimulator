@@ -25,6 +25,7 @@ public:
 
 private slots:
     void on_settingButton_clicked();
+    void onEngineRuninngStateChanged(bool isRunning);
 
 private:
     Ui::MainWindow *ui;
@@ -33,6 +34,6 @@ private:
     SimulationEngine *m_engine;
 
     void setupUiWidgets();
-    void createSignalSotConnections();
+    void createSignalSlotConnections();
 };
 #endif // MAIN_WINDOW_H
