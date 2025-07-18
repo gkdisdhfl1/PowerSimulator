@@ -37,8 +37,6 @@ int SimulationEngine::getMaxDataSize() const
 void SimulationEngine::start()
 {
     if (isRunning()) return;
-    m_simulationTimeMs = 0; // 시뮬레이션 시작 시 시간 초기화
-    m_data.clear(); // 데이터도 초기화
     m_captureTimer.start();
     emit runningStateChanged(true);
     qDebug() << "Engine started.";
@@ -56,9 +54,9 @@ void SimulationEngine::stop()
 
 void SimulationEngine::applySettings(double interval, int maxSize)
 {
-    m_captureTimer.setInterval(static_cast<int>(interval * 1000));
+    m_captureIntervalsMs = interval * 1000; // 기본 간격 저장
     m_maxDataSize = maxSize;
-    // updateCaptureTimer();
+    updateCaptureTimer();
 
     while(m_data.size() > static_cast<size_t>(m_maxDataSize))
         m_data.pop_front();
@@ -133,6 +131,5 @@ void SimulationEngine::setTimeScale(double scale)
 
 void SimulationEngine::updateCaptureTimer()
 {
-    double realIntervalMs = m_captureIntervalsMs * m_timeScale;
-    m_captureTimer.setInterval(static_cast<int>(std::round(realIntervalMs)));
+    m_captureTimer.setInterval(static_cast<int>(m_captureIntervalsMs));
 }
