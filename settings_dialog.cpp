@@ -46,8 +46,8 @@ void SettingsDialog::accept()
     int size = ui->maxSizeSpinBox->value();
     double graphWidth = ui->graphWidthSpinBox->value();
 
-    // 초당 총 샘ㅍ르링 횟수 계산(시간 간격)
-    int totalSamplesPerSecond = samplingCycles * samplesPerCycle;
+    // 초당 총 샘플링 횟수 계산(시간 간격)
+    double totalSamplesPerSecond = samplingCycles * samplesPerCycle;
 
 
     // 유효성 검사
@@ -55,7 +55,7 @@ void SettingsDialog::accept()
         QMessageBox::warning(this, "입력 오류", "초당 샘플링 횟수는 0보다 커야 합니다.");
         return;
     }
-    double intervalnSeconds = 1.0 / static_cast<double>(totalSamplesPerSecond);
+    double intervalnSeconds = 1.0 / totalSamplesPerSecond;
     if(intervalnSeconds < 0.001) { // 1ms 이하 짧은 간격 방지
         QMessageBox::warning(this, "입력 오류", "샘플링 간격이 너무 짧습니다. (1ms 이상 필요)");
         return;
