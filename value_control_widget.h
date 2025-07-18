@@ -46,8 +46,8 @@ private:
     double m_singleStep = 1.0;
     double m_fineStep = 0.01;
 
-    double m_firstSlideMin;
-    double m_firstSlideMax;
+    double m_fineTuningRangeMin;
+    double m_fineTuningRangeMax;
 
 };
 

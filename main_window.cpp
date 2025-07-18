@@ -53,7 +53,6 @@ void MainWindow::setupUiWidgets()
 
     ui->frequencyControlWidget->setRange(config::Frequency::Min, config::Frequency::Max);
     ui->frequencyControlWidget->setValue(config::Frequency::Default);
-    // ui->frequencyControlWidget->setSteps(1.0, 0.1);
     m_engine->setFrequency(ui->frequencyControlWidget->value()); // 초기값 엔진 전달
 }
 

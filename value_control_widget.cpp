@@ -29,8 +29,8 @@ ValueControlWidget::~ValueControlWidget()
 void ValueControlWidget::setRange(double min, double max)
 {
     ui->valueSpinBox->setRange(min, max);
-    m_firstSlideMax = max;
-    m_firstSlideMin = min;
+    m_fineTuningRangeMax = max;
+    m_fineTuningRangeMin = min;
     updateUiAppearance(); // 초기 UI 설정
 }
 
@@ -95,7 +95,7 @@ void ValueControlWidget::updateUiAppearance()
     } else {
         qDebug() << "UI Mode: Normal";
         ui->valueSpinBox->setSingleStep(m_singleStep);
-        ui->valueSlider->setRange(m_firstSlideMin, m_firstSlideMax);
+        ui->valueSlider->setRange(m_fineTuningRangeMin, m_fineTuningRangeMax);
         ui->valueSpinBox->setStyleSheet("");
     }
 
@@ -147,5 +147,5 @@ double ValueControlWidget::calculateNewValue(int sliderPosition) const
 
     // 최종 값의 오차 제거 및 범위 제한
     newValue = std::round(newValue * 100.0) / 100.0;
-    return std::clamp(newValue, m_firstSlideMin, m_firstSlideMax);
+    return std::clamp(newValue, m_fineTuningRangeMin, m_fineTuningRangeMax);
 }
