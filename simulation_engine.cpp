@@ -78,6 +78,19 @@ void SimulationEngine::setPhase(double degrees)
     }
 }
 
+void SimulationEngine::setTimeScale(double scale)
+{
+    if(scale > 0) {
+        m_timeScale = scale;
+        // updateCaptureTimer(); // 시간 비율이 바뀌었으니 실제 타이머 간격 재설정
+    }
+}
+
+void SimulationEngine::updateCaptureTimer()
+{
+    m_captureTimer.setInterval(static_cast<int>(m_captureIntervalsMs));
+}
+
 void SimulationEngine::setFrequency(double hertz)
 {
     if (hertz >= 0) {
@@ -86,6 +99,15 @@ void SimulationEngine::setFrequency(double hertz)
 }
 
 void SimulationEngine::captureData()
+{
+    advanceSimulationTime();
+    double currentVoltage = calculateCurrentVoltage();
+    addNewDataPoint(currentVoltage);
+
+    emit dataUpdated(m_data);
+}
+
+void SimulationEngine::advanceSimulationTime()
 {
     double realIntervalMs = static_cast<double>(m_captureTimer.interval());
     double simulationStepDouble = realIntervalMs / m_timeScale;
@@ -104,32 +126,23 @@ void SimulationEngine::captureData()
 
     // 실제 시간이 아닌 시뮬레이션 시간을 증가시킴
     m_simulationTimeMs += simulationStepInt;
+}
 
+double SimulationEngine::calculateCurrentVoltage()
+{
     // AC 전압 계산 V = A * sin(phase)
     // 위상을 라디안으로 변환하여 계산
     double phaseRadians = utils::degreesToRadians(m_phaseDegrees);
-    double currentVoltage = m_amplitude * sin(phaseRadians);
+    return m_amplitude * sin(phaseRadians);
+}
 
+void SimulationEngine::addNewDataPoint(double voltage)
+{
     // DataPoint 객체를 생성하여 저장
-    m_data.push_back({m_simulationTimeMs, currentVoltage});
+    m_data.push_back({m_simulationTimeMs, voltage});
 
     // 최대 개수 관리
     if(m_data.size() > static_cast<size_t>(m_maxDataSize)) {
         m_data.pop_front();
     }
-
-    emit dataUpdated(m_data);
-}
-
-void SimulationEngine::setTimeScale(double scale)
-{
-    if(scale > 0) {
-        m_timeScale = scale;
-        // updateCaptureTimer(); // 시간 비율이 바뀌었으니 실제 타이머 간격 재설정
-    }
-}
-
-void SimulationEngine::updateCaptureTimer()
-{
-    m_captureTimer.setInterval(static_cast<int>(m_captureIntervalsMs));
 }

@@ -36,7 +36,12 @@ private slots:
     void captureData();
 
 private:
+    void advanceSimulationTime();
+    double calculateCurrentVoltage();
+    void addNewDataPoint(double voltage);
+
     void updateCaptureTimer(); // 내부 헬퍼 함수
+
     QTimer m_captureTimer;
 
     std::deque<DataPoint> m_data;
