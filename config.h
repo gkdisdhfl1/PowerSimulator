@@ -53,6 +53,12 @@ inline QString sv_to_q(std::string_view sv) {
         static constexpr int maxValue = 1000;
     };
 
+    // 시간 비율 설정
+    struct TimeScale {
+        static constexpr double Min = 0.1;
+        static constexpr double Max = 100.0;
+        static constexpr double Default = 1.0;
+    };
 }
 
 namespace utils {

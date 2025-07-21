@@ -97,17 +97,15 @@ void SimulationEngine::setTimeScale(double scale)
     }
 }
 
+void SimulationEngine::setFrequency(double hertz)
+{
+    m_frequency = std::clamp(hertz, config::Frequency::Min, config::Frequency::Max);
+}
+
 void SimulationEngine::updateCaptureTimer()
 {
     // m_captureTimer.setInterval(static_cast<int>(std::round(m_captureIntervalsMs)));
     m_captureTimer.setInterval(std::round(m_captureIntervalsMs));
-}
-
-void SimulationEngine::setFrequency(double hertz)
-{
-    if (hertz >= 0) {
-        m_frequency = hertz;
-    }
 }
 
 void SimulationEngine::captureData()

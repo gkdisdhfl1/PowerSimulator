@@ -51,12 +51,11 @@ void MainWindow::setupUiWidgets()
     ui->voltageControlWidget->setRange(config::Amplitude::Min, config::Amplitude::Max);
     ui->voltageControlWidget->setValue(config::Amplitude::Default);
 
-    ui->timeScaleWidget->setRange(0.1, 100.0);
-    ui->timeScaleWidget->setValue(1.0);
+    ui->timeScaleWidget->setRange(config::TimeScale::Min, config::TimeScale::Max);
+    ui->timeScaleWidget->setValue(config::TimeScale::Default);
 
     ui->frequencyControlWidget->setRange(config::Frequency::Min, config::Frequency::Max);
     ui->frequencyControlWidget->setValue(config::Frequency::Default);
-    m_engine->setFrequency(ui->frequencyControlWidget->value()); // 초기값 엔진 전달
 }
 
 void MainWindow::createSignalSlotConnections()
