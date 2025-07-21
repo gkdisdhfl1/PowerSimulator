@@ -30,7 +30,6 @@ public slots:
 signals:
     void dataUpdated(const std::deque<DataPoint>& data);
     void runningStateChanged(bool isRunning);
-    void phaseUpdated(double newPhase);
 
 private slots:
     void captureData();

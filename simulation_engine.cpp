@@ -118,30 +118,26 @@ void SimulationEngine::captureData()
 
 void SimulationEngine::advanceSimulationTime()
 {
-    // double realIntervalMs = static_cast<double>(m_captureTimer.interval());
-    double realIntervalMs = m_captureIntervalsMs;
-    double simulationStepDouble = realIntervalMs / m_timeScale;
-    simulationStepDouble += m_simulationTimeRemainder;
-    qint64 simulationStepInt = static_cast<qint64>(simulationStepDouble);
-    m_simulationTimeRemainder = simulationStepDouble - static_cast<double>(simulationStepInt);
+    double step = (m_captureIntervalsMs / m_timeScale) + m_simulationTimeRemainder;
+    qint64 stepInt = static_cast<qint64>(step);
+    m_simulationTimeRemainder = step - stepInt;
 
     qDebug() << "---------------------------: ";
     qDebug() << "realIntervalMs (QTimer actual): " << m_captureTimer.interval();
-    qDebug() << "realIntervalMs: " << realIntervalMs;
-    qDebug() << "simulationStepDouble: " << simulationStepDouble;
-    qDebug() << "simulationStepInt: " << simulationStepInt;
+    qDebug() << "realIntervalMs: " << m_captureIntervalsMs;
+    qDebug() << "step: " << step;
+    qDebug() << "stepInt: " << stepInt;
     qDebug() << "m_simulationTimeRemainder: " << m_simulationTimeRemainder;
 
     // 위상 업데이트
-    double stepSec = (simulationStepDouble - m_simulationTimeRemainder) / 1000.0;
+    double stepSec = (step - m_simulationTimeRemainder) / 1000.0;
     double degreesPerInterval = m_frequency * 360.0 * stepSec;
     m_phaseDegrees += degreesPerInterval;
     m_phaseDegrees = std::fmod(m_phaseDegrees, 360.0);
-    emit phaseUpdated(m_phaseDegrees);
 
 
     // 실제 시간이 아닌 시뮬레이션 시간을 증가시킴
-    m_simulationTimeMs += simulationStepInt;
+    m_simulationTimeMs += stepInt;
 }
 
 double SimulationEngine::calculateCurrentVoltage()
