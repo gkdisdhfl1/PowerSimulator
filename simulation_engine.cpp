@@ -8,7 +8,7 @@ SimulationEngine::SimulationEngine()
     , m_maxDataSize(config::Simulation::DefaultDataSize)
     , m_amplitude(config::Amplitude::Default)
     , m_frequency(config::Frequency::Default) // 기본 주파수 1.0 Hz
-    , m_phaseDegrees(0.0) // 기본 위상 0
+    , m_phaseRadians(0.0) // 기본 위상 0
     , m_accumulatedTime(0)
     , m_timeScale(1.0) // 기본 비율은 1.0
     , m_simulationTimeMs(0) // 시뮬레이션 시간은 0에서 시작
@@ -80,10 +80,13 @@ void SimulationEngine::setAmplitude(double amplitude)
 void SimulationEngine::setPhase(double degrees)
 {
     // 각도를 [0, 360) 범위로 정규화
-    m_phaseDegrees = std::fmod(degrees, 360.0);
-    if (m_phaseDegrees < 0) {
-        m_phaseDegrees += 360.0;
+    double normalizedDegrees = std::fmod(degrees, 360.0);
+    if (normalizedDegrees < 0) {
+        normalizedDegrees += 360.0;
     }
+
+    // 라디안으로 변환하여 내부에 저장
+    m_phaseRadians = utils::degreesToRadians(normalizedDegrees);
 }
 
 void SimulationEngine::setTimeScale(double scale)
@@ -116,6 +119,7 @@ void SimulationEngine::captureData()
     emit dataUpdated(m_data);
 }
 
+// 시간만 업데이트
 void SimulationEngine::advanceSimulationTime()
 {
     double step = (m_captureIntervalsMs / m_timeScale) + m_simulationTimeRemainder;
@@ -129,23 +133,20 @@ void SimulationEngine::advanceSimulationTime()
     qDebug() << "stepInt: " << stepInt;
     qDebug() << "m_simulationTimeRemainder: " << m_simulationTimeRemainder;
 
-    // 위상 업데이트
-    double stepSec = (step - m_simulationTimeRemainder) / 1000.0;
-    double degreesPerInterval = m_frequency * 360.0 * stepSec;
-    m_phaseDegrees += degreesPerInterval;
-    m_phaseDegrees = std::fmod(m_phaseDegrees, 360.0);
-
-
     // 실제 시간이 아닌 시뮬레이션 시간을 증가시킴
     m_simulationTimeMs += stepInt;
 }
 
 double SimulationEngine::calculateCurrentVoltage()
 {
+    // 현재 시뮬레이션 시간을 초 단위로 변환
+    const double currentTimeSec = m_simulationTimeMs / 1000.0;
+
+    // 현재 시간의 총 위상(라디안) 계산: 2 * pi * f * t + initial_phase_rad
+    const double currentPhaseRad = 2.0 * std::numbers::pi * m_frequency * currentTimeSec + m_phaseRadians;
+
     // AC 전압 계산 V = A * sin(phase)
-    // 위상을 라디안으로 변환하여 계산
-    double phaseRadians = utils::degreesToRadians(m_phaseDegrees);
-    return m_amplitude * sin(phaseRadians);
+    return m_amplitude * sin(currentPhaseRad);
 }
 
 void SimulationEngine::addNewDataPoint(double voltage)
