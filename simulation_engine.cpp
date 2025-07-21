@@ -96,7 +96,8 @@ void SimulationEngine::setTimeScale(double scale)
 
 void SimulationEngine::updateCaptureTimer()
 {
-    m_captureTimer.setInterval(static_cast<int>(std::round(m_captureIntervalsMs)));
+    // m_captureTimer.setInterval(static_cast<int>(std::round(m_captureIntervalsMs)));
+    m_captureTimer.setInterval(std::round(m_captureIntervalsMs));
 }
 
 void SimulationEngine::setFrequency(double hertz)
@@ -117,7 +118,8 @@ void SimulationEngine::captureData()
 
 void SimulationEngine::advanceSimulationTime()
 {
-    double realIntervalMs = static_cast<double>(m_captureTimer.interval());
+    // double realIntervalMs = static_cast<double>(m_captureTimer.interval());
+    double realIntervalMs = m_captureIntervalsMs;
     double simulationStepDouble = realIntervalMs / m_timeScale;
     simulationStepDouble += m_simulationTimeRemainder;
     qint64 simulationStepInt = static_cast<qint64>(simulationStepDouble);
