@@ -3,8 +3,6 @@
 
 #include <QDialog>
 
-class QDoubleSpinBox;
-
 namespace Ui {
 class SettingsDialog;
 }

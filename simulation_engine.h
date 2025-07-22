@@ -3,7 +3,6 @@
 
 #include <QObject>
 #include <QTimer>
-#include <QElapsedTimer>
 #include <deque>
 #include "data_point.h"
 

@@ -3,20 +3,22 @@
 #include "ui_graph_window.h"
 
 #include <QChartView>
+#include <QValueAxis>
+#include <QLineSeries>
+#include <QChart>
 #include <QDebug>
 #include <QGridLayout>
-#include <QLineSeries>
 #include <QPointF>
-#include <QValueAxis>
 #include <QVector>
 
 GraphWindow::GraphWindow(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::GraphWindow)
+    , m_chart(new QChart())
     , m_series(new QLineSeries(this)) // 부모를 지정하여 메모리 관리 위임
     , m_axisX(new QValueAxis(this))
     , m_axisY(new QValueAxis(this))
-    , m_chartView(new QChartView(&m_chart))
+    , m_chartView(new QChartView(m_chart))
     , m_graphWidthSec(config::GraphWidthSec::Default) // 그래프 폭 기본값으로 초기화
 {
     ui->setupUi(this);
@@ -36,6 +38,7 @@ GraphWindow::GraphWindow(QWidget *parent)
 
 GraphWindow::~GraphWindow()
 {
+    delete m_chart;
     delete ui;
 }
 
@@ -55,24 +58,24 @@ void GraphWindow::setGraphWidth(double width)
 void GraphWindow::setupChart()
 {
     // 차트 기본 설정
-    m_chart.setTitle(tr("실시간 전력 계측 시뮬레이션"));
-    m_chart.legend()->hide(); // 범례는 숨김
+    m_chart->setTitle(tr("실시간 전력 계측 시뮬레이션"));
+    m_chart->legend()->hide(); // 범례는 숨김
 
     // 시리즈를 차트에 추가
-    m_chart.addSeries(m_series);
+    m_chart->addSeries(m_series);
 
     // X축 설정
     m_axisX->setLabelFormat(tr("%.1f s")); // 소수점 첫째 자리까지 초 단위로 표시
     m_axisX->setTitleText(tr("시간 (s)"));
     m_axisX->setRange(0, m_graphWidthSec); // 초기 범위를 설정값으로
-    m_chart.addAxis(m_axisX, Qt::AlignBottom);
+    m_chart->addAxis(m_axisX, Qt::AlignBottom);
     m_series->attachAxis(m_axisX);
 
     // Y축 설정
     m_axisY->setLabelFormat(tr("%.2f V")); // 소수점 둘째 자리까지 V 단위로 표시
     m_axisY->setTitleText(tr("전압 (V)"));
     m_axisY->setRange(config::Amplitude::Min, config::Amplitude::Min);
-    m_chart.addAxis(m_axisY, Qt::AlignLeft);
+    m_chart->addAxis(m_axisY, Qt::AlignLeft);
     m_series->attachAxis(m_axisY);
 }
 
