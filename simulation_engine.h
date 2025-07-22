@@ -47,6 +47,7 @@ private:
     double m_amplitude; // 진폭 (최대 전압)
     double m_frequency; // 주파수 (Hz)
     double m_phaseRadians; // 위상 (라디안)
+    double m_currentPhse; // 현재 누적 위상
     qint64 m_accumulatedTime; // 총 경과 시간
 
     double m_timeScale;

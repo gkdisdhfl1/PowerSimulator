@@ -21,7 +21,7 @@ inline QString sv_to_q(std::string_view sv) {
 
     // 주파수 설정
     struct Frequency {
-        static constexpr double Min = 1.0;
+        static constexpr double Min = 0.0;
         static constexpr double Max = 100.0;
         static constexpr double Default = 1.0;
     };

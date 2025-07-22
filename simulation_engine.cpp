@@ -9,6 +9,7 @@ SimulationEngine::SimulationEngine()
     , m_amplitude(config::Amplitude::Default)
     , m_frequency(config::Frequency::Default) // 기본 주파수 1.0 Hz
     , m_phaseRadians(0.0) // 기본 위상 0
+    , m_currentPhse(0.0)
     , m_accumulatedTime(0)
     , m_timeScale(1.0) // 기본 비율은 1.0
     , m_simulationTimeMs(0) // 시뮬레이션 시간은 0에서 시작
@@ -110,26 +111,31 @@ void SimulationEngine::updateCaptureTimer()
 
 void SimulationEngine::captureData()
 {
-    advanceSimulationTime();
     double currentVoltage = calculateCurrentVoltage();
     addNewDataPoint(currentVoltage);
 
     emit dataUpdated(m_data);
+
+    // 다음 스텝을 위해 현재 진행 위상 업데이트
+    const double timeDeltaSec = (m_captureIntervalsMs / m_timeScale) / 1000.0;
+    const double phaseDelta = 2.0 * std::numbers::pi * m_frequency * timeDeltaSec;
+    m_phaseRadians = std::fmod(m_phaseRadians + phaseDelta, 2.0 * std::numbers::pi);
+
+    advanceSimulationTime();
 }
 
-// 시간만 업데이트
 void SimulationEngine::advanceSimulationTime()
 {
     double step = (m_captureIntervalsMs / m_timeScale) + m_simulationTimeRemainder;
     qint64 stepInt = static_cast<qint64>(step);
     m_simulationTimeRemainder = step - stepInt;
 
-    qDebug() << "---------------------------: ";
-    qDebug() << "realIntervalMs (QTimer actual): " << m_captureTimer.interval();
-    qDebug() << "realIntervalMs: " << m_captureIntervalsMs;
-    qDebug() << "step: " << step;
-    qDebug() << "stepInt: " << stepInt;
-    qDebug() << "m_simulationTimeRemainder: " << m_simulationTimeRemainder;
+    // qDebug() << "---------------------------: ";
+    // qDebug() << "realIntervalMs (QTimer actual): " << m_captureTimer.interval();
+    // qDebug() << "realIntervalMs: " << m_captureIntervalsMs;
+    // qDebug() << "step: " << step;
+    // qDebug() << "stepInt: " << stepInt;
+    // qDebug() << "m_simulationTimeRemainder: " << m_simulationTimeRemainder;
 
     // 실제 시간이 아닌 시뮬레이션 시간을 증가시킴
     m_simulationTimeMs += stepInt;
@@ -137,14 +143,8 @@ void SimulationEngine::advanceSimulationTime()
 
 double SimulationEngine::calculateCurrentVoltage()
 {
-    // 현재 시뮬레이션 시간을 초 단위로 변환
-    const double currentTimeSec = m_simulationTimeMs / 1000.0;
-
-    // 현재 시간의 총 위상(라디안) 계산: 2 * pi * f * t + initial_phase_rad
-    const double currentPhaseRad = 2.0 * std::numbers::pi * m_frequency * currentTimeSec + m_phaseRadians;
-
-    // AC 전압 계산 V = A * sin(phase)
-    return m_amplitude * sin(currentPhaseRad);
+    const double finalPhase = m_currentPhse + m_phaseRadians;
+    return m_amplitude * sin(finalPhase);
 }
 
 void SimulationEngine::addNewDataPoint(double voltage)
