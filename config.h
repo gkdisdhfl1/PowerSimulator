@@ -38,7 +38,7 @@ inline QString sv_to_q(std::string_view sv) {
     };
 
     // 그래프 설정
-    struct GraphWidthSec {
+    struct GraphWidth {
         static constexpr double Default = 10.0;
         static constexpr double Min = 0.01;
         static constexpr double Max = 300.0;

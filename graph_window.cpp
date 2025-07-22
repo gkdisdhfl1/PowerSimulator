@@ -22,7 +22,7 @@ GraphWindow::GraphWindow(QWidget *parent)
     , m_axisX(new QValueAxis(this))
     , m_axisY(new QValueAxis(this))
     , m_chartView(new QChartView(m_chart))
-    , m_graphWidthSec(config::GraphWidthSec::Default) // 그래프 폭 기본값으로 초기화
+    , m_graphWidthSec(config::GraphWidth::Default) // 그래프 폭 기본값으로 초기화
 {
     ui->setupUi(this);
 

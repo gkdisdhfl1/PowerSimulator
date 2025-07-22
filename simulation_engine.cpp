@@ -3,6 +3,8 @@
 #include <QDebug>
 #include <cmath>
 
+using namespace std::chrono_literals;
+
 SimulationEngine::SimulationEngine()
     : QObject()
     , m_maxDataSize(config::Simulation::DefaultDataSize)
@@ -16,9 +18,9 @@ SimulationEngine::SimulationEngine()
 {
     m_captureTimer.setTimerType(Qt::PreciseTimer);
 
-    double totalSamplesPerSecond = config::Simulation::DefaultSamplingCycles * config::Simulation::DefaultSamplesPerCycle;
-    // FPMilliseconds 타입으로 직접 초기화
-    m_captureIntervalsMs = FpMilliseconds(1000.0 / totalSamplesPerSecond);
+    const double samplingCycles = config::Simulation::DefaultSamplingCycles;
+    const double samplesPerCycle = config::Simulation::DefaultSamplesPerCycle;
+    m_captureIntervalsMs = 1.0s / (samplingCycles * samplesPerCycle);
 
     connect(&m_captureTimer, &QTimer::timeout, this, &SimulationEngine::captureData);
     updateCaptureTimer(); // 첫 타이머 간격 설정
@@ -65,7 +67,7 @@ void SimulationEngine::stop()
 void SimulationEngine::applySettings(double interval, int maxSize)
 {
     qDebug() << "interval = " << interval;
-    m_captureIntervalsMs = FpMilliseconds(interval * 1000); // 기본 간격 저장
+    m_captureIntervalsMs = FpSeconds(interval); // 기본 간격 저장
     m_maxDataSize = maxSize;
     updateCaptureTimer();
 
