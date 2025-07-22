@@ -127,3 +127,5 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
     m_axisX->setRange(minX, maxX);
     m_axisY->setRange(minY - y_padding, maxY + y_padding);
 }
+
+

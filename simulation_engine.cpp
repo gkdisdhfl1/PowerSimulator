@@ -94,7 +94,7 @@ void SimulationEngine::setTimeScale(double scale)
 {
     if(scale > 0) {
         m_timeScale = scale;
-        // updateCaptureTimer(); // 시간 비율이 바뀌었으니 실제 타이머 간격 재설정
+        updateCaptureTimer(); // 시간 비율이 바뀌었으니 실제 타이머 간격 재설정
     }
 }
 
@@ -105,8 +105,10 @@ void SimulationEngine::setFrequency(double hertz)
 
 void SimulationEngine::updateCaptureTimer()
 {
+    // 기본 캡처 간격에 시간 비율을 곱해서 실제 타이머 주기를 계산
+    const double scaledInterval = m_captureIntervalsMs * m_timeScale;
     // m_captureTimer.setInterval(static_cast<int>(std::round(m_captureIntervalsMs)));
-    m_captureTimer.setInterval(std::round(m_captureIntervalsMs));
+    m_captureTimer.setInterval(std::round(scaledInterval));
 }
 
 void SimulationEngine::captureData()
@@ -117,16 +119,16 @@ void SimulationEngine::captureData()
     emit dataUpdated(m_data);
 
     // 다음 스텝을 위해 현재 진행 위상 업데이트
-    const double timeDeltaSec = (m_captureIntervalsMs / m_timeScale) / 1000.0;
+    const double timeDeltaSec = m_captureIntervalsMs / 1000.0;
     const double phaseDelta = 2.0 * std::numbers::pi * m_frequency * timeDeltaSec;
-    m_phaseRadians = std::fmod(m_phaseRadians + phaseDelta, 2.0 * std::numbers::pi);
+    m_currentPhse = std::fmod(m_currentPhse + phaseDelta, 2.0 * std::numbers::pi);
 
     advanceSimulationTime();
 }
 
 void SimulationEngine::advanceSimulationTime()
 {
-    double step = (m_captureIntervalsMs / m_timeScale) + m_simulationTimeRemainder;
+    double step = m_captureIntervalsMs + m_simulationTimeRemainder;
     qint64 stepInt = static_cast<qint64>(step);
     m_simulationTimeRemainder = step - stepInt;
 
