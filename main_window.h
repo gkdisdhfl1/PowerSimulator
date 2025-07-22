@@ -4,7 +4,6 @@
 #include <QMainWindow>
 
 // 전방 선언
-class GraphWindow;
 class SettingsDialog;
 class SimulationEngine;
 class ValueControlWidget;
@@ -29,7 +28,6 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    GraphWindow *m_graphWindow;
     SettingsDialog *m_settingsDialog;
     SimulationEngine *m_engine;
 

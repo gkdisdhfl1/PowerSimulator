@@ -12,7 +12,7 @@
 #include <QVector>
 
 GraphWindow::GraphWindow(QWidget *parent)
-    : QDialog(parent)
+    : QWidget(parent)
     , ui(new Ui::GraphWindow)
     , m_chart(new QChart())
     , m_series(new QLineSeries(this)) // 부모를 지정하여 메모리 관리 위임

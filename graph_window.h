@@ -1,8 +1,8 @@
 #ifndef GRAPH_WINDOW_H
 #define GRAPH_WINDOW_H
 
-// #include <QWidget>
-#include <QDialog>
+#include <QWidget>
+// #include <QDialog>
 #include <deque>
 #include "data_point.h"
 
@@ -17,7 +17,7 @@ class GraphWindow;
 }
 QT_END_NAMESPACE
 
-class GraphWindow : public QDialog
+class GraphWindow : public QWidget
 {
     Q_OBJECT
 
