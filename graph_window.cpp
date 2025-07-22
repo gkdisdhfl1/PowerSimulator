@@ -10,6 +10,9 @@
 #include <QGridLayout>
 #include <QPointF>
 #include <QVector>
+#include <chrono>
+
+using FpSeconds = std::chrono::duration<double>;
 
 GraphWindow::GraphWindow(QWidget *parent)
     : QWidget(parent)
@@ -87,9 +90,9 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
     }
 
     // 최신 데이터 시간(그래프 오른쪽 끝)
-    double maxX = data.back().timestampMs / 1000.0;
+    const double maxX = std::chrono::duration_cast<FpSeconds>(data.back().timestamp).count();
     // 가장 오래된 시간 (그래프 왼쪽 끝)
-    double minX = maxX - m_graphWidthSec;
+    const double minX = maxX - m_graphWidthSec;
 
     QList<QPointF> visiblePoints;
     visiblePoints.reserve(data.size());
@@ -99,7 +102,7 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
 
     // 역순 순회 및 데이터 추출
     for(auto it = data.rbegin(); it != data.rend(); ++it) {
-        double currentX = it->timestampMs / 1000.0;
+        double currentX = std::chrono::duration_cast<FpSeconds>(it->timestamp).count();
 
         // 보이는 범위를 벗어났는지 체크
         if(currentX < minX)

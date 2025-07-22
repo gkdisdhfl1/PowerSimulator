@@ -11,13 +11,14 @@ SimulationEngine::SimulationEngine()
     , m_phaseRadians(0.0) // 기본 위상 0
     , m_currentPhse(0.0)
     , m_timeScale(1.0) // 기본 비율은 1.0
-    , m_simulationTimeMs(0) // 시뮬레이션 시간은 0에서 시작
-    , m_simulationTimeRemainder(0.0)
+    , m_captureIntervalsMs(0.0)
+    , m_simulationTimeNs(0)
 {
     m_captureTimer.setTimerType(Qt::PreciseTimer);
 
     double totalSamplesPerSecond = config::Simulation::DefaultSamplingCycles * config::Simulation::DefaultSamplesPerCycle;
-    m_captureIntervalsMs = 1000.0 / totalSamplesPerSecond;
+    // FPMilliseconds 타입으로 직접 초기화
+    m_captureIntervalsMs = FpMilliseconds(1000.0 / totalSamplesPerSecond);
 
     connect(&m_captureTimer, &QTimer::timeout, this, &SimulationEngine::captureData);
     updateCaptureTimer(); // 첫 타이머 간격 설정
@@ -64,7 +65,7 @@ void SimulationEngine::stop()
 void SimulationEngine::applySettings(double interval, int maxSize)
 {
     qDebug() << "interval = " << interval;
-    m_captureIntervalsMs = interval * 1000; // 기본 간격 저장
+    m_captureIntervalsMs = FpMilliseconds(interval * 1000); // 기본 간격 저장
     m_maxDataSize = maxSize;
     updateCaptureTimer();
 
@@ -107,9 +108,9 @@ void SimulationEngine::setFrequency(double hertz)
 void SimulationEngine::updateCaptureTimer()
 {
     // 기본 캡처 간격에 시간 비율을 곱해서 실제 타이머 주기를 계산
-    const double scaledInterval = m_captureIntervalsMs * m_timeScale;
+    const auto scaledInterval = m_captureIntervalsMs * m_timeScale;
     // m_captureTimer.setInterval(static_cast<int>(std::round(m_captureIntervalsMs)));
-    m_captureTimer.setInterval(std::round(scaledInterval));
+    m_captureTimer.setInterval(static_cast<int>(std::round(scaledInterval.count())));
 }
 
 void SimulationEngine::captureData()
@@ -120,8 +121,8 @@ void SimulationEngine::captureData()
     emit dataUpdated(m_data);
 
     // 다음 스텝을 위해 현재 진행 위상 업데이트
-    const double timeDeltaSec = m_captureIntervalsMs / 1000.0;
-    const double phaseDelta = 2.0 * std::numbers::pi * m_frequency * timeDeltaSec;
+    const FpSeconds timeDelta = m_captureIntervalsMs;
+    const double phaseDelta = 2.0 * std::numbers::pi * m_frequency * timeDelta.count();
     m_currentPhse = std::fmod(m_currentPhse + phaseDelta, 2.0 * std::numbers::pi);
 
     advanceSimulationTime();
@@ -129,9 +130,7 @@ void SimulationEngine::captureData()
 
 void SimulationEngine::advanceSimulationTime()
 {
-    double step = m_captureIntervalsMs + m_simulationTimeRemainder;
-    qint64 stepInt = static_cast<qint64>(step);
-    m_simulationTimeRemainder = step - stepInt;
+    m_simulationTimeNs += std::chrono::duration_cast<Nanoseconds>(m_captureIntervalsMs);
 
     // qDebug() << "---------------------------: ";
     // qDebug() << "realIntervalMs (QTimer actual): " << m_captureTimer.interval();
@@ -141,7 +140,6 @@ void SimulationEngine::advanceSimulationTime()
     // qDebug() << "m_simulationTimeRemainder: " << m_simulationTimeRemainder;
 
     // 실제 시간이 아닌 시뮬레이션 시간을 증가시킴
-    m_simulationTimeMs += stepInt;
 }
 
 double SimulationEngine::calculateCurrentVoltage()
@@ -153,9 +151,9 @@ double SimulationEngine::calculateCurrentVoltage()
 void SimulationEngine::addNewDataPoint(double voltage)
 {
     // DataPoint 객체를 생성하여 저장
-    qDebug() << "m_simulationTimeMs: " << m_simulationTimeMs;
+    qDebug() << "m_simulationTimeNs: " << m_simulationTimeNs;
     qDebug() << "voltage: " << voltage;
-    m_data.push_back({m_simulationTimeMs, voltage});
+    m_data.push_back({m_simulationTimeNs, voltage});
 
     // 최대 개수 관리
     if(m_data.size() > static_cast<size_t>(m_maxDataSize)) {

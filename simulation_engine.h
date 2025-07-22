@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QTimer>
 #include <deque>
+#include <chrono>
 #include "data_point.h"
 
 class SimulationEngine : public QObject
@@ -34,6 +35,10 @@ private slots:
     void captureData();
 
 private:
+    using FpSeconds = std::chrono::duration<double>;
+    using FpMilliseconds = std::chrono::duration<double, std::milli>;
+    using Nanoseconds = std::chrono::nanoseconds;
+
     void advanceSimulationTime();
     double calculateCurrentVoltage();
     void addNewDataPoint(double voltage);
@@ -50,9 +55,8 @@ private:
     double m_currentPhse; // 현재 누적 위상
 
     double m_timeScale;
-    double m_captureIntervalsMs;
-    qint64 m_simulationTimeMs;
-    double m_simulationTimeRemainder; // 오차 누적을 위한 변수
+    FpMilliseconds m_captureIntervalsMs; // 기본 캡처 간격 (double, ms)
+    Nanoseconds m_simulationTimeNs; // 시뮬레이션 누적 시간 (정수, ns)
 };
 
 #endif // SIMULATION_ENGINE_H
