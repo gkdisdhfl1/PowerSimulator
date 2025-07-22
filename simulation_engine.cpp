@@ -10,11 +10,12 @@ SimulationEngine::SimulationEngine()
     , m_frequency(config::Frequency::Default) // 기본 주파수 1.0 Hz
     , m_phaseRadians(0.0) // 기본 위상 0
     , m_currentPhse(0.0)
-    , m_accumulatedTime(0)
     , m_timeScale(1.0) // 기본 비율은 1.0
     , m_simulationTimeMs(0) // 시뮬레이션 시간은 0에서 시작
     , m_simulationTimeRemainder(0.0)
 {
+    m_captureTimer.setTimerType(Qt::PreciseTimer);
+
     double totalSamplesPerSecond = config::Simulation::DefaultSamplingCycles * config::Simulation::DefaultSamplesPerCycle;
     m_captureIntervalsMs = 1000.0 / totalSamplesPerSecond;
 
