@@ -9,10 +9,7 @@
 #include <QDebug>
 #include <QGridLayout>
 #include <QPointF>
-#include <QVector>
-#include <chrono>
 #include <ranges>
-
 
 GraphWindow::GraphWindow(QWidget *parent)
     : QWidget(parent)
@@ -90,17 +87,15 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
     }
 
     using FpSeconds = std::chrono::duration<double>;
-    auto to_qpointf = [](const DataPoint& p) {
-        return QPointF(std::chrono::duration_cast<FpSeconds>(p.timestamp).count(), p.voltage);
-    };
+
     // 최신 데이터 시간(그래프 오른쪽 끝)
-    const double maxX = to_qpointf(data.back()).x();
+    const double maxX = utils::to_qpointf(data.back()).x();
     // 가장 오래된 시간 (그래프 왼쪽 끝)
     const double minX = maxX - m_graphWidthSec;
 
     // 데이터처리 파이프라인
     auto visiblePointsView = data
-                               | std::views::transform(to_qpointf) // DataPoint를 QPointF로 변환
+                               | std::views::transform(utils::to_qpointf) // DataPoint를 QPointF로 변환
                                | std::views::filter([minX](const QPointF& p) { return p.x() >= minX;}); // 보이는 점만 필터링
 
     QList<QPointF> pointsList;

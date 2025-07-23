@@ -4,11 +4,14 @@
 #include <cmath>
 #include <QString>
 #include <string_view>
+#include <chrono>
+#include <QPointF>
+#include <data_point.h>
 
 namespace config {
     // std::string_view를 QString으로 변환하는 헬퍼 함수
-inline QString sv_to_q(std::string_view sv) {
-    return QString::fromUtf8(sv.data(), sv.size());
+    inline QString sv_to_q(std::string_view sv) {
+        return QString::fromUtf8(sv.data(), sv.size());
     }
 
     // 진폭 설정
@@ -62,9 +65,16 @@ inline QString sv_to_q(std::string_view sv) {
 }
 
 namespace utils {
+using FpSeconds = std::chrono::duration<double>;
+
     constexpr double degreesToRadians(double degrees) {
         return degrees * (std::numbers::pi / 180.0);
     }
+
+    auto to_qpointf = [](const DataPoint& p) {
+        const auto x = std::chrono::duration_cast<FpSeconds>(p.timestamp).count();
+        return QPointF(x, p.voltage);
+    };
 }
 
 #endif // CONFIG_H
