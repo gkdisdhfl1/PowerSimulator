@@ -1,10 +1,8 @@
 #include "main_window.h"
 #include "./ui_main_window.h"
 #include "config.h"
-#include "graph_window.h"
 #include "settings_dialog.h"
 #include "simulation_engine.h"
-#include "value_control_widget.h"
 
 MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     : QMainWindow(parent)

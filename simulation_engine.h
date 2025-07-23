@@ -4,7 +4,6 @@
 #include <QObject>
 #include <QTimer>
 #include <deque>
-#include <chrono>
 #include "data_point.h"
 
 class SimulationEngine : public QObject
@@ -52,7 +51,7 @@ private:
     double m_amplitude; // 진폭 (최대 전압)
     double m_frequency; // 주파수 (Hz)
     double m_phaseRadians; // 위상 (라디안)
-    double m_currentPhse; // 현재 누적 위상
+    double m_currentPhaseRadians; // 현재 누적 위상
 
     double m_timeScale;
     FpMilliseconds m_captureIntervalsMs; // 기본 캡처 간격 (double, ms)

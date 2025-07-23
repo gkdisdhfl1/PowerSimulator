@@ -8,17 +8,16 @@
 #include <QChart>
 #include <QDebug>
 #include <QGridLayout>
-#include <QPointF>
 #include <ranges>
 
 GraphWindow::GraphWindow(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::GraphWindow)
-    , m_chart(new QChart())
+    , m_chart(std::make_unique<QChart>())
     , m_series(new QLineSeries(this)) // 부모를 지정하여 메모리 관리 위임
     , m_axisX(new QValueAxis(this))
     , m_axisY(new QValueAxis(this))
-    , m_chartView(new QChartView(m_chart))
+    , m_chartView(new QChartView(m_chart.get()))
     , m_graphWidthSec(config::GraphWidth::Default) // 그래프 폭 기본값으로 초기화
 {
     ui->setupUi(this);
@@ -38,7 +37,6 @@ GraphWindow::GraphWindow(QWidget *parent)
 
 GraphWindow::~GraphWindow()
 {
-    delete m_chart;
     delete ui;
 }
 
@@ -114,10 +112,9 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
             y_padding = 5; // 최소 여백 확보
 
         // 계산된 범위로 축을 설정
-        m_axisX->setRange(minX, maxX);
         m_axisY->setRange(minY - y_padding, maxY + y_padding);
     }
-
+    m_axisX->setRange(minX, maxX);
 }
 
 

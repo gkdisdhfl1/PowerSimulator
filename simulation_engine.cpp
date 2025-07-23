@@ -1,9 +1,6 @@
 #include "simulation_engine.h"
 #include "config.h"
 #include <QDebug>
-#include <cmath>
-
-using namespace std::chrono_literals;
 
 SimulationEngine::SimulationEngine()
     : QObject()
@@ -11,11 +8,13 @@ SimulationEngine::SimulationEngine()
     , m_amplitude(config::Amplitude::Default)
     , m_frequency(config::Frequency::Default) // 기본 주파수 1.0 Hz
     , m_phaseRadians(0.0) // 기본 위상 0
-    , m_currentPhse(0.0)
+    , m_currentPhaseRadians(0.0)
     , m_timeScale(1.0) // 기본 비율은 1.0
     , m_captureIntervalsMs(0.0)
     , m_simulationTimeNs(0)
 {
+    using namespace std::chrono_literals;
+
     m_captureTimer.setTimerType(Qt::PreciseTimer);
 
     const double samplingCycles = config::Simulation::DefaultSamplingCycles;
@@ -125,7 +124,7 @@ void SimulationEngine::captureData()
     // 다음 스텝을 위해 현재 진행 위상 업데이트
     const FpSeconds timeDelta = m_captureIntervalsMs;
     const double phaseDelta = 2.0 * std::numbers::pi * m_frequency * timeDelta.count();
-    m_currentPhse = std::fmod(m_currentPhse + phaseDelta, 2.0 * std::numbers::pi);
+    m_currentPhaseRadians = std::fmod(m_currentPhaseRadians + phaseDelta, 2.0 * std::numbers::pi);
 
     advanceSimulationTime();
 }
@@ -133,20 +132,11 @@ void SimulationEngine::captureData()
 void SimulationEngine::advanceSimulationTime()
 {
     m_simulationTimeNs += std::chrono::duration_cast<Nanoseconds>(m_captureIntervalsMs);
-
-    // qDebug() << "---------------------------: ";
-    // qDebug() << "realIntervalMs (QTimer actual): " << m_captureTimer.interval();
-    // qDebug() << "realIntervalMs: " << m_captureIntervalsMs;
-    // qDebug() << "step: " << step;
-    // qDebug() << "stepInt: " << stepInt;
-    // qDebug() << "m_simulationTimeRemainder: " << m_simulationTimeRemainder;
-
-    // 실제 시간이 아닌 시뮬레이션 시간을 증가시킴
 }
 
 double SimulationEngine::calculateCurrentVoltage()
 {
-    const double finalPhase = m_currentPhse + m_phaseRadians;
+    const double finalPhase = m_currentPhaseRadians + m_phaseRadians;
     return m_amplitude * sin(finalPhase);
 }
 
