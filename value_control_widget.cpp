@@ -5,6 +5,7 @@
 ValueControlWidget::ValueControlWidget(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::ValueControlWidget)
+    , m_currentMode(Mode::Normal)
 {
     ui->setupUi(this);
 
@@ -56,17 +57,23 @@ void ValueControlWidget::setSteps(double singleStep, double fineStep)
 // event handler 구현
 void ValueControlWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
-    m_isFineTuningMode = !m_isFineTuningMode; // 상태 반전
-
-    ui->valueSlider->blockSignals(true);
-    updateUiAppearance(); // UI 모양 업데이트
-    syncSliderToValue(); // 새 모드에 맞게 슬라이더 위치 재설정
-    ui->valueSlider->blockSignals(false);
+    const Mode newMode = (m_currentMode == Mode::Normal) ? Mode::FineTuning : Mode::Normal;
+    setMode(newMode);
 
     QWidget::mouseDoubleClickEvent(event);
 }
 
 // --- private 구현 ---
+void ValueControlWidget::setMode(Mode newMode)
+{
+    m_currentMode = newMode;
+
+    ui->valueSlider->blockSignals(true);
+    updateUiAppearance();
+    syncSliderToValue();
+    ui->valueSlider->blockSignals(false);
+}
+
 void ValueControlWidget::onSpinBoxValueChanged(double value)
 {
     // 사용자가 직접 입력한 값으로 슬라이더 위치 동기화 및 외부 알림
@@ -87,16 +94,19 @@ void ValueControlWidget::onSliderMoved(int position)
 
 void ValueControlWidget::updateUiAppearance()
 {
-    if(m_isFineTuningMode) {
-        qDebug() << "UI Mode: Fine-tuning";
-        ui->valueSpinBox->setSingleStep(m_fineStep);
-        ui->valueSlider->setRange(0, 99);
-        ui->valueSpinBox->setStyleSheet("background-color: #e0f0ff;");
-    } else {
+    switch (m_currentMode) {
+    case Mode::Normal:
         qDebug() << "UI Mode: Normal";
         ui->valueSpinBox->setSingleStep(m_singleStep);
         ui->valueSlider->setRange(m_fineTuningRangeMin, m_fineTuningRangeMax);
         ui->valueSpinBox->setStyleSheet("");
+        break;
+    case Mode::FineTuning:
+        qDebug() << "UI Mode: Fine-tuning";
+        ui->valueSpinBox->setSingleStep(m_fineStep);
+        ui->valueSlider->setRange(0, 99);
+        ui->valueSpinBox->setStyleSheet("background-color: #e0f0ff;");
+        break;
     }
 
     ui->valueSlider->setSingleStep(1);
@@ -108,13 +118,17 @@ void ValueControlWidget::syncSliderToValue()
     double currentValue = ui->valueSpinBox->value();
     int newSliderValue;
 
-    if(m_isFineTuningMode) {
-        // 소수점 두 자리를 정수로 변환
-        double fracPart = std::abs(currentValue - std::trunc(currentValue));
-        newSliderValue = static_cast<int>(std::round(fracPart * 100.0));
-    } else {
+    switch (m_currentMode) {
+    case Mode::Normal:
         // 정수 부분만 사용
         newSliderValue = static_cast<int>(std::round(currentValue));
+        break;
+    case Mode::FineTuning: {
+        // 소수점 두 자리를 정수로 변환
+        double fracPart = getFractionalPart(currentValue);
+        newSliderValue = static_cast<int>(std::round(fracPart * 100.0));
+    }
+        break;
     }
 
     ui->valueSlider->blockSignals(true);
@@ -127,25 +141,37 @@ double ValueControlWidget::calculateNewValue(int sliderPosition) const
     double currentValue = ui->valueSpinBox->value();
     double newValue;
 
-    if(m_isFineTuningMode) {
-        // 집중 모드
-        double intPart = std::trunc(currentValue);
-        if(currentValue >= 0)
-            newValue = intPart + (static_cast<double>(sliderPosition) * 0.01);
-        else
-            newValue = intPart - (static_cast<double>(sliderPosition) * 0.01);
-    } else {
-        // 일반 모드
-        double fracPart = std::abs(currentValue - std::trunc(currentValue));
-        fracPart = std::round(fracPart * 100.0) / 100.0;
+    switch (m_currentMode) {
+    case Mode::Normal:
+        {
+            double fracPart = getFractionalPart(currentValue);
+            fracPart = std::round(fracPart * 100.0) / 100.0;
 
-        if(sliderPosition >= 0)
-            newValue = static_cast<double>(sliderPosition) + fracPart;
-        else
-            newValue = static_cast<double>(sliderPosition) - fracPart;
+            if(sliderPosition >= 0)
+                newValue = static_cast<double>(sliderPosition) + fracPart;
+            else
+                newValue = static_cast<double>(sliderPosition) - fracPart;
+        }
+            break;
+    case Mode::FineTuning:
+        {
+            double intPart = std::trunc(currentValue);
+            double finePart = static_cast<double>(sliderPosition) * 0.01;
+
+            if(currentValue >= 0)
+                newValue = intPart + finePart;
+            else
+                newValue = intPart - finePart;
+        }
+        break;
     }
 
     // 최종 값의 오차 제거 및 범위 제한
     newValue = std::round(newValue * 100.0) / 100.0;
     return std::clamp(newValue, m_fineTuningRangeMin, m_fineTuningRangeMax);
+}
+
+inline double ValueControlWidget::getFractionalPart(double value) const
+{
+    return std::abs(std::fmod(value, 1.0));
 }

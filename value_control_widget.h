@@ -15,6 +15,11 @@ public:
     explicit ValueControlWidget(QWidget *parent = nullptr);
     ~ValueControlWidget();
 
+    enum class Mode {
+        Normal,
+        FineTuning
+    };
+
     void setRange(double min, double max);
     void setValue(double value);
     void setSteps(double singleStep, double fineStep);
@@ -35,17 +40,20 @@ signals:
 private:
     Ui::ValueControlWidget *ui;
 
+    void setMode(Mode mode); // 상태를 변경하고 UI를 업데이트하는 함수
+
     // UI를 현재 모드에 맞게 업데이트하는 내부 함수
     void updateUiAppearance();
     void syncSliderToValue();
     double calculateNewValue(int sliderPosition) const;
+    double getFractionalPart(double value) const;
 
 
     // 집중 모드 관련 멤버 변수들
-    bool m_isFineTuningMode = false;
+    Mode m_currentMode;
+
     double m_singleStep = 1.0;
     double m_fineStep = 0.01;
-
     double m_fineTuningRangeMin;
     double m_fineTuningRangeMax;
 
