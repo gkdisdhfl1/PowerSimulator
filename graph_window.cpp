@@ -11,8 +11,8 @@
 #include <QPointF>
 #include <QVector>
 #include <chrono>
+#include <ranges>
 
-using FpSeconds = std::chrono::duration<double>;
 
 GraphWindow::GraphWindow(QWidget *parent)
     : QWidget(parent)
@@ -89,46 +89,40 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
         return;
     }
 
+    using FpSeconds = std::chrono::duration<double>;
+    auto to_qpointf = [](const DataPoint& p) {
+        return QPointF(std::chrono::duration_cast<FpSeconds>(p.timestamp).count(), p.voltage);
+    };
     // 최신 데이터 시간(그래프 오른쪽 끝)
-    const double maxX = std::chrono::duration_cast<FpSeconds>(data.back().timestamp).count();
+    const double maxX = to_qpointf(data.back()).x();
     // 가장 오래된 시간 (그래프 왼쪽 끝)
     const double minX = maxX - m_graphWidthSec;
 
-    QList<QPointF> visiblePoints;
-    visiblePoints.reserve(data.size());
-    // Y축 min/max 초기값을 첫 뎅터로 설정
-    double minY = data.back().voltage;
-    double maxY = data.back().voltage;
+    // 데이터처리 파이프라인
+    auto visiblePointsView = data
+                               | std::views::transform(to_qpointf) // DataPoint를 QPointF로 변환
+                               | std::views::filter([minX](const QPointF& p) { return p.x() >= minX;}); // 보이는 점만 필터링
 
-    // 역순 순회 및 데이터 추출
-    for(auto it = data.rbegin(); it != data.rend(); ++it) {
-        double currentX = std::chrono::duration_cast<FpSeconds>(it->timestamp).count();
+    QList<QPointF> pointsList;
+    std::ranges::copy(visiblePointsView, std::back_inserter(pointsList));
+    m_series->replace(pointsList);
 
-        // 보이는 범위를 벗어났는지 체크
-        if(currentX < minX)
-            break;
+    // Y축 범위 계산
+    if(!pointsList.isEmpty()) {
+        auto [minY_it, maxY_it] = std::ranges::minmax_element(pointsList, {}, &QPointF::y);
+        double minY = minY_it->y();
+        double maxY = maxY_it->y();
 
-        // 보이는 점이므로 리스트에 추가
-        visiblePoints.append(QPointF(currentX, it->voltage));
+        // 그래프가 위아래에 꽉 끼지 않도록 약간의 여백 줌
+        double y_padding = (maxY - minY) * 0.1;
+        if (y_padding < 5)
+            y_padding = 5; // 최소 여백 확보
 
-        // Y축 최소/최대값 실시간 업데이트
-        if (it->voltage < minY) minY = it->voltage;
-        if (it->voltage > maxY) maxY = it->voltage;
+        // 계산된 범위로 축을 설정
+        m_axisX->setRange(minX, maxX);
+        m_axisY->setRange(minY - y_padding, maxY + y_padding);
     }
 
-    std::reverse(visiblePoints.begin(), visiblePoints.end());
-
-    // 시리즈의 데이터를 전달받은 포인트들로 한 번에 교체
-    m_series->replace(visiblePoints);
-
-    // 그래프가 위아래에 꽉 끼지 않도록 약간의 여백 줌
-    double y_padding = (maxY - minY) * 0.1;
-    if (y_padding < 5)
-        y_padding = 5; // 최소 여백 확보
-
-    // 계산된 범위로 축을 설정
-    m_axisX->setRange(minX, maxX);
-    m_axisY->setRange(minY - y_padding, maxY + y_padding);
 }
 
 
