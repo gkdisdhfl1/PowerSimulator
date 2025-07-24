@@ -6,9 +6,9 @@
 #include <deque>
 #include <memory>
 #include "data_point.h"
+#include "custom_chart_view.h"
 
 QT_BEGIN_NAMESPACE
-class QChart;
 class QLineSeries;
 class QValueAxis;
 class QChartView;
@@ -27,9 +27,14 @@ public:
     ~GraphWindow();
     double getGraphWidth() const;
 
+signals:
+    // 자동 스크롤 상태가 변경되었음을 알리는 시그널
+    void autoScrollToggled(bool enabled);
+
 public slots:
     void updateGraph(const std::deque<DataPoint>& data);
     void setGraphWidth(double width);
+    void toggleAutoScroll(bool enabled); // 자동 스크롤 토글 슬롯
 
 private:
     Ui::GraphWindow *ui;
@@ -40,10 +45,12 @@ private:
     QLineSeries *m_series;
     QValueAxis *m_axisX;
     QValueAxis *m_axisY;
-    QChartView * m_chartView;
+    CustomChartView *m_chartView;
 
     // 그래프 폭 조절
     double m_graphWidthSec;
+
+    bool m_isAutoScrollEnabled;
 };
 
 #endif // GRAPH_WINDOW_H

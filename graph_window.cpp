@@ -17,8 +17,9 @@ GraphWindow::GraphWindow(QWidget *parent)
     , m_series(new QLineSeries(this)) // 부모를 지정하여 메모리 관리 위임
     , m_axisX(new QValueAxis(this))
     , m_axisY(new QValueAxis(this))
-    , m_chartView(new QChartView(m_chart.get()))
+    , m_chartView(new CustomChartView(m_chart.get()))
     , m_graphWidthSec(config::GraphWidth::Default) // 그래프 폭 기본값으로 초기화
+    , m_isAutoScrollEnabled(true) // 자동 스크롤 활성화 상태로 시작
 {
     ui->setupUi(this);
 
@@ -29,6 +30,15 @@ GraphWindow::GraphWindow(QWidget *parent)
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->addWidget(m_chartView);
     this->setLayout(mainLayout);
+
+    // CustomChartView가 보내는 신호를 받아서 자동 스크롤을 끔
+    connect(m_chartView, &CustomChartView::userInteracted, this, [this]() {
+        if(m_isAutoScrollEnabled) {
+            toggleAutoScroll(false);
+            // MainWindow의 체크박스도 끄도록 시그널 보냄
+            emit autoScrollToggled(false);
+        }
+    });
 
     m_series->setPointsVisible(true); // 그래프에 점 표시
 
@@ -43,6 +53,11 @@ GraphWindow::~GraphWindow()
 double GraphWindow::getGraphWidth() const
 {
     return m_graphWidthSec;
+}
+
+void GraphWindow::toggleAutoScroll(bool enabled)
+{
+    m_isAutoScrollEnabled = enabled;
 }
 
 void GraphWindow::setGraphWidth(double width)
@@ -100,21 +115,23 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
     std::ranges::copy(visiblePointsView, std::back_inserter(pointsList));
     m_series->replace(pointsList);
 
-    // Y축 범위 계산
-    if(!pointsList.isEmpty()) {
-        auto [minY_it, maxY_it] = std::ranges::minmax_element(pointsList, {}, &QPointF::y);
-        double minY = minY_it->y();
-        double maxY = maxY_it->y();
+    // 자동 스크롤이  활성화된 경우에만 축 범위를 업데이트
+    if(m_isAutoScrollEnabled) {
+        // Y축 범위 계산
+        if(!pointsList.isEmpty()) {
+            auto [minY_it, maxY_it] = std::ranges::minmax_element(pointsList, {}, &QPointF::y);
+            double minY = minY_it->y();
+            double maxY = maxY_it->y();
 
-        // 그래프가 위아래에 꽉 끼지 않도록 약간의 여백 줌
-        double y_padding = (maxY - minY) * 0.1;
-        if (y_padding < 5)
-            y_padding = 5; // 최소 여백 확보
+            // 그래프가 위아래에 꽉 끼지 않도록 약간의 여백 줌
+            double y_padding = (maxY - minY) * 0.1;
+            if (y_padding < 5)
+                y_padding = 5; // 최소 여백 확보
 
-        // 계산된 범위로 축을 설정
-        m_axisY->setRange(minY - y_padding, maxY + y_padding);
+            // 계산된 범위로 축을 설정
+            m_axisY->setRange(minY - y_padding, maxY + y_padding);
+        }
+        m_axisX->setRange(minX, maxX);
     }
-    m_axisX->setRange(minX, maxX);
 }
-
 

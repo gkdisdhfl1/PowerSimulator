@@ -161,6 +161,16 @@
           <item row="4" column="1">
            <widget class="ValueControlWidget" name="frequencyControlWidget" native="true"/>
           </item>
+          <item row="5" column="0">
+           <widget class="QCheckBox" name="autoScrollCheckBox">
+            <property name="text">
+             <string>자동 스크롤</string>
+            </property>
+            <property name="checked">
+             <bool>true</bool>
+            </property>
+           </widget>
+          </item>
          </layout>
         </item>
        </layout>
