@@ -55,7 +55,7 @@ namespace config {
 
     // 시간 비율 설정
     struct TimeScale {
-        static constexpr double Min = 0.1;
+        static constexpr double Min = 1.0;
         static constexpr double Max = 100.0;
         static constexpr double Default = 1.0;
     };

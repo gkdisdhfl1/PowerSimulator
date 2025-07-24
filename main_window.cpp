@@ -15,6 +15,8 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     // UI 초기값 설정
     setupUiWidgets();
     createSignalSlotConnections();
+
+    ui->splitter->setStretchFactor(0, 2);
 }
 
 MainWindow::~MainWindow()
