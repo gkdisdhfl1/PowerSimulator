@@ -29,10 +29,21 @@ void MainWindow::on_settingButton_clicked()
 
     // 다이얼로그를 열기 전에 현재 설정값으로 초기화
     m_settingsDialog->setInitialValues(
+        m_engine->getSamplingCycles(),
+        m_engine->getSamplesPerCycle(),
         m_engine->getMaxDataSize(),
         ui->graphViewPlaceholder->getGraphWidth()
     );
-    m_settingsDialog->open();
+
+    if(m_settingsDialog->exec() == QDialog::Accepted) {
+        // ok를 눌렀다면, 다이얼로그에서 새로운 값들을 가져와 적용
+        m_engine->applySettings(
+            m_settingsDialog->getSamplingCycles(),
+            m_settingsDialog->getSamplesPerCycle(),
+            m_settingsDialog->getMaxSize());
+        ui->graphViewPlaceholder->setGraphWidth(m_settingsDialog->getGraphWidth());
+    }
+    // m_settingsDialog->open();
 }
 
 void MainWindow::onEngineRuninngStateChanged(bool isRunning)
@@ -70,14 +81,6 @@ void MainWindow::createSignalSlotConnections()
 
     // timeScaleWidget 값이 바뀌면 엔진의 setTimeScale 슬롯 호출
     connect(ui->timeScaleWidget, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setTimeScale);
-
-
-    // 설정 다이얼로그의 변경사항을 엔진과 그래프 윈도우에 각각 전달
-    connect(m_settingsDialog, &SettingsDialog::settingsApplied, this,
-            [this](double interval, int maxSize, double graphWidth) {
-                m_engine->applySettings(interval, maxSize);
-                ui->graphViewPlaceholder->setGraphWidth(graphWidth);
-            });
 
     connect(ui->frequencyControlWidget, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setFrequency);
     // ----------------------

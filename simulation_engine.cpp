@@ -7,19 +7,20 @@ SimulationEngine::SimulationEngine()
     , m_maxDataSize(config::Simulation::DefaultDataSize)
     , m_amplitude(config::Amplitude::Default)
     , m_frequency(config::Frequency::Default) // 기본 주파수 1.0 Hz
+    , m_timeScale(config::TimeScale::Default) // 기본 비율은 1.0
+    , m_samplingCycles(config::Sampling::DefaultSamplingCycles)
+    , m_samplesPerCycle(config::Sampling::DefaultSamplesPerCycle)
     , m_phaseRadians(0.0) // 기본 위상 0
     , m_currentPhaseRadians(0.0)
-    , m_timeScale(1.0) // 기본 비율은 1.0
     , m_captureIntervalsMs(0.0)
     , m_simulationTimeNs(0)
+
 {
     using namespace std::chrono_literals;
 
     m_captureTimer.setTimerType(Qt::PreciseTimer);
 
-    const double samplingCycles = config::Simulation::DefaultSamplingCycles;
-    const double samplesPerCycle = config::Simulation::DefaultSamplesPerCycle;
-    m_captureIntervalsMs = 1.0s / (samplingCycles * samplesPerCycle);
+    m_captureIntervalsMs = 1.0s / (m_samplingCycles * m_samplesPerCycle);
 
     connect(&m_captureTimer, &QTimer::timeout, this, &SimulationEngine::captureData);
     updateCaptureTimer(); // 첫 타이머 간격 설정
@@ -29,16 +30,23 @@ bool SimulationEngine::isRunning() const
 {
     return m_captureTimer.isActive();
 }
-
 double SimulationEngine::getCaptureIntervalSec() const
 {
     return m_captureTimer.interval() / 1000.0;
 }
-
 int SimulationEngine::getMaxDataSize() const
 {
     return m_maxDataSize;
 }
+double SimulationEngine::getSamplingCycles() const
+{
+    return m_samplingCycles;
+}
+int SimulationEngine::getSamplesPerCycle() const
+{
+    return m_samplesPerCycle;
+}
+
 
 void SimulationEngine::start()
 {
@@ -63,17 +71,26 @@ void SimulationEngine::stop()
     qDebug() << "Engine stopped.";
 }
 
-void SimulationEngine::applySettings(double interval, int maxSize)
+void SimulationEngine::applySettings(double samplingCycles, int samplesPerCycle, int maxSize)
 {
-    qDebug() << "interval = " << interval;
-    m_captureIntervalsMs = FpSeconds(interval); // 기본 간격 저장
+    using namespace std::chrono_literals;
+
+    m_samplingCycles = samplingCycles;
+    m_samplesPerCycle = samplesPerCycle;
     m_maxDataSize = maxSize;
+
+    // 새로운 설정값으로 capture interval 재계산
+    const double totalSamplesPerSecond = m_samplingCycles * m_samplesPerCycle;
+    m_captureIntervalsMs = 1.0s / totalSamplesPerSecond;
+
     updateCaptureTimer();
 
     while(m_data.size() > static_cast<size_t>(m_maxDataSize))
         m_data.pop_front();
 
-    qDebug() << "설정 반영 완료. Interval:" << interval << "s, Max Size:" << maxSize;
+    qDebug() << "설정 반영 완료. Sampling Cycles: " << m_samplingCycles
+             << ", SamplesPerCycle: " << m_samplesPerCycle
+             <<"s, Max Size:" << maxSize;
 }
 
 void SimulationEngine::setAmplitude(double amplitude)

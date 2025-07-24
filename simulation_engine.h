@@ -14,13 +14,15 @@ public:
 
     bool isRunning() const;
 
-    double getCaptureIntervalSec() const; // 현재 설정값을 읽음
+    double getSamplingCycles() const;
+    int getSamplesPerCycle() const;
     int getMaxDataSize() const;
+    double getCaptureIntervalSec() const; // 현재 설정값을 읽음
 
 public slots:
     void start();
     void stop();
-    void applySettings(double interval, int maxSize);
+    void applySettings(double samplingCycles, int samplesPerCycle, int maxSize);
     void setAmplitude(double amplitude);
     void setPhase(double degrees);
     void setFrequency(double hertz);
@@ -53,6 +55,8 @@ private:
     double m_phaseRadians; // 위상 (라디안)
     double m_currentPhaseRadians; // 현재 누적 위상
 
+    double m_samplingCycles;
+    double m_samplesPerCycle;
     double m_timeScale;
     FpMilliseconds m_captureIntervalsMs; // 기본 캡처 간격 (double, ms)
     Nanoseconds m_simulationTimeNs; // 시뮬레이션 누적 시간 (정수, ns)

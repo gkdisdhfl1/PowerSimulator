@@ -34,10 +34,6 @@ namespace config {
         static constexpr int DefaultDataSize = 100;
         static constexpr int MinDataSize = 1;
         static constexpr int MaxDataSize = 10000;
-        static constexpr double DefaultSamplingCycles = 1.0;
-        static constexpr int DefaultSamplesPerCycle = 10;
-        // static constexpr int DefaultIntervalMs = 100;
-        // static constexpr double MinIntervalSec = 0.001;
     };
 
     // 그래프 설정
@@ -50,7 +46,7 @@ namespace config {
 
     // 샘플링 설정
     struct Sampling {
-        static constexpr double DefaultSamplingCycles = 10;
+        static constexpr double DefaultSamplingCycles = 1.0;
         static constexpr int DefaultSamplesPerCycle = 10;
         static constexpr int MinValue = 1;
         static constexpr int maxValue = 1000;
