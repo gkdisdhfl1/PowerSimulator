@@ -53,9 +53,11 @@ void MainWindow::setupUiWidgets()
 {
     ui->voltageControlWidget->setRange(config::Amplitude::Min, config::Amplitude::Max);
     ui->voltageControlWidget->setValue(config::Amplitude::Default);
+    ui->voltageControlWidget->setSuffix(" V");
 
     ui->timeScaleWidget->setRange(config::TimeScale::Min, config::TimeScale::Max);
     ui->timeScaleWidget->setValue(config::TimeScale::Default);
+    ui->timeScaleWidget->setSuffix(" x");
 
     ui->samplingCyclesControl->setRange(config::Sampling::MinValue, config::Sampling::maxValue);
     ui->samplingCyclesControl->setValue(config::Sampling::DefaultSamplingCycles);
@@ -64,6 +66,7 @@ void MainWindow::setupUiWidgets()
 
     ui->frequencyControlWidget->setRange(config::Frequency::Min, config::Frequency::Max);
     ui->frequencyControlWidget->setValue(config::Frequency::Default);
+    ui->frequencyControlWidget->setSuffix(" Hz");
 }
 
 void MainWindow::createSignalSlotConnections()

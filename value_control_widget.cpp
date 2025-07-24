@@ -54,6 +54,11 @@ void ValueControlWidget::setSteps(double singleStep, double fineStep)
     updateUiAppearance();
 }
 
+void ValueControlWidget::setSuffix(const QString &suffix)
+{
+    ui->suffixLabel->setText(suffix);
+}
+
 // event handler 구현
 void ValueControlWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
