@@ -22,11 +22,13 @@ public:
 public slots:
     void start();
     void stop();
-    void applySettings(double samplingCycles, int samplesPerCycle, int maxSize);
+    void applySettings(int maxSize);
     void setAmplitude(double amplitude);
     void setPhase(double degrees);
     void setFrequency(double hertz);
     void setTimeScale(double rate);
+    void setSamplingcycles(double samplingCycles);
+    void setSamplesPerCycle(int samplesPerCycle);
 
 signals:
     void dataUpdated(const std::deque<DataPoint>& data);
@@ -43,8 +45,8 @@ private:
     void advanceSimulationTime();
     double calculateCurrentVoltage();
     void addNewDataPoint(double voltage);
-
-    void updateCaptureTimer(); // 내부 헬퍼 함수
+    void updateCaptureTimer();
+    void recalculateCaptureInterval();
 
     QTimer m_captureTimer;
 

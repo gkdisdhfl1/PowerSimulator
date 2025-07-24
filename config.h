@@ -49,7 +49,8 @@ namespace config {
         static constexpr double DefaultSamplingCycles = 1.0;
         static constexpr int DefaultSamplesPerCycle = 10;
         static constexpr int MinValue = 1;
-        static constexpr int maxValue = 1000;
+        static constexpr int maxValue = 100;
+        static constexpr double MaxSamplesPerSecond = 1000.0;
     };
 
     // 시간 비율 설정

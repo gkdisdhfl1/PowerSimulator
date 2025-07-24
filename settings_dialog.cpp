@@ -14,11 +14,6 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 {
     ui->setupUi(this);
 
-    ui->samplingCyclesDoubleSpinBox->setRange(1, 1000);
-    ui->samplingCyclesDoubleSpinBox->setValue(config::Sampling::DefaultSamplingCycles);
-    ui->samplesPerCycleSpinBox->setRange(1, 1000);
-    ui->samplesPerCycleSpinBox->setValue(config::Sampling::DefaultSamplesPerCycle);
-
     ui->maxSizeSpinBox->setRange(config::Simulation::MinDataSize, config::Simulation::MaxDataSize);
 
     ui->graphWidthSpinBox->setSuffix(" s");
@@ -32,17 +27,13 @@ SettingsDialog::~SettingsDialog()
     delete ui;
 }
 
-void SettingsDialog::setInitialValues(double samplingCycles, int samplesPerCycle, int maxSize, double graphWidth)
+void SettingsDialog::setInitialValues(int maxSize, double graphWidth)
 {
-    ui->samplingCyclesDoubleSpinBox->setValue(samplingCycles);
-    ui->samplesPerCycleSpinBox->setValue(samplesPerCycle);
     ui->maxSizeSpinBox->setValue(maxSize);
     ui->graphWidthSpinBox->setValue(graphWidth);
 }
 
 // --- getter 함수들 ---
-double SettingsDialog::getSamplingCycles() const { return ui->samplingCyclesDoubleSpinBox->value();}
-int SettingsDialog::getSamplesPerCycle() const { return ui->samplesPerCycleSpinBox->value();}
 int SettingsDialog::getMaxSize() const { return ui->maxSizeSpinBox->value();}
 double SettingsDialog::getGraphWidth() const { return ui->graphWidthSpinBox->value();}
 
@@ -50,14 +41,6 @@ double SettingsDialog::getGraphWidth() const { return ui->graphWidthSpinBox->val
 std::expected<void, SettingsDialog::ValidationError> SettingsDialog::validateInput() const
 {
     // config.h의 값들을 사용하여 유효성 검사
-    const double samplingCycles = ui->samplingCyclesDoubleSpinBox->value();
-    if(samplingCycles < config::Sampling::MinValue)
-        return std::unexpected(ValidationError::SamplingCyclesOutOfRange);
-
-    const double samplesPerCycle = ui->samplesPerCycleSpinBox->value();
-    if(samplesPerCycle < config::Sampling::MinValue)
-        return std::unexpected(ValidationError::SamplesPerCycleOutOfRange);
-
     const int maxSizeValue = ui->maxSizeSpinBox->value();
     if(maxSizeValue < config::Simulation::MinDataSize || maxSizeValue > config::Simulation::MaxDataSize)
         return std::unexpected(ValidationError::MaxSizeOutOfRange);
@@ -73,12 +56,7 @@ QString SettingsDialog::getErrorMessage(ValidationError error) const
 {
     std::string errorMessage;
     switch (error) {
-    case ValidationError::SamplingCyclesOutOfRange:
-        errorMessage = std::format("초 당 cycle은 {} 이상이어야 합니다.", config::Sampling::MinValue);
-        break;
-    case ValidationError::SamplesPerCycleOutOfRange:
-        errorMessage = std::format("cycle 당 sample은 {} 이상이어야 합니다.", config::Sampling::MinValue);
-        break;
+
     case ValidationError::MaxSizeOutOfRange:
         errorMessage = std::format("저장 크기는 {}와 {} 사이여야 합니다.", config::Simulation::MinDataSize, config::Simulation::MaxDataSize);
         break;
