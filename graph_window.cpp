@@ -41,6 +41,8 @@ GraphWindow::GraphWindow(QWidget *parent)
     });
 
     connect(m_chartView, &CustomChartView::stretchRequested, this, &GraphWindow::stretchGraph);
+    connect(m_chartView, &CustomChartView::mouseMoved, this, &GraphWindow::chartMouseMoved);
+    connect(m_chartView, &CustomChartView::mouseMoved, this, &GraphWindow::findNearestPoint);
 
     m_series->setPointsVisible(true); // 그래프에 점 표시
 
@@ -138,15 +140,15 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
                                | std::views::transform(utils::to_qpointf) // DataPoint를 QPointF로 변환
                                | std::views::filter([minX, maxX](const QPointF& p) { return p.x() >= minX && p.x() <= maxX;}); // 보이는 점만 필터링
 
-    QList<QPointF> pointsList;
-    std::ranges::copy(visiblePointsView, std::back_inserter(pointsList));
-    m_series->replace(pointsList);
+    m_currentPoints.clear();
+    std::ranges::copy(visiblePointsView, std::back_inserter(m_currentPoints));
+    m_series->replace(m_currentPoints);
 
     // 자동 스크롤이  활성화된 경우에만 축 범위를 업데이트
     if(m_isAutoScrollEnabled) {
         // Y축 범위 계산
-        if(!pointsList.isEmpty()) {
-            auto [minY_it, maxY_it] = std::ranges::minmax_element(pointsList, {}, &QPointF::y);
+        if(!m_currentPoints.isEmpty()) {
+            auto [minY_it, maxY_it] = std::ranges::minmax_element(m_currentPoints, {}, &QPointF::y);
             double minY = minY_it->y();
             double maxY = maxY_it->y();
 
@@ -162,5 +164,40 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
     }
 }
 
+void GraphWindow::findNearestPoint(const QPointF& chartPos)
+{
+    if(m_series->points().isEmpty()) {
+        return;
+    }
 
+    auto it = std::lower_bound(m_currentPoints.begin(), m_currentPoints.end(), chartPos.x(),
+                               [](const QPointF& p, double x) {
+        return p.x() < x;
+    });
+
+    //찾은 위치와 그 이전 위치 중 더 가까운 점을 최종 후보로 선택
+    if(it == m_currentPoints.begin()) {
+
+    } else if(it == m_currentPoints.end()) {
+        it = m_currentPoints.end() - 1;
+    } else {
+        if(std::abs((it - 1)->x() - chartPos.x()) < std::abs(it->x() - chartPos.x())) {
+            --it;
+        }
+    }
+
+    // 최종 선택된 점
+    const QPointF& nearestPoint = *it;
+
+    // 찾은 점이 커서와 화면상에서 너무 멀리 떨어져있는지 확인
+    const QPointF nearestPointScreenPos = m_chart->mapToPosition(nearestPoint, m_series);
+    const QPointF mouseScreenPos = m_chartView->mapFromGlobal(QCursor::pos());
+    const double pixelDistance = QLineF(nearestPointScreenPos, mouseScreenPos).length();
+
+    const double threshold = 20.0; // 20픽셀 이내 유효
+    if(pixelDistance > threshold)
+        return;
+
+    emit pointHovered(nearestPoint);
+}
 

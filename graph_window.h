@@ -30,12 +30,15 @@ public:
 signals:
     // 자동 스크롤 상태가 변경되었음을 알리는 시그널
     void autoScrollToggled(bool enabled);
+    void chartMouseMoved(const QPointF& point);
+    void pointHovered(const QPointF& point);
 
 public slots:
     void updateGraph(const std::deque<DataPoint>& data);
     void setGraphWidth(double width);
     void toggleAutoScroll(bool enabled); // 자동 스크롤 토글 슬롯
     void stretchGraph(double factor);
+    void findNearestPoint(const QPointF& chartPos);
 
 private:
     Ui::GraphWindow *ui;
@@ -47,6 +50,7 @@ private:
     QValueAxis *m_axisX;
     QValueAxis *m_axisY;
     CustomChartView *m_chartView;
+    QList<QPointF> m_currentPoints; // 현재 화면에 그려진 점들을 저장하는 리스트
 
     // 그래프 폭 조절
     double m_graphWidthSec;

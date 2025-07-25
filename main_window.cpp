@@ -26,8 +26,8 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_settingButton_clicked()
 {
-    qDebug() << "getMaxDataSize() = " << m_engine->getMaxDataSize();
-    qDebug() << "getGraphWidth() = " << ui->graphViewPlaceholder->getGraphWidth();
+    // qDebug() << "getMaxDataSize() = " << m_engine->getMaxDataSize();
+    // qDebug() << "getGraphWidth() = " << ui->graphViewPlaceholder->getGraphWidth();
 
     // 다이얼로그를 열기 전에 현재 설정값으로 초기화
     m_settingsDialog->setInitialValues(
@@ -99,7 +99,12 @@ void MainWindow::createSignalSlotConnections()
     connect(m_engine, &SimulationEngine::dataUpdated, ui->graphViewPlaceholder, &GraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::runningStateChanged, this, &MainWindow::onEngineRuninngStateChanged);
 
-    //
+    // 그래프 관련
     connect(ui->autoScrollCheckBox, &QCheckBox::toggled, ui->graphViewPlaceholder, &GraphWindow::toggleAutoScroll);
     connect(ui->graphViewPlaceholder, &GraphWindow::autoScrollToggled, ui->autoScrollCheckBox, &QCheckBox::setChecked);
+    connect(ui->graphViewPlaceholder, &GraphWindow::pointHovered, this, [this](const QPointF& point) {
+        std::string coordText = std::format("시간: {:.3f} s, 전압: {:.3f} V", point.x(), point.y());
+        if(ui->statusbar)
+            ui->statusbar->showMessage(QString::fromStdString(coordText));
+    });
 }

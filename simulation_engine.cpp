@@ -78,7 +78,7 @@ void SimulationEngine::applySettings(int maxSize)
     m_maxDataSize = maxSize;
 
     while(m_data.size() > static_cast<size_t>(m_maxDataSize)) {
-        qDebug() << "--- 이전 데이터 삭제중 ---";
+        // qDebug() << "--- 이전 데이터 삭제중 ---";
         m_data.pop_front();
     }
     qDebug() << "설정 반영 완료. Max Size: " << maxSize;
@@ -174,13 +174,13 @@ double SimulationEngine::calculateCurrentVoltage()
 void SimulationEngine::addNewDataPoint(double voltage)
 {
     // DataPoint 객체를 생성하여 저장
-    qDebug() << "m_simulationTimeNs: " << m_simulationTimeNs;
-    qDebug() << "voltage: " << voltage;
+    // qDebug() << "m_simulationTimeNs: " << m_simulationTimeNs;
+    // qDebug() << "voltage: " << voltage;
     m_data.push_back({m_simulationTimeNs, voltage});
 
     // 최대 개수 관리
     if(m_data.size() > static_cast<size_t>(m_maxDataSize)) {
-        qDebug() << " ---- data{" << m_simulationTimeNs << ", " << voltage << "} 삭제 ----";
+        // qDebug() << " ---- data{" << m_simulationTimeNs << ", " << voltage << "} 삭제 ----";
         m_data.pop_front();
     }
 }

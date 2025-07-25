@@ -28,6 +28,12 @@ void CustomChartView::mousePressEvent(QMouseEvent *event)
 
 void CustomChartView::mouseMoveEvent(QMouseEvent *event)
 {
+    if(!chart()->series().isEmpty()) {
+        // 화면 좌표를 차트의 값 좌표로 변호나
+        const QPointF chartPoint = chart()->mapToValue(event->pos(), chart()->series().first());
+        emit mouseMoved(chartPoint);
+    }
+
     if(m_isPanning) {
         // 패닝 로직
         QPoint delta = event->pos() - m_panStartPos;
