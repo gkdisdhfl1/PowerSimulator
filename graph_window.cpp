@@ -72,6 +72,9 @@ void GraphWindow::setGraphWidth(double width)
 
 void GraphWindow::stretchGraph(double factor)
 {
+    if(!m_isAutoScrollEnabled)
+        return;
+
     // 현재 그래프 폭에 팩터를 곱하여 새로운 폭을 계산
     m_graphWidthSec /= factor;
 
@@ -113,17 +116,27 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
         return;
     }
 
-    using FpSeconds = std::chrono::duration<double>;
+    // using FpSeconds = std::chrono::duration<double>;
 
-    // 최신 데이터 시간(그래프 오른쪽 끝)
-    const double maxX = utils::to_qpointf(data.back()).x();
-    // 가장 오래된 시간 (그래프 왼쪽 끝)
-    const double minX = maxX - m_graphWidthSec;
+    double minX, maxX;
+    auto *axisX = static_cast<QValueAxis*>(m_chart->axes(Qt::Horizontal).first());
+
+    // 현재 모드에 따라 필터링할 X축의 범위를 결정
+    if(m_isAutoScrollEnabled) {
+        // 최신 데이터 시간(그래프 오른쪽 끝)
+        maxX = utils::to_qpointf(data.back()).x();
+        // 가장 오래된 시간 (그래프 왼쪽 끝)
+        minX = maxX - m_graphWidthSec;
+    } else {
+        // 고정 줌 모드: 현재 축에 설정된 범위를 그대로 사용
+        minX = axisX->min();
+        maxX = axisX->max();
+    }
 
     // 데이터처리 파이프라인
     auto visiblePointsView = data
                                | std::views::transform(utils::to_qpointf) // DataPoint를 QPointF로 변환
-                               | std::views::filter([minX](const QPointF& p) { return p.x() >= minX;}); // 보이는 점만 필터링
+                               | std::views::filter([minX, maxX](const QPointF& p) { return p.x() >= minX && p.x() <= maxX;}); // 보이는 점만 필터링
 
     QList<QPointF> pointsList;
     std::ranges::copy(visiblePointsView, std::back_inserter(pointsList));
