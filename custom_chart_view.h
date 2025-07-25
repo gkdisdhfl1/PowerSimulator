@@ -14,6 +14,7 @@ public:
 signals:
     // 사용자가 그래프와 상호작용했음을 외부에 알리는 시그널
     void userInteracted();
+    void stretchRequested(double factor);
 
 protected:
     // 재정의할 마우스 및 휠 이벤트 헨들러
@@ -25,6 +26,7 @@ protected:
 
 private:
     bool m_isPanning;
+    bool m_ctrlIsPressed;
     QPoint m_panStartPos;
 };
 

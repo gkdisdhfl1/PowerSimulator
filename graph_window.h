@@ -35,6 +35,7 @@ public slots:
     void updateGraph(const std::deque<DataPoint>& data);
     void setGraphWidth(double width);
     void toggleAutoScroll(bool enabled); // 자동 스크롤 토글 슬롯
+    void stretchGraph(double factor);
 
 private:
     Ui::GraphWindow *ui;

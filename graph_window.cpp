@@ -40,6 +40,8 @@ GraphWindow::GraphWindow(QWidget *parent)
         }
     });
 
+    connect(m_chartView, &CustomChartView::stretchRequested, this, &GraphWindow::stretchGraph);
+
     m_series->setPointsVisible(true); // 그래프에 점 표시
 
     setupChart();
@@ -66,6 +68,18 @@ void GraphWindow::setGraphWidth(double width)
         m_graphWidthSec = width;
         qDebug() << "그래프 폭 설정 완료. " << m_graphWidthSec << "s";
     }
+}
+
+void GraphWindow::stretchGraph(double factor)
+{
+    // 현재 그래프 폭에 팩터를 곱하여 새로운 폭을 계산
+    m_graphWidthSec /= factor;
+
+    // 그래프 폭이 너무 크거나 작아지지 않도록 범위 제한
+    m_graphWidthSec = std::clamp(m_graphWidthSec, config::GraphWidth::Min, config::GraphWidth::Max);
+
+    // updateGraph를 즉시 호출하지 않음.
+    qDebug() << "new graph width: " << m_graphWidthSec << "s";
 }
 
 void GraphWindow::setupChart()
@@ -134,4 +148,6 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
         m_axisX->setRange(minX, maxX);
     }
 }
+
+
 

@@ -1,9 +1,12 @@
 #include "custom_chart_view.h"
 #include <QtCharts/QChart>
 #include <QMouseEvent>
+#include <QtCharts/QValueAxis>
+#include <QtCharts/QAbstractSeries>
 
 CustomChartView::CustomChartView(QChart *chart, QWidget *parent) : QChartView(chart, parent)
     , m_isPanning(false)
+    , m_ctrlIsPressed(false)
 {
 
 }
@@ -51,12 +54,46 @@ void CustomChartView::mouseReleaseEvent(QMouseEvent *event)
 
 void CustomChartView::wheelEvent(QWheelEvent *event)
 {
-    emit userInteracted(); // 휠 조작도 사용자 조작
-
-    // 휠 각도에 따라 줌 계산
     const double factor = event->angleDelta().y() > 0 ? 1.1 : 0.9;
-    chart()->zoom(factor);
+    const Qt::KeyboardModifiers modifier = event->modifiers();
 
+    if(modifier == Qt::ShiftModifier) {
+        // shift + 휠: 스트레칭 줌
+        emit stretchRequested(factor);
+    } else if(modifier == Qt::ControlModifier) {
+        // ctrl + 휠: 고정 줌(자동 스크롤 해제)
+        emit userInteracted();
+
+        // 차트 축 목록에서 첫 번째 수평 축을 찾음
+        QValueAxis *axisX = nullptr;
+        for (auto axis : chart()->axes(Qt::Horizontal)) {
+            axisX = qobject_cast<QValueAxis*>(axis);
+            if(axisX) break; // 첫 번째 QValueAxis를 찾으면 중단
+        }
+
+        if(chart()->series().isEmpty()) return;
+
+        const double currentMin = axisX->min();
+        const double currentMax = axisX->max();
+        const double currentWidth = currentMax - currentMin;
+
+        // 마우스 커서 위치를 기준으로 새로운 범위 계산
+        const QPointF mousePos = event->position();
+        // 첫 번째 시리즈를 기준으로 값을 변환
+        const QPointF chartPos = chart()->mapToValue(mousePos, chart()->series().first());
+        const double center = chartPos.x();
+
+        const double newWidth = currentWidth / factor;
+        const double newMin = center - (center - currentMin) / currentWidth * newWidth;
+        const double newMax = center + (currentMax - center) / currentWidth * newWidth;
+
+        axisX->setRange(newMin, newMax);
+    } else {
+        emit userInteracted();
+
+        // 휠 각도에 따라 줌 계산
+        chart()->zoom(factor);
+    }
     event->accept();
 }
 

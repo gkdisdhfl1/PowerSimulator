@@ -77,9 +77,10 @@ void SimulationEngine::applySettings(int maxSize)
 
     m_maxDataSize = maxSize;
 
-    while(m_data.size() > static_cast<size_t>(m_maxDataSize))
+    while(m_data.size() > static_cast<size_t>(m_maxDataSize)) {
+        qDebug() << "--- 이전 데이터 삭제중 ---";
         m_data.pop_front();
-
+    }
     qDebug() << "설정 반영 완료. Max Size: " << maxSize;
 }
 
@@ -179,6 +180,7 @@ void SimulationEngine::addNewDataPoint(double voltage)
 
     // 최대 개수 관리
     if(m_data.size() > static_cast<size_t>(m_maxDataSize)) {
+        qDebug() << " ---- data{" << m_simulationTimeNs << ", " << voltage << "} 삭제 ----";
         m_data.pop_front();
     }
 }
