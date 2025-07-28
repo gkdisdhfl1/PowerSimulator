@@ -39,6 +39,7 @@ void CustomChartView::mouseMoveEvent(QMouseEvent *event)
         QPoint delta = event->pos() - m_panStartPos;
         chart()->scroll(-delta.x(), delta.y());
         m_panStartPos = event->pos();
+        emit userInteracted();
         event->accept();
     } else {
         // 패닝 중이 아닐 때는 부모 클래스의 동작을 따름

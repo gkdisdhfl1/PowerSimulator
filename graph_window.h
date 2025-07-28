@@ -32,6 +32,7 @@ signals:
     void autoScrollToggled(bool enabled);
     void chartMouseMoved(const QPointF& point);
     void pointHovered(const QPointF& point);
+    void redrawNeeded();
 
 public slots:
     void updateGraph(const std::deque<DataPoint>& data);
@@ -39,6 +40,7 @@ public slots:
     void toggleAutoScroll(bool enabled); // 자동 스크롤 토글 슬롯
     void stretchGraph(double factor);
     void findNearestPoint(const QPointF& chartPos);
+
 
 private:
     Ui::GraphWindow *ui;

@@ -29,6 +29,7 @@ public slots:
     void setTimeScale(double rate);
     void setSamplingcycles(double samplingCycles);
     void setSamplesPerCycle(int samplesPerCycle);
+    void onRedrawRequest();
 
 signals:
     void dataUpdated(const std::deque<DataPoint>& data);

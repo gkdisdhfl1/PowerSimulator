@@ -38,6 +38,7 @@ GraphWindow::GraphWindow(QWidget *parent)
             // MainWindow의 체크박스도 끄도록 시그널 보냄
             emit autoScrollToggled(false);
         }
+        emit redrawNeeded();
     });
 
     connect(m_chartView, &CustomChartView::stretchRequested, this, &GraphWindow::stretchGraph);
@@ -110,6 +111,8 @@ void GraphWindow::setupChart()
     m_chart->addAxis(m_axisY, Qt::AlignLeft);
     m_series->attachAxis(m_axisY);
 }
+
+
 
 void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
 {

@@ -205,3 +205,10 @@ void SimulationEngine::recalculateCaptureInterval()
 
     updateCaptureTimer();
 }
+
+void SimulationEngine::onRedrawRequest()
+{
+    // 현재 가지고 있는 m_data를 한번 더 보냄
+    if(!m_data.empty())
+        emit dataUpdated(m_data);
+}
