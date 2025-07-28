@@ -71,11 +71,16 @@ void CustomChartView::wheelEvent(QWheelEvent *event)
         emit userInteracted();
 
         // 차트 축 목록에서 첫 번째 수평 축을 찾음
+        const auto& horizontalAxes = chart()->axes(Qt::Horizontal);
         QValueAxis *axisX = nullptr;
-        for (auto axis : chart()->axes(Qt::Horizontal)) {
+        for (auto axis : horizontalAxes) {
             axisX = qobject_cast<QValueAxis*>(axis);
             if(axisX) break; // 첫 번째 QValueAxis를 찾으면 중단
         }
+
+        // nullptr 체크
+        if(!axisX)
+            return; // 유효한 X축이 없으면 아무것도 하지 않고 반환.
 
         if(chart()->series().isEmpty()) return;
 
