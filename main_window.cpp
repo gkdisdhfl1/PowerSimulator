@@ -24,7 +24,7 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::on_settingButton_clicked()
+void MainWindow::handleSettingButtonClicked()
 {
     // qDebug() << "getMaxDataSize() = " << m_engine->getMaxDataSize();
     // qDebug() << "getGraphWidth() = " << ui->graphViewPlaceholder->getGraphWidth();
@@ -73,6 +73,8 @@ void MainWindow::setupUiWidgets()
 
 void MainWindow::createSignalSlotConnections()
 {
+    connect(ui->settingButton, &QPushButton::clicked, this, &MainWindow::handleSettingButtonClicked);
+
     // ---- UI 이벤트 -> SimulationEngine 슬롯 ----
     connect(ui->startStopButton, &QPushButton::clicked, this, [this]() {
         if (m_engine->isRunning()) {

@@ -23,7 +23,7 @@ public:
     ~MainWindow();
 
 private slots:
-    void on_settingButton_clicked();
+    void handleSettingButtonClicked();
     void onEngineRuninngStateChanged(bool isRunning);
 
 private:
