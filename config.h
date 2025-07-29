@@ -61,7 +61,7 @@ namespace config {
     };
 
     // 사용자 상호작용 관련 상수
-    namespace Interaction {
+    struct Interaction {
         // 줌 팩터
         struct Zoom {
             static constexpr double FactorIn = 1.1;
@@ -72,7 +72,16 @@ namespace config {
         struct Proximity {
             static constexpr double Threshold = 20.0;
         };
-    }
+    };
+
+    // 그래프 시각적 표현 관련 상수
+    struct View {
+        // Y축 패딩 설정
+        struct Padding {
+            static constexpr double Ratio = 0.1;
+            static constexpr double Min = 5.0;
+        };
+    };
 }
 
 namespace utils {

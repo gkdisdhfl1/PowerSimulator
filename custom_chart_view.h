@@ -2,7 +2,6 @@
 #define CUSTOM_CHART_VIEW_H
 
 #include <QtCharts/QChartView>
-#include <QPointF>
 
 class CustomChartView : public QChartView
 {

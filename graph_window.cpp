@@ -156,9 +156,9 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
             double maxY = maxY_it->y();
 
             // 그래프가 위아래에 꽉 끼지 않도록 약간의 여백 줌
-            double y_padding = (maxY - minY) * 0.1;
-            if (y_padding < 5)
-                y_padding = 5; // 최소 여백 확보
+            double y_padding = (maxY - minY) * config::View::Padding::Ratio;
+            if (y_padding < config::View::Padding::Min)
+                y_padding = config::View::Padding::Min; // 최소 여백 확보
 
             // 계산된 범위로 축을 설정
             m_axisY->setRange(minY - y_padding, maxY + y_padding);
