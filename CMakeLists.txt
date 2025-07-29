@@ -33,6 +33,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         value_control_widget.h value_control_widget.cpp value_control_widget.ui
         custom_chart_view.h
         custom_chart_view.cpp
+        resources.qrc
 
     )
 # Define target properties for Android with Qt 6 as:

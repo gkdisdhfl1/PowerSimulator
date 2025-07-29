@@ -1,0 +1,9 @@
+/*
+ * Minimal Stylesheet for ValueControlWidget
+ * Only defines the background color for fine-tuning mode.
+ */
+
+/* FineTuning Mode Background for the SpinBox */
+QDoubleSpinBox[fineTuning="true"] {
+    background-color: #e0f0ff; /* Light blue background */
+}

@@ -1,6 +1,7 @@
 #include "value_control_widget.h"
 #include "ui_value_control_widget.h"
 #include <QDebug>
+#include <QStyle>
 
 ValueControlWidget::ValueControlWidget(QWidget *parent)
     : QWidget(parent)
@@ -37,7 +38,9 @@ void ValueControlWidget::setRange(double min, double max)
 
 void ValueControlWidget::setValue(double value)
 {
-    ui->valueSpinBox->setValue(value);
+    // 값의 범위를 위젯의 min/max 값으로 제한
+    const double clampedValue = std::clamp(value, ui->valueSpinBox->minimum(), ui->valueSpinBox->maximum());
+    ui->valueSpinBox->setValue(clampedValue);
     syncSliderToValue(); // 값 설정 후 슬라이더 위치 동기화
 }
 
@@ -73,6 +76,13 @@ void ValueControlWidget::setMode(Mode newMode)
 {
     m_currentMode = newMode;
 
+    // 동적 속성 설정 코드
+    ui->valueSpinBox->setProperty("fineTuning", (newMode == Mode::FineTuning));
+
+    // 스타일을 다시 적용하여 변경사항을 반영
+    style()->unpolish(ui->valueSpinBox);
+    style()->polish(ui->valueSpinBox);
+
     ui->valueSlider->blockSignals(true);
     updateUiAppearance();
     syncSliderToValue();
@@ -104,13 +114,11 @@ void ValueControlWidget::updateUiAppearance()
         qDebug() << "UI Mode: Normal";
         ui->valueSpinBox->setSingleStep(m_singleStep);
         ui->valueSlider->setRange(m_fineTuningRangeMin, m_fineTuningRangeMax);
-        ui->valueSpinBox->setStyleSheet("");
         break;
     case Mode::FineTuning:
         qDebug() << "UI Mode: Fine-tuning";
         ui->valueSpinBox->setSingleStep(m_fineStep);
         ui->valueSlider->setRange(0, 99);
-        ui->valueSpinBox->setStyleSheet("background-color: #e0f0ff;");
         break;
     }
 

@@ -57,7 +57,6 @@ private:
     double m_fineStep = 0.01;
     double m_fineTuningRangeMin;
     double m_fineTuningRangeMax;
-
 };
 
 #endif // VALUE_CONTROL_WIDGET_H
