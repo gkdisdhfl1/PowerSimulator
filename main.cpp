@@ -1,8 +1,6 @@
 #include "main_window.h"
 #include "simulation_engine.h"
-
 #include <QApplication>
-#include <memory>
 
 int main(int argc, char *argv[])
 {
