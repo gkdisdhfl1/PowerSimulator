@@ -59,6 +59,20 @@ namespace config {
         static constexpr double Max = 100.0;
         static constexpr double Default = 1.0;
     };
+
+    // 사용자 상호작용 관련 상수
+    namespace Interaction {
+        // 줌 팩터
+        struct Zoom {
+            static constexpr double FactorIn = 1.1;
+            static constexpr double FactorOut = 0.9;
+        };
+
+        // 가장 가까운 점을 찾기 위한 픽셀 거리 임계값
+        struct Proximity {
+            static constexpr double Threshold = 20.0;
+        };
+    }
 }
 
 namespace utils {

@@ -197,8 +197,7 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
     const QPointF mouseScreenPos = m_chartView->mapFromGlobal(QCursor::pos());
     const double pixelDistance = QLineF(nearestPointScreenPos, mouseScreenPos).length();
 
-    const double threshold = 20.0; // 20픽셀 이내 유효
-    if(pixelDistance > threshold)
+    if(pixelDistance > config::Interaction::Proximity::Threshold)
         return;
 
     emit pointHovered(nearestPoint);

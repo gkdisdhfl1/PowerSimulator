@@ -1,4 +1,5 @@
 #include "custom_chart_view.h"
+#include "config.h"
 #include <QtCharts/QChart>
 #include <QMouseEvent>
 #include <QtCharts/QValueAxis>
@@ -61,7 +62,10 @@ void CustomChartView::mouseReleaseEvent(QMouseEvent *event)
 
 void CustomChartView::wheelEvent(QWheelEvent *event)
 {
-    const double factor = event->angleDelta().y() > 0 ? 1.1 : 0.9;
+    const double factor = event->angleDelta().y() > 0 ?
+                              config::Interaction::Zoom::FactorIn :
+                              config::Interaction::Zoom::FactorOut;
+
     const Qt::KeyboardModifiers modifier = event->modifiers();
 
     if(modifier == Qt::ShiftModifier) {
