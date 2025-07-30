@@ -20,6 +20,8 @@ GraphWindow::GraphWindow(QWidget *parent)
     , m_chartView(new CustomChartView(m_chart.get()))
     , m_graphWidthSec(config::View::GraphWidth::Default) // 그래프 폭 기본값으로 초기화
     , m_isAutoScrollEnabled(true) // 자동 스크롤 활성화 상태로 시작
+    , m_currentSeries(new QLineSeries(this))
+    , m_axisYCurrent(new QValueAxis(this))
 {
     ui->setupUi(this);
 
@@ -92,10 +94,11 @@ void GraphWindow::setupChart()
 {
     // 차트 기본 설정
     m_chart->setTitle(tr("실시간 전력 계측 시뮬레이션"));
-    m_chart->legend()->hide(); // 범례는 숨김
+    m_chart->legend()->show();
 
     // 시리즈를 차트에 추가
     m_chart->addSeries(m_series);
+
 
     // X축 설정
     m_axisX->setLabelFormat(tr("%.1f s")); // 소수점 첫째 자리까지 초 단위로 표시
@@ -110,6 +113,21 @@ void GraphWindow::setupChart()
     m_axisY->setRange(config::Source::Amplitude::Min, config::Source::Amplitude::Min);
     m_chart->addAxis(m_axisY, Qt::AlignLeft);
     m_series->attachAxis(m_axisY);
+
+    // 전류 시리즈를 차트에 추가
+    m_chart->addSeries(m_currentSeries);
+    m_currentSeries->setName("Current");
+    m_currentSeries->setPointsVisible(true);
+    m_currentSeries->setColor(QColor("red"));
+
+    // 전류 Y축 설정
+    m_axisYCurrent->setLabelFormat(tr("%.2f A"));
+    m_axisYCurrent->setTitleText(tr("전류 (A)"));
+    m_chart->addAxis(m_axisYCurrent, Qt::AlignRight); // 차트 오른쪽에 축 추가
+    m_currentSeries->attachAxis(m_axisX); // X축은 공유
+    m_currentSeries->attachAxis(m_axisYCurrent);
+
+
 }
 
 
@@ -118,6 +136,7 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
 {
     if (data.empty()) {
         m_series->clear();
+        m_currentSeries->clear();
         return;
     }
 
@@ -139,31 +158,38 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
     }
 
     // 데이터처리 파이프라인
-    auto visiblePointsView = data
-                               | std::views::transform(utils::to_qpointf) // DataPoint를 QPointF로 변환
-                               | std::views::filter([minX, maxX](const QPointF& p) { return p.x() >= minX && p.x() <= maxX;}); // 보이는 점만 필터링
+    // auto visiblePointsView = data
+    //                            | std::views::transform(utils::to_qpointf) // DataPoint를 QPointF로 변환
+    //                            | std::views::filter([minX, maxX](const QPointF& p) { return p.x() >= minX && p.x() <= maxX;}); // 보이는 점만 필터링
 
-    m_currentPoints.clear();
-    std::ranges::copy(visiblePointsView, std::back_inserter(m_currentPoints));
-    m_series->replace(m_currentPoints);
+    auto pointsView = data
+                      | std::views::transform([](const DataPoint& p) {
+                            const auto x = utils::to_qpointf(p).x();
+                            return std::make_pair(QPointF(x, p.voltage), QPointF(x, p.current));
+                        })
+                      | std::views::filter([minX, maxX](const auto& pair) {
+                            return pair.first.x() >= minX && pair.first.x() <= maxX;
+                        });
+
+    // 전압/전류 포인트 분리
+    QList<QPointF> voltagePoints;
+    QList<QPointF> currentPoints;
+    voltagePoints.reserve(data.size());
+    currentPoints.reserve(data.size());
+
+    for(const auto& pair : pointsView) {
+        voltagePoints.append(pair.first);
+        currentPoints.append(pair.second);
+    }
+
+    m_series->replace(voltagePoints);
+    m_currentSeries->replace(currentPoints);
+    m_currentPoints = voltagePoints; // 기존 로직을 유지하기 위해 전압 포인트 저장
 
     // 자동 스크롤이  활성화된 경우에만 축 범위를 업데이트
     if(m_isAutoScrollEnabled) {
-        // Y축 범위 계산
-        if(!m_currentPoints.isEmpty()) {
-            auto [minY_it, maxY_it] = std::ranges::minmax_element(m_currentPoints, {}, &QPointF::y);
-            double minY = minY_it->y();
-            double maxY = maxY_it->y();
-
-            // 그래프가 위아래에 꽉 끼지 않도록 약간의 여백 줌
-            double y_padding = (maxY - minY) * config::View::Padding::Ratio;
-            if (y_padding < config::View::Padding::Min)
-                y_padding = config::View::Padding::Min; // 최소 여백 확보
-
-            // 계산된 범위로 축을 설정
-            m_axisY->setRange(minY - y_padding, maxY + y_padding);
-        }
-        m_axisX->setRange(minX, maxX);
+        updateYAxisRange(m_axisY, voltagePoints); // 전압 축 업데이트
+        updateYAxisRange(m_axisYCurrent, currentPoints); // 전류 측 업데이트
     }
 }
 
@@ -203,3 +229,22 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
     emit pointHovered(nearestPoint);
 }
 
+void GraphWindow::updateYAxisRange(QValueAxis *axis, const QList<QPointF> &points)
+{
+    if(!axis || points.isEmpty()) {
+        return;
+    }
+
+    // Y값의 최소/최대 찾음
+    auto [min_it, max_it] = std::ranges::minmax_element(points, {}, &QPointF::y);
+    const double minY = min_it->y();
+    const double maxY = max_it->y();
+
+    // 위아래 여백 계산
+    double padding = (maxY - minY) * config::View::Padding::Ratio;
+    if(padding < config::View::Padding::Min) {
+        padding = config::View::Padding::Min; // 최소 여백 보장
+    }
+
+    axis->setRange(minY - padding, maxY + padding);
+}

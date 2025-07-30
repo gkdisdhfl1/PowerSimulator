@@ -40,7 +40,7 @@ namespace config {
             static constexpr double Min = -500.0;
             static constexpr double Max = 500.0;
             static constexpr double Default = 220.0;
-
+            static constexpr double CurrentDefault = 10.0;
         };
     };
 

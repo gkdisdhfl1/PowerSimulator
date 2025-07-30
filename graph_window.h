@@ -45,12 +45,15 @@ public slots:
 private:
     Ui::GraphWindow *ui;
     void setupChart(); // 차트 초기 설정을 위한 함수
+    void updateYAxisRange(QValueAxis *axis, const QList<QPointF> &points);
 
     // 차트 관련 객체 소유
     std::unique_ptr<QChart> m_chart;
     QLineSeries *m_series;
+    QLineSeries *m_currentSeries;
     QValueAxis *m_axisX;
     QValueAxis *m_axisY;
+    QValueAxis *m_axisYCurrent;
     CustomChartView *m_chartView;
     QList<QPointF> m_currentPoints; // 현재 화면에 그려진 점들을 저장하는 리스트
 

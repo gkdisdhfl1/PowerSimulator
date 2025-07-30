@@ -6,6 +6,7 @@ SimulationEngine::SimulationEngine()
     : QObject()
     , m_maxDataSize(config::Simulation::DefaultDataSize)
     , m_amplitude(config::Source::Amplitude::Default)
+    , m_currentAmplitude(config::Source::Amplitude::CurrentDefault)
     , m_frequency(config::Source::Frequency::Default) // 기본 주파수 1.0 Hz
     , m_timeScale(config::TimeScale::Default) // 기본 비율은 1.0
     , m_samplingCycles(config::Sampling::DefaultSamplingCycles)
@@ -14,7 +15,7 @@ SimulationEngine::SimulationEngine()
     , m_currentPhaseRadians(0.0)
     , m_captureIntervalsMs(0.0)
     , m_simulationTimeNs(0)
-
+    , m_currentPhaseOffsetRadians(0.0)
 {
     using namespace std::chrono_literals;
 
@@ -125,6 +126,16 @@ void SimulationEngine::setSamplesPerCycle(int samplesPerCycle)
     recalculateCaptureInterval();
 }
 
+void SimulationEngine::setCurrentAmplitude(double amplitude)
+{
+    m_currentAmplitude = amplitude;
+}
+
+void SimulationEngine::setCurrentPhaseOffset(double degrees)
+{
+    m_currentPhaseOffsetRadians = utils::degreesToRadians(degrees);
+}
+
 void SimulationEngine::updateCaptureTimer()
 {
     // 기본 캡처 간격에 시간 비율을 곱해서 실제 타이머 주기를 계산
@@ -146,7 +157,8 @@ void SimulationEngine::updateCaptureTimer()
 void SimulationEngine::captureData()
 {
     double currentVoltage = calculateCurrentVoltage();
-    addNewDataPoint(currentVoltage);
+    double currentAmperage = calculateCurrentAmperage();
+    addNewDataPoint(currentVoltage, currentAmperage);
 
     emit dataUpdated(m_data);
 
@@ -171,12 +183,18 @@ double SimulationEngine::calculateCurrentVoltage()
     return m_amplitude * sin(finalPhase);
 }
 
-void SimulationEngine::addNewDataPoint(double voltage)
+double SimulationEngine::calculateCurrentAmperage()
+{
+    const double finalPhase = m_currentPhaseRadians + m_phaseRadians + m_currentPhaseOffsetRadians;
+    return m_amplitude * sin(finalPhase);
+}
+
+void SimulationEngine::addNewDataPoint(double voltage, double current)
 {
     // DataPoint 객체를 생성하여 저장
     // qDebug() << "m_simulationTimeNs: " << m_simulationTimeNs;
     // qDebug() << "voltage: " << voltage;
-    m_data.push_back({m_simulationTimeNs, voltage});
+    m_data.push_back({m_simulationTimeNs, voltage, current});
 
     // 최대 개수 관리
     if(m_data.size() > static_cast<size_t>(m_maxDataSize)) {

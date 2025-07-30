@@ -30,6 +30,8 @@ public slots:
     void setSamplingCycles(double samplingCycles);
     void setSamplesPerCycle(int samplesPerCycle);
     void onRedrawRequest();
+    void setCurrentAmplitude(double amplitude);
+    void setCurrentPhaseOffset(double degrees);
 
 signals:
     void dataUpdated(const std::deque<DataPoint>& data);
@@ -45,7 +47,8 @@ private:
 
     void advanceSimulationTime();
     double calculateCurrentVoltage();
-    void addNewDataPoint(double voltage);
+    double calculateCurrentAmperage();
+    void addNewDataPoint(double voltage, double current);
     void updateCaptureTimer();
     void recalculateCaptureInterval();
 
@@ -57,6 +60,8 @@ private:
     double m_frequency; // 주파수 (Hz)
     double m_phaseRadians; // 위상 (라디안)
     double m_currentPhaseRadians; // 현재 누적 위상
+    double m_currentAmplitude; // 전류 진폭
+    double m_currentPhaseOffsetRadians; // 전압 대비 전류의 위상차 (라디안)
 
     double m_samplingCycles;
     double m_samplesPerCycle;
