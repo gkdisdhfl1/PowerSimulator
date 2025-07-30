@@ -53,8 +53,8 @@ void MainWindow::onEngineRuninngStateChanged(bool isRunning)
 
 void MainWindow::setupUiWidgets()
 {
-    ui->voltageControlWidget->setRange(config::Amplitude::Min, config::Amplitude::Max);
-    ui->voltageControlWidget->setValue(config::Amplitude::Default);
+    ui->voltageControlWidget->setRange(config::Source::Amplitude::Min, config::Source::Amplitude::Max);
+    ui->voltageControlWidget->setValue(config::Source::Amplitude::Default);
     ui->voltageControlWidget->setSuffix(" V");
 
     ui->timeScaleWidget->setRange(config::TimeScale::Min, config::TimeScale::Max);
@@ -66,8 +66,8 @@ void MainWindow::setupUiWidgets()
     ui->samplesPerCycleControl->setRange(config::Sampling::MinValue, config::Sampling::maxValue);
     ui->samplesPerCycleControl->setValue(config::Sampling::DefaultSamplesPerCycle);
 
-    ui->frequencyControlWidget->setRange(config::Frequency::Min, config::Frequency::Max);
-    ui->frequencyControlWidget->setValue(config::Frequency::Default);
+    ui->frequencyControlWidget->setRange(config::Source::Frequency::Min, config::Source::Frequency::Max);
+    ui->frequencyControlWidget->setValue(config::Source::Frequency::Default);
     ui->frequencyControlWidget->setSuffix(" Hz");
 }
 
@@ -90,7 +90,7 @@ void MainWindow::createSignalSlotConnections()
     // timeScaleWidget 값이 바뀌면 엔진의 setTimeScale 슬롯 호출
     connect(ui->timeScaleWidget, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setTimeScale);
 
-    connect(ui->samplingCyclesControl, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setSamplingcycles);
+    connect(ui->samplingCyclesControl, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setSamplingCycles);
     connect(ui->samplesPerCycleControl, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setSamplesPerCycle);
 
     connect(ui->frequencyControlWidget, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setFrequency);

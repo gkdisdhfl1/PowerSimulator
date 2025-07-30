@@ -27,7 +27,7 @@ public slots:
     void setPhase(double degrees);
     void setFrequency(double hertz);
     void setTimeScale(double rate);
-    void setSamplingcycles(double samplingCycles);
+    void setSamplingCycles(double samplingCycles);
     void setSamplesPerCycle(int samplesPerCycle);
     void onRedrawRequest();
 

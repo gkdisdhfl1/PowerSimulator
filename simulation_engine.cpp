@@ -5,8 +5,8 @@
 SimulationEngine::SimulationEngine()
     : QObject()
     , m_maxDataSize(config::Simulation::DefaultDataSize)
-    , m_amplitude(config::Amplitude::Default)
-    , m_frequency(config::Frequency::Default) // 기본 주파수 1.0 Hz
+    , m_amplitude(config::Source::Amplitude::Default)
+    , m_frequency(config::Source::Frequency::Default) // 기본 주파수 1.0 Hz
     , m_timeScale(config::TimeScale::Default) // 기본 비율은 1.0
     , m_samplingCycles(config::Sampling::DefaultSamplingCycles)
     , m_samplesPerCycle(config::Sampling::DefaultSamplesPerCycle)
@@ -86,7 +86,7 @@ void SimulationEngine::applySettings(int maxSize)
 
 void SimulationEngine::setAmplitude(double amplitude)
 {
-    m_amplitude = std::clamp(amplitude, config::Amplitude::Min, config::Amplitude::Max);
+    m_amplitude = std::clamp(amplitude, config::Source::Amplitude::Min, config::Source::Amplitude::Max);
 }
 
 void SimulationEngine::setPhase(double degrees)
@@ -111,10 +111,10 @@ void SimulationEngine::setTimeScale(double scale)
 
 void SimulationEngine::setFrequency(double hertz)
 {
-    m_frequency = std::clamp(hertz, config::Frequency::Min, config::Frequency::Max);
+    m_frequency = std::clamp(hertz, config::Source::Frequency::Min, config::Source::Frequency::Max);
 }
 
-void SimulationEngine::setSamplingcycles(double samplingCycles)
+void SimulationEngine::setSamplingCycles(double samplingCycles)
 {
     m_samplingCycles = samplingCycles;
     recalculateCaptureInterval();
@@ -131,8 +131,8 @@ void SimulationEngine::updateCaptureTimer()
     double scaledIntervalMs = (m_captureIntervalsMs * m_timeScale).count();
 
     // 간격이 0이 되는 것을 방지
-    if(scaledIntervalMs < 1.0)
-        scaledIntervalMs = 1.0;
+    if(scaledIntervalMs < config::Simulation::Timer::MinIntervalMs)
+        scaledIntervalMs = config::Simulation::Timer::MinIntervalMs;
 
     // int 최대값 초과 방지
     const double maxTimerInterval = static_cast<double>(std::numeric_limits<int>::max());

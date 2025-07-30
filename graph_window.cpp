@@ -18,7 +18,7 @@ GraphWindow::GraphWindow(QWidget *parent)
     , m_axisX(new QValueAxis(this))
     , m_axisY(new QValueAxis(this))
     , m_chartView(new CustomChartView(m_chart.get()))
-    , m_graphWidthSec(config::GraphWidth::Default) // 그래프 폭 기본값으로 초기화
+    , m_graphWidthSec(config::View::GraphWidth::Default) // 그래프 폭 기본값으로 초기화
     , m_isAutoScrollEnabled(true) // 자동 스크롤 활성화 상태로 시작
 {
     ui->setupUi(this);
@@ -82,7 +82,7 @@ void GraphWindow::stretchGraph(double factor)
     m_graphWidthSec /= factor;
 
     // 그래프 폭이 너무 크거나 작아지지 않도록 범위 제한
-    m_graphWidthSec = std::clamp(m_graphWidthSec, config::GraphWidth::Min, config::GraphWidth::Max);
+    m_graphWidthSec = std::clamp(m_graphWidthSec, config::View::GraphWidth::Min, config::View::GraphWidth::Max);
 
     // updateGraph를 즉시 호출하지 않음.
     qDebug() << "new graph width: " << m_graphWidthSec << "s";
@@ -107,7 +107,7 @@ void GraphWindow::setupChart()
     // Y축 설정
     m_axisY->setLabelFormat(tr("%.2f V")); // 소수점 둘째 자리까지 V 단위로 표시
     m_axisY->setTitleText(tr("전압 (V)"));
-    m_axisY->setRange(config::Amplitude::Min, config::Amplitude::Min);
+    m_axisY->setRange(config::Source::Amplitude::Min, config::Source::Amplitude::Min);
     m_chart->addAxis(m_axisY, Qt::AlignLeft);
     m_series->attachAxis(m_axisY);
 }
@@ -197,7 +197,7 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
     const QPointF mouseScreenPos = m_chartView->mapFromGlobal(QCursor::pos());
     const double pixelDistance = QLineF(nearestPointScreenPos, mouseScreenPos).length();
 
-    if(pixelDistance > config::Interaction::Proximity::Threshold)
+    if(pixelDistance > config::View::Interaction::Proximity::Threshold)
         return;
 
     emit pointHovered(nearestPoint);

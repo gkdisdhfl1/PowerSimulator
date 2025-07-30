@@ -63,8 +63,8 @@ void CustomChartView::mouseReleaseEvent(QMouseEvent *event)
 void CustomChartView::wheelEvent(QWheelEvent *event)
 {
     const double factor = event->angleDelta().y() > 0 ?
-                              config::Interaction::Zoom::FactorIn :
-                              config::Interaction::Zoom::FactorOut;
+                              config::View::Interaction::Zoom::FactorIn :
+                              config::View::Interaction::Zoom::FactorOut;
 
     const Qt::KeyboardModifiers modifier = event->modifiers();
 

@@ -17,8 +17,8 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     ui->maxSizeSpinBox->setRange(config::Simulation::MinDataSize, config::Simulation::MaxDataSize);
 
     ui->graphWidthSpinBox->setSuffix(" s");
-    ui->graphWidthSpinBox->setRange(config::GraphWidth::Min, config::GraphWidth::Max);
-    ui->graphWidthSpinBox->setValue(config::GraphWidth::Default);
+    ui->graphWidthSpinBox->setRange(config::View::GraphWidth::Min, config::View::GraphWidth::Max);
+    ui->graphWidthSpinBox->setValue(config::View::GraphWidth::Default);
 
 }
 
@@ -46,7 +46,7 @@ std::expected<void, SettingsDialog::ValidationError> SettingsDialog::validateInp
         return std::unexpected(ValidationError::MaxSizeOutOfRange);
 
     const double graphWidthValue = ui->graphWidthSpinBox->value();
-    if(graphWidthValue < config::GraphWidth::Min || graphWidthValue > config::GraphWidth::Max)
+    if(graphWidthValue < config::View::GraphWidth::Min || graphWidthValue > config::View::GraphWidth::Max)
         return std::unexpected(ValidationError::GraphWidthOutOfRange);
 
     return {}; // 모든 검사 통과
@@ -54,17 +54,17 @@ std::expected<void, SettingsDialog::ValidationError> SettingsDialog::validateInp
 
 QString SettingsDialog::getErrorMessage(ValidationError error) const
 {
-    std::string errorMessage;
+    QString errorMessage;
     switch (error) {
 
     case ValidationError::MaxSizeOutOfRange:
-        errorMessage = std::format("저장 크기는 {}와 {} 사이여야 합니다.", config::Simulation::MinDataSize, config::Simulation::MaxDataSize);
+        errorMessage = tr("저장 크기는 %1와 %2 사이여야 합니다.").arg(config::Simulation::MinDataSize).arg(config::Simulation::MaxDataSize);
         break;
     case ValidationError::GraphWidthOutOfRange:
-        errorMessage = std::format("그래프 폭은 {}와 {} 사이여야 합니다.", config::GraphWidth::Min, config::GraphWidth::Max);
+        errorMessage = tr("그래프 폭은 %1와 %2 사이여야 합니다.").arg(config::View::GraphWidth::Min).arg(config::View::GraphWidth::Max);
         break;
     }
-    return QString::fromStdString(errorMessage);
+    return errorMessage;
 }
 
 void SettingsDialog::accept()

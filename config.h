@@ -14,35 +14,35 @@ namespace config {
         return QString::fromUtf8(sv.data(), sv.size());
     }
 
-    // 진폭 설정
-    struct Amplitude {
-        static constexpr double Min = -500.0;
-        static constexpr double Max = 500.0;
-        static constexpr double Default = 220.0;
-
-    };
-
-    // 주파수 설정
-    struct Frequency {
-        static constexpr double Min = 0.0;
-        static constexpr double Max = 100.0;
-        static constexpr double Default = 1.0;
-    };
-
+    // Simulation 핵심 동작과 관련된 설정
     struct Simulation {
-        // Simulation Engine 설정
         static constexpr int DefaultDataSize = 100;
         static constexpr int MinDataSize = 1;
-        static constexpr int MaxDataSize = 10000;
+        static constexpr int MaxDataSize = 100000;
+
+        // 타이머 관련 설정
+        struct Timer {
+            static constexpr double MinIntervalMs = 1.0;
+        };
     };
 
-    // 그래프 설정
-    struct GraphWidth {
-        static constexpr double Default = 10.0;
-        static constexpr double Min = 0.01;
-        static constexpr double Max = 300.0;
-    };
+    // 데이터 source(파형)의 특성과 관련된 설정
+    struct Source {
+        // 주파수 관련 설정
+        struct Frequency {
+            static constexpr double Min = 0.0;
+            static constexpr double Max = 100.0;
+            static constexpr double Default = 1.0;
+        };
 
+        // 진폭 관련 설정
+        struct Amplitude {
+            static constexpr double Min = -500.0;
+            static constexpr double Max = 500.0;
+            static constexpr double Default = 220.0;
+
+        };
+    };
 
     // 샘플링 설정
     struct Sampling {
@@ -60,19 +60,6 @@ namespace config {
         static constexpr double Default = 1.0;
     };
 
-    // 사용자 상호작용 관련 상수
-    struct Interaction {
-        // 줌 팩터
-        struct Zoom {
-            static constexpr double FactorIn = 1.1;
-            static constexpr double FactorOut = 0.9;
-        };
-
-        // 가장 가까운 점을 찾기 위한 픽셀 거리 임계값
-        struct Proximity {
-            static constexpr double Threshold = 20.0;
-        };
-    };
 
     // 그래프 시각적 표현 관련 상수
     struct View {
@@ -80,6 +67,27 @@ namespace config {
         struct Padding {
             static constexpr double Ratio = 0.1;
             static constexpr double Min = 5.0;
+        };
+
+        // 그래프 폭 관련 설정
+        struct GraphWidth {
+            static constexpr double Default = 10.0;
+            static constexpr double Min = 0.01;
+            static constexpr double Max = 300.0;
+        };
+
+        // 사용자 상호작용 관련 상수
+        struct Interaction {
+            // 줌 팩터
+            struct Zoom {
+                static constexpr double FactorIn = 1.1;
+                static constexpr double FactorOut = 0.9;
+            };
+
+            // 가장 가까운 점을 찾기 위한 픽셀 거리 임계값
+            struct Proximity {
+                static constexpr double Threshold = 20.0;
+            };
         };
     };
 }
