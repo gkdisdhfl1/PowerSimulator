@@ -69,6 +69,8 @@ void MainWindow::setupUiWidgets()
     ui->frequencyControlWidget->setRange(config::Source::Frequency::Min, config::Source::Frequency::Max);
     ui->frequencyControlWidget->setValue(config::Source::Frequency::Default);
     ui->frequencyControlWidget->setSuffix(" Hz");
+
+    ui->currentPhaseDial->setValue(config::Source::Current::DefaultPhaseOffset);
 }
 
 void MainWindow::createSignalSlotConnections()
@@ -96,6 +98,8 @@ void MainWindow::createSignalSlotConnections()
     connect(ui->frequencyControlWidget, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setFrequency);
 
     connect(ui->graphViewPlaceholder, &GraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawRequest);
+
+    connect(ui->currentPhaseDial, &FineTuningDial::valueChanged, m_engine, &SimulationEngine::setCurrentPhaseOffset);
     // ----------------------
 
 

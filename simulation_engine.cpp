@@ -6,7 +6,7 @@ SimulationEngine::SimulationEngine()
     : QObject()
     , m_maxDataSize(config::Simulation::DefaultDataSize)
     , m_amplitude(config::Source::Amplitude::Default)
-    , m_currentAmplitude(config::Source::Amplitude::CurrentDefault)
+    , m_currentAmplitude(config::Source::Current::DefaultAmplitude)
     , m_frequency(config::Source::Frequency::Default) // 기본 주파수 1.0 Hz
     , m_timeScale(config::TimeScale::Default) // 기본 비율은 1.0
     , m_samplingCycles(config::Sampling::DefaultSamplingCycles)
@@ -15,7 +15,7 @@ SimulationEngine::SimulationEngine()
     , m_currentPhaseRadians(0.0)
     , m_captureIntervalsMs(0.0)
     , m_simulationTimeNs(0)
-    , m_currentPhaseOffsetRadians(0.0)
+    , m_currentPhaseOffsetRadians(config::Source::Current::DefaultPhaseOffset)
 {
     using namespace std::chrono_literals;
 

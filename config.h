@@ -40,8 +40,16 @@ namespace config {
             static constexpr double Min = -500.0;
             static constexpr double Max = 500.0;
             static constexpr double Default = 220.0;
-            static constexpr double CurrentDefault = 10.0;
+
         };
+
+        struct Current {
+            static constexpr double MinAmplitude = 0.0;
+            static constexpr double MaxAmplitude = 500.0;
+            static constexpr double DefaultAmplitude = 10.0;
+            static constexpr double DefaultPhaseOffset = 0.0;
+        };
+
     };
 
     // 샘플링 설정
