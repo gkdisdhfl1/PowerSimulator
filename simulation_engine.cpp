@@ -266,7 +266,29 @@ void SimulationEngine::recalculateCaptureInterval()
 
 void SimulationEngine::onRedrawRequest()
 {
+    bool shouldEmitUpdate = false;
+
     // 현재 가지고 있는 m_data를 한번 더 보냄
-    if(!m_data.empty())
+    if(!m_data.empty()) {
+        switch (m_updateMode) {
+        case UpdateMode::PerSample:
+            shouldEmitUpdate = true;
+            break;
+        case UpdateMode::PerHalfCycle:
+            // 누적된 위상이 PI(180도) 이상 변했는지 확인
+            if(m_accumulatedPhaseSinceUpdate >= std::numbers::pi) {
+                shouldEmitUpdate = true;
+            }
+            break;
+        case UpdateMode::PerCycle:
+            // 누적된 위상이 2*PI 이상 변했는지 확인
+            if(m_accumulatedPhaseSinceUpdate >= 2.0 * std::numbers::pi) {
+                shouldEmitUpdate = true;
+            }
+            break;
+        }
+    }
+    if(shouldEmitUpdate) {
         emit dataUpdated(m_data);
+    }
 }
