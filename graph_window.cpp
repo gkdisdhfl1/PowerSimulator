@@ -136,8 +136,6 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
         return;
     }
 
-    // using FpSeconds = std::chrono::duration<double>;
-
     double minX, maxX;
     auto *axisX = static_cast<QValueAxis*>(m_chart->axes(Qt::Horizontal).first());
 
@@ -152,11 +150,6 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
         minX = axisX->min();
         maxX = axisX->max();
     }
-
-    // 데이터처리 파이프라인
-    // auto visiblePointsView = data
-    //                            | std::views::transform(utils::to_qpointf) // DataPoint를 QPointF로 변환
-    //                            | std::views::filter([minX, maxX](const QPointF& p) { return p.x() >= minX && p.x() <= maxX;}); // 보이는 점만 필터링
 
     auto pointsView = data
                       | std::views::transform([](const DataPoint& p) {
@@ -185,11 +178,11 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
     // Y축 계산을 위해 모든 점을 하나로 뭉침
     QList<QPointF> allPoints = voltagePoints;
     allPoints.append(currentPoints);
-    updateYAxisRange(m_axisY, allPoints);
 
     // 자동 스크롤이  활성화된 경우에만 축 범위를 업데이트
     if(m_isAutoScrollEnabled) {
         m_axisX->setRange(minX, maxX);
+        updateYAxisRange(m_axisY, allPoints);
     }
 }
 
