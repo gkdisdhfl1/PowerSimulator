@@ -15,6 +15,7 @@ public:
 protected:
     // QWidget의 가상 함수를 재정의
     void mouseDoubleClickEvent(QMouseEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
 
 signals:
     void doubleClicked();

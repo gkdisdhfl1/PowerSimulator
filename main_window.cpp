@@ -77,6 +77,7 @@ void MainWindow::setupUiWidgets()
     ui->frequencyControlWidget->setSuffix(" Hz");
 
     ui->currentPhaseDial->setValue(config::Source::Current::DefaultPhaseOffset);
+    ui->currentPhaseLabel->setText(QString::number(ui->currentPhaseDial->value()) + " °");
 }
 
 void MainWindow::createSignalSlotConnections()
@@ -106,7 +107,12 @@ void MainWindow::createSignalSlotConnections()
     connect(ui->graphViewPlaceholder, &GraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawRequest);
 
     connect(ui->currentAmplitudeControl, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setCurrentAmplitude);
-    connect(ui->currentPhaseDial, &FineTuningDial::valueChanged, m_engine, &SimulationEngine::setCurrentPhaseOffset);
+    connect(ui->currentPhaseDial, &FineTuningDial::valueChanged, this, [this](int value) {
+        // 엔진에 값 전달
+        m_engine->setCurrentPhaseOffset(value);
+        // 라벨 업데이트
+        ui->currentPhaseLabel->setText(QString::number(value) + " °");
+    });
 
     // ----------------------
 
