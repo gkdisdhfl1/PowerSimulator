@@ -12,14 +12,15 @@ ValueControlWidget::ValueControlWidget(QWidget *parent)
 
     // 초기 스텝 크기 설정
     ui->valueSpinBox->setSingleStep(m_singleStep);
+    ui->valueSpinBox->setKeyboardTracking(false); // 키보드 입력 중에 valuedChanged 시그널 발생 안함
 
     // 슬라이더가 움직이는 중이면
     connect(ui->valueSlider, &QSlider::valueChanged, this, &ValueControlWidget::onSliderMoved);
 
-    // 스핀박스 값을 바꾸면 onSpinBoxValueChanged 슬롯 호출
-    connect(ui->valueSpinBox, &QDoubleSpinBox::editingFinished, this, [this]() {
-        onSpinBoxValueChanged(ui->valueSpinBox->value());
-    });
+    // 스핀박스 값이 확정되면 슬롯 호출
+    // setKeyboardTracking(false) 덕분에 키보드 입력 중에 시그널이 발생하지 않음
+    connect(ui->valueSpinBox, &QDoubleSpinBox::valueChanged, this, &ValueControlWidget::onSpinBoxValueChanged);
+
 }
 
 ValueControlWidget::~ValueControlWidget()
