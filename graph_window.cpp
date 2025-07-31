@@ -21,7 +21,6 @@ GraphWindow::GraphWindow(QWidget *parent)
     , m_graphWidthSec(config::View::GraphWidth::Default) // 그래프 폭 기본값으로 초기화
     , m_isAutoScrollEnabled(true) // 자동 스크롤 활성화 상태로 시작
     , m_currentSeries(new QLineSeries(this))
-    , m_axisYCurrent(new QValueAxis(this))
 {
     ui->setupUi(this);
 
@@ -95,10 +94,19 @@ void GraphWindow::setupChart()
     // 차트 기본 설정
     m_chart->setTitle(tr("실시간 전력 계측 시뮬레이션"));
     m_chart->legend()->show();
+    m_chart->legend()->setAlignment(Qt::AlignBottom);
 
-    // 시리즈를 차트에 추가
+
+    // 전압 시리즈 설정
+    m_series->setName("Voltage");
     m_chart->addSeries(m_series);
+    m_series->setPointsVisible(true);
 
+    // 전류 시리즈를 설정
+    m_currentSeries->setName("Current");
+    m_currentSeries->setColor(QColor("red"));
+    m_chart->addSeries(m_currentSeries);
+    m_currentSeries->setPointsVisible(true);
 
     // X축 설정
     m_axisX->setLabelFormat(tr("%.1f s")); // 소수점 첫째 자리까지 초 단위로 표시
@@ -107,27 +115,15 @@ void GraphWindow::setupChart()
     m_chart->addAxis(m_axisX, Qt::AlignBottom);
     m_series->attachAxis(m_axisX);
 
+    m_currentSeries->attachAxis(m_axisX);
+
     // Y축 설정
-    m_axisY->setLabelFormat(tr("%.2f V")); // 소수점 둘째 자리까지 V 단위로 표시
-    m_axisY->setTitleText(tr("전압 (V)"));
-    m_axisY->setRange(config::Source::Amplitude::Min, config::Source::Amplitude::Min);
+    m_axisY->setLabelFormat(tr("%.2f")); // 소수점 둘째 자리까지 V 단위로 표시
+    m_axisY->setTitleText(tr("전압 (V/A)"));
+    // m_axisY->setRange(config::Source::Amplitude::Min, config::Source::Amplitude::Min);
     m_chart->addAxis(m_axisY, Qt::AlignLeft);
     m_series->attachAxis(m_axisY);
-
-    // 전류 시리즈를 차트에 추가
-    m_chart->addSeries(m_currentSeries);
-    m_currentSeries->setName("Current");
-    m_currentSeries->setPointsVisible(true);
-    m_currentSeries->setColor(QColor("red"));
-
-    // 전류 Y축 설정
-    m_axisYCurrent->setLabelFormat(tr("%.2f A"));
-    m_axisYCurrent->setTitleText(tr("전류 (A)"));
-    m_chart->addAxis(m_axisYCurrent, Qt::AlignRight); // 차트 오른쪽에 축 추가
-    m_currentSeries->attachAxis(m_axisX); // X축은 공유
-    m_currentSeries->attachAxis(m_axisYCurrent);
-
-
+    m_currentSeries->attachAxis(m_axisY);
 }
 
 
@@ -174,8 +170,8 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
     // 전압/전류 포인트 분리
     QList<QPointF> voltagePoints;
     QList<QPointF> currentPoints;
-    voltagePoints.reserve(data.size());
-    currentPoints.reserve(data.size());
+    // voltagePoints.reserve(data.size());
+    // currentPoints.reserve(data.size());
 
     for(const auto& pair : pointsView) {
         voltagePoints.append(pair.first);
@@ -186,10 +182,14 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
     m_currentSeries->replace(currentPoints);
     m_currentPoints = voltagePoints; // 기존 로직을 유지하기 위해 전압 포인트 저장
 
+    // Y축 계산을 위해 모든 점을 하나로 뭉침
+    QList<QPointF> allPoints = voltagePoints;
+    allPoints.append(currentPoints);
+    updateYAxisRange(m_axisY, allPoints);
+
     // 자동 스크롤이  활성화된 경우에만 축 범위를 업데이트
     if(m_isAutoScrollEnabled) {
-        updateYAxisRange(m_axisY, voltagePoints); // 전압 축 업데이트
-        updateYAxisRange(m_axisYCurrent, currentPoints); // 전류 측 업데이트
+        m_axisX->setRange(minX, maxX);
     }
 }
 

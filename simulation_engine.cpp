@@ -186,14 +186,15 @@ double SimulationEngine::calculateCurrentVoltage()
 double SimulationEngine::calculateCurrentAmperage()
 {
     const double finalPhase = m_currentPhaseRadians + m_phaseRadians + m_currentPhaseOffsetRadians;
-    return m_amplitude * sin(finalPhase);
+    return m_currentAmplitude * sin(finalPhase);
 }
 
 void SimulationEngine::addNewDataPoint(double voltage, double current)
 {
     // DataPoint 객체를 생성하여 저장
     // qDebug() << "m_simulationTimeNs: " << m_simulationTimeNs;
-    // qDebug() << "voltage: " << voltage;
+    qDebug() << "voltage: " << voltage;
+    qDebug() << "current: " << current;
     m_data.push_back({m_simulationTimeNs, voltage, current});
 
     // 최대 개수 관리

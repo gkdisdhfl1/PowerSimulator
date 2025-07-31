@@ -57,6 +57,12 @@ void MainWindow::setupUiWidgets()
     ui->voltageControlWidget->setValue(config::Source::Amplitude::Default);
     ui->voltageControlWidget->setSuffix(" V");
 
+    ui->currentAmplitudeControl->setRange(config::Source::Current::MinAmplitude, config::Source::Current::MaxAmplitude);
+    ui->currentAmplitudeControl->setValue(config::Source::Current::DefaultAmplitude);
+    ui->currentAmplitudeControl->setSuffix(" A");
+
+    ui->currentPhaseDial->setValue(config::Source::Current::DefaultPhaseOffset);
+
     ui->timeScaleWidget->setRange(config::TimeScale::Min, config::TimeScale::Max);
     ui->timeScaleWidget->setValue(config::TimeScale::Default);
     ui->timeScaleWidget->setSuffix(" x");
@@ -99,7 +105,9 @@ void MainWindow::createSignalSlotConnections()
 
     connect(ui->graphViewPlaceholder, &GraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawRequest);
 
+    connect(ui->currentAmplitudeControl, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setCurrentAmplitude);
     connect(ui->currentPhaseDial, &FineTuningDial::valueChanged, m_engine, &SimulationEngine::setCurrentPhaseOffset);
+
     // ----------------------
 
 

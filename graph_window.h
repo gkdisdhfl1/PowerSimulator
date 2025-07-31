@@ -53,7 +53,6 @@ private:
     QLineSeries *m_currentSeries;
     QValueAxis *m_axisX;
     QValueAxis *m_axisY;
-    QValueAxis *m_axisYCurrent;
     CustomChartView *m_chartView;
     QList<QPointF> m_currentPoints; // 현재 화면에 그려진 점들을 저장하는 리스트
 
