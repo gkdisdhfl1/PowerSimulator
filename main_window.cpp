@@ -78,6 +78,8 @@ void MainWindow::setupUiWidgets()
 
     ui->currentPhaseDial->setValue(config::Source::Current::DefaultPhaseOffset);
     ui->currentPhaseLabel->setText(QString::number(ui->currentPhaseDial->value()) + " °");
+
+    ui->perSampleRadioButton->setChecked(true);
 }
 
 void MainWindow::createSignalSlotConnections()
@@ -114,6 +116,19 @@ void MainWindow::createSignalSlotConnections()
         ui->currentPhaseLabel->setText(QString::number(value) + " °");
     });
 
+    // 화면 갱신 주기 라디오 버튼
+    connect(ui->perSampleRadioButton, &QRadioButton::toggled, this, [this](bool checked) {
+        if(checked)
+            m_engine->setUpdateMode(SimulationEngine::UpdateMode::PerSample);
+    });
+    connect(ui->perHalfCycleRadioButton, &QRadioButton::toggled, this, [this](bool checked) {
+        if(checked)
+            m_engine->setUpdateMode(SimulationEngine::UpdateMode::PerHalfCycle);
+    });
+    connect(ui->PerCycleRadioButton, &QRadioButton::toggled, this, [this](bool checked) {
+        if(checked)
+            m_engine->setUpdateMode(SimulationEngine::UpdateMode::PerCycle);
+    });
     // ----------------------
 
 

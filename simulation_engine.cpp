@@ -16,6 +16,9 @@ SimulationEngine::SimulationEngine()
     , m_captureIntervalsMs(0.0)
     , m_simulationTimeNs(0)
     , m_currentPhaseOffsetRadians(config::Source::Current::DefaultPhaseOffset)
+    , m_updateMode(UpdateMode::PerSample)
+    , m_phaseAtLastUpdate(0.0)
+    , m_accumulatedPhaseSinceUpdate(0.0)
 {
     using namespace std::chrono_literals;
 
@@ -136,6 +139,13 @@ void SimulationEngine::setCurrentPhaseOffset(double degrees)
     m_currentPhaseOffsetRadians = utils::degreesToRadians(degrees);
 }
 
+void SimulationEngine::setUpdateMode(UpdateMode mode)
+{
+    m_updateMode = mode;
+    m_accumulatedPhaseSinceUpdate = 0.0; // 누적 값 초기화
+    emit dataUpdated(m_data);
+}
+
 void SimulationEngine::updateCaptureTimer()
 {
     // 기본 캡처 간격에 시간 비율을 곱해서 실제 타이머 주기를 계산
@@ -160,13 +170,42 @@ void SimulationEngine::captureData()
     double currentAmperage = calculateCurrentAmperage();
     addNewDataPoint(currentVoltage, currentAmperage);
 
-    emit dataUpdated(m_data);
-
     // 다음 스텝을 위해 현재 진행 위상 업데이트
     const FpSeconds timeDelta = m_captureIntervalsMs;
     const double phaseDelta = 2.0 * std::numbers::pi * m_frequency * timeDelta.count();
     m_currentPhaseRadians = std::fmod(m_currentPhaseRadians + phaseDelta, 2.0 * std::numbers::pi);
 
+    // 마지막 갱신 후 누적된 위상 변화량도 업데이트
+    m_accumulatedPhaseSinceUpdate += phaseDelta;
+
+    bool shouldEmitUpdate = false;
+    switch (m_updateMode) {
+    case UpdateMode::PerSample:
+        shouldEmitUpdate = true;
+        break;
+    case UpdateMode::PerHalfCycle:
+        // 누적된 위상이 PI(180도) 이상 변했는지 확인
+        if(m_accumulatedPhaseSinceUpdate >= std::numbers::pi) {
+            shouldEmitUpdate = true;
+        }
+        break;
+    case UpdateMode::PerCycle:
+        // 누적된 위상이 2*PI 이상 변했는지 확인
+        if(m_accumulatedPhaseSinceUpdate >= 2.0 * std::numbers::pi) {
+            shouldEmitUpdate = true;
+        }
+        break;
+    }
+
+    if(shouldEmitUpdate) {
+        emit dataUpdated(m_data);
+        if(m_updateMode == UpdateMode::PerHalfCycle)
+            m_accumulatedPhaseSinceUpdate -= std::numbers::pi;
+        else if(m_updateMode == UpdateMode::PerCycle)
+            m_accumulatedPhaseSinceUpdate -= 2.0 * std::numbers::pi;
+        else
+            m_accumulatedPhaseSinceUpdate = 0.0;
+    }
     advanceSimulationTime();
 }
 

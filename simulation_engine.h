@@ -12,6 +12,12 @@ class SimulationEngine : public QObject
 public:
     explicit SimulationEngine();
 
+    enum class UpdateMode {
+        PerSample,      // 매 샘플마다 갱신
+        PerHalfCycle,   // 반 주기마다 갱신
+        PerCycle        // 한 주기마다 갱신
+    };
+
     bool isRunning() const;
 
     double getSamplingCycles() const;
@@ -32,6 +38,7 @@ public slots:
     void onRedrawRequest();
     void setCurrentAmplitude(double amplitude);
     void setCurrentPhaseOffset(double degrees);
+    void setUpdateMode(UpdateMode mode);
 
 signals:
     void dataUpdated(const std::deque<DataPoint>& data);
@@ -68,6 +75,10 @@ private:
     double m_timeScale;
     FpMilliseconds m_captureIntervalsMs; // 기본 캡처 간격 (double, ms)
     Nanoseconds m_simulationTimeNs; // 시뮬레이션 누적 시간 (정수, ns)
+
+    UpdateMode m_updateMode;
+    double m_phaseAtLastUpdate; // 마지막으로 갱신했을 때의 누적 위상
+    double m_accumulatedPhaseSinceUpdate; // 마지막 갱신 후 누적된 위상 변화량
 };
 
 #endif // SIMULATION_ENGINE_H
