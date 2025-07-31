@@ -21,12 +21,12 @@ void FineTuningDial::wheelEvent(QWheelEvent *event)
     if(angleDelta.y() > 0) {
         // 위로 굴렸을 때
         if(value() == maximum())
-            setValue(0);
+            setValue(minimum());
         else
             setValue(value() + 1);
     } else if(angleDelta.y() < 0) {
         if(value() == minimum())
-            setValue(359);
+            setValue(maximum());
         else
             setValue(value() - 1);
     }

@@ -76,8 +76,8 @@ void GraphWindow::setGraphWidth(double width)
 
 void GraphWindow::stretchGraph(double factor)
 {
-    if(!m_isAutoScrollEnabled)
-        return;
+    // if(!m_isAutoScrollEnabled)
+    //     return;
 
     // 현재 그래프 폭에 팩터를 곱하여 새로운 폭을 계산
     m_graphWidthSec /= factor;
@@ -136,54 +136,9 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
         return;
     }
 
-    double minX, maxX;
-    auto *axisX = static_cast<QValueAxis*>(m_chart->axes(Qt::Horizontal).first());
-
-    // 현재 모드에 따라 필터링할 X축의 범위를 결정
-    if(m_isAutoScrollEnabled) {
-        // 최신 데이터 시간(그래프 오른쪽 끝)
-        maxX = utils::to_qpointf(data.back()).x();
-        // 가장 오래된 시간 (그래프 왼쪽 끝)
-        minX = maxX - m_graphWidthSec;
-    } else {
-        // 고정 줌 모드: 현재 축에 설정된 범위를 그대로 사용
-        minX = axisX->min();
-        maxX = axisX->max();
-    }
-
-    auto pointsView = data
-                      | std::views::transform([](const DataPoint& p) {
-                            const auto x = utils::to_qpointf(p).x();
-                            return std::make_pair(QPointF(x, p.voltage), QPointF(x, p.current));
-                        })
-                      | std::views::filter([minX, maxX](const auto& pair) {
-                            return pair.first.x() >= minX && pair.first.x() <= maxX;
-                        });
-
-    // 전압/전류 포인트 분리
-    QList<QPointF> voltagePoints;
-    QList<QPointF> currentPoints;
-    // voltagePoints.reserve(data.size());
-    // currentPoints.reserve(data.size());
-
-    for(const auto& pair : pointsView) {
-        voltagePoints.append(pair.first);
-        currentPoints.append(pair.second);
-    }
-
-    m_series->replace(voltagePoints);
-    m_currentSeries->replace(currentPoints);
-    m_currentPoints = voltagePoints; // 기존 로직을 유지하기 위해 전압 포인트 저장
-
-    // Y축 계산을 위해 모든 점을 하나로 뭉침
-    QList<QPointF> allPoints = voltagePoints;
-    allPoints.append(currentPoints);
-
-    // 자동 스크롤이  활성화된 경우에만 축 범위를 업데이트
-    if(m_isAutoScrollEnabled) {
-        m_axisX->setRange(minX, maxX);
-        updateYAxisRange(m_axisY, allPoints);
-    }
+    updateVisiblePoints(data); // 현재 화면에 보일 데이터 포인터들만 필터링하여 멤버 변수에 저장
+    updateSeriesData(); // 필터링된 데이터를 사용하여 그래프 시리즈의 내용을 교체
+    updateAxesRanges(); // 자동 스크롤 모드일 경우, 축의 범위를 최신 데이터에 맞게 업데이트
 }
 
 void GraphWindow::findNearestPoint(const QPointF& chartPos)
@@ -240,4 +195,64 @@ void GraphWindow::updateYAxisRange(QValueAxis *axis, const QList<QPointF> &point
     }
 
     axis->setRange(minY - padding, maxY + padding);
+}
+
+void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
+{
+    double minX, maxX;
+    auto *axisX = static_cast<QValueAxis*>(m_chart->axes(Qt::Horizontal).first());
+
+    // 현재 모드에 따라 필터링할 X축의 범위를 결정
+    if(m_isAutoScrollEnabled) {
+        // 최신 데이터 시간(그래프 오른쪽 끝)
+        maxX = utils::to_qpointf(data.back()).x();
+        // 가장 오래된 시간 (그래프 왼쪽 끝)
+        minX = maxX - m_graphWidthSec;
+    } else {
+        // 고정 줌 모드: 현재 축에 설정된 범위를 그대로 사용
+        minX = axisX->min();
+        maxX = axisX->max();
+    }
+
+    auto pointsView = data
+                      | std::views::transform([](const DataPoint& p) {
+                            const auto x = utils::to_qpointf(p).x();
+                            return std::make_pair(QPointF(x, p.voltage), QPointF(x, p.current));
+                        })
+                      | std::views::filter([minX, maxX](const auto& pair) {
+                            return pair.first.x() >= minX && pair.first.x() <= maxX;
+                        });
+
+    // 멤버 변수에 결과 저장
+    m_voltagePoints.clear();
+    m_currentPoints.clear();
+
+    for(const auto& pair : pointsView) {
+        m_voltagePoints.append(pair.first);
+        m_currentPoints.append(pair.second);
+    }
+}
+
+void GraphWindow::updateSeriesData()
+{
+    m_series->replace(m_voltagePoints);
+    m_currentSeries->replace(m_currentPoints);
+}
+
+void GraphWindow::updateAxesRanges()
+{
+    if(m_isAutoScrollEnabled) {
+        //  Y축 계산을 위해 모든 점들을 하나로 합침
+        QList<QPointF> allPoints = m_voltagePoints;
+        allPoints.append(m_currentPoints);
+
+        updateYAxisRange(m_axisY, allPoints);
+
+        // X축의 범위를 업데이트
+        if (!m_voltagePoints.isEmpty()) {
+            const double maxX = m_voltagePoints.back().x();
+            const double minX = maxX - m_graphWidthSec;
+            m_axisX->setRange(minX, maxX);
+        }
+    }
 }

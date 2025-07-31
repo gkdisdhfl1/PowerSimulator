@@ -46,6 +46,9 @@ private:
     Ui::GraphWindow *ui;
     void setupChart(); // 차트 초기 설정을 위한 함수
     void updateYAxisRange(QValueAxis *axis, const QList<QPointF> &points);
+    void updateVisiblePoints(const std::deque<DataPoint>& data);
+    void updateSeriesData();
+    void updateAxesRanges();
 
     // 차트 관련 객체 소유
     std::unique_ptr<QChart> m_chart;
@@ -54,7 +57,8 @@ private:
     QValueAxis *m_axisX;
     QValueAxis *m_axisY;
     CustomChartView *m_chartView;
-    QList<QPointF> m_currentPoints; // 현재 화면에 그려진 점들을 저장하는 리스트
+    QList<QPointF> m_voltagePoints; // 현재 보이는 전압 데이터
+    QList<QPointF> m_currentPoints; // 현재 보이는 전류 데이터
 
     // 그래프 폭 조절
     double m_graphWidthSec;
