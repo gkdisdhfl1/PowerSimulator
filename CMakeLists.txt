@@ -12,6 +12,34 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Charts)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts)
 
+# =================================================
+# 외부 라이브러리 (SQLite, sqplite_modern_cpp)
+# =================================================
+include(FetchContent)
+
+FetchContent_Declare(
+    sqlite_modern_cpp
+    GIT_REPOSITORY https://github.com/SqliteModernCpp/sqlite_modern_cpp.git
+    GIT_SHALLOW TRUE
+    GIT_BRANCH main
+)
+FetchContent_Declare(
+    sqlite3
+    URL         https://www.sqlite.org/2025/sqlite-amalgamation-3500400.zip
+    URL_HASH    SHA256=1D3049DD0F830A025A53105FC79FD2AB9431AEA99E137809D064D8EE8356B032
+)
+
+FetchContent_MakeAvailable(sqlite_modern_cpp)
+FetchContent_MakeAvailable(sqlite3)
+
+add_library(sqlite_modern_cpp INTERFACE)
+target_include_directories(sqlite_modern_cpp INTERFACE
+    ${sqlite_modern_cpp_SOURCE_DIR}/hdr)
+
+add_library(sqlite3_lib STATIC ${sqlite3_SOURCE_DIR}/sqlite3.c)
+target_include_directories(sqlite3_lib PUBLIC ${sqlite3_SOURCE_DIR})
+# =================================================
+
 set(PROJECT_SOURCES
         main.cpp
         main_window.cpp
@@ -54,9 +82,17 @@ else()
     endif()
 endif()
 
+
+
 target_include_directories(PowerSimulator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(PowerSimulator PRIVATE Qt${QT_VERSION_MAJOR}::Widgets Qt${QT_VERSION_MAJOR}::Charts)
+target_link_libraries(PowerSimulator PRIVATE
+    Qt${QT_VERSION_MAJOR}::Widgets
+    Qt${QT_VERSION_MAJOR}::Charts
+    sqlite_modern_cpp
+    sqlite3_lib
+)
+
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.
 # If you are developing for iOS or macOS you should consider setting an
