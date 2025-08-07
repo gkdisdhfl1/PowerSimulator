@@ -8,6 +8,8 @@ class SettingsDialog;
 class SimulationEngine;
 class ValueControlWidget;
 
+class SettingsManager;
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class MainWindow;
@@ -26,12 +28,27 @@ private slots:
     void handleSettingButtonClicked();
     void onEngineRuninngStateChanged(bool isRunning);
 
+    void onActionSaveSettings();
+    void onActionLoadSettings();
+    void onActionDeleteSettings();
+
 private:
+    struct SettingInfo {
+        QWidget* widget; // 값을 가져오거나 설정할 위젯의 포인터
+        std::variant<int, double> defaultValue; // DB에 값이 없을 때 사용할 기본값
+    };
+
     Ui::MainWindow *ui;
     SettingsDialog *m_settingsDialog;
     SimulationEngine *m_engine;
 
+    std::unique_ptr<SettingsManager> m_settingsManager;
+    std::map<std::string, SettingInfo> m_settingsMap;
+
     void setupUiWidgets();
     void createSignalSlotConnections();
+    void initializeSettingsMap(); // 설정 맵을 초기화하는 함수
+    void applySettingsToUi(std::string_view presetName); // 특정 프리셋을 UI에 적용하는 함수
+    void saveUiToSettings(std::string_view presetName); // 현재 UI 상태를 특정 프리셋으로 저장하는 함수
 };
 #endif // MAIN_WINDOW_H

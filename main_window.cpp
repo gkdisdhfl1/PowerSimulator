@@ -1,8 +1,11 @@
 #include "main_window.h"
 #include "./ui_main_window.h"
-#include "config.h"
 #include "settings_dialog.h"
 #include "simulation_engine.h"
+#include "settings_manager.h"
+#include <QInputDialog>
+#include <QMessageBox>
+#include "config.h"
 
 MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     : QMainWindow(parent)
@@ -12,9 +15,14 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
 {
     ui->setupUi(this);
 
+    // 데이터 베이스 설정
+    QString dbPath = QApplication::applicationDirPath() + "/settings.db";
+    m_settingsManager = std::make_unique<SettingsManager>(dbPath.toStdString());
+
     // UI 초기값 설정
     setupUiWidgets();
     createSignalSlotConnections();
+    initializeSettingsMap();
 
     ui->splitter->setStretchFactor(0, 2);
 }
@@ -49,7 +57,68 @@ void MainWindow::onEngineRuninngStateChanged(bool isRunning)
     ui->startStopButton->setText(isRunning ? "일시정지" : "시작");
 }
 
+void MainWindow::onActionSaveSettings()
+{
+    bool ok;
+    // 사용자에게 프리셋 이름을 입력받는 다이얼로그를 띄움
+    QString presetName = QInputDialog::getText(this, "설정 저장", "저장할 설정의 이름을 입력하세요:", QLineEdit::Normal, "", &ok);
 
+    if(ok && !presetName.isEmpty()) {
+        saveUiToSettings(presetName.toStdString());
+    }
+}
+
+void MainWindow::onActionLoadSettings()
+{
+    std::vector<std::string> presetStdVector = m_settingsManager->getAllPresetNames();
+    if(presetStdVector.empty()) {
+        QMessageBox::information(this, "알림", "저장된 설정이 없습니다.");
+        return;
+    }
+
+    // std:vector<std::string>을 QStringList로 변환
+    QStringList presetItems;
+    for(const auto& name : presetStdVector) {
+        presetItems << QString::fromStdString(name);
+    }
+
+    bool ok;
+    // 사용자에게 프리셋 목록을 보여주고 선택받는 다이얼로그를 띄움
+    QString selectedPreset = QInputDialog::getItem(this, "설정 불러오기", "불러올 설정을 선택하세요:", presetItems, 0, false, &ok);
+
+    if(ok && !selectedPreset.isEmpty()) {
+        applySettingsToUi(selectedPreset.toStdString());
+    }
+}
+
+void MainWindow::onActionDeleteSettings()
+{
+    std::vector<std::string> presetStdVector = m_settingsManager->getAllPresetNames();
+    if(presetStdVector.empty()) {
+        QMessageBox::information(this, "알림", "삭제할 설정이 없습니다.");
+        return;
+    }
+
+    // std:vector<std::string>을 QStringList로 변환
+    QStringList presetItems;
+    for(const auto& name : presetStdVector) {
+        presetItems << QString::fromStdString(name);
+    }
+
+    bool ok;
+    // 사용자에게 프리셋 목록을 보여주고 선택받는 다이얼로그를 띄움
+    QString selectedPreset = QInputDialog::getItem(this, "설정 삭제", "삭제할 설정을 선택하세요:", presetItems, 0, false, &ok);
+
+    if(ok && !selectedPreset.isEmpty()) {
+        // 확인 메세지를 한번 더 보여줌
+        QMessageBox::StandardButton reply;
+        reply = QMessageBox::question(this, "삭제 확인", QString("정말로 '%1' 설정을 삭제하겠습니까?").arg(selectedPreset), QMessageBox::Yes | QMessageBox::No);
+        if(reply == QMessageBox::Yes) {
+            m_settingsManager->deletePreset(selectedPreset.toStdString());
+            ui->statusbar->showMessage(QString("'%1' 설정을 삭제했습니다.").arg(selectedPreset), 3000);
+        }
+    }
+}
 
 void MainWindow::setupUiWidgets()
 {
@@ -85,6 +154,11 @@ void MainWindow::setupUiWidgets()
 void MainWindow::createSignalSlotConnections()
 {
     connect(ui->settingButton, &QPushButton::clicked, this, &MainWindow::handleSettingButtonClicked);
+
+    // 메뉴바 액션 연결
+    connect(ui->actionSaveSettings, &QAction::triggered, this, &MainWindow::onActionSaveSettings);
+    connect(ui->actionLoadSettings, &QAction::triggered, this, &MainWindow::onActionLoadSettings);
+    connect(ui->actionDeleteSettings, &QAction::triggered, this, &MainWindow::onActionDeleteSettings);
 
     // ---- UI 이벤트 -> SimulationEngine 슬롯 ----
     connect(ui->startStopButton, &QPushButton::clicked, this, [this]() {
@@ -144,4 +218,60 @@ void MainWindow::createSignalSlotConnections()
         if(ui->statusbar)
             ui->statusbar->showMessage(QString::fromStdString(coordText));
     });
+}
+
+void MainWindow::initializeSettingsMap()
+{
+    // 각 설정 항목의 정보를 맵에 등록
+    m_settingsMap["voltageAmplitude"]   = {ui->voltageControlWidget, 220.0};
+    m_settingsMap["currentAmplitude"]   = {ui->currentAmplitudeControl, 10.0};
+    m_settingsMap["frequency"]   = {ui->frequencyControlWidget, 60.0};
+    m_settingsMap["currentPhaseOffset"]   = {ui->currentPhaseDial, 0};
+    m_settingsMap["timeScale"]   = {ui->timeScaleWidget, 1.0};
+    m_settingsMap["samplingCycles"]   = {ui->samplingCyclesControl, 1.0};
+    m_settingsMap["samplesPerCycle"]   = {ui->samplesPerCycleControl, 10};
+}
+
+void MainWindow::applySettingsToUi(std::string_view presetName)
+{
+    // 맵을 순회하면 DB에서 값을 불러와 각 위젯에 적용
+    for(auto const& [key, info] : m_settingsMap) {
+        if(auto* control = qobject_cast<ValueControlWidget*>(info.widget)) {
+            // ValueControlWidget은 항상 double 값을 적용한다고 가정. 타입에 따라 다르게 동작하고 싶으면 std::visit 사용
+            double defaultValue = std::get<double>(info.defaultValue); // variant에서 double 값을 가져옴
+            double value = m_settingsManager->loadSetting(presetName, key, defaultValue);
+            control->setValue(value);
+        } else if(auto* dial = qobject_cast<QDial*>(info.widget)) {
+            // QDial은 항상 int를 사용한다고 가정
+            int defaultValue = std::get<int>(info.defaultValue); // variant에서 int 값을 가져옴
+            int value = m_settingsManager->loadSetting(presetName, key, defaultValue);
+            dial->setValue(value);
+        }
+    }
+
+    // 라디오 버튼은 별도 처리
+    int updateMode = m_settingsManager->loadSetting(presetName, "updateMode", 0);
+    if(updateMode == 1) ui->perHalfCycleRadioButton->setChecked(true);
+    else if(updateMode == 2) ui->PerCycleRadioButton->setChecked(true);
+    else ui->perSampleRadioButton->setChecked(true);
+
+    ui->statusbar->showMessage(QString("'%1' 설정을 불러왔습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), 3000);
+}
+
+void MainWindow::saveUiToSettings(std::string_view presetName)
+{
+    // 맵을 순회하며 각 위젯의 현재 값을 DB에 저장
+    for(auto const& [key, info] : m_settingsMap) {
+        if(auto* control = qobject_cast<ValueControlWidget*>(info.widget)) {
+            m_settingsManager->saveSetting(presetName, key, control->value());
+        } else if(auto* dial = qobject_cast<QDial*>(info.widget)) {
+            m_settingsManager->saveSetting(presetName, key, dial->value());
+        }
+    }
+
+    // 라디오 버튼은 별도 처리
+    int updateMode = ui->perSampleRadioButton->isChecked() ? 0 : (ui->perHalfCycleRadioButton->isChecked() ? 1 : 2);
+    m_settingsManager->saveSetting(presetName, "updateMode", updateMode);
+
+    ui->statusbar->showMessage(QString("'%1' 이름으로 설정을 저장했습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), 3000);
 }

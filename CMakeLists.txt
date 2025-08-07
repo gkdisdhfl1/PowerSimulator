@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(PowerSimulator VERSION 0.1 LANGUAGES CXX)
+project(PowerSimulator VERSION 0.1 LANGUAGES CXX C)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -62,6 +62,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         custom_chart_view.h
         custom_chart_view.cpp
         resources.qrc
+        settings_manager.h settings_manager.cpp
 
     )
 # Define target properties for Android with Qt 6 as:
