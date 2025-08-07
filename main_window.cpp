@@ -6,6 +6,7 @@
 #include <QInputDialog>
 #include <QMessageBox>
 #include "config.h"
+#include <variant>
 
 MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     : QMainWindow(parent)
@@ -236,17 +237,20 @@ void MainWindow::applySettingsToUi(std::string_view presetName)
 {
     // 맵을 순회하면 DB에서 값을 불러와 각 위젯에 적용
     for(auto const& [key, info] : m_settingsMap) {
-        if(auto* control = qobject_cast<ValueControlWidget*>(info.widget)) {
-            // ValueControlWidget은 항상 double 값을 적용한다고 가정. 타입에 따라 다르게 동작하고 싶으면 std::visit 사용
-            double defaultValue = std::get<double>(info.defaultValue); // variant에서 double 값을 가져옴
-            double value = m_settingsManager->loadSetting(presetName, key, defaultValue);
-            control->setValue(value);
-        } else if(auto* dial = qobject_cast<QDial*>(info.widget)) {
-            // QDial은 항상 int를 사용한다고 가정
-            int defaultValue = std::get<int>(info.defaultValue); // variant에서 int 값을 가져옴
-            int value = m_settingsManager->loadSetting(presetName, key, defaultValue);
-            dial->setValue(value);
-        }
+        std::visit([&](auto&& defaultValue) {
+            // defaultValue의 실제 타입을 추론
+            using T = std::decay_t<decltype(defaultValue)>;
+
+            // DB에서 실제 타입에 맞는 기본값을 사용하여 설정을 불러옴
+            T value=  m_settingsManager->loadSetting(presetName, key, defaultValue);
+
+            // 위젯의 종류에 따라 불러온 값을 설정
+            if(auto* control = qobject_cast<ValueControlWidget*>(info.widget)) {
+                control->setValue(static_cast<double>(value));
+            } else if(auto* dial = qobject_cast<QDial*>(info.widget)) {
+                dial->setValue(static_cast<int>(value));
+            }
+        }, info.defaultValue);
     }
 
     // 라디오 버튼은 별도 처리
