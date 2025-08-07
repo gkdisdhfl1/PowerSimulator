@@ -33,8 +33,15 @@ private slots:
     void onActionDeleteSettings();
 
 private:
+    using SettingValue = std::variant<int, double>;
+    // getter는 int or double을 담은 variant를 반환
+    using SettingGetter = std::function<SettingValue()>;
+    // setter는 int 또는 double을 담은 variant를 받음
+    using SettingSetter = std::function<void(const SettingValue&)>;
+
     struct SettingInfo {
-        QWidget* widget; // 값을 가져오거나 설정할 위젯의 포인터
+        SettingGetter getter;
+        SettingSetter setter;
         std::variant<int, double> defaultValue; // DB에 값이 없을 때 사용할 기본값
     };
 

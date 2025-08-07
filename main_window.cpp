@@ -5,8 +5,8 @@
 #include "settings_manager.h"
 #include <QInputDialog>
 #include <QMessageBox>
-#include "config.h"
 #include <variant>
+#include "config.h"
 
 MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     : QMainWindow(parent)
@@ -224,20 +224,71 @@ void MainWindow::createSignalSlotConnections()
 void MainWindow::initializeSettingsMap()
 {
     // 각 설정 항목의 정보를 맵에 등록
-    m_settingsMap["voltageAmplitude"]   = {ui->voltageControlWidget, 220.0};
-    m_settingsMap["currentAmplitude"]   = {ui->currentAmplitudeControl, 10.0};
-    m_settingsMap["frequency"]          = {ui->frequencyControlWidget, 60.0};
-    m_settingsMap["currentPhaseOffset"] = {ui->currentPhaseDial, 0};
-    m_settingsMap["timeScale"]          = {ui->timeScaleWidget, 1.0};
-    m_settingsMap["samplingCycles"]     = {ui->samplingCyclesControl, 1.0};
-    m_settingsMap["samplesPerCycle"]    = {ui->samplesPerCycleControl, 10};
-    m_settingsMap["maxDataSize"]        = {nullptr, config::Simulation::DefaultDataSize};
-    m_settingsMap["graphWidthSec"]      = {nullptr, config::View::GraphWidth::Default};
+    m_settingsMap["voltageAmplitude"]   = {
+        [this] {return ui->voltageControlWidget->value();},
+        [this](const SettingValue& val) {ui->voltageControlWidget->setValue(std::get<double>(val));},
+        220.0
+    };
+    m_settingsMap["cuurrentAmplitude"]  = {
+        [this] { return ui->currentAmplitudeControl->value();},
+        [this](const SettingValue& val) {ui->currentAmplitudeControl->setValue(std::get<double>(val));},
+        10.0
+    };
+    m_settingsMap["frequency"] = {
+        [this] { return ui->frequencyControlWidget->value();},
+        [this](const SettingValue& val) {ui->frequencyControlWidget->setValue(std::get<double>(val));},
+        0
+    };
+    m_settingsMap["currentPhaseOffset"] = {
+        [this] { return ui->currentPhaseDial->value();},
+        [this](const SettingValue& val){ui->currentPhaseDial->setValue(std::get<int>(val));},
+        0
+    };
+    m_settingsMap["timeScale"] = {
+        [this] { return ui->timeScaleWidget->value(); },
+        [this](const SettingValue& val) { ui->timeScaleWidget->setValue(std::get<double>(val));},
+        1.0
+    };
+    m_settingsMap["samplingCycles"] = {
+        [this] { return ui->samplingCyclesControl->value(); },
+        [this](const SettingValue& val) { ui->samplingCyclesControl->setValue(std::get<double>(val));},
+        1.0
+    };
+    m_settingsMap["samplesPerCycle"] = {
+                                        [this] { return static_cast<int>(ui->samplesPerCycleControl->value());},
+        [this](const SettingValue& val) { ui->timeScaleWidget->setValue(std::get<double>(val));},
+        10
+    };
+    m_settingsMap["maxDataSize"] = {
+        [this] { return m_engine->getMaxDataSize(); },
+        [this](const SettingValue& val) { m_engine->applySettings(std::get<int>(val));},
+        config::Simulation::DefaultDataSize
+    };
+    m_settingsMap["graphWidthSec"] = {
+        [this] { return ui->graphViewPlaceholder->getGraphWidth();},
+        [this](const SettingValue& val) { ui->graphViewPlaceholder->setGraphWidth(std::get<double>(val));},
+        config::View::GraphWidth::Default
+    };
+
+    m_settingsMap["updateMode"] = {
+        [this]() -> SettingValue {
+            if(ui->perHalfCycleRadioButton->isChecked()) return 1;
+            if(ui->PerCycleRadioButton->isChecked()) return 2;
+            return 0;
+        },
+        [this](const SettingValue& val) {
+            int mode = std::get<int>(val);
+            if(mode == 1) ui->perHalfCycleRadioButton->setChecked(true);
+            else if(mode == 2) ui->PerCycleRadioButton->setChecked(true);
+            else ui->perSampleRadioButton->setChecked(true);
+        },
+        0
+    };
 }
 
 void MainWindow::applySettingsToUi(std::string_view presetName)
 {
-    // 맵을 순회하면 DB에서 값을 불러와 각 위젯에 적용
+    // 맵을 순회하면 DB에서 값을 불러와 각 setter에 적용
     for(auto const& [key, info] : m_settingsMap) {
         std::visit([&](auto&& defaultValue) {
             // defaultValue의 실제 타입을 추론
@@ -245,50 +296,21 @@ void MainWindow::applySettingsToUi(std::string_view presetName)
 
             // DB에서 실제 타입에 맞는 기본값을 사용하여 설정을 불러옴
             T value=  m_settingsManager->loadSetting(presetName, key, defaultValue);
-
-            // 위젯의 종류에 따라 불러온 값을 설정
-            if(auto* control = qobject_cast<ValueControlWidget*>(info.widget)) {
-                control->setValue(static_cast<double>(value));
-            } else if(auto* dial = qobject_cast<QDial*>(info.widget)) {
-                dial->setValue(static_cast<int>(value));
-            }
+            info.setter(value); // setter에 T 타입의 값을 담은 variant 전달
         }, info.defaultValue);
     }
-
-    // 위젯이 없는 항목들 처리
-    int maxSize = m_settingsManager->loadSetting(presetName, "maxDataSize", config::Simulation::DefaultDataSize);
-    m_engine->applySettings(maxSize);
-
-    double graphWidth = m_settingsManager->loadSetting(presetName, "graphWidthSec", config::View::GraphWidth::Default);
-    ui->graphViewPlaceholder->setGraphWidth(graphWidth);
-
-    // 라디오 버튼은 별도 처리
-    int updateMode = m_settingsManager->loadSetting(presetName, "updateMode", 0);
-    if(updateMode == 1) ui->perHalfCycleRadioButton->setChecked(true);
-    else if(updateMode == 2) ui->PerCycleRadioButton->setChecked(true);
-    else ui->perSampleRadioButton->setChecked(true);
 
     ui->statusbar->showMessage(QString("'%1' 설정을 불러왔습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), 3000);
 }
 
 void MainWindow::saveUiToSettings(std::string_view presetName)
 {
-    // 맵을 순회하며 각 위젯의 현재 값을 DB에 저장
+    // 맵을 순회하며 각 getter를 호출하여 값을 DB에 저장
     for(auto const& [key, info] : m_settingsMap) {
-        if(auto* control = qobject_cast<ValueControlWidget*>(info.widget)) {
-            m_settingsManager->saveSetting(presetName, key, control->value());
-        } else if(auto* dial = qobject_cast<QDial*>(info.widget)) {
-            m_settingsManager->saveSetting(presetName, key, dial->value());
-        }
+        std::visit([&](auto&& value) {
+            m_settingsManager->saveSetting(presetName, key, value);
+        }, info.getter());
     }
-
-    // 위젯이 없는 항목들 처리
-    m_settingsManager->saveSetting(presetName, "maxDataSize", m_engine->getMaxDataSize());
-    m_settingsManager->saveSetting(presetName, "graphWidthSec", ui->graphViewPlaceholder->getGraphWidth());
-
-    // 라디오 버튼은 별도 처리
-    int updateMode = ui->perSampleRadioButton->isChecked() ? 0 : (ui->perHalfCycleRadioButton->isChecked() ? 1 : 2);
-    m_settingsManager->saveSetting(presetName, "updateMode", updateMode);
 
     ui->statusbar->showMessage(QString("'%1' 이름으로 설정을 저장했습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), 3000);
 }
