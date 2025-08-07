@@ -226,11 +226,13 @@ void MainWindow::initializeSettingsMap()
     // 각 설정 항목의 정보를 맵에 등록
     m_settingsMap["voltageAmplitude"]   = {ui->voltageControlWidget, 220.0};
     m_settingsMap["currentAmplitude"]   = {ui->currentAmplitudeControl, 10.0};
-    m_settingsMap["frequency"]   = {ui->frequencyControlWidget, 60.0};
-    m_settingsMap["currentPhaseOffset"]   = {ui->currentPhaseDial, 0};
-    m_settingsMap["timeScale"]   = {ui->timeScaleWidget, 1.0};
-    m_settingsMap["samplingCycles"]   = {ui->samplingCyclesControl, 1.0};
-    m_settingsMap["samplesPerCycle"]   = {ui->samplesPerCycleControl, 10};
+    m_settingsMap["frequency"]          = {ui->frequencyControlWidget, 60.0};
+    m_settingsMap["currentPhaseOffset"] = {ui->currentPhaseDial, 0};
+    m_settingsMap["timeScale"]          = {ui->timeScaleWidget, 1.0};
+    m_settingsMap["samplingCycles"]     = {ui->samplingCyclesControl, 1.0};
+    m_settingsMap["samplesPerCycle"]    = {ui->samplesPerCycleControl, 10};
+    m_settingsMap["maxDataSize"]        = {nullptr, config::Simulation::DefaultDataSize};
+    m_settingsMap["graphWidthSec"]      = {nullptr, config::View::GraphWidth::Default};
 }
 
 void MainWindow::applySettingsToUi(std::string_view presetName)
@@ -253,6 +255,13 @@ void MainWindow::applySettingsToUi(std::string_view presetName)
         }, info.defaultValue);
     }
 
+    // 위젯이 없는 항목들 처리
+    int maxSize = m_settingsManager->loadSetting(presetName, "maxDataSize", config::Simulation::DefaultDataSize);
+    m_engine->applySettings(maxSize);
+
+    double graphWidth = m_settingsManager->loadSetting(presetName, "graphWidthSec", config::View::GraphWidth::Default);
+    ui->graphViewPlaceholder->setGraphWidth(graphWidth);
+
     // 라디오 버튼은 별도 처리
     int updateMode = m_settingsManager->loadSetting(presetName, "updateMode", 0);
     if(updateMode == 1) ui->perHalfCycleRadioButton->setChecked(true);
@@ -272,6 +281,10 @@ void MainWindow::saveUiToSettings(std::string_view presetName)
             m_settingsManager->saveSetting(presetName, key, dial->value());
         }
     }
+
+    // 위젯이 없는 항목들 처리
+    m_settingsManager->saveSetting(presetName, "maxDataSize", m_engine->getMaxDataSize());
+    m_settingsManager->saveSetting(presetName, "graphWidthSec", ui->graphViewPlaceholder->getGraphWidth());
 
     // 라디오 버튼은 별도 처리
     int updateMode = ui->perSampleRadioButton->isChecked() ? 0 : (ui->perHalfCycleRadioButton->isChecked() ? 1 : 2);
