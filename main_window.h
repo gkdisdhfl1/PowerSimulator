@@ -2,6 +2,7 @@
 #define MAIN_WINDOW_H
 
 #include <QMainWindow>
+#include <expected>
 
 // 전방 선언
 class SettingsDialog;
@@ -55,7 +56,7 @@ private:
     void setupUiWidgets();
     void createSignalSlotConnections();
     void initializeSettingsMap(); // 설정 맵을 초기화하는 함수
-    void applySettingsToUi(std::string_view presetName); // 특정 프리셋을 UI에 적용하는 함수
-    void saveUiToSettings(std::string_view presetName); // 현재 UI 상태를 특정 프리셋으로 저장하는 함수
+    std::expected<void, std::string> applySettingsToUi(std::string_view presetName); // 특정 프리셋을 UI에 적용하는 함수
+    std::expected<void, std::string> saveUiToSettings(std::string_view presetName); // 현재 UI 상태를 특정 프리셋으로 저장하는 함수
 };
 #endif // MAIN_WINDOW_H

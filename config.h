@@ -47,7 +47,7 @@ namespace config {
             static constexpr double MinAmplitude = 0.0;
             static constexpr double MaxAmplitude = 500.0;
             static constexpr double DefaultAmplitude = 10.0;
-            static constexpr double DefaultPhaseOffset = 0.0;
+            static constexpr int DefaultPhaseOffset = 0;
         };
 
     };
