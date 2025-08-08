@@ -3,9 +3,7 @@
 #include "settings_dialog.h"
 #include "simulation_engine.h"
 #include "settings_manager.h"
-#include <QInputDialog>
-#include <QMessageBox>
-#include <variant>
+#include "settings_ui_controller.h"
 #include "config.h"
 
 MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
@@ -20,10 +18,12 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     QString dbPath = QApplication::applicationDirPath() + "/settings.db";
     m_settingsManager = std::make_unique<SettingsManager>(dbPath.toStdString());
 
+    // 컨트롤러 객체 생성
+    m_settingsUiController = std::make_unique<SettingsUiController>(ui, *m_settingsManager, m_engine, this);
+
     // UI 초기값 설정
     setupUiWidgets();
     createSignalSlotConnections();
-    initializeSettingsMap();
 
     ui->splitter->setStretchFactor(0, 2);
 }
@@ -60,71 +60,17 @@ void MainWindow::onEngineRuninngStateChanged(bool isRunning)
 
 void MainWindow::onActionSaveSettings()
 {
-    bool ok;
-    // 사용자에게 프리셋 이름을 입력받는 다이얼로그를 띄움
-    QString presetName = QInputDialog::getText(this, "설정 저장", "저장할 설정의 이름을 입력하세요:", QLineEdit::Normal, "", &ok);
-
-    if(ok && !presetName.isEmpty()) {
-        auto result = saveUiToSettings(presetName.toStdString());
-        if(!result)
-            QMessageBox::warning(this, "저장 실패", QString::fromStdString(result.error()));
-    }
-}
-
-std::optional<QString> MainWindow::promptUserWithPresetList(const QString& title, const QString& label)
-{
-    auto presetsResult = m_settingsManager->getAllPresetNames();
-    if(!presetsResult) {
-        QMessageBox::warning(this, "오류", QString::fromStdString(presetsResult.error()));
-        return std::nullopt; // optional에 값이 없음을 나타냄
-    }
-
-    if(presetsResult.value().empty()) {
-        QMessageBox::information(this, "알림", "저장된 설정이 없습니다.");
-        return std::nullopt;
-    }
-
-    QStringList presetItem;
-    for(const auto& name : presetsResult.value()) {
-        presetItem << QString::fromStdString(name);
-    }
-
-    bool ok;
-    QString selectedPreset = QInputDialog::getItem(this, title, label, presetItem, 0, false, &ok);
-
-    if(ok && !selectedPreset.isEmpty()) {
-        return selectedPreset; // optional에 선택된 값을 담아 반환
-    }
-
-    return std::nullopt; // 사용자가 취소했음을 나타냄
+    m_settingsUiController->handleSaveAction();
 }
 
 void MainWindow::onActionLoadSettings()
 {
-    if(auto selectedPreset = promptUserWithPresetList("설정 불러오기", "불러올 설정을 선택하세요:")) {
-        auto result = applySettingsToUi(selectedPreset->toStdString());
-        if(!result)
-            QMessageBox::warning(this, "불러오기 실패", QString::fromStdString(result.error()));
-    }
+    m_settingsUiController->handleLoadAction();
 }
 
 void MainWindow::onActionDeleteSettings()
 {
-    if(auto selectedPresetOpt = promptUserWithPresetList("설정 삭제", "삭제할 설정을 선택하세요:")) {
-        const QString& selectedPreset = *selectedPresetOpt; // 명시적인 Qstring 변수에 저장
-
-        // 확인 메세지를 한번 더 보여줌
-        QMessageBox::StandardButton reply;
-        reply = QMessageBox::question(this, "삭제 확인", QString("정말로 '%1' 설정을 삭제하겠습니까?").arg(selectedPreset), QMessageBox::Yes | QMessageBox::No);
-        if(reply == QMessageBox::Yes) {
-            auto result = m_settingsManager->deletePreset(selectedPreset.toStdString());
-            if(result) {
-                ui->statusbar->showMessage(QString("'%1' 설정을 삭제했습니다.").arg(selectedPreset), 3000);
-            } else {
-                QMessageBox::warning(this, "삭제 실패: ", QString::fromStdString(result.error()));
-            }
-        }
-    }
+    m_settingsUiController->handleDeleteAction();
 }
 
 void MainWindow::setupUiWidgets()
@@ -225,113 +171,4 @@ void MainWindow::createSignalSlotConnections()
         if(ui->statusbar)
             ui->statusbar->showMessage(QString::fromStdString(coordText));
     });
-}
-
-void MainWindow::initializeSettingsMap()
-{
-    // 각 설정 항목의 정보를 맵에 등록
-    m_settingsMap["voltageAmplitude"]   = {
-        [this] {return ui->voltageControlWidget->value();},
-        [this](const SettingValue& val) {ui->voltageControlWidget->setValue(std::get<double>(val));},
-        config::Source::Amplitude::Default
-    };
-    m_settingsMap["currentAmplitude"]  = {
-        [this] { return ui->currentAmplitudeControl->value();},
-        [this](const SettingValue& val) {ui->currentAmplitudeControl->setValue(std::get<double>(val));},
-        config::Source::Current::DefaultAmplitude
-    };
-    m_settingsMap["frequency"] = {
-        [this] { return ui->frequencyControlWidget->value();},
-        [this](const SettingValue& val) {ui->frequencyControlWidget->setValue(std::get<double>(val));},
-        config::Source::Frequency::Default
-    };
-    m_settingsMap["currentPhaseOffset"] = {
-        [this] { return ui->currentPhaseDial->value();},
-        [this](const SettingValue& val){ui->currentPhaseDial->setValue(std::get<int>(val));},
-        config::Source::Current::DefaultPhaseOffset
-    };
-    m_settingsMap["timeScale"] = {
-        [this] { return ui->timeScaleWidget->value(); },
-        [this](const SettingValue& val) { ui->timeScaleWidget->setValue(std::get<double>(val));},
-        config::TimeScale::Default
-    };
-    m_settingsMap["samplingCycles"] = {
-        [this] { return ui->samplingCyclesControl->value(); },
-        [this](const SettingValue& val) { ui->samplingCyclesControl->setValue(std::get<double>(val));},
-        config::Sampling::DefaultSamplingCycles
-    };
-    m_settingsMap["samplesPerCycle"] = {
-        [this] { return static_cast<int>(ui->samplesPerCycleControl->value());},
-        [this](const SettingValue& val) { ui->samplesPerCycleControl->setValue(std::get<int>(val));},
-        config::Sampling::DefaultSamplesPerCycle
-    };
-    m_settingsMap["maxDataSize"] = {
-        [this] { return m_engine->getMaxDataSize(); },
-        [this](const SettingValue& val) { m_engine->applySettings(std::get<int>(val));},
-        config::Simulation::DefaultDataSize
-    };
-    m_settingsMap["graphWidthSec"] = {
-        [this] { return ui->graphViewPlaceholder->getGraphWidth();},
-        [this](const SettingValue& val) { ui->graphViewPlaceholder->setGraphWidth(std::get<double>(val));},
-        config::View::GraphWidth::Default
-    };
-
-    m_settingsMap["updateMode"] = {
-        [this]() -> SettingValue {
-            if(ui->perHalfCycleRadioButton->isChecked()) return 1;
-            if(ui->PerCycleRadioButton->isChecked()) return 2;
-            return 0;
-        },
-        [this](const SettingValue& val) {
-            int mode = std::get<int>(val);
-            if(mode == 1) ui->perHalfCycleRadioButton->setChecked(true);
-            else if(mode == 2) ui->PerCycleRadioButton->setChecked(true);
-            else ui->perSampleRadioButton->setChecked(true);
-        },
-        0
-    };
-}
-
-std::expected<void, std::string> MainWindow::applySettingsToUi(std::string_view presetName)
-{
-    // 맵을 순회하면 DB에서 값을 불러와 각 setter에 적용
-    for(auto const& [key, info] : m_settingsMap) {
-        auto result = std::visit([&](auto&& defaultValue)->std::expected<void, std::string> {
-            // defaultValue의 실제 타입을 추론
-            using T = std::decay_t<decltype(defaultValue)>;
-
-            // DB에서 실제 타입에 맞는 기본값을 사용하여 설정을 불러옴
-            auto loadResult=  m_settingsManager->loadSetting(presetName, key, defaultValue);
-            if(!loadResult) {
-                return std::unexpected(loadResult.error());
-            }
-
-            qDebug() << "Applying:" << QString::fromStdString(key)
-                     << "| Loaded value: " << QVariant::fromValue(*loadResult)
-                     << "| Type:" << typeid(*loadResult).name();
-
-            info.setter(*loadResult); // setter에 T 타입의 값을 담은 variant 전달
-            return {};
-        }, info.defaultValue);
-
-        if(!result) return result; // 오류 발생 시 즉시 전파
-    }
-
-    ui->statusbar->showMessage(QString("'%1' 설정을 불러왔습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), 3000);
-    return {};
-}
-
-std::expected<void, std::string> MainWindow::saveUiToSettings(std::string_view presetName)
-{
-    // 맵을 순회하며 각 getter를 호출하여 값을 DB에 저장
-    for(auto const& [key, info] : m_settingsMap) {
-        auto result = std::visit([&](auto&& value) {
-            return m_settingsManager->saveSetting(presetName, key, value);
-        }, info.getter());
-
-        if(!result) return result; // 오류 발생 시 즉시 전파
-    }
-
-    ui->statusbar->showMessage(QString("'%1' 이름으로 설정을 저장했습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), 3000);
-    return {};
 }
