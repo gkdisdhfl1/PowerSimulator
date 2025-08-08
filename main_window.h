@@ -58,5 +58,6 @@ private:
     void initializeSettingsMap(); // 설정 맵을 초기화하는 함수
     std::expected<void, std::string> applySettingsToUi(std::string_view presetName); // 특정 프리셋을 UI에 적용하는 함수
     std::expected<void, std::string> saveUiToSettings(std::string_view presetName); // 현재 UI 상태를 특정 프리셋으로 저장하는 함수
+    std::optional<QString> promptUserWithPresetList(const QString& title, const QString& label);
 };
 #endif // MAIN_WINDOW_H

@@ -71,26 +71,38 @@ void MainWindow::onActionSaveSettings()
     }
 }
 
-void MainWindow::onActionLoadSettings()
+std::optional<QString> MainWindow::promptUserWithPresetList(const QString& title, const QString& label)
 {
     auto presetsResult = m_settingsManager->getAllPresetNames();
     if(!presetsResult) {
         QMessageBox::warning(this, "오류", QString::fromStdString(presetsResult.error()));
-        return;
+        return std::nullopt; // optional에 값이 없음을 나타냄
     }
 
-    // std:vector<std::string>을 QStringList로 변환
-    QStringList presetItems;
+    if(presetsResult.value().empty()) {
+        QMessageBox::information(this, "알림", "저장된 설정이 없습니다.");
+        return std::nullopt;
+    }
+
+    QStringList presetItem;
     for(const auto& name : presetsResult.value()) {
-        presetItems << QString::fromStdString(name);
+        presetItem << QString::fromStdString(name);
     }
 
     bool ok;
-    // 사용자에게 프리셋 목록을 보여주고 선택받는 다이얼로그를 띄움
-    QString selectedPreset = QInputDialog::getItem(this, "설정 불러오기", "불러올 설정을 선택하세요:", presetItems, 0, false, &ok);
+    QString selectedPreset = QInputDialog::getItem(this, title, label, presetItem, 0, false, &ok);
 
     if(ok && !selectedPreset.isEmpty()) {
-        auto result = applySettingsToUi(selectedPreset.toStdString());
+        return selectedPreset; // optional에 선택된 값을 담아 반환
+    }
+
+    return std::nullopt; // 사용자가 취소했음을 나타냄
+}
+
+void MainWindow::onActionLoadSettings()
+{
+    if(auto selectedPreset = promptUserWithPresetList("설정 불러오기", "불러올 설정을 선택하세요:")) {
+        auto result = applySettingsToUi(selectedPreset->toStdString());
         if(!result)
             QMessageBox::warning(this, "불러오기 실패", QString::fromStdString(result.error()));
     }
@@ -98,28 +110,9 @@ void MainWindow::onActionLoadSettings()
 
 void MainWindow::onActionDeleteSettings()
 {
-    auto presetsResult = m_settingsManager->getAllPresetNames();
-    if(!presetsResult) {
-        QMessageBox::warning(this, "오류", QString::fromStdString(presetsResult.error()));
-        return;
-    }
+    if(auto selectedPresetOpt = promptUserWithPresetList("설정 삭제", "삭제할 설정을 선택하세요:")) {
+        const QString& selectedPreset = *selectedPresetOpt; // 명시적인 Qstring 변수에 저장
 
-    if(presetsResult.value().empty()) {
-        QMessageBox::information(this, "알림", "삭제할 설정이 없습니다.");
-        return;
-    }
-
-    // std:vector<std::string>을 QStringList로 변환
-    QStringList presetItems;
-    for(const auto& name : presetsResult.value()) {
-        presetItems << QString::fromStdString(name);
-    }
-
-    bool ok;
-    // 사용자에게 프리셋 목록을 보여주고 선택받는 다이얼로그를 띄움
-    QString selectedPreset = QInputDialog::getItem(this, "설정 삭제", "삭제할 설정을 선택하세요:", presetItems, 0, false, &ok);
-
-    if(ok && !selectedPreset.isEmpty()) {
         // 확인 메세지를 한번 더 보여줌
         QMessageBox::StandardButton reply;
         reply = QMessageBox::question(this, "삭제 확인", QString("정말로 '%1' 설정을 삭제하겠습니까?").arg(selectedPreset), QMessageBox::Yes | QMessageBox::No);

@@ -31,16 +31,13 @@ public:
     // 키가 존재하지 않으면 defaultValue를 반환
     template<typename T>
     std::expected<T, Error> loadSetting(std::string_view preset_name, std::string_view key, const T& defaultValue) {
-        std::cout << "Attempting to load: preset='" << preset_name << "', key='" << key << "'" << std::endl;
         try {
             std::string value_str;
             db << "SELECT value FROM Settings WHERE preset_name = ? AND key = ?;"
                << std::string(preset_name) << std::string(key) >> value_str;
 
-            std::cout << "  -> Success! DB value: '" << value_str << "'" << std::endl;
 
             if(value_str.empty()) {
-                std::cout << "  -> DB value is empty, returning default." << std::endl;
                 return defaultValue; // 키가 없는 것은 오류가 아니므로 기본값 반환
             }
 
@@ -48,17 +45,13 @@ public:
             std::stringstream ss(value_str);
             ss >> result;
             if(ss.fail()) {
-                std::cout << "  -> Failed to convert '" << value_str << "', returning default." << std::endl;
                 return std::unexpected("'" + std::string(key) + "' 값을 반환하는데 실패했습니다.");
             }
-            std::cout << "  -> Converted successfully, returning loaded value." << std::endl;
             return result;
         } catch (const sqlite::sqlite_exception&) {
-            std::cout << "  -> sqlite_exception caught! Key not found, returning default." << std::endl;
             // 행이 없는 경우(not found)는 비정상적인 상황으로 보고 기본값 반환
             return defaultValue;
         } catch(const std::exception& e) {
-            std::cout << "  -> std::exception caught! Error: " << e.what() << std::endl;
             return std::unexpected("설정 불러오기 실패: " + std::string(e.what()));
         }
     }
