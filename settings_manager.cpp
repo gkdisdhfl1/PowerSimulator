@@ -23,7 +23,7 @@ std::expected<std::vector<std::string>, SettingsManager::Error> SettingsManager:
                 names.push_back(name);
             };
         return names;
-    } catch(const std::exception e) {
+    } catch(const std::exception& e) {
         return std::unexpected("프리셋 목록 불러오기 실패: " + std::string(e.what()));
     }
 }
@@ -32,7 +32,7 @@ std::expected<void, SettingsManager::Error> SettingsManager::deletePreset(std::s
     try {
         db << "DELETE FROM Settings WHERE preset_name = ?;" << std::string(preset_name);
         return {};
-    } catch(const std::exception e) {
+    } catch(const std::exception& e) {
         return std::unexpected("프리셋 삭제 실패: " + std::string(e.what()));
     }
 }

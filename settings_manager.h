@@ -22,7 +22,7 @@ public:
             db << "INSERT OR REPLACE INTO Settings (preset_name, key, value) VALUES (?, ?, ?);"
                << std::string(preset_name) << std::string(key) << ss.str();
             return {}; // 성공 시 void를 의미하는 빈 객체 반환
-        } catch(const std::exception e) {
+        } catch(const std::exception& e) {
             return std::unexpected("설정 저장 실패: " + std::string(e.what()));
         }
     }
@@ -44,7 +44,7 @@ public:
             T result;
             std::stringstream ss(value_str);
             ss >> result;
-            if(ss.fail()) {
+            if(ss.fail() || !ss.eof()) {
                 return std::unexpected("'" + std::string(key) + "' 값을 반환하는데 실패했습니다.");
             }
             return result;
