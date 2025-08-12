@@ -4,61 +4,32 @@
 
 SimulationEngine::SimulationEngine()
     : QObject()
-    , m_maxDataSize(config::Simulation::DefaultDataSize)
-    , m_amplitude(config::Source::Amplitude::Default)
-    , m_currentAmplitude(config::Source::Current::DefaultAmplitude)
-    , m_frequency(config::Source::Frequency::Default) // 기본 주파수 1.0 Hz
-    , m_timeScale(config::TimeScale::Default) // 기본 비율은 1.0
-    , m_samplingCycles(config::Sampling::DefaultSamplingCycles)
-    , m_samplesPerCycle(config::Sampling::DefaultSamplesPerCycle)
-    , m_phaseRadians(0.0) // 기본 위상 0
     , m_currentPhaseRadians(0.0)
+    , m_accumulatedPhaseSinceUpdate(0.0)
     , m_captureIntervalsMs(0.0)
     , m_simulationTimeNs(0)
-    , m_currentPhaseOffsetRadians(config::Source::Current::DefaultPhaseOffset)
-    , m_updateMode(UpdateMode::PerSample)
-    , m_phaseAtLastUpdate(0.0)
-    , m_accumulatedPhaseSinceUpdate(0.0)
 {
     using namespace std::chrono_literals;
 
     m_captureTimer.setTimerType(Qt::PreciseTimer);
 
-    m_captureIntervalsMs = 1.0s / (m_samplingCycles * m_samplesPerCycle);
+    m_captureIntervalsMs = 1.0s / (m_params.samplingCycles * m_params.samplesPerCycle);
 
     connect(&m_captureTimer, &QTimer::timeout, this, &SimulationEngine::captureData);
     updateCaptureTimer(); // 첫 타이머 간격 설정
 }
 
-bool SimulationEngine::isRunning() const
-{
-    return m_captureTimer.isActive();
-}
-double SimulationEngine::getCaptureIntervalSec() const
-{
-    return m_captureTimer.interval() / 1000.0;
-}
-int SimulationEngine::getMaxDataSize() const
-{
-    return m_maxDataSize;
-}
-double SimulationEngine::getSamplingCycles() const
-{
-    return m_samplingCycles;
-}
-int SimulationEngine::getSamplesPerCycle() const
-{
-    return m_samplesPerCycle;
-}
+bool SimulationEngine::isRunning() const { return m_captureTimer.isActive(); }
+SimulationEngine::Parameters& SimulationEngine::parameters() { return m_params; };
+const SimulationEngine::Parameters& SimulationEngine::parameters() const { return m_params; };
 
 
 void SimulationEngine::start()
 {
     if (isRunning()) return;
     qDebug() << "시작";
-    qDebug() << "m_amplitude = " << m_amplitude << " " << "m_frequency = " << m_frequency;
-    qDebug() << "m_maxDataSize = " << m_maxDataSize << "m_timeScale = " << m_timeScale;
-
+    qDebug() << "m_amplitude = " << m_params.amplitude << " " << "m_frequency = " << m_params.frequency;
+    qDebug() << "m_maxDataSize = " << m_params.maxDataSize << "m_timeScale = " << m_params.timeScale;
 
     m_captureTimer.start();
     emit runningStateChanged(true);
@@ -75,95 +46,6 @@ void SimulationEngine::stop()
     qDebug() << "Engine stopped.";
 }
 
-void SimulationEngine::applySettings(int maxSize)
-{
-    using namespace std::chrono_literals;
-
-    m_maxDataSize = maxSize;
-
-    while(m_data.size() > static_cast<size_t>(m_maxDataSize)) {
-        // qDebug() << "--- 이전 데이터 삭제중 ---";
-        m_data.pop_front();
-    }
-    qDebug() << "설정 반영 완료. Max Size: " << maxSize;
-}
-
-void SimulationEngine::setAmplitude(double amplitude)
-{
-    m_amplitude = std::clamp(amplitude, config::Source::Amplitude::Min, config::Source::Amplitude::Max);
-}
-
-void SimulationEngine::setPhase(double degrees)
-{
-    // 각도를 [0, 360) 범위로 정규화
-    double normalizedDegrees = std::fmod(degrees, 360.0);
-    if (normalizedDegrees < 0) {
-        normalizedDegrees += 360.0;
-    }
-
-    // 라디안으로 변환하여 내부에 저장
-    m_phaseRadians = utils::degreesToRadians(normalizedDegrees);
-}
-
-void SimulationEngine::setTimeScale(double scale)
-{
-    if(scale > 0) {
-        m_timeScale = scale;
-        updateCaptureTimer(); // 시간 비율이 바뀌었으니 실제 타이머 간격 재설정
-    }
-}
-
-void SimulationEngine::setFrequency(double hertz)
-{
-    m_frequency = std::clamp(hertz, config::Source::Frequency::Min, config::Source::Frequency::Max);
-}
-
-void SimulationEngine::setSamplingCycles(double samplingCycles)
-{
-    m_samplingCycles = samplingCycles;
-    recalculateCaptureInterval();
-}
-void SimulationEngine::setSamplesPerCycle(int samplesPerCycle)
-{
-    m_samplesPerCycle = samplesPerCycle;
-    recalculateCaptureInterval();
-}
-
-void SimulationEngine::setCurrentAmplitude(double amplitude)
-{
-    m_currentAmplitude = amplitude;
-}
-
-void SimulationEngine::setCurrentPhaseOffset(double degrees)
-{
-    m_currentPhaseOffsetRadians = utils::degreesToRadians(degrees);
-}
-
-void SimulationEngine::setUpdateMode(UpdateMode mode)
-{
-    m_updateMode = mode;
-    m_accumulatedPhaseSinceUpdate = 0.0; // 누적 값 초기화
-    emit dataUpdated(m_data);
-}
-
-void SimulationEngine::updateCaptureTimer()
-{
-    // 기본 캡처 간격에 시간 비율을 곱해서 실제 타이머 주기를 계산
-    double scaledIntervalMs = (m_captureIntervalsMs * m_timeScale).count();
-
-    // 간격이 0이 되는 것을 방지
-    if(scaledIntervalMs < config::Simulation::Timer::MinIntervalMs)
-        scaledIntervalMs = config::Simulation::Timer::MinIntervalMs;
-
-    // int 최대값 초과 방지
-    const double maxTimerInterval = static_cast<double>(std::numeric_limits<int>::max());
-    if(scaledIntervalMs > maxTimerInterval)
-        scaledIntervalMs = maxTimerInterval;
-
-    m_captureTimer.setInterval(static_cast<int>(std::round(scaledIntervalMs)));
-    qDebug() << "m_captureTimer.interval()" << m_captureTimer.interval();
-}
-
 void SimulationEngine::captureData()
 {
     double currentVoltage = calculateCurrentVoltage();
@@ -172,14 +54,14 @@ void SimulationEngine::captureData()
 
     // 다음 스텝을 위해 현재 진행 위상 업데이트
     const FpSeconds timeDelta = m_captureIntervalsMs;
-    const double phaseDelta = 2.0 * std::numbers::pi * m_frequency * timeDelta.count();
+    const double phaseDelta = 2.0 * std::numbers::pi * m_params.frequency * timeDelta.count();
     m_currentPhaseRadians = std::fmod(m_currentPhaseRadians + phaseDelta, 2.0 * std::numbers::pi);
 
     // 마지막 갱신 후 누적된 위상 변화량도 업데이트
     m_accumulatedPhaseSinceUpdate += phaseDelta;
 
     bool shouldEmitUpdate = false;
-    switch (m_updateMode) {
+    switch (m_params.updateMode) {
     case UpdateMode::PerSample:
         shouldEmitUpdate = true;
         break;
@@ -199,15 +81,34 @@ void SimulationEngine::captureData()
 
     if(shouldEmitUpdate) {
         emit dataUpdated(m_data);
-        if(m_updateMode == UpdateMode::PerHalfCycle)
+        if(m_params.updateMode == UpdateMode::PerHalfCycle)
             m_accumulatedPhaseSinceUpdate -= std::numbers::pi;
-        else if(m_updateMode == UpdateMode::PerCycle)
+        else if(m_params.updateMode == UpdateMode::PerCycle)
             m_accumulatedPhaseSinceUpdate -= 2.0 * std::numbers::pi;
         else
             m_accumulatedPhaseSinceUpdate = 0.0;
     }
     advanceSimulationTime();
 }
+
+void SimulationEngine::updateCaptureTimer()
+{
+    // 기본 캡처 간격에 시간 비율을 곱해서 실제 타이머 주기를 계산
+    double scaledIntervalMs = (m_captureIntervalsMs * m_params.timeScale).count();
+
+    // 간격이 0이 되는 것을 방지
+    if(scaledIntervalMs < config::Simulation::Timer::MinIntervalMs)
+        scaledIntervalMs = config::Simulation::Timer::MinIntervalMs;
+
+    // int 최대값 초과 방지
+    const double maxTimerInterval = static_cast<double>(std::numeric_limits<int>::max());
+    if(scaledIntervalMs > maxTimerInterval)
+        scaledIntervalMs = maxTimerInterval;
+
+    m_captureTimer.setInterval(static_cast<int>(std::round(scaledIntervalMs)));
+    qDebug() << "m_captureTimer.interval()" << m_captureTimer.interval();
+}
+
 
 void SimulationEngine::advanceSimulationTime()
 {
@@ -218,14 +119,14 @@ void SimulationEngine::advanceSimulationTime()
 
 double SimulationEngine::calculateCurrentVoltage()
 {
-    const double finalPhase = m_currentPhaseRadians + m_phaseRadians;
-    return m_amplitude * sin(finalPhase);
+    const double finalPhase = m_currentPhaseRadians + m_params.phaseRadians;
+    return m_params.amplitude * sin(finalPhase);
 }
 
 double SimulationEngine::calculateCurrentAmperage()
 {
-    const double finalPhase = m_currentPhaseRadians + m_phaseRadians + m_currentPhaseOffsetRadians;
-    return m_currentAmplitude * sin(finalPhase);
+    const double finalPhase = m_currentPhaseRadians + m_params.phaseRadians + m_params.currentPhaseOffsetRadians;
+    return m_params.currentAmplitude * sin(finalPhase);
 }
 
 void SimulationEngine::addNewDataPoint(double voltage, double current)
@@ -237,7 +138,7 @@ void SimulationEngine::addNewDataPoint(double voltage, double current)
     m_data.push_back({m_simulationTimeNs, voltage, current});
 
     // 최대 개수 관리
-    if(m_data.size() > static_cast<size_t>(m_maxDataSize)) {
+    if(m_data.size() > static_cast<size_t>(m_params.maxDataSize)) {
         // qDebug() << " ---- data{" << m_simulationTimeNs << ", " << voltage << "} 삭제 ----";
         m_data.pop_front();
     }
@@ -247,7 +148,7 @@ void SimulationEngine::recalculateCaptureInterval()
 {
     using namespace std::chrono_literals;
 
-    double totalSamplesPerSecond = m_samplingCycles * m_samplesPerCycle;
+    double totalSamplesPerSecond = m_params.samplingCycles * m_params.samplesPerCycle;
     qDebug() << "totalSamplesPerSecond: " << totalSamplesPerSecond;
 
     if(totalSamplesPerSecond > config::Sampling::MaxSamplesPerSecond) {
@@ -270,23 +171,24 @@ void SimulationEngine::onRedrawRequest()
 
     // 현재 가지고 있는 m_data를 한번 더 보냄
     if(!m_data.empty()) {
-        switch (m_updateMode) {
-        case UpdateMode::PerSample:
-            shouldEmitUpdate = true;
-            break;
-        case UpdateMode::PerHalfCycle:
-            // 누적된 위상이 PI(180도) 이상 변했는지 확인
-            if(m_accumulatedPhaseSinceUpdate >= std::numbers::pi) {
-                shouldEmitUpdate = true;
-            }
-            break;
-        case UpdateMode::PerCycle:
-            // 누적된 위상이 2*PI 이상 변했는지 확인
-            if(m_accumulatedPhaseSinceUpdate >= 2.0 * std::numbers::pi) {
-                shouldEmitUpdate = true;
-            }
-            break;
-        }
+        // switch (m_updateMode) {
+        // case UpdateMode::PerSample:
+        //     shouldEmitUpdate = true;
+        //     break;
+        // case UpdateMode::PerHalfCycle:
+        //     // 누적된 위상이 PI(180도) 이상 변했는지 확인
+        //     if(m_accumulatedPhaseSinceUpdate >= std::numbers::pi) {
+        //         shouldEmitUpdate = true;
+        //     }
+        //     break;
+        // case UpdateMode::PerCycle:
+        //     // 누적된 위상이 2*PI 이상 변했는지 확인
+        //     if(m_accumulatedPhaseSinceUpdate >= 2.0 * std::numbers::pi) {
+        //         shouldEmitUpdate = true;
+        //     }
+        //     break;
+        // }
+        emit dataUpdated(m_data);
     }
     if(shouldEmitUpdate) {
         emit dataUpdated(m_data);

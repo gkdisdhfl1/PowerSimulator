@@ -5,6 +5,7 @@
 #include "settings_manager.h"
 #include "simulation_engine.h"
 
+class SettingsDialog;
 
 class SettingsUiController : public QObject
 {
@@ -16,6 +17,17 @@ public:
     void handleSaveAction();
     void handleLoadAction();
     void handleDeleteAction();
+    void handleSettingsDialog();
+
+public slots:
+    void onAmplitudeChanged(double value);
+    void onCurrentAmplitudeChanged(double value);
+    void onFrequencyChanged(double value);
+    void onCurrentPhaseChanged(int degrees);
+    void onTimeScaleChanged(double value);
+    void onSamplingCyclesChanged(double value);
+    void onSamplesPerCycleChanged(int value);
+    void onUpdateModeChanged(); // 라디오 버튼은 매개변수 필요 없음
 
 private:
     using SettingValue = std::variant<int, double>;
@@ -33,6 +45,7 @@ private:
     SimulationEngine* m_engine;
     QWidget* m_parent;
     std::map<std::string, SettingInfo> m_settingsMap;
+    std::unique_ptr<SettingsDialog> m_settingsDialog; // SettingsDialog 소유권 이전
 
     void initializeSettingsMap(); // 설정 맵을 초기화하는 함수
     std::expected<void, std::string> applySettingsToUi(std::string_view presetName); // 특정 프리셋을 UI에 적용하는 함수

@@ -4,7 +4,6 @@
 #include <QMainWindow>
 
 // 전방 선언
-class SettingsDialog;
 class SimulationEngine;
 class ValueControlWidget;
 
@@ -26,7 +25,6 @@ public:
     ~MainWindow();
 
 private slots:
-    void handleSettingButtonClicked();
     void onEngineRuninngStateChanged(bool isRunning);
 
     void onActionSaveSettings();
@@ -35,7 +33,6 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
-    SettingsDialog *m_settingsDialog;
     SimulationEngine *m_engine;
 
     std::unique_ptr<SettingsManager> m_settingsManager;

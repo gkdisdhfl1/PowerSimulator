@@ -1,5 +1,6 @@
 #include "settings_ui_controller.h"
 #include "config.h"
+#include "settings_dialog.h"
 #include <QInputDialog>
 #include <QMessageBox>
 
@@ -11,6 +12,69 @@ SettingsUiController::SettingsUiController(Ui::MainWindow* ui, SettingsManager& 
     ,m_parent(parent)
 {
     initializeSettingsMap();
+
+    // 시그널 슬롯 연결
+    connect(m_ui->voltageControlWidget, &ValueControlWidget::valueChanged, this, &SettingsUiController::onAmplitudeChanged);
+    connect(m_ui->currentAmplitudeControl, &ValueControlWidget::valueChanged, this, &SettingsUiController::onCurrentAmplitudeChanged);
+    connect(m_ui->frequencyControlWidget, &ValueControlWidget::valueChanged, this, &SettingsUiController::onFrequencyChanged);
+    connect(m_ui->currentPhaseDial, &FineTuningDial::valueChanged, this, &SettingsUiController::onCurrentPhaseChanged);
+    connect(m_ui->timeScaleWidget, &ValueControlWidget::valueChanged, this, &SettingsUiController::onTimeScaleChanged);
+    connect(m_ui->samplingCyclesControl, &ValueControlWidget::valueChanged, this, &SettingsUiController::onSamplingCyclesChanged);
+    connect(m_ui->samplesPerCycleControl, &ValueControlWidget::valueChanged, this, [this](double value) {
+        onSamplesPerCycleChanged(static_cast<int>(value));
+    });
+
+    // 라디오 버튼들
+    connect(m_ui->perSampleRadioButton, &QRadioButton::toggled, this, &SettingsUiController::onUpdateModeChanged);
+    connect(m_ui->perHalfCycleRadioButton, &QRadioButton::toggled, this, &SettingsUiController::onUpdateModeChanged);
+    connect(m_ui->PerCycleRadioButton, &QRadioButton::toggled, this, &SettingsUiController::onUpdateModeChanged);
+
+    m_settingsDialog = std::make_unique<SettingsDialog>(m_parent);
+}
+
+// --- slot 구현 ---
+void SettingsUiController::onAmplitudeChanged(double value)
+{
+    m_engine->parameters().amplitude = value;
+}
+void SettingsUiController::onCurrentAmplitudeChanged(double value)
+{
+    m_engine->parameters().currentAmplitude = value;
+}
+void SettingsUiController::onFrequencyChanged(double value)
+{
+    m_engine->parameters().frequency = value;
+    m_engine->recalculateCaptureInterval();
+}
+void SettingsUiController::onCurrentPhaseChanged(int degrees)
+{
+    m_engine->parameters().currentPhaseOffsetRadians = utils::degreesToRadians(degrees);
+}
+void SettingsUiController::onTimeScaleChanged(double value)
+{
+    m_engine->parameters().timeScale = value;
+    m_engine->updateCaptureTimer();
+}
+void SettingsUiController::onSamplingCyclesChanged(double value)
+{
+    m_engine->parameters().samplingCycles = value;
+    m_engine->recalculateCaptureInterval();
+}
+void SettingsUiController::onSamplesPerCycleChanged(int value)
+{
+    m_engine->parameters().samplesPerCycle = value;
+    m_engine->recalculateCaptureInterval();
+}
+void SettingsUiController::onUpdateModeChanged()
+{
+    // 어떤 버튼을 눌렀는지 확인하여 모드 변경
+    if(m_ui->perSampleRadioButton->isChecked()) {
+        m_engine->parameters().updateMode = SimulationEngine::UpdateMode::PerSample;
+    } else if(m_ui->perHalfCycleRadioButton->isChecked()) {
+        m_engine->parameters().updateMode = SimulationEngine::UpdateMode::PerHalfCycle;
+    } else if(m_ui->PerCycleRadioButton->isChecked()) {
+        m_engine->parameters().updateMode = SimulationEngine::UpdateMode::PerCycle;
+    }
 }
 
 void SettingsUiController::handleSaveAction()
@@ -53,47 +117,94 @@ void SettingsUiController::handleDeleteAction()
     }
 }
 
+void SettingsUiController::handleSettingsDialog()
+{
+    // 맵에 등록된 getter을 호출하여 다이얼로그의 초기값을 설정
+    int currentMaxSize = std::get<int>(m_settingsMap.at("maxDataSize").getter());
+    double currentGraphWidth = std::get<double>(m_settingsMap.at("graphWidthSec").getter());
+    m_settingsDialog->setInitialValues(currentMaxSize, currentGraphWidth);
+
+    if(m_settingsDialog->exec() == QDialog::Accepted) {
+        // ok를 누르면 맵에 등록된 setter 호출하여 새로운 값을 적용
+        m_settingsMap.at("maxDataSize").setter(m_settingsDialog->getMaxSize());
+        m_settingsMap.at("graphWidthSec").setter(m_settingsDialog->getGraphWidth());
+    }
+}
+
 void SettingsUiController::initializeSettingsMap()
 {
     // 각 설정 항목의 정보를 맵에 등록
     m_settingsMap["voltageAmplitude"]   = {
-        [this] {return m_ui->voltageControlWidget->value();},
-        [this](const SettingValue& val) {m_ui->voltageControlWidget->setValue(std::get<double>(val));},
+        [this] { return m_engine->parameters().amplitude;},
+        [this](const SettingValue& val) {
+            double value = std::get<double>(val);
+            m_ui->voltageControlWidget->setValue(value);
+            m_engine->parameters().amplitude = value;
+        },
         config::Source::Amplitude::Default
     };
     m_settingsMap["currentAmplitude"]  = {
-        [this] { return m_ui->currentAmplitudeControl->value();},
-        [this](const SettingValue& val) {m_ui->currentAmplitudeControl->setValue(std::get<double>(val));},
+        [this] { return m_engine->parameters().currentAmplitude; },
+        [this](const SettingValue& val) {
+            double value = std::get<double>(val);
+            m_ui->currentAmplitudeControl->setValue(value);
+            m_engine->parameters().currentAmplitude = value;
+        },
         config::Source::Current::DefaultAmplitude
     };
     m_settingsMap["frequency"] = {
-        [this] { return m_ui->frequencyControlWidget->value();},
-        [this](const SettingValue& val) {m_ui->frequencyControlWidget->setValue(std::get<double>(val));},
+        [this] { return m_engine->parameters().frequency; },
+        [this](const SettingValue& val) {
+            double value = std::get<double>(val);
+            m_ui->frequencyControlWidget->setValue(value);
+            m_engine->parameters().frequency = value;
+            m_engine->recalculateCaptureInterval();
+        },
         config::Source::Frequency::Default
     };
     m_settingsMap["currentPhaseOffset"] = {
-        [this] { return m_ui->currentPhaseDial->value();},
-        [this](const SettingValue& val){m_ui->currentPhaseDial->setValue(std::get<int>(val));},
+        [this] { return m_ui->currentPhaseDial->value(); },
+        [this](const SettingValue& val){
+            int degrees = std::get<int>(val);
+            m_ui->currentPhaseDial->setValue(degrees);
+            m_engine->parameters().currentPhaseOffsetRadians = utils::degreesToRadians(degrees);
+        },
         config::Source::Current::DefaultPhaseOffset
     };
     m_settingsMap["timeScale"] = {
-        [this] { return m_ui->timeScaleWidget->value(); },
-        [this](const SettingValue& val) { m_ui->timeScaleWidget->setValue(std::get<double>(val));},
+        [this] { return m_engine->parameters().timeScale; },
+        [this](const SettingValue& val) {
+            double value = std::get<double>(val);
+            m_ui->timeScaleWidget->setValue(value);
+            m_engine->parameters().timeScale = value;
+            m_engine->updateCaptureTimer();
+        },
         config::TimeScale::Default
     };
     m_settingsMap["samplingCycles"] = {
-        [this] { return m_ui->samplingCyclesControl->value(); },
-        [this](const SettingValue& val) { m_ui->samplingCyclesControl->setValue(std::get<double>(val));},
+        [this] { return m_engine->parameters().samplingCycles; },
+        [this](const SettingValue& val) {
+            double value = std::get<double>(val);
+            m_ui->samplingCyclesControl->setValue(value);
+            m_engine->parameters().samplingCycles = value;
+            m_engine->recalculateCaptureInterval();
+        },
         config::Sampling::DefaultSamplingCycles
     };
     m_settingsMap["samplesPerCycle"] = {
-        [this] { return static_cast<int>(m_ui->samplesPerCycleControl->value());},
-        [this](const SettingValue& val) { m_ui->samplesPerCycleControl->setValue(std::get<int>(val));},
+        [this] { return m_engine->parameters().samplesPerCycle;},
+        [this](const SettingValue& val) {
+            double value = std::get<int>(val);
+            m_ui->samplesPerCycleControl->setValue(value);
+            m_engine->recalculateCaptureInterval();
+        },
         config::Sampling::DefaultSamplesPerCycle
     };
     m_settingsMap["maxDataSize"] = {
-        [this] { return m_engine->getMaxDataSize(); },
-        [this](const SettingValue& val) { m_engine->applySettings(std::get<int>(val));},
+        [this] { return m_engine->parameters().maxDataSize; },
+        [this](const SettingValue& val) {
+            m_engine->parameters().maxDataSize = std::get<int>(val);
+        },
         config::Simulation::DefaultDataSize
     };
     m_settingsMap["graphWidthSec"] = {
@@ -104,12 +215,11 @@ void SettingsUiController::initializeSettingsMap()
 
     m_settingsMap["updateMode"] = {
         [this]() -> SettingValue {
-            if(m_ui->perHalfCycleRadioButton->isChecked()) return 1;
-            if(m_ui->PerCycleRadioButton->isChecked()) return 2;
-            return 0;
+            return static_cast<int>(m_engine->parameters().updateMode);
         },
         [this](const SettingValue& val) {
             int mode = std::get<int>(val);
+            m_engine->parameters().updateMode = static_cast<SimulationEngine::UpdateMode>(mode);
             if(mode == 1) m_ui->perHalfCycleRadioButton->setChecked(true);
             else if(mode == 2) m_ui->PerCycleRadioButton->setChecked(true);
             else m_ui->perSampleRadioButton->setChecked(true);

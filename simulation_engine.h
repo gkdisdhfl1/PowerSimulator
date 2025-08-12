@@ -5,40 +5,46 @@
 #include <QTimer>
 #include <deque>
 #include "data_point.h"
+#include "config.h"
 
 class SimulationEngine : public QObject
 {
     Q_OBJECT
 public:
-    explicit SimulationEngine();
-
     enum class UpdateMode {
         PerSample,      // 매 샘플마다 갱신
         PerHalfCycle,   // 반 주기마다 갱신
         PerCycle        // 한 주기마다 갱신
     };
 
+    // 시뮬레이션 매개변수를 담는 구조체
+    struct Parameters {
+        double amplitude = config::Source::Amplitude::Default;
+        double currentAmplitude = config::Source::Current::DefaultAmplitude;
+        double frequency = config::Source::Frequency::Default;
+        double phaseRadians = 0.0;
+        double currentPhaseOffsetRadians = 0.0;
+        double timeScale = config::TimeScale::Default;
+        double samplingCycles = config::Sampling::DefaultSamplingCycles;
+        double samplesPerCycle = config::Sampling::DefaultSamplesPerCycle;
+        int maxDataSize = config::Simulation::DefaultDataSize;
+        UpdateMode updateMode = UpdateMode::PerSample;
+    };
+
+    explicit SimulationEngine();
+
     bool isRunning() const;
 
-    double getSamplingCycles() const;
-    int getSamplesPerCycle() const;
-    int getMaxDataSize() const;
-    double getCaptureIntervalSec() const; // 현재 설정값을 읽음
+    // 파라미터에 직접 접근할 수 있는 인터페이스
+    Parameters& parameters();
+    const Parameters& parameters() const;
 
 public slots:
     void start();
     void stop();
-    void applySettings(int maxSize);
-    void setAmplitude(double amplitude);
-    void setPhase(double degrees);
-    void setFrequency(double hertz);
-    void setTimeScale(double rate);
-    void setSamplingCycles(double samplingCycles);
-    void setSamplesPerCycle(int samplesPerCycle);
     void onRedrawRequest();
-    void setCurrentAmplitude(double amplitude);
-    void setCurrentPhaseOffset(double degrees);
-    void setUpdateMode(UpdateMode mode);
+    void updateCaptureTimer();
+    void recalculateCaptureInterval();
 
 signals:
     void dataUpdated(const std::deque<DataPoint>& data);
@@ -56,29 +62,15 @@ private:
     double calculateCurrentVoltage();
     double calculateCurrentAmperage();
     void addNewDataPoint(double voltage, double current);
-    void updateCaptureTimer();
-    void recalculateCaptureInterval();
 
     QTimer m_captureTimer;
-
     std::deque<DataPoint> m_data;
-    int m_maxDataSize;
-    double m_amplitude; // 진폭 (최대 전압)
-    double m_frequency; // 주파수 (Hz)
-    double m_phaseRadians; // 위상 (라디안)
-    double m_currentPhaseRadians; // 현재 누적 위상
-    double m_currentAmplitude; // 전류 진폭
-    double m_currentPhaseOffsetRadians; // 전압 대비 전류의 위상차 (라디안)
+    Parameters m_params;
 
-    double m_samplingCycles;
-    double m_samplesPerCycle;
-    double m_timeScale;
+    double m_currentPhaseRadians; // 현재 누적 위상
+    double m_accumulatedPhaseSinceUpdate; // 마지막 갱신 후 누적된 위상 변화량
     FpMilliseconds m_captureIntervalsMs; // 기본 캡처 간격 (double, ms)
     Nanoseconds m_simulationTimeNs; // 시뮬레이션 누적 시간 (정수, ns)
-
-    UpdateMode m_updateMode;
-    double m_phaseAtLastUpdate; // 마지막으로 갱신했을 때의 누적 위상
-    double m_accumulatedPhaseSinceUpdate; // 마지막 갱신 후 누적된 위상 변화량
 };
 
 #endif // SIMULATION_ENGINE_H

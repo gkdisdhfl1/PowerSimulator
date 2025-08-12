@@ -9,7 +9,6 @@
 MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
-    , m_settingsDialog(new SettingsDialog(this))
     , m_engine(engine)
 {
     ui->setupUi(this);
@@ -31,26 +30,6 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
 MainWindow::~MainWindow()
 {
     delete ui;
-}
-
-void MainWindow::handleSettingButtonClicked()
-{
-    // qDebug() << "getMaxDataSize() = " << m_engine->getMaxDataSize();
-    // qDebug() << "getGraphWidth() = " << ui->graphViewPlaceholder->getGraphWidth();
-
-    // 다이얼로그를 열기 전에 현재 설정값으로 초기화
-    m_settingsDialog->setInitialValues(
-        m_engine->getMaxDataSize(),
-        ui->graphViewPlaceholder->getGraphWidth()
-    );
-
-    if(m_settingsDialog->exec() == QDialog::Accepted) {
-        // ok를 눌렀다면, 다이얼로그에서 새로운 값들을 가져와 적용
-        m_engine->applySettings(
-            m_settingsDialog->getMaxSize());
-        ui->graphViewPlaceholder->setGraphWidth(m_settingsDialog->getGraphWidth());
-    }
-    // m_settingsDialog->open();
 }
 
 void MainWindow::onEngineRuninngStateChanged(bool isRunning)
@@ -106,7 +85,7 @@ void MainWindow::setupUiWidgets()
 
 void MainWindow::createSignalSlotConnections()
 {
-    connect(ui->settingButton, &QPushButton::clicked, this, &MainWindow::handleSettingButtonClicked);
+    connect(ui->settingButton, &QPushButton::clicked, m_settingsUiController.get(), &SettingsUiController::handleSettingsDialog);
 
     // 메뉴바 액션 연결
     connect(ui->actionSaveSettings, &QAction::triggered, this, &MainWindow::onActionSaveSettings);
@@ -122,40 +101,6 @@ void MainWindow::createSignalSlotConnections()
         }
     });
 
-    // voltageControlWidget의 값이 바뀌면, 엔진의 현재 전압을 설정
-    connect(ui->voltageControlWidget, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setAmplitude);
-
-    // timeScaleWidget 값이 바뀌면 엔진의 setTimeScale 슬롯 호출
-    connect(ui->timeScaleWidget, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setTimeScale);
-
-    connect(ui->samplingCyclesControl, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setSamplingCycles);
-    connect(ui->samplesPerCycleControl, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setSamplesPerCycle);
-
-    connect(ui->frequencyControlWidget, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setFrequency);
-
-    connect(ui->graphViewPlaceholder, &GraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawRequest);
-
-    connect(ui->currentAmplitudeControl, &ValueControlWidget::valueChanged, m_engine, &SimulationEngine::setCurrentAmplitude);
-    connect(ui->currentPhaseDial, &FineTuningDial::valueChanged, this, [this](int value) {
-        // 엔진에 값 전달
-        m_engine->setCurrentPhaseOffset(value);
-        // 라벨 업데이트
-        ui->currentPhaseLabel->setText(QString::number(value) + " °");
-    });
-
-    // 화면 갱신 주기 라디오 버튼
-    connect(ui->perSampleRadioButton, &QRadioButton::toggled, this, [this](bool checked) {
-        if(checked)
-            m_engine->setUpdateMode(SimulationEngine::UpdateMode::PerSample);
-    });
-    connect(ui->perHalfCycleRadioButton, &QRadioButton::toggled, this, [this](bool checked) {
-        if(checked)
-            m_engine->setUpdateMode(SimulationEngine::UpdateMode::PerHalfCycle);
-    });
-    connect(ui->PerCycleRadioButton, &QRadioButton::toggled, this, [this](bool checked) {
-        if(checked)
-            m_engine->setUpdateMode(SimulationEngine::UpdateMode::PerCycle);
-    });
     // ----------------------
 
 
@@ -171,4 +116,11 @@ void MainWindow::createSignalSlotConnections()
         if(ui->statusbar)
             ui->statusbar->showMessage(QString::fromStdString(coordText));
     });
+    connect(ui->graphViewPlaceholder, &GraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawRequest);
+
+    connect(ui->currentPhaseDial, &FineTuningDial::valueChanged, this, [this](int value) {
+        // 라벨 업데이트
+        ui->currentPhaseLabel->setText(QString::number(value) + " °");
+    });
+
 }
