@@ -40,6 +40,8 @@ MainView::MainView(QWidget *parent)
     connect(ui->currentPhaseDial, &FineTuningDial::valueChanged, this, [this](int value) {
         ui->currentPhaseLabel->setText(QString::number(value) + " °");
     });
+
+    ui->splitter->setStretchFactor(0, 2);
 }
 
 MainView::~MainView()

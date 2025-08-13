@@ -4,6 +4,7 @@
 #include "ui_main_window.h"
 #include "settings_manager.h"
 #include "simulation_engine.h"
+#include <QVariantMap>
 
 class SettingsDialog;
 class MainView;
@@ -24,7 +25,7 @@ public:
 signals:
     void taskFinished(const std::expected<void, std::string>& result, const QString& successMessage);
     void presetListChanged(const std::vector<std::string>& presetList);;
-    void presetValuesFetched(int maxDataSize, double graphWidth);
+    void presetValuesFetched(const QVariantMap& data);
 
 public slots:
     // View(SettingsDialog)로부터 오는 요청을 처리하는 슬롯
@@ -63,8 +64,10 @@ private:
     QWidget* m_parent;
     std::map<std::string, SettingInfo> m_settingsMap;
     std::unique_ptr<SettingsDialog> m_settingsDialog; // SettingsDialog 소유권 이전
+    QMap<QString, QString> m_keyNameMap;
 
     void initializeSettingsMap(); // 설정 맵을 초기화하는 함수
+    void initializeKeyNameMap();
     std::expected<void, std::string> applySettingsToUi(std::string_view presetName); // 특정 프리셋을 UI에 적용하는 함수
     std::expected<void, std::string> saveUiToSettings(std::string_view presetName); // 현재 UI 상태를 특정 프리셋으로 저장하는 함수
     std::optional<QString> promptUserWithPresetList(const QString& title, const QString& label);

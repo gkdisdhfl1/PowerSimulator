@@ -65,6 +65,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         settings_manager.h settings_manager.cpp
         settings_ui_controller.h settings_ui_controller.cpp
         main_view.h main_view.cpp main_view.ui
+        shared_data_types.h
 
     )
 # Define target properties for Android with Qt 6 as:

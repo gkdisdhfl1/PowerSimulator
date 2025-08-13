@@ -3,9 +3,11 @@
 #include "main_view.h"
 #include "ui_main_view.h"
 #include "settings_dialog.h"
+#include "shared_data_types.h"
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QStatusBar>
+
 
 SettingsUiController::SettingsUiController(MainView* view, SettingsManager& settingsManager, SimulationEngine* engine, QWidget* parent)
     : QObject(parent)
@@ -15,6 +17,7 @@ SettingsUiController::SettingsUiController(MainView* view, SettingsManager& sett
     ,m_parent(parent)
 {
     initializeSettingsMap();
+    initializeKeyNameMap();
 
     m_settingsDialog = std::make_unique<SettingsDialog>(m_parent);
     m_settingsDialog->setController(this);
@@ -55,17 +58,40 @@ void SettingsUiController::onRequestPresetList()
 
 void SettingsUiController::onRequestPresetValues(const QString& presetName)
 {
-    // 직접 DB에서 값을 읽어와야함
-    // m_settingsMap의 getter은 현재 UI 상태를 반영
-    auto maxSizeResult = m_settingsManager.loadSetting(presetName.toStdString(), "maxDataSize", config::Simulation::DefaultDataSize);
-    auto graphWidthResult = m_settingsManager.loadSetting(presetName.toStdString(), "graphWidthSec", config::View::GraphWidth::Default);
+    QVariantMap previewData;
+    std::string presetStdString = presetName.toStdString();
 
-    if(maxSizeResult && graphWidthResult) {
-        emit presetValuesFetched(*maxSizeResult, *graphWidthResult);
-    } else {
-        // 오류 처리
-        qWarning() << "Failed to fetch preset values for" << presetName;
+    // m_settingsMap을 순회하며 모든 키에 대해 DB값을 읽음
+    for(const auto& [key, info] : m_settingsMap) {
+        std::expected<SettingValue, std::string> result = std::visit([&](auto&& defaultValue)->std::expected<SettingValue, std::string> { // 반환 타입 명시
+            return m_settingsManager.loadSetting(presetStdString, key, defaultValue);
+        }, info.defaultValue);
+
+        if(result) {
+            QString displayName = m_keyNameMap.value(QString::fromStdString(key));
+            if(displayName.isEmpty()) continue;
+
+            // QVariant로 변환하는 작업을 visit 바깥에서 수행
+            QVariant displayValue;
+            std::visit([&](auto&& value) {
+                displayValue = QVariant::fromValue(value);
+            }, *result);
+
+            if(QString::fromStdString(key) == "updateMode") {
+                int mode = displayName.toInt();
+                QString modeStr = (mode == 0) ? "Per Sample" : (mode == 1) ? "Per Half Cycle" :
+                                                               "Per Cycle";
+                previewData[displayName] = modeStr;
+            } else {
+                previewData[displayName] = displayValue;
+            }
+        } else {
+            qWarning() << "Could not load setting" << QString::fromStdString(key)
+                       << "for preset" << presetName;
+        }
     }
+
+    emit presetValuesFetched(previewData);
 }
 
 void SettingsUiController::onAmplitudeChanged(double value)
@@ -212,6 +238,20 @@ void SettingsUiController::initializeSettingsMap()
         },
         0
     };
+}
+
+void SettingsUiController::initializeKeyNameMap()
+{
+    m_keyNameMap["voltageAmplitude"] = PresetKeys::Amplitude;
+    m_keyNameMap["currentAmplitude"] = PresetKeys::CurrentAmplitude;
+    m_keyNameMap["frequency"] = PresetKeys::Frequency;
+    m_keyNameMap["currentPhaseOffset"] = PresetKeys::CurrentPhase;
+    m_keyNameMap["timeScale"] = PresetKeys::TimeScale;
+    m_keyNameMap["samplingCycles"] = PresetKeys::SamplingCycles;
+    m_keyNameMap["samplesPerCycle"] = PresetKeys::SamplesPerCycle;
+    m_keyNameMap["maxDataSize"] = PresetKeys::MaxDataSize;
+    m_keyNameMap["graphWidthSec"] = PresetKeys::GraphWidth;
+    m_keyNameMap["updateMode"] = PresetKeys::UpdateMode;
 }
 
 std::expected<void, std::string> SettingsUiController::applySettingsToUi(std::string_view presetName)

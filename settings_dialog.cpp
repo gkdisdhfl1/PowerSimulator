@@ -52,7 +52,7 @@ void SettingsDialog::showEvent(QShowEvent *event)
     // 다이얼로그가 열릴 때마다 프리셋 목록을 새로고침하도록 Controller에게 요청
     refreshPresetList();
     // 상세 정보 UI 섹션의 버튼 활성화 상태 등을 초기화
-    updateDetailSection();
+    updateUiStates();
 }
 
 // ----- 슬롯 구현 -----
@@ -127,7 +127,7 @@ void SettingsDialog::onDeletePresetClicked()
 // 리스트 위젯에서 선택 항목이 변경될 때
 void SettingsDialog::onPresetSelectionChanged()
 {
-    updateDetailSection(); // 버튼 활성화 등 UI 상태 업데이트
+    updateUiStates(); // 버튼 활성화 등 UI 상태 업데이트
 
     if(m_controller && ui->presetListWidget->currentItem()) {
         // Controller에게 선택된 프리셋의 상세 정보를 요청
@@ -135,6 +135,13 @@ void SettingsDialog::onPresetSelectionChanged()
     }
 }
 
+void SettingsDialog::onApplyCurrentSettingsClicked()
+{
+    if(!m_controller) return;
+    emit applyDialogSettingsRequested(ui->maxDataSizeSpinBox->value(), ui->graphWidthSpinBox->value());
+}
+
+// --- public slots ---
 void SettingsDialog::onControllerTaskFinished(const std::expected<void, std::string>& result, const QString& successMessage)
 {
     if(result) {
@@ -152,10 +159,7 @@ void SettingsDialog::onControllerTaskFinished(const std::expected<void, std::str
 void SettingsDialog::onPresetListChanged(const std::vector<std::string>& presetList)
 {
     // 목록을 새로고침 후에도 선택 상태를 유지하기 위해 현재 선택된 항목을 기억해둠
-    QString currentSelection;
-    if(ui->presetListWidget->currentItem()) {
-        currentSelection = ui->presetListWidget->currentItem()->text();
-    }
+    QString currentSelection = ui->presetListWidget->currentItem() ? ui->presetListWidget->currentItem()->text() : "";
 
     ui->presetListWidget->clear();
     for(const auto& name : presetList) {
@@ -172,7 +176,31 @@ void SettingsDialog::onPresetListChanged(const std::vector<std::string>& presetL
 }
 
 // Controller가 보내준 선택된 프리셋의 상세 값으로 오른쪽 UI를 업데이트
-void SettingsDialog::onPresetValuesFetched(int maxDataSize, double graphWidth)
+void SettingsDialog::onPresetValuesFetched(const QVariantMap& data)
+{
+    ui->previewTableWidget->clearContents();
+    ui->previewTableWidget->setRowCount(0);
+
+    // QVariantMap을 순회하며 테이블을 동적으로 채움
+    for(auto it = data.constBegin(); it != data.constEnd(); ++it) {
+        int currentRow = ui->previewTableWidget->rowCount();
+        ui->previewTableWidget->insertRow(currentRow);
+
+        // 0번 컬럼: 속성 이름
+        QTableWidgetItem* keyItem = new QTableWidgetItem(it.key());
+        keyItem->setFlags(keyItem->flags() & ~Qt::ItemIsEditable);
+        ui->previewTableWidget->setItem(currentRow, 0, keyItem);
+
+        // 1번 컬럼: 속성 값
+        QTableWidgetItem* valueItem = new QTableWidgetItem(it.value().toString());
+        valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable);
+        ui->previewTableWidget->setItem(currentRow, 1, valueItem);
+    }
+
+    // ui->previewTableWidget->resizeColumnToContents();
+}
+
+void SettingsDialog::onCurrentSettingsFetched(int maxDataSize, double graphWidth)
 {
     ui->maxDataSizeSpinBox->setValue(maxDataSize);
     ui->graphWidthSpinBox->setValue(graphWidth);
@@ -185,19 +213,19 @@ void SettingsDialog::refreshPresetList()
         m_controller->onRequestPresetList();
 }
 
-void SettingsDialog::updateDetailSection()
+void SettingsDialog::updateUiStates()
 {
     bool itemSelected = ui->presetListWidget->currentItem() != nullptr;
+
+    ui->presetPreviewGroupBox->setEnabled(itemSelected);
 
     // 선택된 항목이 있을 때만 불러오기, 이름 바꾸기, 삭제 버튼 활성화
     ui->loadPresetButton->setEnabled(itemSelected);
     ui->renamePresetButton->setEnabled(itemSelected);
     ui->deletePresetButton->setEnabled(itemSelected);
 
-    // 선택된 항목이 있을 때만 오른쪽 설정 그룹박스 활성화
-    ui->groupBox->setEnabled(itemSelected);
     if(!itemSelected) {
-        ui->maxDataSizeSpinBox->clear();
-        ui->graphWidthSpinBox->clear();
+        ui->previewTableWidget->clearContents();
+        ui->previewTableWidget->setRowCount(0);
     }
 }
