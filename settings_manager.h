@@ -58,7 +58,7 @@ public:
 
     std::expected<std::vector<std::string>, Error> getAllPresetNames();
     std::expected<void, Error> deletePreset(std::string_view preset_name);
-
+    std::expected<void, Error> renamePreset(std::string_view old_name, std::string_view new_name);
 private:
     sqlite::database db; // 데이터베이스 객체
 };

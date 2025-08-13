@@ -5,8 +5,6 @@
 
 // 전방 선언
 class SimulationEngine;
-class ValueControlWidget;
-
 class SettingsManager;
 class SettingsUiController;
 
@@ -26,10 +24,7 @@ public:
 
 private slots:
     void onEngineRuninngStateChanged(bool isRunning);
-
-    void onActionSaveSettings();
-    void onActionLoadSettings();
-    void onActionDeleteSettings();
+    void onActionSettings();
 
 private:
     Ui::MainWindow *ui;

@@ -19,7 +19,22 @@ public:
     void handleDeleteAction();
     void handleSettingsDialog();
 
+signals:
+    void taskFinished(const std::expected<void, std::string>& result, const QString& successMessage);
+    void presetListChanged(const std::vector<std::string>& presetList);;
+    void presetValuesFetched(int maxDataSize, double graphWidth);
+
 public slots:
+    // View(SettingsDialog)로부터 오는 요청을 처리하는 슬롯
+    void onSaveAsPresetRequested(const QString& presetName);
+    void onLoadPresetRequested(const QString& presetName);
+    void onDeletePresetRequested(const QString& presetName);
+    void onRenamePresetRequested(const QString& oldName, const QString& newName);
+
+    // View가 프리셋 목록이나 상세 값을 요청할 때 호출될 슬롯
+    void onRequestPresetList();
+    void onRequestPresetValues(const QString& presetName);
+
     void onAmplitudeChanged(double value);
     void onCurrentAmplitudeChanged(double value);
     void onFrequencyChanged(double value);

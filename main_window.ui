@@ -293,9 +293,7 @@
     <property name="title">
      <string>파일</string>
     </property>
-    <addaction name="actionSaveSettings"/>
-    <addaction name="actionLoadSettings"/>
-    <addaction name="actionDeleteSettings"/>
+    <addaction name="actionSettings"/>
    </widget>
    <addaction name="menu"/>
   </widget>
@@ -313,6 +311,11 @@
   <action name="actionDeleteSettings">
    <property name="text">
     <string>Delete Settings</string>
+   </property>
+  </action>
+  <action name="actionSettings">
+   <property name="text">
+    <string>설정</string>
    </property>
   </action>
  </widget>

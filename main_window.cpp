@@ -17,7 +17,6 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     QString dbPath = QApplication::applicationDirPath() + "/settings.db";
     m_settingsManager = std::make_unique<SettingsManager>(dbPath.toStdString());
 
-    // 컨트롤러 객체 생성
     m_settingsUiController = std::make_unique<SettingsUiController>(ui, *m_settingsManager, m_engine, this);
 
     // UI 초기값 설정
@@ -37,19 +36,9 @@ void MainWindow::onEngineRuninngStateChanged(bool isRunning)
     ui->startStopButton->setText(isRunning ? "일시정지" : "시작");
 }
 
-void MainWindow::onActionSaveSettings()
+void MainWindow::onActionSettings()
 {
-    m_settingsUiController->handleSaveAction();
-}
-
-void MainWindow::onActionLoadSettings()
-{
-    m_settingsUiController->handleLoadAction();
-}
-
-void MainWindow::onActionDeleteSettings()
-{
-    m_settingsUiController->handleDeleteAction();
+    m_settingsUiController->handleSettingsDialog();
 }
 
 void MainWindow::setupUiWidgets()
@@ -88,9 +77,7 @@ void MainWindow::createSignalSlotConnections()
     connect(ui->settingButton, &QPushButton::clicked, m_settingsUiController.get(), &SettingsUiController::handleSettingsDialog);
 
     // 메뉴바 액션 연결
-    connect(ui->actionSaveSettings, &QAction::triggered, this, &MainWindow::onActionSaveSettings);
-    connect(ui->actionLoadSettings, &QAction::triggered, this, &MainWindow::onActionLoadSettings);
-    connect(ui->actionDeleteSettings, &QAction::triggered, this, &MainWindow::onActionDeleteSettings);
+    connect(ui->actionSettings, &QAction::triggered, this, &MainWindow::onActionSettings);
 
     // ---- UI 이벤트 -> SimulationEngine 슬롯 ----
     connect(ui->startStopButton, &QPushButton::clicked, this, [this]() {

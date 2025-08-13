@@ -1,12 +1,10 @@
 #include "settings_dialog.h"
 #include "config.h"
+#include "settings_ui_controller.h"
 #include "ui_settings_dialog.h"
-
-#include <QDoubleSpinBox>
-#include <QHBoxLayout>
-#include <QLabel>
+#include <QDebug>
+#include <QInputDialog>
 #include <QMessageBox>
-#include <QVBoxLayout>
 
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
@@ -14,12 +12,14 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 {
     ui->setupUi(this);
 
-    ui->maxSizeSpinBox->setRange(config::Simulation::MinDataSize, config::Simulation::MaxDataSize);
+    // UI에 있는 버튼들의 시그널을 이 클래스의 private 슬롯에 연결
+    connect(ui->newPresetButton, &QPushButton::clicked, this, &SettingsDialog::onNewPresetClicked);
+    connect(ui->loadPresetButton, &QPushButton::clicked, this, &SettingsDialog::onLoadPresetClicked);
+    connect(ui->renamePresetButton, &QPushButton::clicked, this, &SettingsDialog::onRenamePresetClicked);
+    connect(ui->deletePresetButton, &QPushButton::clicked, this, &SettingsDialog::onDeletePresetClicked);
 
-    ui->graphWidthSpinBox->setSuffix(" s");
-    ui->graphWidthSpinBox->setRange(config::View::GraphWidth::Min, config::View::GraphWidth::Max);
-    ui->graphWidthSpinBox->setValue(config::View::GraphWidth::Default);
-
+    // 리스트 위젯의 선택이 변경될 때의 시그널을 슬롯에 연결
+    connect(ui->presetListWidget, &QListWidget::currentItemChanged, this, &SettingsDialog::onPresetSelectionChanged);
 }
 
 SettingsDialog::~SettingsDialog()
@@ -27,56 +27,177 @@ SettingsDialog::~SettingsDialog()
     delete ui;
 }
 
-void SettingsDialog::setInitialValues(int maxSize, double graphWidth)
+void SettingsDialog::setController(SettingsUiController* controller)
 {
-    ui->maxSizeSpinBox->setValue(maxSize);
+    m_controller = controller;
+    if(!m_controller) return;
+
+    // dialog -> controller
+    connect(this, &SettingsDialog::saveAsPresetRequested, m_controller, &SettingsUiController::onSaveAsPresetRequested);
+    connect(this, &SettingsDialog::loadPresetRequested, m_controller, &SettingsUiController::onLoadPresetRequested);
+    connect(this, &SettingsDialog::deletePresetRequested, m_controller, &SettingsUiController::onDeletePresetRequested);
+    connect(this, &SettingsDialog::renamePresetRequested, m_controller, &SettingsUiController::onRenamePresetRequested);
+
+    // controller -> dialog
+    connect(m_controller, &SettingsUiController::taskFinished, this, &SettingsDialog::onControllerTaskFinished);
+    connect(m_controller, &SettingsUiController::presetListChanged, this, &SettingsDialog::onPresetListChanged);
+    connect(m_controller, &SettingsUiController::presetValuesFetched, this, &SettingsDialog::onPresetValuesFetched);
+}
+
+// QDialog의 showEvent 재정의
+void SettingsDialog::showEvent(QShowEvent *event)
+{
+    QDialog::showEvent(event);
+
+    // 다이얼로그가 열릴 때마다 프리셋 목록을 새로고침하도록 Controller에게 요청
+    refreshPresetList();
+    // 상세 정보 UI 섹션의 버튼 활성화 상태 등을 초기화
+    updateDetailSection();
+}
+
+// ----- 슬롯 구현 -----
+void SettingsDialog::onNewPresetClicked()
+{
+    if(!m_controller) return;
+
+    bool ok;
+    QString presetName = QInputDialog::getText(this, "새 프리셋 저장", "저장할 프리셋의 이름을 입력하세요:", QLineEdit::Normal, "", &ok);
+
+    if(ok && !presetName.isEmpty()) {
+        // Controller에게 현재 MainWindow의 설정을 이 이름으로 저장해달라고 요청
+        emit saveAsPresetRequested(presetName);
+    }
+}
+
+void SettingsDialog::onLoadPresetClicked()
+{
+    if(!m_controller) return;
+
+    QListWidgetItem* currentItem = ui->presetListWidget->currentItem();
+    if(!currentItem) {
+        QMessageBox::warning(this, "알림", "적용할 프리셋을 선택하세요.");
+        return;
+    }
+
+    // Controller에게 선택된 프리셋을 적용해달라고 요청
+    emit loadPresetRequested(currentItem->text());
+    accept(); // 요청 후 닫음
+}
+
+void SettingsDialog::onRenamePresetClicked()
+{
+    if(!m_controller) return;
+
+    QListWidgetItem* currentItem = ui->presetListWidget->currentItem();
+    if(!currentItem) {
+        QMessageBox::warning(this, "알림", "이름을 바꿀 프리셋을 선택하세요.");
+        return;
+    }
+
+    QString oldName = currentItem->text();
+    bool ok;
+    QString newName = QInputDialog::getText(this, "프리셋 이름 변경", QString("'%1'의 새 이름을 입력하세요:").arg(oldName), QLineEdit::Normal, oldName, &ok);
+
+    if(ok && !newName.isEmpty() && oldName != newName) {
+        // Controller에게 이름 변경 요청
+        emit renamePresetRequested(oldName, newName);
+    }
+}
+
+void SettingsDialog::onDeletePresetClicked()
+{
+    if(!m_controller) return;
+
+    QListWidgetItem* currentItem = ui->presetListWidget->currentItem();
+    if(!currentItem) {
+        QMessageBox::warning(this, "알림", "삭제할 프리셋을 선택하세요.");
+        return;
+    }
+
+    QString presetName = currentItem->text();
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "삭제 확인", QString("정말로 '%1' 프리셋을 삭제하시겠습니까?").arg(presetName), QMessageBox::Yes | QMessageBox::No);
+
+    if(reply == QMessageBox::Yes) {
+        // Controller에게 삭제 요청
+        emit deletePresetRequested(presetName);
+    }
+}
+
+// 리스트 위젯에서 선택 항목이 변경될 때
+void SettingsDialog::onPresetSelectionChanged()
+{
+    updateDetailSection(); // 버튼 활성화 등 UI 상태 업데이트
+
+    if(m_controller && ui->presetListWidget->currentItem()) {
+        // Controller에게 선택된 프리셋의 상세 정보를 요청
+        m_controller->onRequestPresetValues(ui->presetListWidget->currentItem()->text());
+    }
+}
+
+void SettingsDialog::onControllerTaskFinished(const std::expected<void, std::string>& result, const QString& successMessage)
+{
+    if(result) {
+        // 작업 성공했을 경우
+        qDebug() << "Controller task success:" <<  successMessage;
+        // 성공 메시지 상태바 표시
+        // 작업 성공했으므로, 최산 상태 반영
+        refreshPresetList();
+    } else {
+        // 작업 실패했을 경우
+        QMessageBox::warning(this, "작업 실패", QString::fromStdString(result.error()));
+    }
+}
+
+void SettingsDialog::onPresetListChanged(const std::vector<std::string>& presetList)
+{
+    // 목록을 새로고침 후에도 선택 상태를 유지하기 위해 현재 선택된 항목을 기억해둠
+    QString currentSelection;
+    if(ui->presetListWidget->currentItem()) {
+        currentSelection = ui->presetListWidget->currentItem()->text();
+    }
+
+    ui->presetListWidget->clear();
+    for(const auto& name : presetList) {
+        ui->presetListWidget->addItem(QString::fromStdString(name));
+    }
+
+    // 이전에 선택했던 항목이 새 목록에도 존재하면 다시 선택
+    for(int i = 0; i < ui->presetListWidget->count(); ++i) {
+        if(ui->presetListWidget->item(i)->text() == currentSelection) {
+            ui->presetListWidget->setCurrentRow(i);
+            break;
+        }
+    }
+}
+
+// Controller가 보내준 선택된 프리셋의 상세 값으로 오른쪽 UI를 업데이트
+void SettingsDialog::onPresetValuesFetched(int maxDataSize, double graphWidth)
+{
+    ui->maxDataSizeSpinBox->setValue(maxDataSize);
     ui->graphWidthSpinBox->setValue(graphWidth);
 }
 
-// --- getter 함수들 ---
-int SettingsDialog::getMaxSize() const { return ui->maxSizeSpinBox->value();}
-double SettingsDialog::getGraphWidth() const { return ui->graphWidthSpinBox->value();}
-
-
-std::expected<void, SettingsDialog::ValidationError> SettingsDialog::validateInput() const
+// --- private 헬퍼 함수 ---
+void SettingsDialog::refreshPresetList()
 {
-    // config.h의 값들을 사용하여 유효성 검사
-    const int maxSizeValue = ui->maxSizeSpinBox->value();
-    if(maxSizeValue < config::Simulation::MinDataSize || maxSizeValue > config::Simulation::MaxDataSize)
-        return std::unexpected(ValidationError::MaxSizeOutOfRange);
-
-    const double graphWidthValue = ui->graphWidthSpinBox->value();
-    if(graphWidthValue < config::View::GraphWidth::Min || graphWidthValue > config::View::GraphWidth::Max)
-        return std::unexpected(ValidationError::GraphWidthOutOfRange);
-
-    return {}; // 모든 검사 통과
+    if(m_controller)
+        m_controller->onRequestPresetList();
 }
 
-QString SettingsDialog::getErrorMessage(ValidationError error) const
+void SettingsDialog::updateDetailSection()
 {
-    QString errorMessage;
-    switch (error) {
+    bool itemSelected = ui->presetListWidget->currentItem() != nullptr;
 
-    case ValidationError::MaxSizeOutOfRange:
-        errorMessage = tr("저장 크기는 %1와 %2 사이여야 합니다.").arg(config::Simulation::MinDataSize).arg(config::Simulation::MaxDataSize);
-        break;
-    case ValidationError::GraphWidthOutOfRange:
-        errorMessage = tr("그래프 폭은 %1와 %2 사이여야 합니다.").arg(config::View::GraphWidth::Min).arg(config::View::GraphWidth::Max);
-        break;
+    // 선택된 항목이 있을 때만 불러오기, 이름 바꾸기, 삭제 버튼 활성화
+    ui->loadPresetButton->setEnabled(itemSelected);
+    ui->renamePresetButton->setEnabled(itemSelected);
+    ui->deletePresetButton->setEnabled(itemSelected);
+
+    // 선택된 항목이 있을 때만 오른쪽 설정 그룹박스 활성화
+    ui->groupBox->setEnabled(itemSelected);
+    if(!itemSelected) {
+        ui->maxDataSizeSpinBox->clear();
+        ui->graphWidthSpinBox->clear();
     }
-    return errorMessage;
-}
-
-void SettingsDialog::accept()
-{
-    auto validationResult = validateInput();
-    if(validationResult.has_value())
-        // 유효성 검사 성공 시, 다이얼로그를 닫음
-        QDialog::accept();
-    else {
-        // 실패 시, 오류 메세지 박스를 띄움
-        const QString errorMessage = getErrorMessage(validationResult.error());
-        QMessageBox::warning(this, "입력 값 오류", errorMessage);
-    }
-
 }

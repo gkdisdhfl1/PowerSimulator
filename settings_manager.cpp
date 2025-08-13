@@ -36,3 +36,26 @@ std::expected<void, SettingsManager::Error> SettingsManager::deletePreset(std::s
         return std::unexpected("프리셋 삭제 실패: " + std::string(e.what()));
     }
 }
+
+std::expected<void, SettingsManager::Error> SettingsManager::renamePreset(std::string_view old_name, std::string_view new_name)
+{
+    try {
+        // 새 이름으로 된 프리셋이 있는지 확인
+        int count = 0;
+        db << "SELECT count(*) FROM Settings WHERE preset_name = ?;"
+           << std::string(new_name) >> count;
+
+        if(count > 0) {
+            return std::unexpected("Error: 프리셋 이름 ' " + std::string(new_name) + "'는 이미 존재합니다.");
+        }
+
+        db << "UPDATE Settings SET preset_name = ? WHERE preset_name = ?;"
+           << std::string(new_name) << std::string(old_name);
+
+        return {};
+    } catch(const sqlite::sqlite_exception& e) {
+        return std::unexpected("프리셋 이름 변경 실패: " + std::string(e.what()));
+    } catch(const std::exception& e) {
+        return std::unexpected("예상히지 못한 오류 발생: " + std::string(e.what()));
+    }
+}

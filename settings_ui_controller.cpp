@@ -30,9 +30,57 @@ SettingsUiController::SettingsUiController(Ui::MainWindow* ui, SettingsManager& 
     connect(m_ui->PerCycleRadioButton, &QRadioButton::toggled, this, &SettingsUiController::onUpdateModeChanged);
 
     m_settingsDialog = std::make_unique<SettingsDialog>(m_parent);
+    m_settingsDialog->setController(this);
 }
 
 // --- slot 구현 ---
+void SettingsUiController::onSaveAsPresetRequested(const QString& presetName)
+{
+    auto result = saveUiToSettings(presetName.toStdString());
+    emit taskFinished(result, "프리셋이 성공적으로 저장되었습니다.");
+}
+void SettingsUiController::onLoadPresetRequested(const QString& presetName)
+{
+    auto result = applySettingsToUi(presetName.toStdString());
+    emit taskFinished(result, "프리셋을 성공적으로 적용했습니다.");
+}
+void SettingsUiController::onDeletePresetRequested(const QString& presetName)
+{
+    auto result = m_settingsManager.deletePreset(presetName.toStdString());
+    emit taskFinished(result, "프리셋이 성공적으로 삭제되었습니다.");
+}
+void SettingsUiController::onRenamePresetRequested(const QString& oldName, const QString& newName)
+{
+    auto result = m_settingsManager.renamePreset(oldName.toStdString(), newName.toStdString());
+    emit taskFinished(result, "프리셋 이름이 변경되었습니다.");
+}
+
+void SettingsUiController::onRequestPresetList()
+{
+    auto result = m_settingsManager.getAllPresetNames();
+    if(result)
+        emit presetListChanged(result.value());
+    else {
+        // 오류처리
+        qWarning() << "Failed to get preset list:" << QString::fromStdString(result.error());
+    }
+}
+
+void SettingsUiController::onRequestPresetValues(const QString& presetName)
+{
+    // 직접 DB에서 값을 읽어와야함
+    // m_settingsMap의 getter은 현재 UI 상태를 반영
+    auto maxSizeResult = m_settingsManager.loadSetting(presetName.toStdString(), "maxDataSize", config::Simulation::DefaultDataSize);
+    auto graphWidthResult = m_settingsManager.loadSetting(presetName.toStdString(), "graphWidthSec", config::View::GraphWidth::Default);
+
+    if(maxSizeResult && graphWidthResult) {
+        emit presetValuesFetched(*maxSizeResult, *graphWidthResult);
+    } else {
+        // 오류 처리
+        qWarning() << "Failed to fetch preset values for" << presetName;
+    }
+}
+
 void SettingsUiController::onAmplitudeChanged(double value)
 {
     m_engine->parameters().amplitude = value;
@@ -77,58 +125,9 @@ void SettingsUiController::onUpdateModeChanged()
     }
 }
 
-void SettingsUiController::handleSaveAction()
-{
-    bool ok;
-    // 사용자에게 프리셋 이름을 입력받는 다이얼로그를 띄움
-    QString presetName = QInputDialog::getText(m_parent, "설정 저장", "저장할 설정의 이름을 입력하세요:", QLineEdit::Normal, "", &ok);
-
-    if(ok && !presetName.isEmpty()) {
-        auto result = saveUiToSettings(presetName.toStdString());
-        if(!result)
-            QMessageBox::warning(m_parent, "저장 실패", QString::fromStdString(result.error()));
-    }
-}
-
-void SettingsUiController::handleLoadAction()
-{
-    if(auto selectedPreset = promptUserWithPresetList("설정 불러오기", "불러올 설정을 선택하세요:")) {
-        auto result = applySettingsToUi(selectedPreset->toStdString());
-        if(!result)
-            QMessageBox::warning(m_parent, "불러오기 실패", QString::fromStdString(result.error()));
-    }
-}
-
-void SettingsUiController::handleDeleteAction()
-{
-    if(auto selectedPreset = promptUserWithPresetList("설정 삭제", "삭제할 설정을 선택하세요:")) {
-
-        // 확인 메세지를 한번 더 보여줌
-        QMessageBox::StandardButton reply;
-        reply = QMessageBox::question(m_parent, "삭제 확인", QString("정말로 '%1' 설정을 삭제하겠습니까?").arg(*selectedPreset), QMessageBox::Yes | QMessageBox::No);
-        if(reply == QMessageBox::Yes) {
-            auto result = m_settingsManager.deletePreset(selectedPreset->toStdString());
-            if(result) {
-                m_ui->statusbar->showMessage(QString("'%1' 설정을 삭제했습니다.").arg(*selectedPreset), 3000);
-            } else {
-                QMessageBox::warning(m_parent, "삭제 실패: ", QString::fromStdString(result.error()));
-            }
-        }
-    }
-}
-
 void SettingsUiController::handleSettingsDialog()
 {
-    // 맵에 등록된 getter을 호출하여 다이얼로그의 초기값을 설정
-    int currentMaxSize = std::get<int>(m_settingsMap.at("maxDataSize").getter());
-    double currentGraphWidth = std::get<double>(m_settingsMap.at("graphWidthSec").getter());
-    m_settingsDialog->setInitialValues(currentMaxSize, currentGraphWidth);
-
-    if(m_settingsDialog->exec() == QDialog::Accepted) {
-        // ok를 누르면 맵에 등록된 setter 호출하여 새로운 값을 적용
-        m_settingsMap.at("maxDataSize").setter(m_settingsDialog->getMaxSize());
-        m_settingsMap.at("graphWidthSec").setter(m_settingsDialog->getGraphWidth());
-    }
+    m_settingsDialog->exec();
 }
 
 void SettingsUiController::initializeSettingsMap()

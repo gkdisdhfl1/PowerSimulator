@@ -1,5 +1,4 @@
 #include "simulation_engine.h"
-#include "config.h"
 #include <QDebug>
 
 SimulationEngine::SimulationEngine()
