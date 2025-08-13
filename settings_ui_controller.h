@@ -6,12 +6,14 @@
 #include "simulation_engine.h"
 
 class SettingsDialog;
+class MainView;
+class SettingsManager;
 
 class SettingsUiController : public QObject
 {
     Q_OBJECT
 public:
-    explicit SettingsUiController(Ui::MainWindow* ui, SettingsManager& settingsManager, SimulationEngine* engine, QWidget* parent);
+    explicit SettingsUiController(MainView* ui, SettingsManager& settingsManager, SimulationEngine* engine, QWidget* parent);
 
     // MainWindow의 액션에 연결될 public 함수들
     void handleSaveAction();
@@ -55,7 +57,7 @@ private:
         SettingValue defaultValue; // DB에 값이 없을 때 사용할 기본값
     };
 
-    Ui::MainWindow* m_ui;
+    MainView* m_view;
     SettingsManager& m_settingsManager;
     SimulationEngine* m_engine;
     QWidget* m_parent;

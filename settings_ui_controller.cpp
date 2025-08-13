@@ -1,33 +1,20 @@
 #include "settings_ui_controller.h"
 #include "config.h"
+#include "main_view.h"
+#include "ui_main_view.h"
 #include "settings_dialog.h"
 #include <QInputDialog>
 #include <QMessageBox>
+#include <QStatusBar>
 
-SettingsUiController::SettingsUiController(Ui::MainWindow* ui, SettingsManager& settingsManager, SimulationEngine* engine, QWidget* parent)
+SettingsUiController::SettingsUiController(MainView* view, SettingsManager& settingsManager, SimulationEngine* engine, QWidget* parent)
     : QObject(parent)
-    ,m_ui(ui)
+    ,m_view(view)
     ,m_settingsManager(settingsManager)
     ,m_engine(engine)
     ,m_parent(parent)
 {
     initializeSettingsMap();
-
-    // 시그널 슬롯 연결
-    connect(m_ui->voltageControlWidget, &ValueControlWidget::valueChanged, this, &SettingsUiController::onAmplitudeChanged);
-    connect(m_ui->currentAmplitudeControl, &ValueControlWidget::valueChanged, this, &SettingsUiController::onCurrentAmplitudeChanged);
-    connect(m_ui->frequencyControlWidget, &ValueControlWidget::valueChanged, this, &SettingsUiController::onFrequencyChanged);
-    connect(m_ui->currentPhaseDial, &FineTuningDial::valueChanged, this, &SettingsUiController::onCurrentPhaseChanged);
-    connect(m_ui->timeScaleWidget, &ValueControlWidget::valueChanged, this, &SettingsUiController::onTimeScaleChanged);
-    connect(m_ui->samplingCyclesControl, &ValueControlWidget::valueChanged, this, &SettingsUiController::onSamplingCyclesChanged);
-    connect(m_ui->samplesPerCycleControl, &ValueControlWidget::valueChanged, this, [this](double value) {
-        onSamplesPerCycleChanged(static_cast<int>(value));
-    });
-
-    // 라디오 버튼들
-    connect(m_ui->perSampleRadioButton, &QRadioButton::toggled, this, &SettingsUiController::onUpdateModeChanged);
-    connect(m_ui->perHalfCycleRadioButton, &QRadioButton::toggled, this, &SettingsUiController::onUpdateModeChanged);
-    connect(m_ui->PerCycleRadioButton, &QRadioButton::toggled, this, &SettingsUiController::onUpdateModeChanged);
 
     m_settingsDialog = std::make_unique<SettingsDialog>(m_parent);
     m_settingsDialog->setController(this);
@@ -116,11 +103,11 @@ void SettingsUiController::onSamplesPerCycleChanged(int value)
 void SettingsUiController::onUpdateModeChanged()
 {
     // 어떤 버튼을 눌렀는지 확인하여 모드 변경
-    if(m_ui->perSampleRadioButton->isChecked()) {
+    if(m_view->getUi()->perSampleRadioButton->isChecked()) {
         m_engine->parameters().updateMode = SimulationEngine::UpdateMode::PerSample;
-    } else if(m_ui->perHalfCycleRadioButton->isChecked()) {
+    } else if(m_view->getUi()->perHalfCycleRadioButton->isChecked()) {
         m_engine->parameters().updateMode = SimulationEngine::UpdateMode::PerHalfCycle;
-    } else if(m_ui->PerCycleRadioButton->isChecked()) {
+    } else if(m_view->getUi()->PerCycleRadioButton->isChecked()) {
         m_engine->parameters().updateMode = SimulationEngine::UpdateMode::PerCycle;
     }
 }
@@ -137,7 +124,7 @@ void SettingsUiController::initializeSettingsMap()
         [this] { return m_engine->parameters().amplitude;},
         [this](const SettingValue& val) {
             double value = std::get<double>(val);
-            m_ui->voltageControlWidget->setValue(value);
+            m_view->getUi()->voltageControlWidget->setValue(value);
             m_engine->parameters().amplitude = value;
         },
         config::Source::Amplitude::Default
@@ -146,7 +133,7 @@ void SettingsUiController::initializeSettingsMap()
         [this] { return m_engine->parameters().currentAmplitude; },
         [this](const SettingValue& val) {
             double value = std::get<double>(val);
-            m_ui->currentAmplitudeControl->setValue(value);
+            m_view->getUi()->currentAmplitudeControl->setValue(value);
             m_engine->parameters().currentAmplitude = value;
         },
         config::Source::Current::DefaultAmplitude
@@ -155,17 +142,17 @@ void SettingsUiController::initializeSettingsMap()
         [this] { return m_engine->parameters().frequency; },
         [this](const SettingValue& val) {
             double value = std::get<double>(val);
-            m_ui->frequencyControlWidget->setValue(value);
+            m_view->getUi()->frequencyControlWidget->setValue(value);
             m_engine->parameters().frequency = value;
             m_engine->recalculateCaptureInterval();
         },
         config::Source::Frequency::Default
     };
     m_settingsMap["currentPhaseOffset"] = {
-        [this] { return m_ui->currentPhaseDial->value(); },
+        [this] { return m_view->getUi()->currentPhaseDial->value(); },
         [this](const SettingValue& val){
             int degrees = std::get<int>(val);
-            m_ui->currentPhaseDial->setValue(degrees);
+            m_view->getUi()->currentPhaseDial->setValue(degrees);
             m_engine->parameters().currentPhaseOffsetRadians = utils::degreesToRadians(degrees);
         },
         config::Source::Current::DefaultPhaseOffset
@@ -174,7 +161,7 @@ void SettingsUiController::initializeSettingsMap()
         [this] { return m_engine->parameters().timeScale; },
         [this](const SettingValue& val) {
             double value = std::get<double>(val);
-            m_ui->timeScaleWidget->setValue(value);
+            m_view->getUi()->timeScaleWidget->setValue(value);
             m_engine->parameters().timeScale = value;
             m_engine->updateCaptureTimer();
         },
@@ -184,7 +171,7 @@ void SettingsUiController::initializeSettingsMap()
         [this] { return m_engine->parameters().samplingCycles; },
         [this](const SettingValue& val) {
             double value = std::get<double>(val);
-            m_ui->samplingCyclesControl->setValue(value);
+            m_view->getUi()->samplingCyclesControl->setValue(value);
             m_engine->parameters().samplingCycles = value;
             m_engine->recalculateCaptureInterval();
         },
@@ -194,7 +181,7 @@ void SettingsUiController::initializeSettingsMap()
         [this] { return m_engine->parameters().samplesPerCycle;},
         [this](const SettingValue& val) {
             double value = std::get<int>(val);
-            m_ui->samplesPerCycleControl->setValue(value);
+            m_view->getUi()->samplesPerCycleControl->setValue(value);
             m_engine->recalculateCaptureInterval();
         },
         config::Sampling::DefaultSamplesPerCycle
@@ -207,8 +194,8 @@ void SettingsUiController::initializeSettingsMap()
         config::Simulation::DefaultDataSize
     };
     m_settingsMap["graphWidthSec"] = {
-        [this] { return m_ui->graphViewPlaceholder->getGraphWidth();},
-        [this](const SettingValue& val) { m_ui->graphViewPlaceholder->setGraphWidth(std::get<double>(val));},
+        [this] { return m_view->getUi()->graphViewPlaceholder->getGraphWidth();},
+        [this](const SettingValue& val) { m_view->getUi()->graphViewPlaceholder->setGraphWidth(std::get<double>(val));},
         config::View::GraphWidth::Default
     };
 
@@ -219,9 +206,9 @@ void SettingsUiController::initializeSettingsMap()
         [this](const SettingValue& val) {
             int mode = std::get<int>(val);
             m_engine->parameters().updateMode = static_cast<SimulationEngine::UpdateMode>(mode);
-            if(mode == 1) m_ui->perHalfCycleRadioButton->setChecked(true);
-            else if(mode == 2) m_ui->PerCycleRadioButton->setChecked(true);
-            else m_ui->perSampleRadioButton->setChecked(true);
+            if(mode == 1) m_view->getUi()->perHalfCycleRadioButton->setChecked(true);
+            else if(mode == 2) m_view->getUi()->PerCycleRadioButton->setChecked(true);
+            else m_view->getUi()->perSampleRadioButton->setChecked(true);
         },
         0
     };
@@ -251,8 +238,8 @@ std::expected<void, std::string> SettingsUiController::applySettingsToUi(std::st
 
         if(!result) return result; // 오류 발생 시 즉시 전파
     }
-
-    m_ui->statusbar->showMessage(QString("'%1' 설정을 불러왔습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), 3000);
+    m_parent->findChild<QStatusBar*>()->showMessage(QString("'%1' 설정을 불러왔습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), 3000);
+    // m_statusbar->showMessage(QString("'%1' 설정을 불러왔습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), 3000);
     return {};
 }
 
@@ -267,7 +254,7 @@ std::expected<void, std::string> SettingsUiController::saveUiToSettings(std::str
         if(!result) return result; // 오류 발생 시 즉시 전파
     }
 
-    m_ui->statusbar->showMessage(QString("'%1' 이름으로 설정을 저장했습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), 3000);
+    m_parent->findChild<QStatusBar*>()->showMessage(QString("'%1' 이름으로 설정을 저장했습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), 3000);
     return {};
 }
 

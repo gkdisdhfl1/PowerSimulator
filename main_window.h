@@ -7,6 +7,7 @@
 class SimulationEngine;
 class SettingsManager;
 class SettingsUiController;
+class MainView;
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -23,17 +24,18 @@ public:
     ~MainWindow();
 
 private slots:
-    void onEngineRuninngStateChanged(bool isRunning);
+    // void onEngineRuninngStateChanged(bool isRunning);
     void onActionSettings();
 
 private:
     Ui::MainWindow *ui;
+    MainView *m_view;
     SimulationEngine *m_engine;
 
     std::unique_ptr<SettingsManager> m_settingsManager;
     std::unique_ptr<SettingsUiController> m_settingsUiController;
 
-    void setupUiWidgets();
-    void createSignalSlotConnections();
+    void createSignalSlotConnections(); // 조립 역할
+    void createActions(); // 메뉴바
 };
 #endif // MAIN_WINDOW_H

@@ -1,10 +1,11 @@
 #include "main_window.h"
-#include "./ui_main_window.h"
+#include "ui_main_view.h"
+#include "ui_main_window.h"
+#include "main_view.h"
 #include "settings_dialog.h"
 #include "simulation_engine.h"
 #include "settings_manager.h"
 #include "settings_ui_controller.h"
-#include "config.h"
 
 MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     : QMainWindow(parent)
@@ -17,13 +18,17 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     QString dbPath = QApplication::applicationDirPath() + "/settings.db";
     m_settingsManager = std::make_unique<SettingsManager>(dbPath.toStdString());
 
-    m_settingsUiController = std::make_unique<SettingsUiController>(ui, *m_settingsManager, m_engine, this);
+    m_view = new MainView(this);
+    m_view->initializeUiValues();
 
-    // UI 초기값 설정
-    setupUiWidgets();
+    m_settingsUiController = std::make_unique<SettingsUiController>(m_view, *m_settingsManager, m_engine, this);
+
+    // UI 조립
+    setCentralWidget(m_view);
+    statusBar()->showMessage("Ready");
     createSignalSlotConnections();
 
-    ui->splitter->setStretchFactor(0, 2);
+    // ui->splitter->setStretchFactor(0, 2);
 }
 
 MainWindow::~MainWindow()
@@ -31,83 +36,47 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::onEngineRuninngStateChanged(bool isRunning)
-{
-    ui->startStopButton->setText(isRunning ? "일시정지" : "시작");
-}
-
 void MainWindow::onActionSettings()
 {
     m_settingsUiController->handleSettingsDialog();
 }
 
-void MainWindow::setupUiWidgets()
-{
-    ui->voltageControlWidget->setRange(config::Source::Amplitude::Min, config::Source::Amplitude::Max);
-    ui->voltageControlWidget->setValue(config::Source::Amplitude::Default);
-    ui->voltageControlWidget->setSuffix(" V");
-
-    ui->currentAmplitudeControl->setRange(config::Source::Current::MinAmplitude, config::Source::Current::MaxAmplitude);
-    ui->currentAmplitudeControl->setValue(config::Source::Current::DefaultAmplitude);
-    ui->currentAmplitudeControl->setSuffix(" A");
-
-    ui->currentPhaseDial->setValue(config::Source::Current::DefaultPhaseOffset);
-
-    ui->timeScaleWidget->setRange(config::TimeScale::Min, config::TimeScale::Max);
-    ui->timeScaleWidget->setValue(config::TimeScale::Default);
-    ui->timeScaleWidget->setSuffix(" x");
-
-    ui->samplingCyclesControl->setRange(config::Sampling::MinValue, config::Sampling::maxValue);
-    ui->samplingCyclesControl->setValue(config::Sampling::DefaultSamplingCycles);
-    ui->samplesPerCycleControl->setRange(config::Sampling::MinValue, config::Sampling::maxValue);
-    ui->samplesPerCycleControl->setValue(config::Sampling::DefaultSamplesPerCycle);
-
-    ui->frequencyControlWidget->setRange(config::Source::Frequency::Min, config::Source::Frequency::Max);
-    ui->frequencyControlWidget->setValue(config::Source::Frequency::Default);
-    ui->frequencyControlWidget->setSuffix(" Hz");
-
-    ui->currentPhaseDial->setValue(config::Source::Current::DefaultPhaseOffset);
-    ui->currentPhaseLabel->setText(QString::number(ui->currentPhaseDial->value()) + " °");
-
-    ui->perSampleRadioButton->setChecked(true);
-}
-
 void MainWindow::createSignalSlotConnections()
 {
-    connect(ui->settingButton, &QPushButton::clicked, m_settingsUiController.get(), &SettingsUiController::handleSettingsDialog);
-
     // 메뉴바 액션 연결
     connect(ui->actionSettings, &QAction::triggered, this, &MainWindow::onActionSettings);
 
-    // ---- UI 이벤트 -> SimulationEngine 슬롯 ----
-    connect(ui->startStopButton, &QPushButton::clicked, this, [this]() {
+    // ---- View 이벤트 -> Controller or Model(engine) 슬롯 ----
+    connect(m_view, &MainView::startStopClicked, this, [this]() {
         if (m_engine->isRunning()) {
             m_engine->stop();
         } else {
             m_engine->start();
         }
     });
+    connect(m_view, &MainView::settingsClicked, this, &MainWindow::onActionSettings);
 
+    connect(m_view, &MainView::amplitudeChanged, m_settingsUiController.get(), &SettingsUiController::onAmplitudeChanged);
+    connect(m_view, &MainView::currentAmplitudeChanged, m_settingsUiController.get(), &SettingsUiController::onCurrentAmplitudeChanged);
+    connect(m_view, &MainView::frequencyChanged, m_settingsUiController.get(), &SettingsUiController::onFrequencyChanged);
+    connect(m_view, &MainView::currentPhaseChanged, m_settingsUiController.get(), &SettingsUiController::onCurrentPhaseChanged);
+    connect(m_view, &MainView::timeScaleChanged, m_settingsUiController.get(), &SettingsUiController::onTimeScaleChanged);
+    connect(m_view, &MainView::samplingCyclesChanged, m_settingsUiController.get(), &SettingsUiController::onSamplingCyclesChanged);
+    connect(m_view, &MainView::samplesPerCycleChanged, m_settingsUiController.get(), &SettingsUiController::onSamplesPerCycleChanged);
+    connect(m_view, &MainView::updateModeChanged, m_settingsUiController.get(), &SettingsUiController::onUpdateModeChanged);
     // ----------------------
 
+    // Model(engine) 시그널 -> View UI 슬롯
+    connect(m_engine, &SimulationEngine::dataUpdated, m_view, &MainView::updateGraph);
+    connect(m_engine, &SimulationEngine::runningStateChanged, m_view, &MainView::setRunningState);
 
-    // SimulationEngine 시그널 -> UI 슬롯
-    connect(m_engine, &SimulationEngine::dataUpdated, ui->graphViewPlaceholder, &GraphWindow::updateGraph);
-    connect(m_engine, &SimulationEngine::runningStateChanged, this, &MainWindow::onEngineRuninngStateChanged);
+    // View의 내부 상호작용 (Graph -> CheckBox)
+    connect(m_view->getUi()->graphViewPlaceholder, &GraphWindow::autoScrollToggled, m_view, &MainView::setAutoScroll);
+    connect(m_view, &MainView::autoScrollToggled, m_view->getUi()->graphViewPlaceholder, &GraphWindow::toggleAutoScroll);
 
-    // 그래프 관련
-    connect(ui->autoScrollCheckBox, &QCheckBox::toggled, ui->graphViewPlaceholder, &GraphWindow::toggleAutoScroll);
-    connect(ui->graphViewPlaceholder, &GraphWindow::autoScrollToggled, ui->autoScrollCheckBox, &QCheckBox::setChecked);
-    connect(ui->graphViewPlaceholder, &GraphWindow::pointHovered, this, [this](const QPointF& point) {
-        std::string coordText = std::format("시간: {:.3f} s, 전압: {:.3f} V", point.x(), point.y());
-        if(ui->statusbar)
-            ui->statusbar->showMessage(QString::fromStdString(coordText));
-    });
-    connect(ui->graphViewPlaceholder, &GraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawRequest);
-
-    connect(ui->currentPhaseDial, &FineTuningDial::valueChanged, this, [this](int value) {
-        // 라벨 업데이트
-        ui->currentPhaseLabel->setText(QString::number(value) + " °");
+    // Model(engine) 데이터 변경 시그널 -> MainWindow 상태바 업데이트
+    connect(m_view, &MainView::pointHovered, this, [this](const QPointF& point) {
+        statusBar()->showMessage(QString("Time: %1 s, Voltage: %2 V").arg(point.x(), 0, 'f', 3).arg(point.y(), 0, 'f', 3));
     });
 
 }
