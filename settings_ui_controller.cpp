@@ -117,6 +117,7 @@ void SettingsUiController::onCurrentAmplitudeChanged(double value)
 }
 void SettingsUiController::onFrequencyChanged(double value)
 {
+    if(m_blockUiSignals) return;
     m_engine->parameters().frequency = value;
     m_engine->recalculateCaptureInterval();
 }
@@ -126,16 +127,19 @@ void SettingsUiController::onCurrentPhaseChanged(int degrees)
 }
 void SettingsUiController::onTimeScaleChanged(double value)
 {
+    if(m_blockUiSignals) return;
     m_engine->parameters().timeScale = value;
     m_engine->updateCaptureTimer();
 }
 void SettingsUiController::onSamplingCyclesChanged(double value)
 {
+    if(m_blockUiSignals) return;
     m_engine->parameters().samplingCycles = value;
     m_engine->recalculateCaptureInterval();
 }
 void SettingsUiController::onSamplesPerCycleChanged(int value)
 {
+    if(m_blockUiSignals) return;
     m_engine->parameters().samplesPerCycle = value;
     m_engine->recalculateCaptureInterval();
 }
@@ -195,7 +199,7 @@ void SettingsUiController::initializeSettingsMap()
             double value = std::get<double>(val);
             m_view->getUi()->frequencyControlWidget->setValue(value);
             m_engine->parameters().frequency = value;
-            m_engine->recalculateCaptureInterval();
+            // m_engine->recalculateCaptureInterval();
         },
         config::Source::Frequency::Default
     };
@@ -214,7 +218,7 @@ void SettingsUiController::initializeSettingsMap()
             double value = std::get<double>(val);
             m_view->getUi()->timeScaleWidget->setValue(value);
             m_engine->parameters().timeScale = value;
-            m_engine->updateCaptureTimer();
+            // m_engine->updateCaptureTimer();
         },
         config::TimeScale::Default
     };
@@ -224,7 +228,7 @@ void SettingsUiController::initializeSettingsMap()
             double value = std::get<double>(val);
             m_view->getUi()->samplingCyclesControl->setValue(value);
             m_engine->parameters().samplingCycles = value;
-            m_engine->recalculateCaptureInterval();
+            // m_engine->recalculateCaptureInterval();
         },
         config::Sampling::DefaultSamplingCycles
     };
@@ -233,7 +237,7 @@ void SettingsUiController::initializeSettingsMap()
         [this](const SettingValue& val) {
             double value = std::get<int>(val);
             m_view->getUi()->samplesPerCycleControl->setValue(value);
-            m_engine->recalculateCaptureInterval();
+            // m_engine->recalculateCaptureInterval();
         },
         config::Sampling::DefaultSamplesPerCycle
     };
@@ -281,6 +285,8 @@ void SettingsUiController::initializeKeyNameMap()
 
 std::expected<void, std::string> SettingsUiController::applySettingsToUi(std::string_view presetName)
 {
+    m_blockUiSignals = true; // 프리셋 적용 시 슬롯 호출 잠시 무시
+
     // 맵을 순회하면 DB에서 값을 불러와 각 setter에 적용
     for(auto const& [key, info] : m_settingsMap) {
         auto result = std::visit([&](auto&& defaultValue)->std::expected<void, std::string> {
@@ -301,8 +307,16 @@ std::expected<void, std::string> SettingsUiController::applySettingsToUi(std::st
             return {};
         }, info.defaultValue);
 
-        if(!result) return result; // 오류 발생 시 즉시 전파
+        if(!result) {
+            m_blockUiSignals = false;
+            return result; // 오류 발생 시 즉시 전파
+        }
     }
+    m_blockUiSignals = false;
+
+    // 모든 값이 변경 된 후, 일괄 적용
+    m_engine->recalculateCaptureInterval();
+
     m_parent->findChild<QStatusBar*>()->showMessage(QString("'%1' 설정을 불러왔습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), 3000);
     // m_statusbar->showMessage(QString("'%1' 설정을 불러왔습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), 3000);
     return {};
