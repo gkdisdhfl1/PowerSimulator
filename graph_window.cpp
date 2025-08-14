@@ -153,10 +153,10 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
     });
 
     //찾은 위치와 그 이전 위치 중 더 가까운 점을 최종 후보로 선택
-    if(it == m_currentPoints.begin()) {
+    if(it == m_voltagePoints.begin()) {
 
-    } else if(it == m_currentPoints.end()) {
-        it = m_currentPoints.end() - 1;
+    } else if(it == m_voltagePoints.end()) {
+        it = m_voltagePoints.end() - 1;
     } else {
         if(std::abs((it - 1)->x() - chartPos.x()) < std::abs(it->x() - chartPos.x())) {
             --it;
