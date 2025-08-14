@@ -48,8 +48,10 @@ void SettingsUiController::onRenamePresetRequested(const QString& oldName, const
 void SettingsUiController::onRequestPresetList()
 {
     auto result = m_settingsManager.getAllPresetNames();
-    if(result)
+    if(result) {
+        qDebug() << "result value: " << result.value();
         emit presetListChanged(result.value());
+    }
     else {
         // 오류처리
         qWarning() << "Failed to get preset list:" << QString::fromStdString(result.error());
@@ -78,9 +80,12 @@ void SettingsUiController::onRequestPresetValues(const QString& presetName)
             }, *result);
 
             if(QString::fromStdString(key) == "updateMode") {
-                int mode = displayName.toInt();
+                int mode = displayValue.toInt();
+                // qDebug() << "display value : " << displayValue;
+                // qDebug() << "mode : " << mode;
                 QString modeStr = (mode == 0) ? "Per Sample" : (mode == 1) ? "Per Half Cycle" :
                                                                "Per Cycle";
+                // qDebug() << "modeStr : " << modeStr;
                 previewData[displayName] = modeStr;
             } else {
                 previewData[displayName] = displayValue;

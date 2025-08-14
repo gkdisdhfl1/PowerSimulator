@@ -147,7 +147,7 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
         return;
     }
 
-    auto it = std::lower_bound(m_currentPoints.begin(), m_currentPoints.end(), chartPos.x(),
+    auto it = std::lower_bound(m_voltagePoints.begin(), m_voltagePoints.end(), chartPos.x(),
                                [](const QPointF& p, double x) {
         return p.x() < x;
     });
