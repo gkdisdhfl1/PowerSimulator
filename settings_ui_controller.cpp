@@ -94,6 +94,19 @@ void SettingsUiController::onRequestPresetValues(const QString& presetName)
     emit presetValuesFetched(previewData);
 }
 
+void SettingsUiController::onRequestCurrentSettings()
+{
+    int currentMaxSize = std::get<int>(m_settingsMap.at("maxDataSize").getter());
+    double currentGrapWidth = std::get<double>(m_settingsMap.at("graphWidthSec").getter());
+    emit currentSettingsFetched(currentMaxSize, currentGrapWidth);
+}
+
+void SettingsUiController::onApplyDialogSettings(int maxDataSize, double graphWidth)
+{
+    m_settingsMap.at("maxDataSize").setter(maxDataSize);
+    m_settingsMap.at("graphWidthSec").setter(graphWidth);
+}
+
 void SettingsUiController::onAmplitudeChanged(double value)
 {
     m_engine->parameters().amplitude = value;
@@ -138,9 +151,21 @@ void SettingsUiController::onUpdateModeChanged()
     }
 }
 
-void SettingsUiController::handleSettingsDialog()
+void SettingsUiController::showSettingsDialog()
 {
-    m_settingsDialog->exec();
+    int currentMaxSize = std::get<int>(m_settingsMap.at("maxDataSize").getter());
+    double currentGraphWidth = std::get<double>(m_settingsMap.at("graphWidthSec").getter());
+
+    if (m_settingsDialog->openWithValues(currentMaxSize, currentGraphWidth) == QDialog::Accepted) {
+        // Dialog가 닫혔을 때, 이유를 확인
+        if(m_settingsDialog->getResultState() == SettingsDialog::DialogResult::Accepted) {
+            int newMaxSize = m_settingsDialog->getMaxSize(); // Dialog에 getter 필요
+            double newGraphWidth = m_settingsDialog->getGraphWidth(); // Dialog에 getter 필요
+
+            m_settingsMap.at("maxDataSize").setter(newMaxSize);
+            m_settingsMap.at("graphWidthSec").setter(newGraphWidth);
+        }
+    }
 }
 
 void SettingsUiController::initializeSettingsMap()
@@ -268,9 +293,9 @@ std::expected<void, std::string> SettingsUiController::applySettingsToUi(std::st
                 return std::unexpected(loadResult.error());
             }
 
-            qDebug() << "Applying:" << QString::fromStdString(key)
-                     << "| Loaded value: " << QVariant::fromValue(*loadResult)
-                     << "| Type:" << typeid(*loadResult).name();
+            // qDebug() << "Applying:" << QString::fromStdString(key)
+            //          << "| Loaded value: " << QVariant::fromValue(*loadResult)
+            //          << "| Type:" << typeid(*loadResult).name();
 
             info.setter(*loadResult); // setter에 T 타입의 값을 담은 variant 전달
             return {};

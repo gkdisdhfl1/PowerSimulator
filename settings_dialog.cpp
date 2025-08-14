@@ -9,8 +9,15 @@
 SettingsDialog::SettingsDialog(QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::SettingsDialog)
+    , m_resultState(DialogResult::Cancled)
 {
     ui->setupUi(this);
+    ui->maxDataSizeSpinBox->setRange(config::Simulation::MinDataSize, config::Simulation::MaxDataSize);
+
+    ui->graphWidthSpinBox->setSuffix(" s");
+    ui->graphWidthSpinBox->setRange(config::View::GraphWidth::Min, config::View::GraphWidth::Max);
+    ui->graphWidthSpinBox->setValue(config::View::GraphWidth::Default);
+
 
     // UI에 있는 버튼들의 시그널을 이 클래스의 private 슬롯에 연결
     connect(ui->newPresetButton, &QPushButton::clicked, this, &SettingsDialog::onNewPresetClicked);
@@ -37,6 +44,7 @@ void SettingsDialog::setController(SettingsUiController* controller)
     connect(this, &SettingsDialog::loadPresetRequested, m_controller, &SettingsUiController::onLoadPresetRequested);
     connect(this, &SettingsDialog::deletePresetRequested, m_controller, &SettingsUiController::onDeletePresetRequested);
     connect(this, &SettingsDialog::renamePresetRequested, m_controller, &SettingsUiController::onRenamePresetRequested);
+    connect(this, &SettingsDialog::settingsApplied, m_controller, &SettingsUiController::onApplyDialogSettings);
 
     // controller -> dialog
     connect(m_controller, &SettingsUiController::taskFinished, this, &SettingsDialog::onControllerTaskFinished);
@@ -44,15 +52,28 @@ void SettingsDialog::setController(SettingsUiController* controller)
     connect(m_controller, &SettingsUiController::presetValuesFetched, this, &SettingsDialog::onPresetValuesFetched);
 }
 
-// QDialog의 showEvent 재정의
-void SettingsDialog::showEvent(QShowEvent *event)
+int SettingsDialog::openWithValues(int currentMaxSize, double currentGraphWidth)
 {
-    QDialog::showEvent(event);
-
-    // 다이얼로그가 열릴 때마다 프리셋 목록을 새로고침하도록 Controller에게 요청
+    ui->maxDataSizeSpinBox->setValue(currentMaxSize);
+    ui->graphWidthSpinBox->setValue(currentGraphWidth);
     refreshPresetList();
-    // 상세 정보 UI 섹션의 버튼 활성화 상태 등을 초기화
     updateUiStates();
+
+    m_resultState = DialogResult::Cancled;
+    return exec();
+}
+
+int SettingsDialog::getMaxSize() const
+{
+    return ui->maxDataSizeSpinBox->value();
+}
+double SettingsDialog::getGraphWidth() const
+{
+    return ui->graphWidthSpinBox->value();
+}
+SettingsDialog::DialogResult SettingsDialog::getResultState() const
+{
+    return m_resultState;
 }
 
 // ----- 슬롯 구현 -----
@@ -81,7 +102,8 @@ void SettingsDialog::onLoadPresetClicked()
 
     // Controller에게 선택된 프리셋을 적용해달라고 요청
     emit loadPresetRequested(currentItem->text());
-    accept(); // 요청 후 닫음
+    m_resultState = DialogResult::PresetLoaded; // 상태를 프리셋 로드로 설정
+    QDialog::accept(); // 그냥 닫음
 }
 
 void SettingsDialog::onRenamePresetClicked()
@@ -135,11 +157,7 @@ void SettingsDialog::onPresetSelectionChanged()
     }
 }
 
-void SettingsDialog::onApplyCurrentSettingsClicked()
-{
-    if(!m_controller) return;
-    emit applyDialogSettingsRequested(ui->maxDataSizeSpinBox->value(), ui->graphWidthSpinBox->value());
-}
+
 
 // --- public slots ---
 void SettingsDialog::onControllerTaskFinished(const std::expected<void, std::string>& result, const QString& successMessage)
@@ -196,8 +214,6 @@ void SettingsDialog::onPresetValuesFetched(const QVariantMap& data)
         valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable);
         ui->previewTableWidget->setItem(currentRow, 1, valueItem);
     }
-
-    // ui->previewTableWidget->resizeColumnToContents();
 }
 
 void SettingsDialog::onCurrentSettingsFetched(int maxDataSize, double graphWidth)
@@ -228,4 +244,13 @@ void SettingsDialog::updateUiStates()
         ui->previewTableWidget->clearContents();
         ui->previewTableWidget->setRowCount(0);
     }
+}
+
+void SettingsDialog::accept()
+{
+    if(m_controller) {
+        emit settingsApplied(ui->maxDataSizeSpinBox->value(), ui->graphWidthSpinBox->value());
+    }
+    m_resultState = DialogResult::Accepted; // 상태를 ok 눌림으로 설정
+    QDialog::accept();
 }

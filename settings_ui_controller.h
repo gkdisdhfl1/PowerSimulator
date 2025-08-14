@@ -20,12 +20,13 @@ public:
     void handleSaveAction();
     void handleLoadAction();
     void handleDeleteAction();
-    void handleSettingsDialog();
+    void showSettingsDialog();
 
 signals:
     void taskFinished(const std::expected<void, std::string>& result, const QString& successMessage);
     void presetListChanged(const std::vector<std::string>& presetList);;
     void presetValuesFetched(const QVariantMap& data);
+    void currentSettingsFetched(int maxDataSize, double graphWidth);
 
 public slots:
     // View(SettingsDialog)로부터 오는 요청을 처리하는 슬롯
@@ -37,6 +38,8 @@ public slots:
     // View가 프리셋 목록이나 상세 값을 요청할 때 호출될 슬롯
     void onRequestPresetList();
     void onRequestPresetValues(const QString& presetName);
+    void onRequestCurrentSettings();
+    void onApplyDialogSettings(int maxDataSize, double graphWidth);
 
     void onAmplitudeChanged(double value);
     void onCurrentAmplitudeChanged(double value);

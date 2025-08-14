@@ -22,6 +22,13 @@ public:
 
     // 의존성 주입을 위한 Setter
     void setController(SettingsUiController* controller);
+    int openWithValues(int currentMaxSize, double currentGraphWidth); // 다이얼 열고 초기화하는 함수
+
+    enum class DialogResult { Accepted, PresetLoaded, Cancled };
+    DialogResult getResultState() const;
+
+    int getMaxSize() const;
+    double getGraphWidth() const;
 
 signals:
     // Controller에게 작업을 요청하는 시그널들
@@ -29,7 +36,7 @@ signals:
     void loadPresetRequested(const QString& presetName);
     void deletePresetRequested(const QString& presetName);
     void renamePresetRequested(const QString& oldName, const QString& newName);
-    void applyDialogSettingsRequested(int maxDataSize, double graphWidth);
+    void settingsApplied(int maxDataSize, double graphWidth);
 
 public slots:
     // Controller로부터 작업 결과를 받는 슬롯
@@ -39,24 +46,21 @@ public slots:
     void onPresetValuesFetched(const QVariantMap& data);
     void onCurrentSettingsFetched(int maxDataSize, double graphWidth);
 
-protected:
-    // 다이얼 로그가 표시될 때마다 UI를 초기화
-    void showEvent(QShowEvent *event) override;
-
 private slots:
     void onNewPresetClicked();
     void onLoadPresetClicked();
     void onRenamePresetClicked();
     void onDeletePresetClicked();
     void onPresetSelectionChanged();
-    void onApplyCurrentSettingsClicked();
 
 private:
     Ui::SettingsDialog *ui;
     SettingsUiController* m_controller = nullptr; // Controller 포인터 소유x
+    DialogResult m_resultState;
 
     void refreshPresetList(); // Controller에게 프리셋 목록을 요청하는 함수
     void updateUiStates(); // 오른쪽 상세 설정 UI를 업데이트하는 함수
+    void accept() override;
 };
 
 #endif // SETTINGS_DIALOG_H

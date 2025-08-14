@@ -38,7 +38,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::onActionSettings()
 {
-    m_settingsUiController->handleSettingsDialog();
+    m_settingsUiController->showSettingsDialog();
 }
 
 void MainWindow::createSignalSlotConnections()
