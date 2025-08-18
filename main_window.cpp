@@ -54,6 +54,7 @@ void MainWindow::createSignalSlotConnections()
             m_engine->start();
         }
     });
+    connect(m_view, &MainView::redrawNeeded, m_engine, &SimulationEngine::onRedrawRequest);
     connect(m_view, &MainView::settingsClicked, this, &MainWindow::onActionSettings);
 
     connect(m_view, &MainView::amplitudeChanged, m_settingsUiController.get(), &SettingsUiController::onAmplitudeChanged);
@@ -76,7 +77,7 @@ void MainWindow::createSignalSlotConnections()
 
     // Model(engine) 데이터 변경 시그널 -> MainWindow 상태바 업데이트
     connect(m_view, &MainView::pointHovered, this, [this](const QPointF& point) {
-        statusBar()->showMessage(QString("Time: %1 s, Voltage: %2 V").arg(point.x(), 0, 'f', 3).arg(point.y(), 0, 'f', 3));
+        statusBar()->showMessage(QString("Time: %1 s, Voltage:/chat %2 V").arg(point.x(), 0, 'f', 3).arg(point.y(), 0, 'f', 3));
     });
 
 }

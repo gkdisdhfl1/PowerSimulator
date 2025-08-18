@@ -17,11 +17,9 @@ class SettingsDialog : public QDialog
     Q_OBJECT
 
 public:
-    explicit SettingsDialog(QWidget *parent = nullptr);
+    explicit SettingsDialog(SettingsUiController* controller, QWidget *parent = nullptr);
     ~SettingsDialog();
 
-    // 의존성 주입을 위한 Setter
-    void setController(SettingsUiController* controller);
     int openWithValues(int currentMaxSize, double currentGraphWidth); // 다이얼 열고 초기화하는 함수
 
     enum class DialogResult { Accepted, PresetLoaded, Cancled };

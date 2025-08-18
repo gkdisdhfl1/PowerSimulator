@@ -6,9 +6,10 @@
 #include <QInputDialog>
 #include <QMessageBox>
 
-SettingsDialog::SettingsDialog(QWidget *parent)
+SettingsDialog::SettingsDialog(SettingsUiController* controller ,QWidget *parent)
     : QDialog(parent)
     , ui(new Ui::SettingsDialog)
+    , m_controller(controller)
     , m_resultState(DialogResult::Cancled)
 {
     ui->setupUi(this);
@@ -18,6 +19,17 @@ SettingsDialog::SettingsDialog(QWidget *parent)
     ui->graphWidthSpinBox->setRange(config::View::GraphWidth::Min, config::View::GraphWidth::Max);
     ui->graphWidthSpinBox->setValue(config::View::GraphWidth::Default);
 
+    // dialog -> controller
+    connect(this, &SettingsDialog::saveAsPresetRequested, m_controller, &SettingsUiController::onSaveAsPresetRequested);
+    connect(this, &SettingsDialog::loadPresetRequested, m_controller, &SettingsUiController::onLoadPresetRequested);
+    connect(this, &SettingsDialog::deletePresetRequested, m_controller, &SettingsUiController::onDeletePresetRequested);
+    connect(this, &SettingsDialog::renamePresetRequested, m_controller, &SettingsUiController::onRenamePresetRequested);
+    connect(this, &SettingsDialog::settingsApplied, m_controller, &SettingsUiController::onApplyDialogSettings);
+
+    // controller -> dialog
+    connect(m_controller, &SettingsUiController::taskFinished, this, &SettingsDialog::onControllerTaskFinished);
+    connect(m_controller, &SettingsUiController::presetListChanged, this, &SettingsDialog::onPresetListChanged);
+    connect(m_controller, &SettingsUiController::presetValuesFetched, this, &SettingsDialog::onPresetValuesFetched);
 
     // UI에 있는 버튼들의 시그널을 이 클래스의 private 슬롯에 연결
     connect(ui->newPresetButton, &QPushButton::clicked, this, &SettingsDialog::onNewPresetClicked);
@@ -32,24 +44,6 @@ SettingsDialog::SettingsDialog(QWidget *parent)
 SettingsDialog::~SettingsDialog()
 {
     delete ui;
-}
-
-void SettingsDialog::setController(SettingsUiController* controller)
-{
-    m_controller = controller;
-    if(!m_controller) return;
-
-    // dialog -> controller
-    connect(this, &SettingsDialog::saveAsPresetRequested, m_controller, &SettingsUiController::onSaveAsPresetRequested);
-    connect(this, &SettingsDialog::loadPresetRequested, m_controller, &SettingsUiController::onLoadPresetRequested);
-    connect(this, &SettingsDialog::deletePresetRequested, m_controller, &SettingsUiController::onDeletePresetRequested);
-    connect(this, &SettingsDialog::renamePresetRequested, m_controller, &SettingsUiController::onRenamePresetRequested);
-    connect(this, &SettingsDialog::settingsApplied, m_controller, &SettingsUiController::onApplyDialogSettings);
-
-    // controller -> dialog
-    connect(m_controller, &SettingsUiController::taskFinished, this, &SettingsDialog::onControllerTaskFinished);
-    connect(m_controller, &SettingsUiController::presetListChanged, this, &SettingsDialog::onPresetListChanged);
-    connect(m_controller, &SettingsUiController::presetValuesFetched, this, &SettingsDialog::onPresetValuesFetched);
 }
 
 int SettingsDialog::openWithValues(int currentMaxSize, double currentGraphWidth)

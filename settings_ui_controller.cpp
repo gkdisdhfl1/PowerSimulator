@@ -19,8 +19,7 @@ SettingsUiController::SettingsUiController(MainView* view, SettingsManager& sett
     initializeSettingsMap();
     initializeKeyNameMap();
 
-    m_settingsDialog = std::make_unique<SettingsDialog>(m_parent);
-    m_settingsDialog->setController(this);
+    m_settingsDialog = std::make_unique<SettingsDialog>(this, m_parent);
 }
 
 // --- slot 구현 ---
