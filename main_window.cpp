@@ -27,8 +27,6 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     setCentralWidget(m_view);
     statusBar()->showMessage("Ready");
     createSignalSlotConnections();
-
-    // ui->splitter->setStretchFactor(0, 2);
 }
 
 MainWindow::~MainWindow()
@@ -36,15 +34,10 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::onActionSettings()
-{
-    m_settingsUiController->showSettingsDialog();
-}
-
 void MainWindow::createSignalSlotConnections()
 {
     // 메뉴바 액션 연결
-    connect(ui->actionSettings, &QAction::triggered, this, &MainWindow::onActionSettings);
+    connect(ui->actionSettings, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showSettingsDialog);
 
     // ---- View 이벤트 -> Controller or Model(engine) 슬롯 ----
     connect(m_view, &MainView::startStopClicked, this, [this]() {
@@ -55,7 +48,7 @@ void MainWindow::createSignalSlotConnections()
         }
     });
     connect(m_view, &MainView::redrawNeeded, m_engine, &SimulationEngine::onRedrawRequest);
-    connect(m_view, &MainView::settingsClicked, this, &MainWindow::onActionSettings);
+    connect(m_view, &MainView::settingsClicked, m_settingsUiController.get(), &SettingsUiController::showSettingsDialog);
 
     connect(m_view, &MainView::amplitudeChanged, m_settingsUiController.get(), &SettingsUiController::onAmplitudeChanged);
     connect(m_view, &MainView::currentAmplitudeChanged, m_settingsUiController.get(), &SettingsUiController::onCurrentAmplitudeChanged);
@@ -75,9 +68,8 @@ void MainWindow::createSignalSlotConnections()
     connect(m_view->getUi()->graphViewPlaceholder, &GraphWindow::autoScrollToggled, m_view, &MainView::setAutoScroll);
     connect(m_view, &MainView::autoScrollToggled, m_view->getUi()->graphViewPlaceholder, &GraphWindow::toggleAutoScroll);
 
-    // Model(engine) 데이터 변경 시그널 -> MainWindow 상태바 업데이트
+    // View가 보낸 마우스 위치 정보 -> MainWindow가 상태바 업데이트
     connect(m_view, &MainView::pointHovered, this, [this](const QPointF& point) {
-        statusBar()->showMessage(QString("Time: %1 s, Voltage:/chat %2 V").arg(point.x(), 0, 'f', 3).arg(point.y(), 0, 'f', 3));
+        statusBar()->showMessage(QString("Time: %1 s, Voltage: %2 V").arg(point.x(), 0, 'f', 3).arg(point.y(), 0, 'f', 3));
     });
-
 }

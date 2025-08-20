@@ -321,7 +321,7 @@ std::expected<void, std::string> SettingsUiController::applySettingsToUi(std::st
     // 모든 값이 변경 된 후, 일괄 적용
     m_engine->recalculateCaptureInterval();
 
-    m_parent->findChild<QStatusBar*>()->showMessage(QString("'%1' 설정을 불러왔습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), 3000);
+    m_parent->findChild<QStatusBar*>()->showMessage(QString("'%1' 설정을 불러왔습니다.").arg(QString::fromUtf8(presetName.data() , presetName.size())), 3000);
     // m_statusbar->showMessage(QString("'%1' 설정을 불러왔습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), 3000);
     return {};
 }

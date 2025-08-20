@@ -23,10 +23,6 @@ public:
     explicit MainWindow(SimulationEngine *engine, QWidget *parent = nullptr);
     ~MainWindow();
 
-private slots:
-    // void onEngineRuninngStateChanged(bool isRunning);
-    void onActionSettings();
-
 private:
     Ui::MainWindow *ui;
     MainView *m_view;

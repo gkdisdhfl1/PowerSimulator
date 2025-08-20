@@ -16,10 +16,6 @@ class SettingsUiController : public QObject
 public:
     explicit SettingsUiController(MainView* ui, SettingsManager& settingsManager, SimulationEngine* engine, QWidget* parent);
 
-    // MainWindow의 액션에 연결될 public 함수들
-    void handleSaveAction();
-    void handleLoadAction();
-    void handleDeleteAction();
     void showSettingsDialog();
 
 signals:
