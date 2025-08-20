@@ -1,9 +1,9 @@
 #include "main_window.h"
-#include "ui_main_view.h"
 #include "ui_main_window.h"
+#include "ui_main_view.h"
 #include "main_view.h"
-#include "settings_dialog.h"
 #include "simulation_engine.h"
+#include "settings_dialog.h"
 #include "settings_manager.h"
 #include "settings_ui_controller.h"
 

@@ -1,7 +1,7 @@
 #include "settings_dialog.h"
-#include "config.h"
-#include "settings_ui_controller.h"
 #include "ui_settings_dialog.h"
+#include "settings_ui_controller.h"
+#include "config.h"
 #include <QDebug>
 #include <QInputDialog>
 #include <QMessageBox>

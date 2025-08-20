@@ -1,14 +1,13 @@
 #ifndef SETTINGS_UI_CONTROLLER_H
 #define SETTINGS_UI_CONTROLLER_H
 
-#include "ui_main_window.h"
-#include "settings_manager.h"
-#include "simulation_engine.h"
 #include <QVariantMap>
+#include <expected>
 
 class SettingsDialog;
 class MainView;
 class SettingsManager;
+class SimulationEngine;
 
 class SettingsUiController : public QObject
 {
@@ -69,7 +68,6 @@ private:
     void initializeKeyNameMap();
     std::expected<void, std::string> applySettingsToUi(std::string_view presetName); // 특정 프리셋을 UI에 적용하는 함수
     std::expected<void, std::string> saveUiToSettings(std::string_view presetName); // 현재 UI 상태를 특정 프리셋으로 저장하는 함수
-    std::optional<QString> promptUserWithPresetList(const QString& title, const QString& label);
 
     bool m_blockUiSignals = false;
 };

@@ -2,9 +2,7 @@
 #define GRAPH_WINDOW_H
 
 #include <QWidget>
-// #include <QDialog>
 #include <deque>
-#include <memory>
 #include "data_point.h"
 #include "custom_chart_view.h"
 

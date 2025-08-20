@@ -3,10 +3,24 @@
 #include "main_view.h"
 #include "ui_main_view.h"
 #include "settings_dialog.h"
-#include "shared_data_types.h"
+#include "settings_manager.h"
+#include "simulation_engine.h"
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QStatusBar>
+
+namespace PresetKeys {
+constexpr const char* Amplitude         = "진폭 (Voltage)";
+constexpr const char* CurrentAmplitude  = "진폭 (Current)";
+constexpr const char* Frequency         = "주파수";
+constexpr const char* CurrentPhase      = "위상차";
+constexpr const char* TimeScale         = "시간 배율";
+constexpr const char* SamplingCycles    = "초당 cycle";
+constexpr const char* SamplesPerCycle   = "cycle당 sample";
+constexpr const char* MaxDataSize       = "데이터 최대 개수";
+constexpr const char* GraphWidth        = "그래프 시간 폭";
+constexpr const char* UpdateMode        = "갱신 모드";
+}
 
 
 SettingsUiController::SettingsUiController(MainView* view, SettingsManager& settingsManager, SimulationEngine* engine, QWidget* parent)
@@ -339,32 +353,4 @@ std::expected<void, std::string> SettingsUiController::saveUiToSettings(std::str
 
     m_parent->findChild<QStatusBar*>()->showMessage(QString("'%1' 이름으로 설정을 저장했습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), 3000);
     return {};
-}
-
-std::optional<QString> SettingsUiController::promptUserWithPresetList(const QString& title, const QString& label)
-{
-    auto presetsResult = m_settingsManager.getAllPresetNames();
-    if(!presetsResult) {
-        QMessageBox::warning(m_parent, "오류", QString::fromStdString(presetsResult.error()));
-        return std::nullopt; // optional에 값이 없음을 나타냄
-    }
-
-    if(presetsResult.value().empty()) {
-        QMessageBox::information(m_parent, "알림", "저장된 설정이 없습니다.");
-        return std::nullopt;
-    }
-
-    QStringList presetItem;
-    for(const auto& name : presetsResult.value()) {
-        presetItem << QString::fromStdString(name);
-    }
-
-    bool ok;
-    QString selectedPreset = QInputDialog::getItem(m_parent, title, label, presetItem, 0, false, &ok);
-
-    if(ok && !selectedPreset.isEmpty()) {
-        return selectedPreset; // optional에 선택된 값을 담아 반환
-    }
-
-    return std::nullopt; // 사용자가 취소했음을 나타냄
 }

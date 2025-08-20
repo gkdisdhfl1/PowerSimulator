@@ -16,5 +16,4 @@ namespace PresetKeys {
     const QString GraphWidth        = "그래프 시간 폭";
     const QString UpdateMode        = "갱신 모드";
 }
-
 #endif // SHARED_DATA_TYPES_H

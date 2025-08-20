@@ -1,7 +1,5 @@
 #include "custom_chart_view.h"
 #include "config.h"
-#include <QtCharts/QChart>
-#include <QMouseEvent>
 #include <QtCharts/QValueAxis>
 #include <QtCharts/QAbstractSeries>
 

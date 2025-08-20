@@ -20,9 +20,9 @@ public:
     explicit SettingsDialog(SettingsUiController* controller, QWidget *parent = nullptr);
     ~SettingsDialog();
 
-    int openWithValues(int currentMaxSize, double currentGraphWidth); // 다이얼 열고 초기화하는 함수
-
     enum class DialogResult { Accepted, PresetLoaded, Cancled };
+
+    int openWithValues(int currentMaxSize, double currentGraphWidth); // 다이얼 열고 초기화하는 함수
     DialogResult getResultState() const;
 
     int getMaxSize() const;
