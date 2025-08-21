@@ -143,38 +143,43 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
 
 void GraphWindow::findNearestPoint(const QPointF& chartPos)
 {
-    if(m_series->points().isEmpty()) {
-        return;
+    // 데이터 없으면 종료
+    if(m_series->points().isEmpty() || m_voltagePoints.isEmpty()) return;
+
+    // 1. 이진 탐색으로 chartPos.x() 이상인 첫 번째 점을 찾음
+    auto it = std::lower_bound(
+        m_voltagePoints.begin(), m_voltagePoints.end(), chartPos.x(),
+        [](const QPointF& p, double x) {
+            return p.x() < x;
+        });
+
+    // 2. 후보군(it, it-1)을 벡터로 담음
+    std::vector<const QPointF*> candidates;
+    if(it != m_voltagePoints.end()) {
+        candidates.push_back(&(*it));
+    }
+    if(it != m_voltagePoints.begin()) {
+        candidates.push_back(&(*(it - 1)));
     }
 
-    auto it = std::lower_bound(m_voltagePoints.begin(), m_voltagePoints.end(), chartPos.x(),
-                               [](const QPointF& p, double x) {
-        return p.x() < x;
-    });
+    // 3. 스크린 좌표로 변환 & 거리 계산
+    const QPointF mouseScreenPos = m_chartView->mapFromGlobal(QCursor::pos());
+    const QPointF* nearestPoint = nullptr;
+    double minDistance = std::numeric_limits<double>::max();
 
-    //찾은 위치와 그 이전 위치 중 더 가까운 점을 최종 후보로 선택
-    if(it == m_voltagePoints.begin()) {
-
-    } else if(it == m_voltagePoints.end()) {
-        it = m_voltagePoints.end() - 1;
-    } else {
-        if(std::abs((it - 1)->x() - chartPos.x()) < std::abs(it->x() - chartPos.x())) {
-            --it;
+    for(const QPointF* c : candidates) {
+        QPointF screenPos = m_chart->mapToPosition(*c, m_series);
+        double dist = QLineF(mouseScreenPos, screenPos).length();
+        if(dist < minDistance) {
+            minDistance = dist;
+            nearestPoint = c;
         }
     }
 
-    // 최종 선택된 점
-    const QPointF& nearestPoint = *it;
-
-    // 찾은 점이 커서와 화면상에서 너무 멀리 떨어져있는지 확인
-    const QPointF nearestPointScreenPos = m_chart->mapToPosition(nearestPoint, m_series);
-    const QPointF mouseScreenPos = m_chartView->mapFromGlobal(QCursor::pos());
-    const double pixelDistance = QLineF(nearestPointScreenPos, mouseScreenPos).length();
-
-    if(pixelDistance > config::View::Interaction::Proximity::Threshold)
-        return;
-
-    emit pointHovered(nearestPoint);
+    // 임계값 이내면 선택
+    if(nearestPoint && minDistance <= config::View::Interaction::Proximity::Threshold) {
+        emit pointHovered(*nearestPoint);
+    }
 }
 
 void GraphWindow::updateYAxisRange(QValueAxis *axis, const QList<QPointF> &points)
@@ -214,6 +219,7 @@ void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
         maxX = axisX->max();
     }
 
+    // C++20 ranges를 사용해, 현재 보이는 X축 범위 내의 점들만 필터링하는 뷰를 생성
     auto pointsView = data
                       | std::views::transform([](const DataPoint& p) {
                             const auto x = utils::to_qpointf(p).x();

@@ -3,6 +3,12 @@
 #include <QDebug>
 #include <QStyle>
 
+namespace {
+constexpr int FineTuningSliderSteps = 100;
+constexpr int FineTuningPageStep = 10;
+constexpr double SliderStepValue = 1.0 / FineTuningSliderSteps;
+}
+
 ValueControlWidget::ValueControlWidget(QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::ValueControlWidget)
@@ -119,12 +125,12 @@ void ValueControlWidget::updateUiAppearance()
     case Mode::FineTuning:
         qDebug() << "UI Mode: Fine-tuning";
         ui->valueSpinBox->setSingleStep(m_fineStep);
-        ui->valueSlider->setRange(0, 99);
+        ui->valueSlider->setRange(0, FineTuningSliderSteps - 1);
         break;
     }
 
     ui->valueSlider->setSingleStep(1);
-    ui->valueSlider->setPageStep(10);
+    ui->valueSlider->setPageStep(FineTuningPageStep);
 }
 
 void ValueControlWidget::syncSliderToValue()
@@ -170,7 +176,7 @@ double ValueControlWidget::calculateNewValue(int sliderPosition) const
     case Mode::FineTuning:
         {
             double intPart = std::trunc(currentValue);
-            double finePart = static_cast<double>(sliderPosition) * 0.01;
+            double finePart = static_cast<double>(sliderPosition) * SliderStepValue;
 
             if(currentValue >= 0)
                 newValue = intPart + finePart;
