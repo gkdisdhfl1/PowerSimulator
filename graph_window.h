@@ -43,7 +43,8 @@ public slots:
 private:
     Ui::GraphWindow *ui;
     void setupChart(); // 차트 초기 설정을 위한 함수
-    void updateYAxisRange(QValueAxis *axis, const QList<QPointF> &points);
+    void updateYAxisRange(double minY, double maxY);
+    void updateMinMaxY(const QList<QPointF>& points, double& minY, double& maxY);
     void updateVisiblePoints(const std::deque<DataPoint>& data);
     void updateSeriesData();
     void updateAxesRanges();

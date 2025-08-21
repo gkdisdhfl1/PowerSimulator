@@ -182,25 +182,6 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
     }
 }
 
-void GraphWindow::updateYAxisRange(QValueAxis *axis, const QList<QPointF> &points)
-{
-    if(!axis || points.isEmpty()) {
-        return;
-    }
-
-    // Y값의 최소/최대 찾음
-    auto [min_it, max_it] = std::ranges::minmax_element(points, {}, &QPointF::y);
-    const double minY = min_it->y();
-    const double maxY = max_it->y();
-
-    // 위아래 여백 계산
-    double padding = (maxY - minY) * config::View::Padding::Ratio;
-    if(padding < config::View::Padding::Min) {
-        padding = config::View::Padding::Min; // 최소 여백 보장
-    }
-
-    axis->setRange(minY - padding, maxY + padding);
-}
 
 void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
 {
@@ -248,17 +229,52 @@ void GraphWindow::updateSeriesData()
 void GraphWindow::updateAxesRanges()
 {
     if(m_isAutoScrollEnabled) {
-        //  Y축 계산을 위해 모든 점들을 하나로 합침
-        QList<QPointF> allPoints = m_voltagePoints;
-        allPoints.append(m_currentPoints);
+        if(m_voltagePoints.isEmpty() && m_currentPoints.isEmpty()) return;
 
-        updateYAxisRange(m_axisY, allPoints);
+        // Y값의 최소/최대값을 저장할 변수 초기화
+        double minY = std::numeric_limits<double>::max();
+        double maxY = std::numeric_limits<double>::lowest();
+
+        updateMinMaxY(m_voltagePoints, minY, maxY);
+        updateMinMaxY(m_currentPoints, minY, maxY);
+
+        // Y축 범위 설정
+        updateYAxisRange(minY, maxY);
 
         // X축의 범위를 업데이트
+        double lastTimestamp = std::numeric_limits<double>::lowest();
+        bool hasPoints = false;
         if (!m_voltagePoints.isEmpty()) {
-            const double maxX = m_voltagePoints.back().x();
-            const double minX = maxX - m_graphWidthSec;
-            m_axisX->setRange(minX, maxX);
+            lastTimestamp = m_voltagePoints.back().x();
+            hasPoints = true;
+        }
+        if(!m_currentPoints.isEmpty()) {
+            lastTimestamp = m_currentPoints.back().x();
+            hasPoints = true;
+        }
+        if(hasPoints) {
+            const double minX = lastTimestamp - m_graphWidthSec;
+            m_axisX->setRange(minX, lastTimestamp);
         }
     }
+}
+
+void GraphWindow::updateMinMaxY(const QList<QPointF>& points, double& minY, double& maxY)
+{
+    if(points.isEmpty()) return;
+
+    auto [min_it, max_it] = std::ranges::minmax_element(points, {}, &QPointF::y);
+    minY = std::min(minY, min_it->y());
+    maxY = std::max(maxY, max_it->y());
+}
+
+void GraphWindow::updateYAxisRange(double minY, double maxY)
+{
+    // 위아래 여백 계산
+    double padding = (maxY - minY) * config::View::Padding::Ratio;
+    if(padding < config::View::Padding::Min) {
+        padding = config::View::Padding::Min; // 최소 여백 보장
+    }
+
+    m_axisY->setRange(minY - padding, maxY + padding);
 }
