@@ -69,9 +69,27 @@ void ValueControlWidget::setSuffix(const QString &suffix)
     ui->suffixLabel->setText(suffix);
 }
 
+void ValueControlWidget::setDataType(DataType type)
+{
+    m_dataType = type;
+    if(m_dataType == DataType::Integer) {
+        ui->valueSpinBox->setDecimals(0);
+        // 정수 모드에서는 항상 Normal 모드로 고정
+        if(m_currentMode == Mode::FineTuning) {
+            setMode(Mode::Normal);
+        }
+    } else {
+        // Double 모드일 때 기본 소수점 자릿수
+        ui->valueSpinBox->setDecimals(2);
+    }
+}
+
 // event handler 구현
 void ValueControlWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
+    // 정수 모드에서는 미세 조정 모드로 진입하지 않음
+    if(m_dataType == DataType::Integer) return;
+
     const Mode newMode = (m_currentMode == Mode::Normal) ? Mode::FineTuning : Mode::Normal;
     setMode(newMode);
 
@@ -100,7 +118,11 @@ void ValueControlWidget::onSpinBoxValueChanged(double value)
 {
     // 사용자가 직접 입력한 값으로 슬라이더 위치 동기화 및 외부 알림
     syncSliderToValue();
-    emit valueChanged(value);
+    if(m_dataType == DataType::Integer) {
+        emit intValueChanged(static_cast<int>(std::round(value)));
+    } else {
+        emit valueChanged(value);
+    }
 }
 
 void ValueControlWidget::onSliderMoved(int position)
@@ -111,7 +133,11 @@ void ValueControlWidget::onSliderMoved(int position)
     ui->valueSpinBox->setValue(newValue);
     ui->valueSpinBox->blockSignals(false);
 
-    emit valueChanged(ui->valueSpinBox->value());
+    if(m_dataType == DataType::Integer) {
+        emit intValueChanged(static_cast<int>(std::round(newValue)));
+    } else {
+        emit valueChanged(newValue);
+    }
 }
 
 void ValueControlWidget::updateUiAppearance()

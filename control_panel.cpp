@@ -106,7 +106,7 @@ void ControlPanel::setupUi()
     formLayout->addRow("주파수", m_frequencyControlWidget);
     formLayout->addRow("시간 배율", m_timeScaleControlWidget);
     formLayout->addRow("초당 cycle", m_samplingCyclesControlWidget);
-    // formLayout->addRow("cycle당 sample", m_samplesPerCycleControlWidget);
+    formLayout->addRow("cycle당 sample", m_samplesPerCycleControlWidget);
     // formLayout->addRow(m_currentPhaseLabel, m_currentPhaseDial);
 
     // 위상차 다이얼 레이아웃
@@ -158,6 +158,7 @@ void ControlPanel::initializeUiValues()
     m_samplingCyclesControlWidget->setValue(config::Sampling::DefaultSamplingCycles);
     m_samplesPerCycleControlWidget->setRange(config::Sampling::MinValue, config::Sampling::maxValue);
     m_samplesPerCycleControlWidget->setValue(config::Sampling::DefaultSamplesPerCycle);
+    m_samplesPerCycleControlWidget->setDataType(ValueControlWidget::DataType::Integer);
 
     m_currentPhaseDial->setRange(0, 359);
     m_currentPhaseDial->setValue(config::Source::Current::DefaultPhaseOffset);
@@ -186,9 +187,7 @@ void ControlPanel::createConnections()
     connect(m_currentPhaseDial, &FineTuningDial::valueChanged, this, &ControlPanel::currentPhaseChanged);
     connect(m_timeScaleControlWidget, &ValueControlWidget::valueChanged, this, &ControlPanel::timeScaleChanged);
     connect(m_samplingCyclesControlWidget, &ValueControlWidget::valueChanged, this, &ControlPanel::samplingCyclesChanged);
-    connect(m_samplesPerCycleControlWidget, &ValueControlWidget::valueChanged, this, [this](double value) {
-        emit samplesPerCycleChanged(static_cast<int>(value));
-    });
+    connect(m_samplesPerCycleControlWidget, &ValueControlWidget::intValueChanged, this, &ControlPanel::samplesPerCycleChanged);
 
     // 라디오 버튼 연결
     connect(m_perSampleRadioButton, &QRadioButton::toggled, this, &ControlPanel::updateModeChanged);

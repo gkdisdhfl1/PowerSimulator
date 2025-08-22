@@ -190,6 +190,7 @@ void SettingsUiController::onSamplingCyclesChanged(double value)
 }
 void SettingsUiController::onSamplesPerCycleChanged(int value)
 {
+    qDebug() << "onSamplesPerCycleChanged value: " << value;
     if(m_blockUiSignals) return;
     m_engine->parameters().samplesPerCycle = value;
     m_engine->recalculateCaptureInterval();

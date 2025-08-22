@@ -19,11 +19,16 @@ public:
         Normal,
         FineTuning
     };
+    enum class DataType {
+        Double,
+        Integer
+    };
 
     void setRange(double min, double max);
     void setValue(double value);
     void setSteps(double singleStep, double fineStep);
     void setSuffix(const QString &suffix);
+    void setDataType(DataType type);
     double value() const; // 현재 값을 가져오는 함수
 
 protected:
@@ -37,6 +42,7 @@ private slots:
 
 signals:
     void valueChanged(double newValue);
+    void intValueChanged(int newValue);
 
 private:
     Ui::ValueControlWidget *ui;
@@ -52,6 +58,7 @@ private:
 
     // 집중 모드 관련 멤버 변수들
     Mode m_currentMode;
+    DataType m_dataType = DataType::Double;
 
     double m_singleStep = 1.0;
     double m_fineStep = 0.01;
