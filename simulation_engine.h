@@ -6,6 +6,7 @@
 #include <deque>
 #include "data_point.h"
 #include "config.h"
+#include "measured_data.h"
 
 class SimulationEngine : public QObject
 {
@@ -50,6 +51,7 @@ public slots:
 signals:
     void dataUpdated(const std::deque<DataPoint>& data);
     void runningStateChanged(bool isRunning);
+    void measuredDataUpdated(const std::deque<MeasuredData>& data);
 
 private slots:
     void captureData();
@@ -63,6 +65,7 @@ private:
     double calculateCurrentVoltage();
     double calculateCurrentAmperage();
     void addNewDataPoint(double voltage, double current);
+    void calculateCycleData(); // RMS, 전력 계산 함수
 
     QTimer m_captureTimer;
     std::deque<DataPoint> m_data;
@@ -72,6 +75,11 @@ private:
     double m_accumulatedPhaseSinceUpdate; // 마지막 갱신 후 누적된 위상 변화량
     FpMilliseconds m_captureIntervalsMs; // 기본 캡처 간격 (double, ms)
     Nanoseconds m_simulationTimeNs; // 시뮬레이션 누적 시간 (정수, ns)
+
+    // measuredData 관련 변수
+    std::deque<MeasuredData> m_measuredData; // 계산된 데이터를 저장할 컨테이너
+    std::vector<DataPoint> m_cycleSampleBuffer; // 1사이클 동안의 샘플을 모으는 버퍼
+    double m_accumulatedPhaseForCycle; // 사이클 계산을 위한 누적 위상
 };
 
 #endif // SIMULATION_ENGINE_H

@@ -200,6 +200,9 @@
          <property name="text">
           <string>Ok</string>
          </property>
+         <property name="default">
+          <bool>true</bool>
+         </property>
         </widget>
        </item>
        <item>
@@ -224,8 +227,8 @@
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>241</x>
-     <y>272</y>
+     <x>712</x>
+     <y>359</y>
     </hint>
     <hint type="destinationlabel">
      <x>171</x>
@@ -240,8 +243,8 @@
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">
-     <x>357</x>
-     <y>276</y>
+     <x>793</x>
+     <y>359</y>
     </hint>
     <hint type="destinationlabel">
      <x>343</x>

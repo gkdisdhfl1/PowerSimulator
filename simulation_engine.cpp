@@ -7,6 +7,7 @@ SimulationEngine::SimulationEngine()
     , m_accumulatedPhaseSinceUpdate(0.0)
     , m_captureIntervalsMs(0.0)
     , m_simulationTimeNs(0)
+    , m_accumulatedPhaseForCycle(0.0)
 {
     using namespace std::chrono_literals;
 
@@ -51,13 +52,23 @@ void SimulationEngine::captureData()
     double currentAmperage = calculateCurrentAmperage();
     addNewDataPoint(currentVoltage, currentAmperage);
 
+    // 1 사이클 계산을 위한 현재 샘플을 버퍼에 추가
+    m_cycleSampleBuffer.push_back(m_data.back());
+
     // 다음 스텝을 위해 현재 진행 위상 업데이트
     const FpSeconds timeDelta = m_captureIntervalsMs;
     const double phaseDelta = 2.0 * std::numbers::pi * m_params.frequency * timeDelta.count();
     m_currentPhaseRadians = std::fmod(m_currentPhaseRadians + phaseDelta, 2.0 * std::numbers::pi);
 
-    // 마지막 갱신 후 누적된 위상 변화량도 업데이트
+    // UI 갱신 및 사이클 계산을 위한 누적 위상 업데이트
     m_accumulatedPhaseSinceUpdate += phaseDelta;
+    m_accumulatedPhaseForCycle += phaseDelta;
+
+    // 사이클 계산 로직
+    if(m_accumulatedPhaseForCycle >= 2.0 * std::numbers::pi) {
+        calculateCycleData(); // 1 사이클이 누적되면 계산 실행
+        m_accumulatedPhaseForCycle -= 2.0 * std::numbers::pi; // 누적 위상 초기화
+    }
 
     bool shouldEmitUpdate = false;
     switch (m_params.updateMode) {
@@ -166,28 +177,48 @@ void SimulationEngine::recalculateCaptureInterval()
 
 void SimulationEngine::onRedrawRequest()
 {
-    // bool shouldEmitUpdate = false;
-
-    // // 현재 가지고 있는 m_data를 한번 더 보냄
-    // switch (m_params.updateMode) {
-    // case UpdateMode::PerSample:
-    //     shouldEmitUpdate = true;
-    //     break;
-    // case UpdateMode::PerHalfCycle:
-    //     // 누적된 위상이 PI(180도) 이상 변했는지 확인
-    //     if(m_accumulatedPhaseSinceUpdate >= std::numbers::pi) {
-    //         shouldEmitUpdate = true;
-    //     }
-    //     break;
-    // case UpdateMode::PerCycle:
-    //     // 누적된 위상이 2*PI 이상 변했는지 확인
-    //     if(m_accumulatedPhaseSinceUpdate >= 2.0 * std::numbers::pi) {
-    //         shouldEmitUpdate = true;
-    //     }
-    //     break;
-    // }
-    // if(shouldEmitUpdate) {
-    //     emit dataUpdated(m_data);
-    // }
     emit dataUpdated(m_data);
+}
+
+void SimulationEngine::calculateCycleData()
+{
+    if(m_cycleSampleBuffer.empty())
+        return;
+
+    // 1. RMS 계산
+    double voltageSqaureSum = std::accumulate(m_cycleSampleBuffer.begin(), m_cycleSampleBuffer.end(), 0.0,
+                                              [](double sum, const DataPoint& p) {
+        return sum + p.voltage * p.voltage;
+    });
+    double currentSqaureSum = std::accumulate(m_cycleSampleBuffer.begin(), m_cycleSampleBuffer.end(), 0.0,
+                                              [](double sum, const DataPoint& p) {
+                                                  return sum + p.current * p.current;
+                                              });
+
+    // 평균을 내고 제곱근을 취함
+    const double voltageRms = std::sqrt(voltageSqaureSum / m_cycleSampleBuffer.size());
+    const double currentRms = std::sqrt(currentSqaureSum / m_cycleSampleBuffer.size());
+
+    // 2. 유효 전력 계산
+    double powerSum = std::accumulate(m_cycleSampleBuffer.begin(), m_cycleSampleBuffer.end(), 0.0,
+                                      [](double sum, const DataPoint& p) {
+                                          return sum + p.voltage * p.current;
+                                      });
+
+    // 평균을 냄
+    const double activePower = powerSum / m_cycleSampleBuffer.size();
+
+    // 3. 계산된 데이터 구조체를 담아 컨테이너 추가
+    m_measuredData.push_back({
+        m_simulationTimeNs, // 현재 시간 (사이클 종료 시점)
+        voltageRms,
+        currentRms,
+        activePower
+    });
+
+    // 4. UI에 업데이트 알림
+    emit measuredDataUpdated(m_measuredData);
+
+    // 5. 버퍼 비우기
+    m_cycleSampleBuffer.clear();
 }
