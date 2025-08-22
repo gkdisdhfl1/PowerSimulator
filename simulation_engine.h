@@ -28,6 +28,7 @@ public:
         double samplingCycles = config::Sampling::DefaultSamplingCycles;
         double samplesPerCycle = config::Sampling::DefaultSamplesPerCycle;
         int maxDataSize = config::Simulation::DefaultDataSize;
+        double graphWidthSec = config::View::GraphWidth::Default;
         UpdateMode updateMode = UpdateMode::PerSample;
     };
 

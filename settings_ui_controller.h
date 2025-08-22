@@ -3,9 +3,10 @@
 
 #include <QVariantMap>
 #include <expected>
+#include "control_panel_state.h"
 
 class SettingsDialog;
-class MainView;
+class ControlPanel;
 class SettingsManager;
 class SimulationEngine;
 
@@ -13,9 +14,8 @@ class SettingsUiController : public QObject
 {
     Q_OBJECT
 public:
-    explicit SettingsUiController(MainView* ui, SettingsManager& settingsManager, SimulationEngine* engine, QWidget* parent);
+    explicit SettingsUiController(ControlPanel* controlPanel, SettingsManager& settingsManager, SimulationEngine* engine, QWidget* parent);
 
-    void showSettingsDialog();
 
 signals:
     void taskFinished(const std::expected<void, std::string>& result, const QString& successMessage);
@@ -30,12 +30,14 @@ public slots:
     void onDeletePresetRequested(const QString& presetName);
     void onRenamePresetRequested(const QString& oldName, const QString& newName);
 
-    // View가 프리셋 목록이나 상세 값을 요청할 때 호출될 슬롯
+    // SettingsDialog가 프리셋 목록이나 상세 값을 요청할 때 호출될 슬롯
     void onRequestPresetList();
     void onRequestPresetValues(const QString& presetName);
     void onRequestCurrentSettings();
     void onApplyDialogSettings(int maxDataSize, double graphWidth);
+    void showSettingsDialog();
 
+    // ControlPanel의 실시간 변경에 반응하는 슬롯들
     void onAmplitudeChanged(double value);
     void onCurrentAmplitudeChanged(double value);
     void onFrequencyChanged(double value);
@@ -47,24 +49,26 @@ public slots:
 
 private:
     using SettingValue = std::variant<int, double>;
-    using SettingGetter = std::function<SettingValue()>;
-    using SettingSetter = std::function<void(const SettingValue&)>;
+    using StateGetter = std::function<SettingValue(const ControlPanelState&)>;
+    using StateSetter = std::function<void(ControlPanelState&, const SettingValue&)>;
 
     struct SettingInfo {
-        SettingGetter getter;
-        SettingSetter setter;
+        StateGetter getter;
+        StateSetter setter;
         SettingValue defaultValue; // DB에 값이 없을 때 사용할 기본값
     };
 
-    MainView* m_view;
+    ControlPanel* m_controlPanel;
     SettingsManager& m_settingsManager;
     SimulationEngine* m_engine;
-    QWidget* m_parent;
-    std::map<std::string, SettingInfo> m_settingsMap;
+    QWidget* m_parent;        
     std::unique_ptr<SettingsDialog> m_settingsDialog; // SettingsDialog 소유권 이전
+
+    std::unordered_map<std::string, SettingInfo> m_settingsMap;
     QMap<QString, QString> m_keyNameMap;
 
-    void initializeSettingsMap(); // 설정 맵을 초기화하는 함수
+    // 헬퍼 함수들
+    void initializeSettingsMap();
     void initializeKeyNameMap();
     std::expected<void, std::string> applySettingsToUi(std::string_view presetName); // 특정 프리셋을 UI에 적용하는 함수
     std::expected<void, std::string> saveUiToSettings(std::string_view presetName); // 현재 UI 상태를 특정 프리셋으로 저장하는 함수

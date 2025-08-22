@@ -1,6 +1,7 @@
 #include "graph_window.h"
 #include "config.h"
 #include "ui_graph_window.h"
+#include "simulation_engine.h"
 
 #include <QChartView>
 #include <QValueAxis>
@@ -10,15 +11,15 @@
 #include <QGridLayout>
 #include <ranges>
 
-GraphWindow::GraphWindow(QWidget *parent)
+GraphWindow::GraphWindow(SimulationEngine* engine, QWidget *parent)
     : QWidget(parent)
     , ui(new Ui::GraphWindow)
+    , m_engine(engine)
     , m_chart(std::make_unique<QChart>())
     , m_series(new QLineSeries(this)) // 부모를 지정하여 메모리 관리 위임
     , m_axisX(new QValueAxis(this))
     , m_axisY(new QValueAxis(this))
     , m_chartView(new CustomChartView(m_chart.get()))
-    , m_graphWidthSec(config::View::GraphWidth::Default) // 그래프 폭 기본값으로 초기화
     , m_isAutoScrollEnabled(true) // 자동 스크롤 활성화 상태로 시작
     , m_currentSeries(new QLineSeries(this))
 {
@@ -56,22 +57,9 @@ GraphWindow::~GraphWindow()
     delete ui;
 }
 
-double GraphWindow::getGraphWidth() const
-{
-    return m_graphWidthSec;
-}
-
 void GraphWindow::toggleAutoScroll(bool enabled)
 {
     m_isAutoScrollEnabled = enabled;
-}
-
-void GraphWindow::setGraphWidth(double width)
-{
-    if (width > 0) {
-        m_graphWidthSec = width;
-        qDebug() << "그래프 폭 설정 완료. " << m_graphWidthSec << "s";
-    }
 }
 
 void GraphWindow::stretchGraph(double factor)
@@ -80,13 +68,13 @@ void GraphWindow::stretchGraph(double factor)
     //     return;
 
     // 현재 그래프 폭에 팩터를 곱하여 새로운 폭을 계산
-    m_graphWidthSec /= factor;
+    m_engine->parameters().graphWidthSec /= factor;
 
     // 그래프 폭이 너무 크거나 작아지지 않도록 범위 제한
-    m_graphWidthSec = std::clamp(m_graphWidthSec, config::View::GraphWidth::Min, config::View::GraphWidth::Max);
+    m_engine->parameters().graphWidthSec = std::clamp(m_engine->parameters().graphWidthSec , config::View::GraphWidth::Min, config::View::GraphWidth::Max);
 
     // updateGraph를 즉시 호출하지 않음.
-    qDebug() << "new graph width: " << m_graphWidthSec << "s";
+    qDebug() << "new graph width: " << m_engine->parameters().graphWidthSec  << "s";
 }
 
 void GraphWindow::setupChart()
@@ -111,7 +99,7 @@ void GraphWindow::setupChart()
     // X축 설정
     m_axisX->setLabelFormat(tr("%.1f s")); // 소수점 첫째 자리까지 초 단위로 표시
     m_axisX->setTitleText(tr("시간 (s)"));
-    m_axisX->setRange(0, m_graphWidthSec); // 초기 범위를 설정값으로
+    m_axisX->setRange(0, m_engine->parameters().graphWidthSec ); // 초기 범위를 설정값으로
     m_chart->addAxis(m_axisX, Qt::AlignBottom);
     m_series->attachAxis(m_axisX);
 
@@ -193,7 +181,7 @@ void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
         // 최신 데이터 시간(그래프 오른쪽 끝)
         maxX = utils::to_qpointf(data.back()).x();
         // 가장 오래된 시간 (그래프 왼쪽 끝)
-        minX = maxX - m_graphWidthSec;
+        minX = maxX - m_engine->parameters().graphWidthSec ;
     } else {
         // 고정 줌 모드: 현재 축에 설정된 범위를 그대로 사용
         minX = axisX->min();
@@ -253,7 +241,7 @@ void GraphWindow::updateAxesRanges()
             hasPoints = true;
         }
         if(hasPoints) {
-            const double minX = lastTimestamp - m_graphWidthSec;
+            const double minX = lastTimestamp - m_engine->parameters().graphWidthSec;
             m_axisX->setRange(minX, lastTimestamp);
         }
     }

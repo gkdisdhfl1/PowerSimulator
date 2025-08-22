@@ -64,7 +64,9 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         resources.qrc
         settings_manager.h settings_manager.cpp
         settings_ui_controller.h settings_ui_controller.cpp
-        main_view.h main_view.cpp main_view.ui
+
+        control_panel.h control_panel.cpp
+        control_panel_state.h
 
 
     )
