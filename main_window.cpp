@@ -90,4 +90,7 @@ void MainWindow::createSignalSlotConnections()
     connect(m_graphWindow, &GraphWindow::pointHovered, this, [this](const QPointF& point) {
         statusBar()->showMessage(QString("Time: %1 s, Voltage: %2 V").arg(point.x(), 0, 'f', 3).arg(point.y(), 0, 'f', 3));
     });
+    connect(m_graphWindow, &GraphWindow::autoScrollToggled, m_controlPanel, &ControlPanel::setAutoScroll);
+
+    connect(m_controlPanel, &ControlPanel::autoScrollToggled, m_graphWindow, &GraphWindow::toggleAutoScroll);
 }

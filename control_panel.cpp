@@ -87,6 +87,8 @@ void ControlPanel::setupUi()
     m_perHalfCycleRadioButton = new QRadioButton("Half Cycle");
     m_perCycleRadioButton = new QRadioButton("1 Cycle");
 
+    m_autoScrollCheckBox = new QCheckBox("자동 스크롤");
+
     // 레이아웃 설정
     auto mainLayout = new QVBoxLayout(this);
 
@@ -120,6 +122,8 @@ void ControlPanel::setupUi()
     updateModeLayout->addWidget(m_perSampleRadioButton);
     updateModeLayout->addWidget(m_perHalfCycleRadioButton);
     updateModeLayout->addWidget(m_perCycleRadioButton);
+    updateModeLayout->addStretch(); // 위젯들을 왼쪽으로 밀착
+    updateModeLayout->addWidget(m_autoScrollCheckBox);
 
     auto updateModeGroupBox = new QGroupBox("화면 갱신");
     updateModeGroupBox->setLayout(updateModeLayout);
@@ -156,13 +160,17 @@ void ControlPanel::initializeUiValues()
     m_samplesPerCycleControlWidget->setValue(config::Sampling::DefaultSamplesPerCycle);
 
     m_currentPhaseDial->setRange(0, 359);
-    m_currentPhaseDial->setWrapping(true);
     m_currentPhaseDial->setValue(config::Source::Current::DefaultPhaseOffset);
+    m_currentPhaseDial->setWrapping(true);
     m_currentPhaseDial->setNotchesVisible(true);
+    updateCurrentPhaseLabel(m_currentPhaseDial->value());
 
-    m_currentPhaseLabel->setText("0 °");
+    QFontMetrics fm(m_currentPhaseLabel->font());
+    int width = fm.horizontalAdvance("359 °"); // 가장 긴 텍스트의 너비 계산
+    m_currentPhaseLabel->setMinimumWidth(width);
 
     m_perSampleRadioButton->setChecked(true);
+    m_autoScrollCheckBox->setChecked(true);
 }
 
 void ControlPanel::createConnections()
@@ -189,12 +197,20 @@ void ControlPanel::createConnections()
 
     // 내부 UI 업데이트 연결
     connect(m_currentPhaseDial, &FineTuningDial::valueChanged, this, &ControlPanel::updateCurrentPhaseLabel);
+
+    // 체크박스 시그널 연결
+    connect(m_autoScrollCheckBox, &QCheckBox::toggled, this, &ControlPanel::autoScrollToggled);
 }
 
 // --- public slots ---
 void ControlPanel::setRunningState(bool isRunning)
 {
     m_startStopButton->setText(isRunning ? "일시정지" : "시작");
+}
+
+void ControlPanel::setAutoScroll(bool enabled)
+{
+    m_autoScrollCheckBox->setChecked(enabled);
 }
 
 // --- private slots ---

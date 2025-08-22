@@ -30,6 +30,7 @@ public:
 public slots:
     // MainWindow 또는 다른 컨트롤러가 이 위젯의 상태를 변경할 때 사용
     void setRunningState(bool isRunning);
+    void setAutoScroll(bool enabled);
 
 private slots:
     void updateCurrentPhaseLabel(int value);
@@ -50,6 +51,7 @@ signals:
     void samplingCyclesChanged(double value);
     void samplesPerCycleChanged(int value);
     void updateModeChanged();
+    void autoScrollToggled(bool enabled);
 
 private:
     // UI 생성 및 초기화를 위한 헬퍼 함수들
@@ -75,7 +77,7 @@ private:
     QRadioButton* m_perHalfCycleRadioButton;
     QRadioButton* m_perCycleRadioButton;
 
-    QCheckBox* m_autoScrollBox;
+    QCheckBox* m_autoScrollCheckBox;
 };
 
 #endif // CONTROL_PANEL_H
