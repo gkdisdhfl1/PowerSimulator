@@ -28,7 +28,6 @@ public:
 signals:
     // 자동 스크롤 상태가 변경되었음을 알리는 시그널
     void autoScrollToggled(bool enabled);
-    void chartMouseMoved(const QPointF& point);
     void pointHovered(const QPointF& point);
     void redrawNeeded();
 

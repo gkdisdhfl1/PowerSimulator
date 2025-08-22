@@ -1,6 +1,5 @@
 #include "main_window.h"
 #include "settings_dialog.h"
-#include "ui_main_window.h"
 #include "simulation_engine.h"
 #include "settings_manager.h"
 #include "settings_ui_controller.h"
@@ -9,17 +8,21 @@
 
 #include <QDockWidget>
 #include <QStatusBar>
+#include <QMenuBar>
+#include <QMenu>
+#include <qapplication.h>
 
 MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
     , m_engine(engine)
 {
-    ui->setupUi(this);
+    // 메뉴바 생성
+    createMenus();
 
     // 데이터 베이스 설정
     QString dbPath = QApplication::applicationDirPath() + "/settings.db";
     m_settingsManager = std::make_unique<SettingsManager>(dbPath.toStdString());
+
 
     // UI 컴포넌트 생성 및 도킹
     setupUiComponents();
@@ -36,7 +39,16 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
 
 MainWindow::~MainWindow()
 {
-    delete ui;
+}
+
+void MainWindow::createMenus()
+{
+    // '파일' 메뉴 생성
+    QMenu *fileMenu = menuBar()->addMenu("파일(&F");
+
+    // '설정' 액션 생성 및 메뉴에 추가
+    m_actionSettings = new QAction("설정(&S)", this);
+    fileMenu->addAction(m_actionSettings);
 }
 
 void MainWindow::setupUiComponents()
@@ -60,7 +72,7 @@ void MainWindow::setupUiComponents()
 void MainWindow::createSignalSlotConnections()
 {
     // 메뉴바 액션 연결
-    connect(ui->actionSettings, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showSettingsDialog);
+    connect(m_actionSettings, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showSettingsDialog);
 
     // ---- ControlPanel 이벤트 -> Controller or Model(engine) 슬롯 ----
     connect(m_controlPanel, &ControlPanel::startStopClicked, this, [this]() {

@@ -9,12 +9,7 @@ class SettingsManager;
 class SettingsUiController;
 class ControlPanel;
 class GraphWindow;
-
-QT_BEGIN_NAMESPACE
-namespace Ui {
-class MainWindow;
-}
-QT_END_NAMESPACE
+class QAction;
 
 class MainWindow : public QMainWindow
 {
@@ -25,7 +20,7 @@ public:
     ~MainWindow();
 
 private:
-    Ui::MainWindow *ui;
+    QAction* m_actionSettings;
     SimulationEngine *m_engine;
 
     // View와 Controller들을 소유
@@ -36,5 +31,6 @@ private:
 
     void createSignalSlotConnections(); // 조립 역할
     void setupUiComponents();
+    void createMenus();
 };
 #endif // MAIN_WINDOW_H

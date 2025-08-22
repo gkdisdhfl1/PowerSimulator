@@ -44,7 +44,6 @@ GraphWindow::GraphWindow(SimulationEngine* engine, QWidget *parent)
     });
 
     connect(m_chartView, &CustomChartView::stretchRequested, this, &GraphWindow::stretchGraph);
-    connect(m_chartView, &CustomChartView::mouseMoved, this, &GraphWindow::chartMouseMoved);
     connect(m_chartView, &CustomChartView::mouseMoved, this, &GraphWindow::findNearestPoint);
 
     m_series->setPointsVisible(true); // 그래프에 점 표시
