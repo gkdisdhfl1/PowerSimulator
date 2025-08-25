@@ -3,9 +3,9 @@
 
 #include <QWidget>
 
-namespace Ui {
-class ValueControlWidget;
-}
+class QDoubleSpinBox;
+class QSlider;
+class QLabel;
 
 class ValueControlWidget : public QWidget
 {
@@ -36,7 +36,6 @@ protected:
     void mouseDoubleClickEvent(QMouseEvent *event) override;
 
 private slots:
-    // void onSliderValueChanged(int value);
     void onSpinBoxValueChanged(double value);
     void onSliderMoved(int position); // 슬라이더가 움직이는 중일 때
 
@@ -45,8 +44,12 @@ signals:
     void intValueChanged(int newValue);
 
 private:
-    Ui::ValueControlWidget *ui;
+    // UI 요소들 멤버 변수
+    QDoubleSpinBox* m_spinBox;
+    QSlider* m_slider;
+    QLabel* m_suffixLabel;
 
+    void setupUi();
     void setMode(Mode mode); // 상태를 변경하고 UI를 업데이트하는 함수
 
     // UI를 현재 모드에 맞게 업데이트하는 내부 함수

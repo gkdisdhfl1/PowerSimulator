@@ -56,15 +56,12 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         simulation_engine.h simulation_engine.cpp
         data_point.h
         config.h
-        fine_tuning_dial.h
-        fine_tuning_dial.cpp
-        value_control_widget.h value_control_widget.cpp value_control_widget.ui
-        custom_chart_view.h
-        custom_chart_view.cpp
+        fine_tuning_dial.h fine_tuning_dial.cpp
+        value_control_widget.h value_control_widget.cpp
+        custom_chart_view.h custom_chart_view.cpp
         resources.qrc
         settings_manager.h settings_manager.cpp
         settings_ui_controller.h settings_ui_controller.cpp
-
         control_panel.h control_panel.cpp
         control_panel_state.h
         measured_data.h

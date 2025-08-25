@@ -1,7 +1,10 @@
 #include "value_control_widget.h"
-#include "ui_value_control_widget.h"
 #include <QDebug>
 #include <QStyle>
+#include <QSpinBox>
+#include <QSlider>
+#include <QLabel>
+#include <QVBoxLayout>
 
 namespace {
 constexpr int FineTuningSliderSteps = 100;
@@ -11,33 +14,32 @@ constexpr double SliderStepValue = 1.0 / FineTuningSliderSteps;
 
 ValueControlWidget::ValueControlWidget(QWidget *parent)
     : QWidget(parent)
-    , ui(new Ui::ValueControlWidget)
+
     , m_currentMode(Mode::Normal)
 {
-    ui->setupUi(this);
+    setupUi();
 
     // 초기 스텝 크기 설정
-    ui->valueSpinBox->setSingleStep(m_singleStep);
-    ui->valueSpinBox->setKeyboardTracking(false); // 키보드 입력 중에 valuedChanged 시그널 발생 안함
+    m_spinBox->setSingleStep(m_singleStep);
+    m_spinBox->setKeyboardTracking(false); // 키보드 입력 중에 valuedChanged 시그널 발생 안함
 
     // 슬라이더가 움직이는 중이면
-    connect(ui->valueSlider, &QSlider::valueChanged, this, &ValueControlWidget::onSliderMoved);
+    connect(m_slider, &QSlider::valueChanged, this, &ValueControlWidget::onSliderMoved);
 
     // 스핀박스 값이 확정되면 슬롯 호출
     // setKeyboardTracking(false) 덕분에 키보드 입력 중에 시그널이 발생하지 않음
-    connect(ui->valueSpinBox, &QDoubleSpinBox::valueChanged, this, &ValueControlWidget::onSpinBoxValueChanged);
+    connect(m_spinBox, &QDoubleSpinBox::valueChanged, this, &ValueControlWidget::onSpinBoxValueChanged);
 
 }
-
 ValueControlWidget::~ValueControlWidget()
 {
-    delete ui;
+
 }
 
 // --- public 구현 ---
 void ValueControlWidget::setRange(double min, double max)
 {
-    ui->valueSpinBox->setRange(min, max);
+    m_spinBox->setRange(min, max);
     m_fineTuningRangeMax = max;
     m_fineTuningRangeMin = min;
     updateUiAppearance(); // 초기 UI 설정
@@ -46,14 +48,14 @@ void ValueControlWidget::setRange(double min, double max)
 void ValueControlWidget::setValue(double value)
 {
     // 값의 범위를 위젯의 min/max 값으로 제한
-    const double clampedValue = std::clamp(value, ui->valueSpinBox->minimum(), ui->valueSpinBox->maximum());
-    ui->valueSpinBox->setValue(clampedValue);
+    const double clampedValue = std::clamp(value, m_spinBox->minimum(), m_spinBox->maximum());
+    m_spinBox->setValue(clampedValue);
     syncSliderToValue(); // 값 설정 후 슬라이더 위치 동기화
 }
 
 double ValueControlWidget::value() const
 {
-    return ui->valueSpinBox->value();
+    return m_spinBox->value();
 }
 
 void ValueControlWidget::setSteps(double singleStep, double fineStep)
@@ -66,21 +68,21 @@ void ValueControlWidget::setSteps(double singleStep, double fineStep)
 
 void ValueControlWidget::setSuffix(const QString &suffix)
 {
-    ui->suffixLabel->setText(suffix);
+    m_suffixLabel->setText(suffix);
 }
 
 void ValueControlWidget::setDataType(DataType type)
 {
     m_dataType = type;
     if(m_dataType == DataType::Integer) {
-        ui->valueSpinBox->setDecimals(0);
+        m_spinBox->setDecimals(0);
         // 정수 모드에서는 항상 Normal 모드로 고정
         if(m_currentMode == Mode::FineTuning) {
             setMode(Mode::Normal);
         }
     } else {
         // Double 모드일 때 기본 소수점 자릿수
-        ui->valueSpinBox->setDecimals(2);
+        m_spinBox->setDecimals(2);
     }
 }
 
@@ -97,21 +99,40 @@ void ValueControlWidget::mouseDoubleClickEvent(QMouseEvent *event)
 }
 
 // --- private 구현 ---
+void ValueControlWidget::setupUi()
+{
+    // 위젯 생성
+    m_spinBox = new QDoubleSpinBox;
+    m_slider = new QSlider(Qt::Horizontal);
+    m_suffixLabel = new QLabel();
+
+    // 레이아웃 설정
+    auto mainLayout = new QVBoxLayout(this);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+
+    auto topLayout = new QHBoxLayout();
+    topLayout->addWidget(m_spinBox, 1); // spinBox가 남는 공간 차지
+    topLayout->addWidget(m_suffixLabel);
+
+    mainLayout->addLayout(topLayout);
+    mainLayout->addWidget(m_slider);
+}
+
 void ValueControlWidget::setMode(Mode newMode)
 {
     m_currentMode = newMode;
 
     // 동적 속성 설정 코드
-    ui->valueSpinBox->setProperty("fineTuning", (newMode == Mode::FineTuning));
+    m_spinBox->setProperty("fineTuning", (newMode == Mode::FineTuning));
 
     // 스타일을 다시 적용하여 변경사항을 반영
-    style()->unpolish(ui->valueSpinBox);
-    style()->polish(ui->valueSpinBox);
+    style()->unpolish(m_spinBox);
+    style()->polish(m_spinBox);
 
-    ui->valueSlider->blockSignals(true);
+    m_slider->blockSignals(true);
     updateUiAppearance();
     syncSliderToValue();
-    ui->valueSlider->blockSignals(false);
+    m_slider->blockSignals(false);
 }
 
 void ValueControlWidget::onSpinBoxValueChanged(double value)
@@ -129,9 +150,9 @@ void ValueControlWidget::onSliderMoved(int position)
 {
     double newValue = calculateNewValue(position);
 
-    ui->valueSpinBox->blockSignals(true);
-    ui->valueSpinBox->setValue(newValue);
-    ui->valueSpinBox->blockSignals(false);
+    m_spinBox->blockSignals(true);
+    m_spinBox->setValue(newValue);
+    m_spinBox->blockSignals(false);
 
     if(m_dataType == DataType::Integer) {
         emit intValueChanged(static_cast<int>(std::round(newValue)));
@@ -145,23 +166,23 @@ void ValueControlWidget::updateUiAppearance()
     switch (m_currentMode) {
     case Mode::Normal:
         qDebug() << "UI Mode: Normal";
-        ui->valueSpinBox->setSingleStep(m_singleStep);
-        ui->valueSlider->setRange(m_fineTuningRangeMin, m_fineTuningRangeMax);
+        m_spinBox->setSingleStep(m_singleStep);
+        m_slider->setRange(m_fineTuningRangeMin, m_fineTuningRangeMax);
         break;
     case Mode::FineTuning:
         qDebug() << "UI Mode: Fine-tuning";
-        ui->valueSpinBox->setSingleStep(m_fineStep);
-        ui->valueSlider->setRange(0, FineTuningSliderSteps - 1);
+        m_spinBox->setSingleStep(m_fineStep);
+        m_slider->setRange(0, FineTuningSliderSteps - 1);
         break;
     }
 
-    ui->valueSlider->setSingleStep(1);
-    ui->valueSlider->setPageStep(FineTuningPageStep);
+    m_slider->setSingleStep(1);
+    m_slider->setPageStep(FineTuningPageStep);
 }
 
 void ValueControlWidget::syncSliderToValue()
 {
-    double currentValue = ui->valueSpinBox->value();
+    double currentValue = m_spinBox->value();
     int newSliderValue;
 
     switch (m_currentMode) {
@@ -177,14 +198,14 @@ void ValueControlWidget::syncSliderToValue()
         break;
     }
 
-    ui->valueSlider->blockSignals(true);
-    ui->valueSlider->setValue(newSliderValue);
-    ui->valueSlider->blockSignals(false);
+    m_slider->blockSignals(true);
+    m_slider->setValue(newSliderValue);
+    m_slider->blockSignals(false);
 }
 
 double ValueControlWidget::calculateNewValue(int sliderPosition) const
 {
-    double currentValue = ui->valueSpinBox->value();
+    double currentValue = m_spinBox->value();
     double newValue;
 
     switch (m_currentMode) {
