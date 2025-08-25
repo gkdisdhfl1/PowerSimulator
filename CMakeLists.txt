@@ -44,15 +44,15 @@ set(PROJECT_SOURCES
         main.cpp
         main_window.cpp
         main_window.h
-        main_window.ui
+
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     qt_add_executable(PowerSimulator
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
-        graph_window.h graph_window.cpp graph_window.ui
-        settings_dialog.h settings_dialog.cpp settings_dialog.ui
+        graph_window.h graph_window.cpp
+        settings_dialog.h settings_dialog.cpp
         simulation_engine.h simulation_engine.cpp
         data_point.h
         config.h

@@ -9,11 +9,9 @@
 QT_BEGIN_NAMESPACE
 class QLineSeries;
 class QValueAxis;
-class QChartView;
+class QChart;
 
-namespace Ui {
-class GraphWindow;
-}
+
 QT_END_NAMESPACE
 class SimulationEngine;
 
@@ -39,7 +37,6 @@ public slots:
 
 
 private:
-    Ui::GraphWindow *ui;
     SimulationEngine *m_engine;
 
     void setupChart(); // 차트 초기 설정을 위한 함수
@@ -60,7 +57,6 @@ private:
     QList<QPointF> m_currentPoints; // 현재 보이는 전류 데이터
 
     // 그래프 폭 조절
-
     bool m_isAutoScrollEnabled;
 };
 

@@ -1,23 +1,32 @@
 #include "settings_dialog.h"
-#include "ui_settings_dialog.h"
 #include "settings_ui_controller.h"
 #include "config.h"
 #include <QDebug>
 #include <QInputDialog>
 #include <QMessageBox>
+#include <QListWidget>
+#include <QPushButton>
+#include <QTableWidget>
+#include <QSpinBox>
+#include <QDoubleSpinBox>
+#include <QLabel>
+#include <QGroupBox>
+#include <QHBoxLayout>
+#include <QSpacerItem>
+#include <QHeaderView>
+#include <QFormLayout>
 
 SettingsDialog::SettingsDialog(SettingsUiController* controller ,QWidget *parent)
     : QDialog(parent)
-    , ui(new Ui::SettingsDialog)
     , m_controller(controller)
     , m_resultState(DialogResult::Cancled)
 {
-    ui->setupUi(this);
-    ui->maxDataSizeSpinBox->setRange(config::Simulation::MinDataSize, config::Simulation::MaxDataSize);
+    setupUi();
+    m_maxDataSizeSpinBox->setRange(config::Simulation::MinDataSize, config::Simulation::MaxDataSize);
 
-    ui->graphWidthSpinBox->setSuffix(" s");
-    ui->graphWidthSpinBox->setRange(config::View::GraphWidth::Min, config::View::GraphWidth::Max);
-    ui->graphWidthSpinBox->setValue(config::View::GraphWidth::Default);
+    m_graphWidthSpinBox->setSuffix(" s");
+    m_graphWidthSpinBox->setRange(config::View::GraphWidth::Min, config::View::GraphWidth::Max);
+    m_graphWidthSpinBox->setValue(config::View::GraphWidth::Default);
 
     // dialog -> controller
     connect(this, &SettingsDialog::saveAsPresetRequested, m_controller, &SettingsUiController::onSaveAsPresetRequested);
@@ -32,24 +41,106 @@ SettingsDialog::SettingsDialog(SettingsUiController* controller ,QWidget *parent
     connect(m_controller, &SettingsUiController::presetValuesFetched, this, &SettingsDialog::onPresetValuesFetched);
 
     // UI에 있는 버튼들의 시그널을 이 클래스의 private 슬롯에 연결
-    connect(ui->newPresetButton, &QPushButton::clicked, this, &SettingsDialog::onNewPresetClicked);
-    connect(ui->loadPresetButton, &QPushButton::clicked, this, &SettingsDialog::onLoadPresetClicked);
-    connect(ui->renamePresetButton, &QPushButton::clicked, this, &SettingsDialog::onRenamePresetClicked);
-    connect(ui->deletePresetButton, &QPushButton::clicked, this, &SettingsDialog::onDeletePresetClicked);
+    connect(m_newPresetButton, &QPushButton::clicked, this, &SettingsDialog::onNewPresetClicked);
+    connect(m_loadPresetButton, &QPushButton::clicked, this, &SettingsDialog::onLoadPresetClicked);
+    connect(m_renamePresetButton, &QPushButton::clicked, this, &SettingsDialog::onRenamePresetClicked);
+    connect(m_deletePresetButton, &QPushButton::clicked, this, &SettingsDialog::onDeletePresetClicked);
 
     // 리스트 위젯의 선택이 변경될 때의 시그널을 슬롯에 연결
-    connect(ui->presetListWidget, &QListWidget::currentItemChanged, this, &SettingsDialog::onPresetSelectionChanged);
+    connect(m_presetListWidget, &QListWidget::currentItemChanged, this, &SettingsDialog::onPresetSelectionChanged);
+
+    // 확인/취소 버튼을 QDialog의 기본 슬롯인 accept/reject에 연결
+    connect(m_okButton, &QPushButton::clicked, this, &SettingsDialog::accept);
+    connect(m_cancelButton, &QPushButton::clicked, this, &SettingsDialog::reject);
 }
 
 SettingsDialog::~SettingsDialog()
 {
-    delete ui;
+}
+
+void SettingsDialog::setupUi()
+{
+    setWindowTitle("SettingDialog");
+
+    // 1. 왼쪽 패널 (프리셋 목록)
+    auto presetLabel = new QLabel("프리셋 목록");
+    m_presetListWidget = new QListWidget();
+
+    auto presetButtonsLayout = new QHBoxLayout();
+    m_newPresetButton = new QPushButton("새로 만들기");
+    m_loadPresetButton = new QPushButton("불러오기");
+    m_deletePresetButton = new QPushButton("삭제");
+    m_renamePresetButton = new QPushButton("이름 변경");
+    presetButtonsLayout->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
+    presetButtonsLayout->addWidget(m_newPresetButton);
+    presetButtonsLayout->addWidget(m_loadPresetButton);
+    presetButtonsLayout->addWidget(m_deletePresetButton);
+    presetButtonsLayout->addWidget(m_renamePresetButton);
+
+    auto leftLayout = new QVBoxLayout();
+    leftLayout->addWidget(presetLabel);
+    leftLayout->addWidget(m_presetListWidget);
+    leftLayout->addLayout(presetButtonsLayout);
+
+    // 2. 중간 패널 (프리셋 미리보기)
+    m_previewTableWidget = new QTableWidget();
+    m_previewTableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_previewTableWidget->setSelectionBehavior(QAbstractItemView::SelectRows);
+    m_previewTableWidget->setColumnCount(2);
+    m_previewTableWidget->horizontalHeader()->setVisible(false);
+    m_previewTableWidget->horizontalHeader()->setStretchLastSection(true);
+    m_previewTableWidget->verticalHeader()->setVisible(false);
+
+    auto previewLayout = new QGridLayout();
+    previewLayout->addWidget(m_previewTableWidget, 0, 0);
+
+    m_previewGroupBox = new QGroupBox("프리셋 미리보기");
+    m_previewGroupBox->setLayout(previewLayout);
+
+    // 3. 오른쪽 패널 (상세 설정 및 확인/취소)
+    auto detailsLabel = new QLabel("저장 크기");
+    m_maxDataSizeSpinBox = new QSpinBox();
+    m_maxDataSizeSpinBox->setRange(config::Simulation::MinDataSize, config::Simulation::MaxDataSize);
+    m_maxDataSizeSpinBox->setSingleStep(100);
+
+    auto graphWidthLabel = new QLabel("그래프 폭");
+    m_graphWidthSpinBox = new QDoubleSpinBox();
+    m_graphWidthSpinBox->setRange(config::View::GraphWidth::Min, config::View::GraphWidth::Max);
+    m_graphWidthSpinBox->setSingleStep(0.1);
+    m_graphWidthSpinBox->setDecimals(2);
+
+    auto formLayout = new QFormLayout();
+    formLayout->addRow(detailsLabel, m_maxDataSizeSpinBox);
+    formLayout->addRow(graphWidthLabel, m_graphWidthSpinBox);
+
+    auto detailsGroupBox = new QGroupBox("상세 설정");
+    detailsGroupBox->setLayout(formLayout);
+
+    m_okButton = new QPushButton("Ok");
+    m_okButton->setDefault(true);
+    m_cancelButton = new QPushButton("Cancel");
+
+    auto dialogButtonsLayout = new QHBoxLayout();
+    dialogButtonsLayout->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
+    dialogButtonsLayout->addWidget(m_okButton);
+    dialogButtonsLayout->addWidget(m_cancelButton);
+
+    auto rightLayout = new QVBoxLayout();
+    rightLayout->addWidget(detailsGroupBox);
+    rightLayout->stretch(1);
+    rightLayout->addLayout(dialogButtonsLayout);
+
+    // 4. 전체 다이얼로그 레이아웃
+    auto mainLayout = new QHBoxLayout(this);
+    mainLayout->addLayout(leftLayout, 2);
+    mainLayout->addWidget(m_previewGroupBox, 3);
+    mainLayout->addLayout(rightLayout, 2);
 }
 
 int SettingsDialog::openWithValues(int currentMaxSize, double currentGraphWidth)
 {
-    ui->maxDataSizeSpinBox->setValue(currentMaxSize);
-    ui->graphWidthSpinBox->setValue(currentGraphWidth);
+    m_maxDataSizeSpinBox->setValue(currentMaxSize);
+    m_graphWidthSpinBox->setValue(currentGraphWidth);
     refreshPresetList();
     updateUiStates();
 
@@ -59,11 +150,11 @@ int SettingsDialog::openWithValues(int currentMaxSize, double currentGraphWidth)
 
 int SettingsDialog::getMaxSize() const
 {
-    return ui->maxDataSizeSpinBox->value();
+    return m_maxDataSizeSpinBox->value();
 }
 double SettingsDialog::getGraphWidth() const
 {
-    return ui->graphWidthSpinBox->value();
+    return m_graphWidthSpinBox->value();
 }
 SettingsDialog::DialogResult SettingsDialog::getResultState() const
 {
@@ -88,7 +179,7 @@ void SettingsDialog::onLoadPresetClicked()
 {
     if(!m_controller) return;
 
-    QListWidgetItem* currentItem = ui->presetListWidget->currentItem();
+    QListWidgetItem* currentItem = m_presetListWidget->currentItem();
     if(!currentItem) {
         QMessageBox::warning(this, "알림", "적용할 프리셋을 선택하세요.");
         return;
@@ -104,7 +195,7 @@ void SettingsDialog::onRenamePresetClicked()
 {
     if(!m_controller) return;
 
-    QListWidgetItem* currentItem = ui->presetListWidget->currentItem();
+    QListWidgetItem* currentItem = m_presetListWidget->currentItem();
     if(!currentItem) {
         QMessageBox::warning(this, "알림", "이름을 바꿀 프리셋을 선택하세요.");
         return;
@@ -124,7 +215,7 @@ void SettingsDialog::onDeletePresetClicked()
 {
     if(!m_controller) return;
 
-    QListWidgetItem* currentItem = ui->presetListWidget->currentItem();
+    QListWidgetItem* currentItem = m_presetListWidget->currentItem();
     if(!currentItem) {
         QMessageBox::warning(this, "알림", "삭제할 프리셋을 선택하세요.");
         return;
@@ -145,9 +236,9 @@ void SettingsDialog::onPresetSelectionChanged()
 {
     updateUiStates(); // 버튼 활성화 등 UI 상태 업데이트
 
-    if(m_controller && ui->presetListWidget->currentItem()) {
+    if(m_controller && m_presetListWidget->currentItem()) {
         // Controller에게 선택된 프리셋의 상세 정보를 요청
-        m_controller->onRequestPresetValues(ui->presetListWidget->currentItem()->text());
+        m_controller->onRequestPresetValues(m_presetListWidget->currentItem()->text());
     }
 }
 
@@ -171,17 +262,17 @@ void SettingsDialog::onControllerTaskFinished(const std::expected<void, std::str
 void SettingsDialog::onPresetListChanged(const std::vector<std::string>& presetList)
 {
     // 목록을 새로고침 후에도 선택 상태를 유지하기 위해 현재 선택된 항목을 기억해둠
-    QString currentSelection = ui->presetListWidget->currentItem() ? ui->presetListWidget->currentItem()->text() : "";
+    QString currentSelection = m_presetListWidget->currentItem() ? m_presetListWidget->currentItem()->text() : "";
 
-    ui->presetListWidget->clear();
+    m_presetListWidget->clear();
     for(const auto& name : presetList) {
-        ui->presetListWidget->addItem(QString::fromStdString(name));
+        m_presetListWidget->addItem(QString::fromStdString(name));
     }
 
     // 이전에 선택했던 항목이 새 목록에도 존재하면 다시 선택
-    for(int i = 0; i < ui->presetListWidget->count(); ++i) {
-        if(ui->presetListWidget->item(i)->text() == currentSelection) {
-            ui->presetListWidget->setCurrentRow(i);
+    for(int i = 0; i < m_presetListWidget->count(); ++i) {
+        if(m_presetListWidget->item(i)->text() == currentSelection) {
+            m_presetListWidget->setCurrentRow(i);
             break;
         }
     }
@@ -190,30 +281,30 @@ void SettingsDialog::onPresetListChanged(const std::vector<std::string>& presetL
 // Controller가 보내준 선택된 프리셋의 상세 값으로 오른쪽 UI를 업데이트
 void SettingsDialog::onPresetValuesFetched(const QVariantMap& data)
 {
-    ui->previewTableWidget->clearContents();
-    ui->previewTableWidget->setRowCount(0);
+    m_previewTableWidget->clearContents();
+    m_previewTableWidget->setRowCount(0);
 
     // QVariantMap을 순회하며 테이블을 동적으로 채움
     for(auto it = data.constBegin(); it != data.constEnd(); ++it) {
-        int currentRow = ui->previewTableWidget->rowCount();
-        ui->previewTableWidget->insertRow(currentRow);
+        int currentRow = m_previewTableWidget->rowCount();
+        m_previewTableWidget->insertRow(currentRow);
 
         // 0번 컬럼: 속성 이름
         QTableWidgetItem* keyItem = new QTableWidgetItem(it.key());
         keyItem->setFlags(keyItem->flags() & ~Qt::ItemIsEditable);
-        ui->previewTableWidget->setItem(currentRow, 0, keyItem);
+        m_previewTableWidget->setItem(currentRow, 0, keyItem);
 
         // 1번 컬럼: 속성 값
         QTableWidgetItem* valueItem = new QTableWidgetItem(it.value().toString());
         valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable);
-        ui->previewTableWidget->setItem(currentRow, 1, valueItem);
+        m_previewTableWidget->setItem(currentRow, 1, valueItem);
     }
 }
 
 void SettingsDialog::onCurrentSettingsFetched(int maxDataSize, double graphWidth)
 {
-    ui->maxDataSizeSpinBox->setValue(maxDataSize);
-    ui->graphWidthSpinBox->setValue(graphWidth);
+    m_maxDataSizeSpinBox->setValue(maxDataSize);
+    m_graphWidthSpinBox->setValue(graphWidth);
 }
 
 // --- private 헬퍼 함수 ---
@@ -225,25 +316,25 @@ void SettingsDialog::refreshPresetList()
 
 void SettingsDialog::updateUiStates()
 {
-    bool itemSelected = ui->presetListWidget->currentItem() != nullptr;
+    bool itemSelected = m_presetListWidget->currentItem() != nullptr;
 
-    ui->presetPreviewGroupBox->setEnabled(itemSelected);
+    m_previewGroupBox->setEnabled(itemSelected);
 
     // 선택된 항목이 있을 때만 불러오기, 이름 바꾸기, 삭제 버튼 활성화
-    ui->loadPresetButton->setEnabled(itemSelected);
-    ui->renamePresetButton->setEnabled(itemSelected);
-    ui->deletePresetButton->setEnabled(itemSelected);
+    m_loadPresetButton->setEnabled(itemSelected);
+    m_renamePresetButton->setEnabled(itemSelected);
+    m_deletePresetButton->setEnabled(itemSelected);
 
     if(!itemSelected) {
-        ui->previewTableWidget->clearContents();
-        ui->previewTableWidget->setRowCount(0);
+        m_previewTableWidget->clearContents();
+        m_previewTableWidget->setRowCount(0);
     }
 }
 
 void SettingsDialog::accept()
 {
     if(m_controller) {
-        emit settingsApplied(ui->maxDataSizeSpinBox->value(), ui->graphWidthSpinBox->value());
+        emit settingsApplied(m_maxDataSizeSpinBox->value(), m_graphWidthSpinBox->value());
     }
     m_resultState = DialogResult::Accepted; // 상태를 ok 눌림으로 설정
     QDialog::accept();

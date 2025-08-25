@@ -6,11 +6,14 @@
 #include <QVariantMap>
 
 class SettingsUiController;
-struct PresetPreviewData; // Controller와 데이터를 주고받을 구조체
+class QListWidget;
+class QPushButton;
+class QTableWidget;
+class QSpinBox;
+class QDoubleSpinBox;
+class QGroupBox;
 
-namespace Ui {
-class SettingsDialog;
-}
+struct PresetPreviewData; // Controller와 데이터를 주고받을 구조체
 
 class SettingsDialog : public QDialog
 {
@@ -52,10 +55,24 @@ private slots:
     void onPresetSelectionChanged();
 
 private:
-    Ui::SettingsDialog *ui;
+
+    // UI 요소들의 멤버 변수
+    QListWidget* m_presetListWidget;
+    QPushButton* m_newPresetButton;
+    QPushButton* m_loadPresetButton;
+    QPushButton* m_deletePresetButton;
+    QPushButton* m_renamePresetButton;
+    QTableWidget* m_previewTableWidget;
+    QSpinBox* m_maxDataSizeSpinBox;
+    QDoubleSpinBox* m_graphWidthSpinBox;
+    QPushButton* m_okButton;
+    QPushButton* m_cancelButton;
+    QGroupBox* m_previewGroupBox;
+
     SettingsUiController* m_controller = nullptr; // Controller 포인터 소유x
     DialogResult m_resultState;
 
+    void setupUi();
     void refreshPresetList(); // Controller에게 프리셋 목록을 요청하는 함수
     void updateUiStates(); // 오른쪽 상세 설정 UI를 업데이트하는 함수
     void accept() override;

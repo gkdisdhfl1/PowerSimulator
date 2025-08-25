@@ -1,7 +1,7 @@
 #include "value_control_widget.h"
 #include <QDebug>
 #include <QStyle>
-#include <QSpinBox>
+#include <QDoubleSpinBox>
 #include <QSlider>
 #include <QLabel>
 #include <QVBoxLayout>

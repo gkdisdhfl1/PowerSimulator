@@ -1,6 +1,5 @@
 #include "graph_window.h"
 #include "config.h"
-#include "ui_graph_window.h"
 #include "simulation_engine.h"
 
 #include <QChartView>
@@ -13,7 +12,6 @@
 
 GraphWindow::GraphWindow(SimulationEngine* engine, QWidget *parent)
     : QWidget(parent)
-    , ui(new Ui::GraphWindow)
     , m_engine(engine)
     , m_chart(std::make_unique<QChart>())
     , m_series(new QLineSeries(this)) // 부모를 지정하여 메모리 관리 위임
@@ -23,15 +21,12 @@ GraphWindow::GraphWindow(SimulationEngine* engine, QWidget *parent)
     , m_isAutoScrollEnabled(true) // 자동 스크롤 활성화 상태로 시작
     , m_currentSeries(new QLineSeries(this))
 {
-    ui->setupUi(this);
-
     m_chartView->setRenderHint(QPainter::Antialiasing);
 
     // 레이아웃 설정
-    QGridLayout *mainLayout = new QGridLayout;
+    QGridLayout *mainLayout = new QGridLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
     mainLayout->addWidget(m_chartView);
-    this->setLayout(mainLayout);
 
     // CustomChartView가 보내는 신호를 받아서 자동 스크롤을 끔
     connect(m_chartView, &CustomChartView::userInteracted, this, [this]() {
@@ -53,7 +48,6 @@ GraphWindow::GraphWindow(SimulationEngine* engine, QWidget *parent)
 
 GraphWindow::~GraphWindow()
 {
-    delete ui;
 }
 
 void GraphWindow::toggleAutoScroll(bool enabled)
