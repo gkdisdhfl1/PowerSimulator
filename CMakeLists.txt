@@ -48,6 +48,8 @@ set(PROJECT_SOURCES
 )
 
 if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
+    find_package(Qt6 REQUIRED COMPONENTS Widgets)
+
     qt_add_executable(PowerSimulator
         MANUAL_FINALIZATION
         ${PROJECT_SOURCES}
@@ -65,6 +67,8 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
         control_panel.h control_panel.cpp
         control_panel_state.h
         measured_data.h
+        base_graph_window.h base_graph_window.cpp
+        analysis_graph_window.h analysis_graph_window.cpp
 
 
     )
@@ -96,6 +100,7 @@ target_link_libraries(PowerSimulator PRIVATE
     sqlite_modern_cpp
     sqlite3_lib
 )
+target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

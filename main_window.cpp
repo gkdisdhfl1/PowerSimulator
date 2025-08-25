@@ -5,12 +5,13 @@
 #include "settings_ui_controller.h"
 #include "control_panel.h"
 #include "graph_window.h"
+#include "analysis_graph_window.h"
 
 #include <QDockWidget>
 #include <QStatusBar>
 #include <QMenuBar>
 #include <QMenu>
-#include <qapplication.h>
+#include <QApplication>
 
 MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     : QMainWindow(parent)
@@ -64,9 +65,17 @@ void MainWindow::setupUiComponents()
 
     // 그래프 창 도킹 위젯 생성
     m_graphWindow = new GraphWindow(m_engine, this);
-    QDockWidget *graphDock = new QDockWidget("Graph", this);
+    QDockWidget *graphDock = new QDockWidget("Real-time Waveform", this);
     graphDock->setWidget(m_graphWindow);
-    addDockWidget(Qt::RightDockWidgetArea, graphDock);
+    addDockWidget(Qt::TopDockWidgetArea, graphDock);
+
+    // 분석 그래프 창 도킹 위젯 생성
+    m_analysisGraphWindow = new AnalysisGraphWindow(this);
+    QDockWidget *analysisGraphDock = new QDockWidget("Cycle Analysis", this);
+    analysisGraphDock->setWidget(m_analysisGraphWindow);
+
+    // 도킹 위젯들 탭으로 묵기
+    tabifyDockWidget(graphDock, analysisGraphDock);
 }
 
 void MainWindow::createSignalSlotConnections()
@@ -97,6 +106,7 @@ void MainWindow::createSignalSlotConnections()
     // Model(engine) 시그널 -> UI 슬롯
     connect(m_engine, &SimulationEngine::dataUpdated, m_graphWindow, &GraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::runningStateChanged, m_controlPanel, &ControlPanel::setRunningState);
+    connect(m_engine, &SimulationEngine::measuredDataUpdated, m_analysisGraphWindow, &AnalysisGraphWindow::updateGraph);
 
     // ---- GraphWindow 시그널 -> UI 슬롯 ----
     connect(m_graphWindow, &GraphWindow::pointHovered, this, [this](const QPointF& point) {

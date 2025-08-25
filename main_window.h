@@ -10,6 +10,7 @@ class SettingsUiController;
 class ControlPanel;
 class GraphWindow;
 class QAction;
+class AnalysisGraphWindow;
 
 class MainWindow : public QMainWindow
 {
@@ -26,6 +27,7 @@ private:
     // View와 Controller들을 소유
     ControlPanel* m_controlPanel;
     GraphWindow* m_graphWindow;
+    AnalysisGraphWindow* m_analysisGraphWindow;
     std::unique_ptr<SettingsManager> m_settingsManager;
     std::unique_ptr<SettingsUiController> m_settingsUiController;
 
