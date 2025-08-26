@@ -70,7 +70,7 @@ void MainWindow::setupUiComponents()
     addDockWidget(Qt::TopDockWidgetArea, graphDock);
 
     // 분석 그래프 창 도킹 위젯 생성
-    m_analysisGraphWindow = new AnalysisGraphWindow(this);
+    m_analysisGraphWindow = new AnalysisGraphWindow(m_engine, this);
     QDockWidget *analysisGraphDock = new QDockWidget("Cycle Analysis", this);
     analysisGraphDock->setWidget(m_analysisGraphWindow);
 
@@ -113,6 +113,9 @@ void MainWindow::createSignalSlotConnections()
         statusBar()->showMessage(QString("Time: %1 s, Voltage: %2 V").arg(point.x(), 0, 'f', 3).arg(point.y(), 0, 'f', 3));
     });
     connect(m_graphWindow, &GraphWindow::autoScrollToggled, m_controlPanel, &ControlPanel::setAutoScroll);
+    connect(m_analysisGraphWindow, &AnalysisGraphWindow::autoScrollToggled, m_controlPanel, &ControlPanel::setAutoScroll);
 
     connect(m_controlPanel, &ControlPanel::autoScrollToggled, m_graphWindow, &GraphWindow::toggleAutoScroll);
+    connect(m_controlPanel, &ControlPanel::autoScrollToggled, m_analysisGraphWindow, &AnalysisGraphWindow::toggleAutoScroll);
+
 }

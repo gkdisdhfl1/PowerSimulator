@@ -45,6 +45,7 @@ public slots:
     void start();
     void stop();
     void onRedrawRequest();
+    void onRedrawAnalysisRequest();
     void updateCaptureTimer();
     void recalculateCaptureInterval();
 

@@ -179,6 +179,10 @@ void SimulationEngine::onRedrawRequest()
 {
     emit dataUpdated(m_data);
 }
+void SimulationEngine::onRedrawAnalysisRequest()
+{
+    emit measuredDataUpdated(m_measuredData);
+}
 
 void SimulationEngine::calculateCycleData()
 {

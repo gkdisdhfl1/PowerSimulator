@@ -15,6 +15,7 @@ signals:
     void userInteracted();
     void stretchRequested(double factor);
     void mouseMoved(const QPointF& point);
+    void doubleClicked();
 
 protected:
     // 재정의할 마우스 및 휠 이벤트 헨들러
