@@ -1,21 +1,15 @@
 #ifndef GRAPH_WINDOW_H
 #define GRAPH_WINDOW_H
 
-#include <QWidget>
 #include <deque>
 #include "data_point.h"
-#include "custom_chart_view.h"
+#include "base_graph_window.h"
 
-QT_BEGIN_NAMESPACE
 class QLineSeries;
 class QValueAxis;
-class QChart;
-
-
-QT_END_NAMESPACE
 class SimulationEngine;
 
-class GraphWindow : public QWidget
+class GraphWindow : public BaseGraphWindow
 {
     Q_OBJECT
 
@@ -36,23 +30,26 @@ public slots:
     void findNearestPoint(const QPointF& chartPos);
 
 
-private:
-    SimulationEngine *m_engine;
+private:    
+    // BaseGraphWindow에서 상속받음
+    void setupSeries() override;
 
-    void setupChart(); // 차트 초기 설정을 위한 함수
+    // Y축 범위 계산 관련 함수들
     void updateYAxisRange(double minY, double maxY);
     void updateMinMaxY(const QList<QPointF>& points, double& minY, double& maxY);
+
+    // 데이터 처리 관련 함수들
     void updateVisiblePoints(const std::deque<DataPoint>& data);
     void updateSeriesData();
     void updateAxesRanges();
 
+    SimulationEngine *m_engine;
+
     // 차트 관련 객체 소유
-    std::unique_ptr<QChart> m_chart;
-    QLineSeries *m_series;
+    QLineSeries *m_voltageSeries;
     QLineSeries *m_currentSeries;
-    QValueAxis *m_axisX;
     QValueAxis *m_axisY;
-    CustomChartView *m_chartView;
+
     QList<QPointF> m_voltagePoints; // 현재 보이는 전압 데이터
     QList<QPointF> m_currentPoints; // 현재 보이는 전류 데이터
 

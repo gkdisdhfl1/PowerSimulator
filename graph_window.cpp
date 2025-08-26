@@ -1,8 +1,8 @@
 #include "graph_window.h"
 #include "config.h"
+#include "custom_chart_view.h"
 #include "simulation_engine.h"
 
-#include <QChartView>
 #include <QValueAxis>
 #include <QLineSeries>
 #include <QChart>
@@ -11,23 +11,13 @@
 #include <ranges>
 
 GraphWindow::GraphWindow(SimulationEngine* engine, QWidget *parent)
-    : QWidget(parent)
+    : BaseGraphWindow(parent)
     , m_engine(engine)
-    , m_chart(std::make_unique<QChart>())
-    , m_series(new QLineSeries(this)) // 부모를 지정하여 메모리 관리 위임
-    , m_axisX(new QValueAxis(this))
-    , m_axisY(new QValueAxis(this))
-    , m_chartView(new CustomChartView(m_chart.get()))
-    , m_isAutoScrollEnabled(true) // 자동 스크롤 활성화 상태로 시작
+    , m_voltageSeries(new QLineSeries(this)) // 부모를 지정하여 메모리 관리 위임
     , m_currentSeries(new QLineSeries(this))
+    , m_axisY(new QValueAxis(this))
+    , m_isAutoScrollEnabled(true) // 자동 스크롤 활성화 상태로 시작
 {
-    m_chartView->setRenderHint(QPainter::Antialiasing);
-
-    // 레이아웃 설정
-    QGridLayout *mainLayout = new QGridLayout(this);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
-    mainLayout->addWidget(m_chartView);
-
     // CustomChartView가 보내는 신호를 받아서 자동 스크롤을 끔
     connect(m_chartView, &CustomChartView::userInteracted, this, [this]() {
         if(m_isAutoScrollEnabled) {
@@ -41,13 +31,43 @@ GraphWindow::GraphWindow(SimulationEngine* engine, QWidget *parent)
     connect(m_chartView, &CustomChartView::stretchRequested, this, &GraphWindow::stretchGraph);
     connect(m_chartView, &CustomChartView::mouseMoved, this, &GraphWindow::findNearestPoint);
 
-    m_series->setPointsVisible(true); // 그래프에 점 표시
+    // 그래프에 점 표시
+    m_voltageSeries->setPointsVisible(true);
+    m_currentSeries->setPointsVisible(true);
 
-    setupChart();
+    setupSeries();
 }
 
 GraphWindow::~GraphWindow()
 {
+}
+
+void GraphWindow::setupSeries()
+{
+    m_chart->setTitle(tr("실시간 전력 계측 시뮬레이션"));
+
+    // 전압 시리즈 설정
+    m_voltageSeries->setName("Voltage");
+    m_chart->addSeries(m_voltageSeries);
+    m_voltageSeries->setPointsVisible(true);
+
+    // 전류 시리즈를 설정
+    m_currentSeries->setName("Current");
+    m_currentSeries->setColor(QColor("red"));
+    m_chart->addSeries(m_currentSeries);
+    m_currentSeries->setPointsVisible(true);
+
+    // X축 설정
+    m_axisX->setRange(0, m_engine->parameters().graphWidthSec ); // 초기 범위를 설정값으로
+    m_voltageSeries->attachAxis(m_axisX);
+    m_currentSeries->attachAxis(m_axisX);
+
+    // Y축 설정
+    m_axisY->setLabelFormat(tr("%.2f")); // 소수점 둘째 자리까지 V 단위로 표시
+    m_axisY->setTitleText(tr("전압 (V/A)"));
+    m_chart->addAxis(m_axisY, Qt::AlignLeft);
+    m_voltageSeries->attachAxis(m_axisY);
+    m_currentSeries->attachAxis(m_axisY);
 }
 
 void GraphWindow::toggleAutoScroll(bool enabled)
@@ -70,49 +90,10 @@ void GraphWindow::stretchGraph(double factor)
     qDebug() << "new graph width: " << m_engine->parameters().graphWidthSec  << "s";
 }
 
-void GraphWindow::setupChart()
-{
-    // 차트 기본 설정
-    m_chart->setTitle(tr("실시간 전력 계측 시뮬레이션"));
-    m_chart->legend()->show();
-    m_chart->legend()->setAlignment(Qt::AlignBottom);
-
-
-    // 전압 시리즈 설정
-    m_series->setName("Voltage");
-    m_chart->addSeries(m_series);
-    m_series->setPointsVisible(true);
-
-    // 전류 시리즈를 설정
-    m_currentSeries->setName("Current");
-    m_currentSeries->setColor(QColor("red"));
-    m_chart->addSeries(m_currentSeries);
-    m_currentSeries->setPointsVisible(true);
-
-    // X축 설정
-    m_axisX->setLabelFormat(tr("%.1f s")); // 소수점 첫째 자리까지 초 단위로 표시
-    m_axisX->setTitleText(tr("시간 (s)"));
-    m_axisX->setRange(0, m_engine->parameters().graphWidthSec ); // 초기 범위를 설정값으로
-    m_chart->addAxis(m_axisX, Qt::AlignBottom);
-    m_series->attachAxis(m_axisX);
-
-    m_currentSeries->attachAxis(m_axisX);
-
-    // Y축 설정
-    m_axisY->setLabelFormat(tr("%.2f")); // 소수점 둘째 자리까지 V 단위로 표시
-    m_axisY->setTitleText(tr("전압 (V/A)"));
-    // m_axisY->setRange(config::Source::Amplitude::Min, config::Source::Amplitude::Min);
-    m_chart->addAxis(m_axisY, Qt::AlignLeft);
-    m_series->attachAxis(m_axisY);
-    m_currentSeries->attachAxis(m_axisY);
-}
-
-
-
 void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
 {
     if (data.empty()) {
-        m_series->clear();
+        m_voltageSeries->clear();
         m_currentSeries->clear();
         return;
     }
@@ -125,7 +106,7 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
 void GraphWindow::findNearestPoint(const QPointF& chartPos)
 {
     // 데이터 없으면 종료
-    if(m_series->points().isEmpty() || m_voltagePoints.isEmpty()) return;
+    if(m_voltageSeries->points().isEmpty() || m_voltagePoints.isEmpty()) return;
 
     // 1. 이진 탐색으로 chartPos.x() 이상인 첫 번째 점을 찾음
     auto it = std::lower_bound(
@@ -149,7 +130,7 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
     double minDistance = std::numeric_limits<double>::max();
 
     for(const QPointF* c : candidates) {
-        QPointF screenPos = m_chart->mapToPosition(*c, m_series);
+        QPointF screenPos = m_chart->mapToPosition(*c, m_voltageSeries);
         double dist = QLineF(mouseScreenPos, screenPos).length();
         if(dist < minDistance) {
             minDistance = dist;
@@ -203,7 +184,7 @@ void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
 
 void GraphWindow::updateSeriesData()
 {
-    m_series->replace(m_voltagePoints);
+    m_voltageSeries->replace(m_voltagePoints);
     m_currentSeries->replace(m_currentPoints);
 }
 

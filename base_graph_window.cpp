@@ -27,7 +27,7 @@ void BaseGraphWindow::setupBaseChart()
     m_chart->legend()->setAlignment(Qt::AlignBottom);
 
     // X축 설정
-    m_axisX->setLabelFormat("%.1f s");
-    m_axisX->setTitleText("Time (s)");
+    m_axisX->setLabelFormat(tr("%.1f s"));
+    m_axisX->setTitleText(tr("시간 (s)"));
     m_chart->addAxis(m_axisX, Qt::AlignBottom);
 }
