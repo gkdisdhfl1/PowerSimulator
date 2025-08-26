@@ -215,8 +215,20 @@ void GraphWindow::updateAxesRanges()
             hasPoints = true;
         }
         if(hasPoints) {
-            const double minX = lastTimestamp - m_engine->parameters().graphWidthSec;
-            m_axisX->setRange(minX, lastTimestamp);
+            const double graphWidth = m_engine->parameters().graphWidthSec;
+            double minX, maxX;
+
+            // 시뮬레이션 시간이 그래프 폭을 채웠는지 확인
+            if(lastTimestamp < graphWidth) {
+                // 아직 덜 채웠으면 X축을 고정
+                minX = 0;
+                maxX = graphWidth;
+            } else {
+                // 다 채웠으면 슬라이딩 시작
+                minX = lastTimestamp - graphWidth;
+                maxX = lastTimestamp;
+            }
+            m_axisX->setRange(minX, maxX);
         }
     }
 }
