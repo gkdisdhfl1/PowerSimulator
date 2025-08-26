@@ -36,6 +36,7 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     // 시그널-슬롯 연결
     createSignalSlotConnections();
     statusBar()->showMessage("Ready");
+    resize(1200,720);
 }
 
 MainWindow::~MainWindow()
@@ -67,7 +68,7 @@ void MainWindow::setupUiComponents()
     m_graphWindow = new GraphWindow(m_engine, this);
     QDockWidget *graphDock = new QDockWidget("Real-time Waveform", this);
     graphDock->setWidget(m_graphWindow);
-    addDockWidget(Qt::TopDockWidgetArea, graphDock);
+    addDockWidget(Qt::RightDockWidgetArea, graphDock);
 
     // 분석 그래프 창 도킹 위젯 생성
     m_analysisGraphWindow = new AnalysisGraphWindow(m_engine, this);
@@ -75,7 +76,14 @@ void MainWindow::setupUiComponents()
     analysisGraphDock->setWidget(m_analysisGraphWindow);
 
     // 도킹 위젯들 탭으로 묵기
-    tabifyDockWidget(graphDock, analysisGraphDock);
+    // tabifyDockWidget(graphDock, analysisGraphDock);
+
+    // 상하로 분할
+    splitDockWidget(graphDock, analysisGraphDock, Qt::Vertical);
+
+    QList<int> sizes;
+    sizes << 250 << 750; // 컨트롤 패널에 250, 그래프 영역에 750 할당
+    resizeDocks({controlDock, graphDock}, sizes, Qt::Horizontal);
 }
 
 void MainWindow::createSignalSlotConnections()
