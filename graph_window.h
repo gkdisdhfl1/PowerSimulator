@@ -7,7 +7,6 @@
 
 class QLineSeries;
 class QValueAxis;
-class SimulationEngine;
 
 class GraphWindow : public BaseGraphWindow
 {
@@ -25,7 +24,6 @@ signals:
 
 public slots:
     void updateGraph(const std::deque<DataPoint>& data);
-    void toggleAutoScroll(bool enabled); // 자동 스크롤 토글 슬롯
     void stretchGraph(double factor);
     void findNearestPoint(const QPointF& chartPos);
 
@@ -41,9 +39,8 @@ private:
     // 데이터 처리 관련 함수들
     void updateVisiblePoints(const std::deque<DataPoint>& data);
     void updateSeriesData();
-    void updateAxesRanges();
+    void updateAxes(const std::deque<DataPoint>& data);
 
-    SimulationEngine *m_engine;
 
     // 차트 관련 객체 소유
     QLineSeries *m_voltageSeries;
@@ -52,9 +49,6 @@ private:
 
     QList<QPointF> m_voltagePoints; // 현재 보이는 전압 데이터
     QList<QPointF> m_currentPoints; // 현재 보이는 전류 데이터
-
-    // 그래프 폭 조절
-    bool m_isAutoScrollEnabled;
 };
 
 #endif // GRAPH_WINDOW_H

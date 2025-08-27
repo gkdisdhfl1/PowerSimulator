@@ -6,7 +6,6 @@
 #include <deque>
 
 class QLineSeries;
-class SimulationEngine;
 
 class AnalysisGraphWindow : public BaseGraphWindow
 {
@@ -20,7 +19,6 @@ signals:
 
 public slots:
     void updateGraph(const std::deque<MeasuredData>& data);
-    void toggleAutoScroll(bool enabled);
 
 private:
     void setupSeries() override;
@@ -37,10 +35,6 @@ private:
     QValueAxis* m_axisY_voltage;
     QValueAxis* m_axisY_current;
     QValueAxis* m_axisY_power;
-
-    // 상태관리를 위한 멤버 변수
-    SimulationEngine *m_engine;
-    bool m_isAutoScrollEnabled;
 
     // 표시할 데이터 를 담을 멤버 변수
     QList<QPointF> m_voltagePoints;

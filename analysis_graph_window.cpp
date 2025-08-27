@@ -6,17 +6,16 @@
 #include <QChart>
 #include <QDebug>
 #include <QPen>
+#include <ranges>
 
 AnalysisGraphWindow::AnalysisGraphWindow(SimulationEngine *engine, QWidget *parent)
-    : BaseGraphWindow(parent)
+    : BaseGraphWindow(engine, parent)
     , m_voltageRmsSeries(new QLineSeries(this))
     , m_currentRmsSeries(new QLineSeries(this))
     , m_activePowerSeries(new QLineSeries(this))
     , m_axisY_voltage(new QValueAxis(this))
     , m_axisY_current(new QValueAxis(this))
     , m_axisY_power(new QValueAxis(this))
-    , m_engine(engine)
-    , m_isAutoScrollEnabled(true)
 {
     m_chart->setTitle("Cycle-based Analysis");
 
@@ -58,9 +57,12 @@ void AnalysisGraphWindow::setupSeries()
     m_chart->addSeries(m_currentRmsSeries);
     m_chart->addSeries(m_activePowerSeries);
 
+    m_axisX->setRange(0, m_engine->parameters().graphWidthSec ); // 초기 범위를 설정값으로
+
+
     // y축 생성 및 설정
     // 전압 왼쪽
-    m_axisY_voltage->setTitleText("Voltage (V)");
+    m_axisY_voltage->setTitleText("전압 (V)");
     m_axisY_voltage->setLinePenColor(m_voltageRmsSeries->color());
     m_axisY_voltage->setLabelFormat("%.1f");
     m_chart->addAxis(m_axisY_voltage, Qt::AlignLeft);
@@ -68,7 +70,7 @@ void AnalysisGraphWindow::setupSeries()
     m_voltageRmsSeries->attachAxis(m_axisY_voltage);
 
     // 전류 오른쪽
-    m_axisY_current->setTitleText("Current (V)");
+    m_axisY_current->setTitleText("전류 (V)");
     m_axisY_current->setLinePenColor(m_currentRmsSeries->color());
     m_axisY_current->setLabelFormat("%.2f");
     m_chart->addAxis(m_axisY_current, Qt::AlignRight);
@@ -76,18 +78,12 @@ void AnalysisGraphWindow::setupSeries()
     m_currentRmsSeries->attachAxis(m_axisY_current);
 
     // 전력 오른쪽
-    m_axisY_power->setTitleText("Power (W)");
+    m_axisY_power->setTitleText("전력 (W)");
     m_axisY_power->setLinePenColor(m_activePowerSeries->color());
     m_axisY_power->setLabelFormat("%.0f");
     m_chart->addAxis(m_axisY_power, Qt::AlignRight);
     m_activePowerSeries->attachAxis(m_axisX);
     m_activePowerSeries->attachAxis(m_axisY_power);
-}
-
-void AnalysisGraphWindow::toggleAutoScroll(bool enabled)
-{
-    m_isAutoScrollEnabled = enabled;
-    emit redrawNeeded();
 }
 
 void AnalysisGraphWindow::updateGraph(const std::deque<MeasuredData>& data)
@@ -110,25 +106,27 @@ void AnalysisGraphWindow::updateVisiblePoints(const std::deque<MeasuredData>& da
     m_currentPoints.clear();
     m_powerPoints.clear();
 
-    double minX, maxX;
-    if(m_isAutoScrollEnabled) {
-        const double graphWidth = m_engine->parameters().graphWidthSec;
-        const double lastTimestamp = std::chrono::duration<double>(data.back().timestamp).count();
-        minX = (lastTimestamp < graphWidth) ? 0 : lastTimestamp - graphWidth;
-        maxX = (lastTimestamp < graphWidth) ? graphWidth : lastTimestamp;
-    } else {
-        // 자동 스크롤 모드가 아닐 때는 현재 X축 범위를 그대로 사용
-        minX = m_axisX->min();
-        maxX = m_axisX->max();
-    }
+    const auto [minX, maxX] = getVisibleXRange(data);
 
-    for(const auto& d : data) {
-        const double timeSec = std::chrono::duration<double>(d.timestamp).count();
-        if(timeSec >= minX && timeSec <= maxX) {
-            m_voltagePoints.append(QPointF(timeSec, d.voltageRms));
-            m_currentPoints.append(QPointF(timeSec, d.currentRms));
-            m_powerPoints.append(QPointF(timeSec, d.activePower));
-        }
+    auto pointsView = data
+                      | std::ranges::views::transform([](const MeasuredData& d) {
+                            const double timeSec = std::chrono::duration<double>(d.timestamp).count();
+                            return std::make_tuple(
+                                QPointF(timeSec, d.voltageRms),
+                                QPointF(timeSec, d.currentRms),
+                                QPointF(timeSec, d.activePower)
+                                );
+                        })
+                      | std::views::filter([minX, maxX](const auto& tpl) {
+                            // 튜플의 첫 번째 qPointF의 x좌표를 기준으로 필터링
+                            return std::get<0>(tpl).x() >= minX && std::get<0>(tpl).x() <= maxX;
+                        });
+
+    // 필터링된 결과를 멤버 변수에 저장
+    for(const auto& [voltageP, currentP, powerP]: pointsView) {
+        m_voltagePoints.append(voltageP);
+        m_currentPoints.append(currentP);
+        m_powerPoints.append(powerP);
     }
 }
 
@@ -160,14 +158,8 @@ void AnalysisGraphWindow::updateAxes(const std::deque<MeasuredData>& data)
 
     // X축 범위는 자동  스크롤 모드일 때만 업데이트
     if(m_isAutoScrollEnabled) {
-        const double graphWidth = m_engine->parameters().graphWidthSec;
-        const double lastTimestamp = std::chrono::duration<double>(data.back().timestamp).count();
-
-        if(lastTimestamp < graphWidth) {
-            m_axisX->setRange(0, graphWidth);
-        } else {
-            m_axisX->setRange(lastTimestamp - graphWidth, lastTimestamp);
-        }
+        const auto [minX, maxX] = getVisibleXRange(data);
+        m_axisX->setRange(minX, maxX);
     } else {
         // // 꺼져있을 때는 사용자가 줌/팬한 상태이므로 X축 범위를 변경하지 않음
         // if(!data.empty()) {

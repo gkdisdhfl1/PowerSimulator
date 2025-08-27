@@ -11,12 +11,10 @@
 #include <ranges>
 
 GraphWindow::GraphWindow(SimulationEngine* engine, QWidget *parent)
-    : BaseGraphWindow(parent)
-    , m_engine(engine)
+    : BaseGraphWindow(engine, parent)
     , m_voltageSeries(new QLineSeries(this)) // 부모를 지정하여 메모리 관리 위임
     , m_currentSeries(new QLineSeries(this))
     , m_axisY(new QValueAxis(this))
-    , m_isAutoScrollEnabled(true) // 자동 스크롤 활성화 상태로 시작
 {
     // CustomChartView가 보내는 신호를 받아서 자동 스크롤을 끔
     connect(m_chartView, &CustomChartView::userInteracted, this, [this]() {
@@ -70,11 +68,6 @@ void GraphWindow::setupSeries()
     m_currentSeries->attachAxis(m_axisY);
 }
 
-void GraphWindow::toggleAutoScroll(bool enabled)
-{
-    m_isAutoScrollEnabled = enabled;
-}
-
 void GraphWindow::stretchGraph(double factor)
 {
     // if(!m_isAutoScrollEnabled)
@@ -100,7 +93,7 @@ void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
 
     updateVisiblePoints(data); // 현재 화면에 보일 데이터 포인터들만 필터링하여 멤버 변수에 저장
     updateSeriesData(); // 필터링된 데이터를 사용하여 그래프 시리즈의 내용을 교체
-    updateAxesRanges(); // 자동 스크롤 모드일 경우, 축의 범위를 최신 데이터에 맞게 업데이트
+    updateAxes(data); // 자동 스크롤 모드일 경우, 축의 범위를 최신 데이터에 맞게 업데이트
 }
 
 void GraphWindow::findNearestPoint(const QPointF& chartPos)
@@ -147,20 +140,11 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
 
 void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
 {
-    double minX, maxX;
-    auto *axisX = static_cast<QValueAxis*>(m_chart->axes(Qt::Horizontal).first());
+    // 멤버 변수에 결과 저장
+    m_voltagePoints.clear();
+    m_currentPoints.clear();
 
-    // 현재 모드에 따라 필터링할 X축의 범위를 결정
-    if(m_isAutoScrollEnabled) {
-        // 최신 데이터 시간(그래프 오른쪽 끝)
-        maxX = utils::to_qpointf(data.back()).x();
-        // 가장 오래된 시간 (그래프 왼쪽 끝)
-        minX = maxX - m_engine->parameters().graphWidthSec ;
-    } else {
-        // 고정 줌 모드: 현재 축에 설정된 범위를 그대로 사용
-        minX = axisX->min();
-        maxX = axisX->max();
-    }
+    const auto [minX, maxX] = getVisibleXRange(data);
 
     // C++20 ranges를 사용해, 현재 보이는 X축 범위 내의 점들만 필터링하는 뷰를 생성
     auto pointsView = data
@@ -172,11 +156,9 @@ void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
                             return pair.first.x() >= minX && pair.first.x() <= maxX;
                         });
 
-    // 멤버 변수에 결과 저장
-    m_voltagePoints.clear();
-    m_currentPoints.clear();
 
     for(const auto& pair : pointsView) {
+        // qDebug() << "pointsview.size: " << std::ranges::distance(pointsView);
         m_voltagePoints.append(pair.first);
         m_currentPoints.append(pair.second);
     }
@@ -188,7 +170,7 @@ void GraphWindow::updateSeriesData()
     m_currentSeries->replace(m_currentPoints);
 }
 
-void GraphWindow::updateAxesRanges()
+void GraphWindow::updateAxes(const std::deque<DataPoint> &data)
 {
     if(m_isAutoScrollEnabled) {
         if(m_voltagePoints.isEmpty() && m_currentPoints.isEmpty()) return;
@@ -204,32 +186,8 @@ void GraphWindow::updateAxesRanges()
         updateYAxisRange(minY, maxY);
 
         // X축의 범위를 업데이트
-        double lastTimestamp = std::numeric_limits<double>::lowest();
-        bool hasPoints = false;
-        if (!m_voltagePoints.isEmpty()) {
-            lastTimestamp = m_voltagePoints.back().x();
-            hasPoints = true;
-        }
-        if(!m_currentPoints.isEmpty()) {
-            lastTimestamp = m_currentPoints.back().x();
-            hasPoints = true;
-        }
-        if(hasPoints) {
-            const double graphWidth = m_engine->parameters().graphWidthSec;
-            double minX, maxX;
-
-            // 시뮬레이션 시간이 그래프 폭을 채웠는지 확인
-            if(lastTimestamp < graphWidth) {
-                // 아직 덜 채웠으면 X축을 고정
-                minX = 0;
-                maxX = graphWidth;
-            } else {
-                // 다 채웠으면 슬라이딩 시작
-                minX = lastTimestamp - graphWidth;
-                maxX = lastTimestamp;
-            }
-            m_axisX->setRange(minX, maxX);
-        }
+        const auto [minX, maxX] = getVisibleXRange(data);
+        m_axisX->setRange(minX, maxX);
     }
 }
 
