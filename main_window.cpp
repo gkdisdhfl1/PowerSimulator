@@ -58,10 +58,16 @@ void MainWindow::setupUiComponents()
     // 중앙 위젯을 사용하지 않도록 설정 (도킹 공간으로만 사용)
     setCentralWidget(nullptr);
 
+    setDockNestingEnabled(true);
+
     // 컨트롤 패널 도킹 위젯 생성
     m_controlPanel = new ControlPanel(this);
     QDockWidget *controlDock = new QDockWidget("Control Panel", this);
     controlDock->setWidget(m_controlPanel);
+
+    controlDock->setMinimumWidth(200);
+    controlDock->setMaximumWidth(400);
+
     addDockWidget(Qt::LeftDockWidgetArea, controlDock);
 
     // 그래프 창 도킹 위젯 생성
@@ -75,15 +81,8 @@ void MainWindow::setupUiComponents()
     QDockWidget *analysisGraphDock = new QDockWidget("Cycle Analysis", this);
     analysisGraphDock->setWidget(m_analysisGraphWindow);
 
-    // 도킹 위젯들 탭으로 묵기
-    // tabifyDockWidget(graphDock, analysisGraphDock);
-
     // 상하로 분할
     splitDockWidget(graphDock, analysisGraphDock, Qt::Vertical);
-
-    QList<int> sizes;
-    sizes << 250 << 750; // 컨트롤 패널에 250, 그래프 영역에 750 할당
-    resizeDocks({controlDock, graphDock}, sizes, Qt::Horizontal);
 }
 
 void MainWindow::createSignalSlotConnections()
