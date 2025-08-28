@@ -1,8 +1,11 @@
 #include "phasor_view.h"
+#include "config.h"
 
 #include <QCheckBox>
 #include <QVBoxLayout>
 #include <QPainter>
+#include <QLabel>
+#include <QGroupBox>
 
 namespace {
     // 페이저를 그릴 때 사용하는 상수들
@@ -15,8 +18,11 @@ namespace {
 
 PhasorView::PhasorView(QWidget *parent)
     : QWidget{parent}
+    , m_controlContainer(new QWidget(this))
     , m_voltageVisibleCheck(new QCheckBox("전압", this))
     , m_currentVisibleCheck(new QCheckBox("전류", this))
+    , m_voltageInfoLabel(new QLabel(this))
+    , m_currentInfoLabel(new QLabel(this))
 {
     // 체크 박스 기본갑 설정
     m_voltageVisibleCheck->setChecked(true);
@@ -27,14 +33,20 @@ PhasorView::PhasorView(QWidget *parent)
     connect(m_currentVisibleCheck, &QCheckBox::checkStateChanged, this, QOverload<>::of(&PhasorView::update));
 
     // 레이아웃 설정
-    auto mainLayout = new QHBoxLayout(this);
-    auto checkLayout = new QVBoxLayout();
-    checkLayout->addStretch();
-    checkLayout->addWidget(m_voltageVisibleCheck);
-    checkLayout->addWidget(m_currentVisibleCheck);
+    auto controlLayout = new QHBoxLayout(m_controlContainer);
+    controlLayout->addStretch();
+    controlLayout->addWidget(m_voltageVisibleCheck);
+    controlLayout->addWidget(m_voltageInfoLabel);
+    controlLayout->addSpacing(30);
+    controlLayout->addWidget(m_currentVisibleCheck);
+    controlLayout->addWidget(m_currentInfoLabel);
+    controlLayout->addStretch();
+    m_controlContainer->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Fixed);
 
-    mainLayout->addStretch();
-    mainLayout->addLayout(checkLayout);
+    auto mainLayout = new QVBoxLayout(this);
+    mainLayout->setContentsMargins(5, 5, 5, 5);
+    mainLayout->addStretch(); // 그림 영역이 나머지 공간을 차지
+    mainLayout->addWidget(m_controlContainer);
 
     // 위젯 최소 크기 설정
     setMinimumSize(250, 250);
@@ -43,12 +55,24 @@ PhasorView::PhasorView(QWidget *parent)
 void PhasorView::updateData(const std::deque<MeasuredData>& data)
 {
     if(data.empty()) {
-        m_voltagePhasor = QPointF(0, 0);
-        m_currentPhasor = QPointF(0, 0);
+        m_voltage = PhasorInfo();
+        m_current= PhasorInfo();
+        m_voltageInfoLabel->clear();
+        m_currentInfoLabel->clear();
     } else {
         const auto& latestData = data.back();
-        m_voltagePhasor = QPointF(latestData.voltagePhasorX, latestData.voltagePhasorY);
-        m_currentPhasor = QPointF(latestData.currentPhasorX, latestData.currentPhasorY);
+
+        // 전압 정보 계산 및 저장
+        m_voltage.components = QPointF(latestData.voltagePhasorX, latestData.voltagePhasorY);
+        m_voltage.magnitude = std::sqrt(m_voltage.components.x() * m_voltage.components.x() + m_voltage.components.y() * m_voltage.components.y());
+        m_voltage.phaseDegrees = utils::radiansToDegrees(std::atan2(m_voltage.components.y(), m_voltage.components.x()));
+        m_voltageInfoLabel->setText(QString::asprintf("%.1f V, %.1f°", m_voltage.magnitude, m_voltage.phaseDegrees));
+
+        // 전류 정보 계산 및 저장
+        m_current.components = QPointF(latestData.currentPhasorX, latestData.currentPhasorY);
+        m_current.magnitude = std::sqrt(m_current.components.x() * m_current.components.x() + m_current.components.y() * m_current.components.y());
+        m_current.phaseDegrees = utils::radiansToDegrees(std::atan2(m_current.components.y(), m_current.components.x()));
+        m_currentInfoLabel->setText(QString::asprintf("%.1f V, %.1f°", m_current.magnitude, m_current.phaseDegrees));
     }
 
     // 새로운 데이터가 들어왔으니 위젯을 다시 그림
@@ -62,25 +86,27 @@ void PhasorView::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // 위젯의 중심점을 원점으로 설정
-    const QPointF origin(width() / 2.0, height() / 2.0);
+    // --- 그리기 영역 계산 ---
+    const int controlHeight = m_controlContainer->height();
+    // 컨트롤 영역을 제외한 위쪽 영역을 그리기 영역으로 설정
+    const QRect drawingRect = rect().adjusted(0, 0, 0, -controlHeight);
+
+    const QPointF origin = drawingRect.center();
     painter.translate(origin);
+
+    const double maxRadius = std::min(drawingRect.width(), drawingRect.height()) / 2.0 - AXIS_PADDING;
 
     // 좌표 축 그리기
     painter.setPen(Qt::gray);
-    painter.drawLine(-width()/2 + AXIS_PADDING, 0, width()/2 - AXIS_PADDING, 0); // X축
-    painter.drawLine(0, -height()/2 + AXIS_PADDING, 0, height()/2 - AXIS_PADDING); // X축
-
-    // 실제 크기 계산
-    const double voltageMag = std::sqrt(m_voltagePhasor.x() * m_voltagePhasor.x() + m_voltagePhasor.y() * m_voltagePhasor.y());
-    const double currentMag = std::sqrt(m_currentPhasor.x() * m_currentPhasor.x() + m_currentPhasor.y() * m_currentPhasor.y());
+    painter.drawLine(-drawingRect.width()/2 + AXIS_PADDING, 0, drawingRect.width()/2 - AXIS_PADDING, 0); // X축
+    painter.drawLine(0, -drawingRect.height()/2 + AXIS_PADDING, 0, drawingRect.height()/2 - AXIS_PADDING); // X축
 
     // 화면에 맞게 스케일 조절
-    const double maxMag = std::max(voltageMag, currentMag);
-    const double scaleFactor = (maxMag > 1e-6) ? (VOLTAGE_RADIUS / maxMag) : 0;
+    const double maxMag = std::max(m_voltage.magnitude, m_current.magnitude);
+    const double scaleFactor = (maxMag > 1e-6) ? (maxRadius / maxMag) : 0;
 
-    const double scaledVoltageRadius = voltageMag * scaleFactor;
-    const double scaledCurrentRadius = currentMag * scaleFactor;
+    const double scaledVoltageRadius = m_voltage.magnitude * scaleFactor;
+    const double scaledCurrentRadius = m_voltage.magnitude * scaleFactor;
 
     // 전압이 항상 바깥쪽
     const double finalVoltageRadius = std::max(scaledVoltageRadius, scaledCurrentRadius);
@@ -95,21 +121,20 @@ void PhasorView::paintEvent(QPaintEvent *event)
 
     // 페이저 그리기
     if(m_voltageVisibleCheck->isChecked()) {
-        drawPhasor(painter, m_voltagePhasor, Qt::blue, VOLTAGE_RADIUS);
+        drawPhasor(painter, m_voltage, Qt::blue, VOLTAGE_RADIUS);
     }
     if(m_currentVisibleCheck->isChecked()) {
-        drawPhasor(painter, m_currentPhasor, Qt::red, CURRENT_RADIUS);
+        drawPhasor(painter, m_current, Qt::red, CURRENT_RADIUS);
     }
 }
 
-void PhasorView::drawPhasor(QPainter& painter, const QPointF& phasor, const QColor& color, double radius)
+void PhasorView::drawPhasor(QPainter& painter, const PhasorInfo& phasor, const QColor& color, double radius)
 {
-    const double magnitude = std::sqrt(phasor.x() * phasor.x() + phasor.y() * phasor.y());
-    if(magnitude < 1e-6) // 크기가 0에 가까우면
+    if(phasor.magnitude < 1e-6) // 크기가 0에 가까우면
         return;
 
     // Y축은 위쪽이 음수이므로 부호 반전
-    const QPointF endPoint(phasor.x() / magnitude * radius, -phasor.y() / magnitude * radius);
+    const QPointF endPoint(phasor.components.x() / phasor.magnitude* radius, -phasor.components.y() / phasor.magnitude * radius);
 
     QPen pen(color);
     pen.setWidth(2);

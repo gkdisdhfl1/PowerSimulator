@@ -66,7 +66,7 @@ void MainWindow::setupUiComponents()
     QDockWidget *controlDock = new QDockWidget("Control Panel", this);
     controlDock->setWidget(m_controlPanel);
     controlDock->setMinimumWidth(200);
-    controlDock->setMaximumWidth(400);
+    controlDock->setMaximumWidth(375);
     addDockWidget(Qt::LeftDockWidgetArea, controlDock);
 
     // 그래프 창 도킹 위젯 생성
@@ -94,7 +94,7 @@ void MainWindow::setupUiComponents()
 
     // 하단 두 위젯 너비 비율 설정
     QList<int> bottomSizes;
-    bottomSizes << 400 << 200;
+    bottomSizes << 400 << 260;
     resizeDocks({analysisGraphDock, phasorDock}, bottomSizes, Qt::Horizontal);
 
     // 상단과 하단 영역의 높이 비율 설정

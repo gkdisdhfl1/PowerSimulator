@@ -107,6 +107,10 @@ using FpSeconds = std::chrono::duration<double>;
         return degrees * (std::numbers::pi / 180.0);
     }
 
+    constexpr double radiansToDegrees(double radians) {
+        return radians * (180.0 / std::numbers::pi);
+    }
+
     constexpr QPointF to_qpointf(const DataPoint& p) {
         const auto x = std::chrono::duration_cast<FpSeconds>(p.timestamp).count();
         return QPointF(x, p.voltage);

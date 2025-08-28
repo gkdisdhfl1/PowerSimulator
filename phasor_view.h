@@ -6,6 +6,7 @@
 #include "measured_data.h"
 
 class QCheckBox;
+class QLabel;
 
 class PhasorView : public QWidget
 {
@@ -21,15 +22,24 @@ protected:
     void paintEvent(QPaintEvent *event) override;
 
 private:
-    void drawPhasor(QPainter& painter, const QPointF& phasor, const QColor& color, double radius);
+    struct PhasorInfo {
+        QPointF components{0, 0};
+        double magnitude = 0.0;
+        double phaseDegrees = 0.0;
+    };
+
+    void drawPhasor(QPainter& painter, const PhasorInfo& phasor, const QColor& color, double radius);
 
     // UI 요소
+    QWidget* m_controlContainer;
     QCheckBox* m_voltageVisibleCheck;
     QCheckBox* m_currentVisibleCheck;
+    QLabel* m_voltageInfoLabel;
+    QLabel* m_currentInfoLabel;
 
     // 표시할 데이터
-    QPointF m_voltagePhasor;
-    QPointF m_currentPhasor;
+    PhasorInfo m_voltage;
+    PhasorInfo m_current;
 
 };
 
