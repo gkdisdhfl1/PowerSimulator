@@ -23,7 +23,7 @@ bool SimulationEngine::isRunning() const { return m_captureTimer.isActive(); }
 SimulationEngine::Parameters& SimulationEngine::parameters() { return m_params; };
 const SimulationEngine::Parameters& SimulationEngine::parameters() const { return m_params; };
 
-
+// ---- public slots ----
 void SimulationEngine::start()
 {
     if (isRunning()) return;
@@ -189,35 +189,55 @@ void SimulationEngine::calculateCycleData()
     if(m_cycleSampleBuffer.empty())
         return;
 
-    // 1. RMS 계산
-    double voltageSqaureSum = std::accumulate(m_cycleSampleBuffer.begin(), m_cycleSampleBuffer.end(), 0.0,
-                                              [](double sum, const DataPoint& p) {
-        return sum + p.voltage * p.voltage;
-    });
-    double currentSqaureSum = std::accumulate(m_cycleSampleBuffer.begin(), m_cycleSampleBuffer.end(), 0.0,
-                                              [](double sum, const DataPoint& p) {
-                                                  return sum + p.current * p.current;
-                                              });
+    const size_t N = m_cycleSampleBuffer.size();
+    const double two_pi_over_N = 2.0 * std::numbers::pi / N;
 
-    // 평균을 내고 제곱근을 취함
-    const double voltageRms = std::sqrt(voltageSqaureSum / m_cycleSampleBuffer.size());
-    const double currentRms = std::sqrt(currentSqaureSum / m_cycleSampleBuffer.size());
+    // 1. RMS, 유효 전력, DFT 성분 합산
+    double voltageSquareSum = 0.0;
+    double currentSquareSum = 0.0;
+    double powerSum = 0.0;
+    double voltagePhasorX_sum = 0.0;
+    double voltagePhasorY_sum = 0.0;
+    double currentPhasorX_sum = 0.0;
+    double currentPhasorY_sum = 0.0;
 
-    // 2. 유효 전력 계산
-    double powerSum = std::accumulate(m_cycleSampleBuffer.begin(), m_cycleSampleBuffer.end(), 0.0,
-                                      [](double sum, const DataPoint& p) {
-                                          return sum + p.voltage * p.current;
-                                      });
+    for(size_t n = 0 ; n < N; ++n) {
+        const auto& sample = m_cycleSampleBuffer[n];
+        const double angle = two_pi_over_N * n;
 
-    // 평균을 냄
-    const double activePower = powerSum / m_cycleSampleBuffer.size();
+        // RMS 및 전력 계산을 위한 합산
+        voltageSquareSum += sample.voltage * sample.voltage;
+        currentSquareSum += sample.current * sample.current;
+        powerSum += sample.voltage * sample.current;
+
+        // DFT 계산을 위한 합산
+        voltagePhasorX_sum += sample.voltage * std::cos(angle);
+        voltagePhasorY_sum += sample.voltage * std::sin(angle);
+        currentPhasorX_sum += sample.current * std::cos(angle);
+        currentPhasorY_sum += sample.current * std::sin(angle);
+    }
+
+    // 2. 최종 값 계산
+    const double voltageRms = std::sqrt(voltageSquareSum / N);
+    const double currentRms = std::sqrt(currentSquareSum / N);
+    const double activePower = powerSum / N;
+
+    // DFT 정규화( 2/N 곱하기)
+    const double voltagePhasorX = (2.0 / N) * voltagePhasorX_sum;
+    const double voltagePhasorY = (2.0 / N) * voltagePhasorY_sum;
+    const double currentPhasorX = (2.0 / N) * currentPhasorX_sum;
+    const double currentPhasorY = (2.0 / N) * currentPhasorY_sum;
 
     // 3. 계산된 데이터 구조체를 담아 컨테이너 추가
     m_measuredData.push_back({
         m_simulationTimeNs, // 현재 시간 (사이클 종료 시점)
         voltageRms,
         currentRms,
-        activePower
+        activePower,
+        voltagePhasorX,
+        voltagePhasorY,
+        currentPhasorX,
+        currentPhasorY
     });
 
     // 4. UI에 업데이트 알림

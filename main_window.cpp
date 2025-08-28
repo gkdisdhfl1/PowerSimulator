@@ -6,6 +6,7 @@
 #include "control_panel.h"
 #include "graph_window.h"
 #include "analysis_graph_window.h"
+#include "phasor_view.h"
 
 #include <QDockWidget>
 #include <QStatusBar>
@@ -64,10 +65,8 @@ void MainWindow::setupUiComponents()
     m_controlPanel = new ControlPanel(this);
     QDockWidget *controlDock = new QDockWidget("Control Panel", this);
     controlDock->setWidget(m_controlPanel);
-
     controlDock->setMinimumWidth(200);
     controlDock->setMaximumWidth(400);
-
     addDockWidget(Qt::LeftDockWidgetArea, controlDock);
 
     // 그래프 창 도킹 위젯 생성
@@ -81,8 +80,27 @@ void MainWindow::setupUiComponents()
     QDockWidget *analysisGraphDock = new QDockWidget("Cycle Analysis", this);
     analysisGraphDock->setWidget(m_analysisGraphWindow);
 
+    // PhasorView 위젯 생성 및 도킹
+    m_phasorView = new PhasorView(this);
+    QDockWidget *phasorDock = new QDockWidget("Phasor", this);
+    phasorDock->setWidget(m_phasorView);
+
     // 상하로 분할
     splitDockWidget(graphDock, analysisGraphDock, Qt::Vertical);
+
+    // // 좌우로 분할
+    splitDockWidget(analysisGraphDock, phasorDock, Qt::Horizontal);
+    // splitDockWidget(phasorDock, analysisGraphDock, Qt::Horizontal);
+
+    // 하단 두 위젯 너비 비율 설정
+    QList<int> bottomSizes;
+    bottomSizes << 400 << 200;
+    resizeDocks({analysisGraphDock, phasorDock}, bottomSizes, Qt::Horizontal);
+
+    // 상단과 하단 영역의 높이 비율 설정
+    QList<int> mainSizes;
+    mainSizes << 500 << 250;
+    resizeDocks({graphDock, analysisGraphDock}, mainSizes, Qt::Vertical);
 }
 
 void MainWindow::createSignalSlotConnections()
@@ -114,6 +132,7 @@ void MainWindow::createSignalSlotConnections()
     connect(m_engine, &SimulationEngine::dataUpdated, m_graphWindow, &GraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::runningStateChanged, m_controlPanel, &ControlPanel::setRunningState);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_analysisGraphWindow, &AnalysisGraphWindow::updateGraph);
+    connect(m_engine, &SimulationEngine::measuredDataUpdated, m_phasorView, &PhasorView::updateData);
 
     // ---- GraphWindow 시그널 -> UI 슬롯 ----
     connect(m_graphWindow, &GraphWindow::pointHovered, this, [this](const QPointF& point) {

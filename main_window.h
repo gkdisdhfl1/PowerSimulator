@@ -11,6 +11,7 @@ class ControlPanel;
 class GraphWindow;
 class QAction;
 class AnalysisGraphWindow;
+class PhasorView;
 
 class MainWindow : public QMainWindow
 {
@@ -28,6 +29,7 @@ private:
     ControlPanel* m_controlPanel;
     GraphWindow* m_graphWindow;
     AnalysisGraphWindow* m_analysisGraphWindow;
+    PhasorView* m_phasorView;
     std::unique_ptr<SettingsManager> m_settingsManager;
     std::unique_ptr<SettingsUiController> m_settingsUiController;
 
