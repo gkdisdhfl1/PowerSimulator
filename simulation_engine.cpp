@@ -123,7 +123,7 @@ void SimulationEngine::updateCaptureTimer()
 void SimulationEngine::advanceSimulationTime()
 {
     m_simulationTimeNs += std::chrono::duration_cast<Nanoseconds>(m_captureIntervalsMs);
-    qDebug() << "m_simulationTimeNs: " << m_simulationTimeNs;
+    // qDebug() << "m_simulationTimeNs: " << m_simulationTimeNs;
 
 }
 
@@ -143,8 +143,8 @@ void SimulationEngine::addNewDataPoint(double voltage, double current)
 {
     // DataPoint 객체를 생성하여 저장
     // qDebug() << "m_simulationTimeNs: " << m_simulationTimeNs;
-    qDebug() << "voltage: " << voltage;
-    qDebug() << "current: " << current;
+    // qDebug() << "voltage: " << voltage;
+    // qDebug() << "current: " << current;
     m_data.push_back({m_simulationTimeNs, voltage, current});
 
     // 최대 개수 관리
@@ -192,41 +192,43 @@ void SimulationEngine::calculateCycleData()
     const size_t N = m_cycleSampleBuffer.size();
     const double two_pi_over_N = 2.0 * std::numbers::pi / N;
 
-    // 1. RMS, 유효 전력, DFT 성분 합산
-    double voltageSquareSum = 0.0;
-    double currentSquareSum = 0.0;
+    // 1. 데이터 집계
+    CycleCalculationData voltageData;
+    CycleCalculationData currentData;
     double powerSum = 0.0;
-    double voltagePhasorX_sum = 0.0;
-    double voltagePhasorY_sum = 0.0;
-    double currentPhasorX_sum = 0.0;
-    double currentPhasorY_sum = 0.0;
+
 
     for(size_t n = 0 ; n < N; ++n) {
         const auto& sample = m_cycleSampleBuffer[n];
         const double angle = two_pi_over_N * n;
+        const double cos_angle = std::cos(angle);
+        const double sin_angle = std::sin(angle);
 
-        // RMS 및 전력 계산을 위한 합산
-        voltageSquareSum += sample.voltage * sample.voltage;
-        currentSquareSum += sample.current * sample.current;
-        powerSum += sample.voltage * sample.current;
+        // 전압 데이터 집계
+        voltageData.squareSum += sample.voltage * sample.voltage;
+        voltageData.phasorX_sum += sample.voltage * cos_angle;
+        voltageData.phasorY_sum += sample.voltage * sin_angle;
 
-        // DFT 계산을 위한 합산
-        voltagePhasorX_sum += sample.voltage * std::cos(angle);
-        voltagePhasorY_sum += sample.voltage * std::sin(angle);
-        currentPhasorX_sum += sample.current * std::cos(angle);
-        currentPhasorY_sum += sample.current * std::sin(angle);
+        // 전류 데이터 집계
+        currentData.squareSum += sample.current * sample.current;
+        currentData.phasorX_sum += sample.current * cos_angle;
+        currentData.phasorY_sum += sample.current * sin_angle;
+
+        // 유효 전력 데이터 집계
+        powerSum += sample.voltage * sample.current;        
     }
 
     // 2. 최종 값 계산
-    const double voltageRms = std::sqrt(voltageSquareSum / N);
-    const double currentRms = std::sqrt(currentSquareSum / N);
+    const double voltageRms = std::sqrt(voltageData.squareSum / N);
+    const double currentRms = std::sqrt(currentData.squareSum / N);
     const double activePower = powerSum / N;
 
     // DFT 정규화( 2/N 곱하기)
-    const double voltagePhasorX = (2.0 / N) * voltagePhasorX_sum;
-    const double voltagePhasorY = (2.0 / N) * voltagePhasorY_sum;
-    const double currentPhasorX = (2.0 / N) * currentPhasorX_sum;
-    const double currentPhasorY = (2.0 / N) * currentPhasorY_sum;
+    const double normFactor = 2.0 / N;
+    const double voltagePhasorX = normFactor * voltageData.phasorX_sum;
+    const double voltagePhasorY = normFactor * voltageData.phasorY_sum;
+    const double currentPhasorX = normFactor * currentData.phasorX_sum;
+    const double currentPhasorY = normFactor * currentData.phasorY_sum;
 
     // 3. 계산된 데이터 구조체를 담아 컨테이너 추가
     m_measuredData.push_back({
