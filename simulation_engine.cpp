@@ -20,6 +20,7 @@ SimulationEngine::SimulationEngine()
 }
 
 bool SimulationEngine::isRunning() const { return m_captureTimer.isActive(); }
+int SimulationEngine::getDataSize() const { return m_data.size(); }
 SimulationEngine::Parameters& SimulationEngine::parameters() { return m_params; };
 const SimulationEngine::Parameters& SimulationEngine::parameters() const { return m_params; };
 
@@ -44,6 +45,20 @@ void SimulationEngine::stop()
 
     emit runningStateChanged(false);
     qDebug() << "Engine stopped.";
+}
+
+void SimulationEngine::onMaxDataSizeChanged(int newSize)
+{
+    m_params.maxDataSize = newSize;
+
+    while(m_data.size() > static_cast<size_t>(m_params.maxDataSize)) {
+        m_data.pop_front();
+    }
+    while(m_measuredData.size() > static_cast<size_t>(m_params.maxDataSize)) {
+        m_measuredData.pop_front();
+    }
+
+    emit dataUpdated(m_data);
 }
 
 void SimulationEngine::captureData()
@@ -152,6 +167,7 @@ void SimulationEngine::addNewDataPoint(double voltage, double current)
         // qDebug() << " ---- data{" << m_simulationTimeNs << ", " << voltage << "} 삭제 ----";
         m_data.pop_front();
     }
+
 }
 
 void SimulationEngine::recalculateCaptureInterval()
@@ -241,6 +257,9 @@ void SimulationEngine::calculateCycleData()
         currentPhasorX,
         currentPhasorY
     });
+    if(m_measuredData.size() > static_cast<size_t>(m_params.maxDataSize)) {
+        m_measuredData.pop_front();
+    }
 
     // 4. UI에 업데이트 알림
     emit measuredDataUpdated(m_measuredData);

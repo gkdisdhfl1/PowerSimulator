@@ -108,6 +108,8 @@ void MainWindow::createSignalSlotConnections()
     // 메뉴바 액션 연결
     connect(m_actionSettings, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showSettingsDialog);
 
+    connect(m_settingsUiController.get(), &SettingsUiController::maxDataSizeChangeRequested, m_engine, &SimulationEngine::onMaxDataSizeChanged);
+
     // ---- ControlPanel 이벤트 -> Controller or Model(engine) 슬롯 ----
     connect(m_controlPanel, &ControlPanel::startStopClicked, this, [this]() {
         if (m_engine->isRunning()) {

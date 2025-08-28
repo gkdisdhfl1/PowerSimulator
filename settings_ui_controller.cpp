@@ -214,7 +214,7 @@ void SettingsUiController::showSettingsDialog()
             int newMaxSize = m_settingsDialog->getMaxSize(); // Dialog에 getter 필요
             double newGraphWidth = m_settingsDialog->getGraphWidth(); // Dialog에 getter 필요
 
-            m_engine->parameters().maxDataSize = newMaxSize;
+            requestMaxSizeChange(newMaxSize);
             m_engine->parameters().graphWidthSec = newGraphWidth;
         }
     }
@@ -310,6 +310,27 @@ void SettingsUiController::initializeKeyNameMap()
     m_keyNameMap["updateMode"] = PresetKeys::UpdateMode;
 }
 
+void SettingsUiController::requestMaxSizeChange(int newSize)
+{
+    const int currentDataSize = m_engine->getDataSize();
+    bool applyChange = true;
+
+    // 새 최대 크기가 현재 데이터 개수보다 작을 경우
+    if(newSize < currentDataSize) {
+        QMessageBox::StandardButton reply;
+        reply = QMessageBox::question(m_parent, "데이터 축소 경고",
+                                      QString("데이터 최대 개수를 %1개에서 %2개로 줄이면 이전 데이터 일부가 영구적으로 삭제됩니다. \n\n계속하시겠습니까?").arg(currentDataSize).arg(newSize),
+                                      QMessageBox::Yes | QMessageBox::No);
+        if(reply == QMessageBox::No)
+            applyChange = false;
+    }
+
+    if(applyChange) {
+        emit maxDataSizeChangeRequested(newSize);
+    }
+
+}
+
 std::expected<void, std::string> SettingsUiController::applySettingsToUi(std::string_view presetName)
 {
     m_blockUiSignals = true; // 프리셋 적용 시 슬롯 호출 잠시 무시
@@ -341,7 +362,7 @@ std::expected<void, std::string> SettingsUiController::applySettingsToUi(std::st
 
     // UI와 별개인 엔진 파라미터들도 업데이트
     if(auto res = m_settingsManager.loadSetting(presetName, "maxDataSize", m_engine->parameters().maxDataSize); res) {
-        m_engine->parameters().maxDataSize = *res;
+        requestMaxSizeChange(*res);
     }
     if(auto res = m_settingsManager.loadSetting(presetName, "graphWidthSec", m_engine->parameters().graphWidthSec); res) {
         m_engine->parameters().graphWidthSec = *res;

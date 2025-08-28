@@ -22,6 +22,7 @@ signals:
     void presetListChanged(const std::vector<std::string>& presetList);;
     void presetValuesFetched(const QVariantMap& data);
     void currentSettingsFetched(int maxDataSize, double graphWidth);
+    void maxDataSizeChangeRequested(int maxSize);
 
 public slots:
     // View(SettingsDialog)로부터 오는 요청을 처리하는 슬롯
@@ -70,6 +71,7 @@ private:
     // 헬퍼 함수들
     void initializeSettingsMap();
     void initializeKeyNameMap();
+    void requestMaxSizeChange(int newSize);
     std::expected<void, std::string> applySettingsToUi(std::string_view presetName); // 특정 프리셋을 UI에 적용하는 함수
     std::expected<void, std::string> saveUiToSettings(std::string_view presetName); // 현재 UI 상태를 특정 프리셋으로 저장하는 함수
 

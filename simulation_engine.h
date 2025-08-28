@@ -36,6 +36,7 @@ public:
     explicit SimulationEngine();
 
     bool isRunning() const;
+    int getDataSize() const;
 
     // 파라미터에 직접 접근할 수 있는 인터페이스
     Parameters& parameters();
@@ -46,6 +47,7 @@ public slots:
     void stop();
     void onRedrawRequest();
     void onRedrawAnalysisRequest();
+    void onMaxDataSizeChanged(int newSize);
     void updateCaptureTimer();
     void recalculateCaptureInterval();
 
