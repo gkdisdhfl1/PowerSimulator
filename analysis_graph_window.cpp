@@ -25,6 +25,7 @@ AnalysisGraphWindow::AnalysisGraphWindow(SimulationEngine *engine, QWidget *pare
             toggleAutoScroll(false);
             emit autoScrollToggled(false);
         }
+        emit redrawNeeded();
     });
 
     // 더블 클릭 시 줌 리셋 및 전체 보기를 위한 데이터 재요청
