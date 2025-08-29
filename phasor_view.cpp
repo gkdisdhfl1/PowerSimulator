@@ -24,7 +24,7 @@ PhasorView::PhasorView(QWidget *parent)
     , m_voltageInfoLabel(new QLabel(this))
     , m_currentInfoLabel(new QLabel(this))
 {
-    // 체크 박스 기본갑 설정
+    // 체크 박스 기본값 설정
     m_voltageVisibleCheck->setChecked(true);
     m_currentVisibleCheck->setChecked(true);
 

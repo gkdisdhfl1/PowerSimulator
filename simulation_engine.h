@@ -89,7 +89,6 @@ private:
     // measuredData 관련 변수
     std::deque<MeasuredData> m_measuredData; // 계산된 데이터를 저장할 컨테이너
     std::vector<DataPoint> m_cycleSampleBuffer; // 1사이클 동안의 샘플을 모으는 버퍼
-    double m_accumulatedPhaseForCycle; // 사이클 계산을 위한 누적 위상
 };
 
 #endif // SIMULATION_ENGINE_H

@@ -7,7 +7,6 @@ SimulationEngine::SimulationEngine()
     , m_accumulatedPhaseSinceUpdate(0.0)
     , m_captureIntervalsMs(0.0)
     , m_simulationTimeNs(0)
-    , m_accumulatedPhaseForCycle(0.0)
 {
     using namespace std::chrono_literals;
 
@@ -70,6 +69,11 @@ void SimulationEngine::captureData()
     // 1 사이클 계산을 위한 현재 샘플을 버퍼에 추가
     m_cycleSampleBuffer.push_back(m_data.back());
 
+    // 버퍼에 설정된 samplesPerCycle 만큼 데이터가 쌓이면 계산을 실행
+    if(m_cycleSampleBuffer.size() >= static_cast<size_t>(m_params.samplesPerCycle)) {
+        calculateCycleData();
+    }
+
     // 다음 스텝을 위해 현재 진행 위상 업데이트
     const FpSeconds timeDelta = m_captureIntervalsMs;
     const double phaseDelta = 2.0 * std::numbers::pi * m_params.frequency * timeDelta.count();
@@ -77,13 +81,6 @@ void SimulationEngine::captureData()
 
     // UI 갱신 및 사이클 계산을 위한 누적 위상 업데이트
     m_accumulatedPhaseSinceUpdate += phaseDelta;
-    m_accumulatedPhaseForCycle += phaseDelta;
-
-    // 사이클 계산 로직
-    if(m_accumulatedPhaseForCycle >= 2.0 * std::numbers::pi) {
-        calculateCycleData(); // 1 사이클이 누적되면 계산 실행
-        m_accumulatedPhaseForCycle -= 2.0 * std::numbers::pi; // 누적 위상 초기화
-    }
 
     // 누적된 위상을 보고 Mode에 맞춰 업데이트
     processUpdateByMode(true); // 누적 위상 리셋
