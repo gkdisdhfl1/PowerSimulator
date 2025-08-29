@@ -75,6 +75,7 @@ private:
     double calculateCurrentAmperage();
     void addNewDataPoint(double voltage, double current);
     void calculateCycleData(); // RMS, 전력 계산 함수
+    void processUpdateByMode(bool resetAccumulatedPhase);
 
     QTimer m_captureTimer;
     std::deque<DataPoint> m_data;

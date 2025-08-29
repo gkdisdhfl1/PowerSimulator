@@ -85,34 +85,8 @@ void SimulationEngine::captureData()
         m_accumulatedPhaseForCycle -= 2.0 * std::numbers::pi; // 누적 위상 초기화
     }
 
-    bool shouldEmitUpdate = false;
-    switch (m_params.updateMode) {
-    case UpdateMode::PerSample:
-        shouldEmitUpdate = true;
-        break;
-    case UpdateMode::PerHalfCycle:
-        // 누적된 위상이 PI(180도) 이상 변했는지 확인
-        if(m_accumulatedPhaseSinceUpdate >= std::numbers::pi) {
-            shouldEmitUpdate = true;
-        }
-        break;
-    case UpdateMode::PerCycle:
-        // 누적된 위상이 2*PI 이상 변했는지 확인
-        if(m_accumulatedPhaseSinceUpdate >= 2.0 * std::numbers::pi) {
-            shouldEmitUpdate = true;
-        }
-        break;
-    }
-
-    if(shouldEmitUpdate) {
-        emit dataUpdated(m_data);
-        if(m_params.updateMode == UpdateMode::PerHalfCycle)
-            m_accumulatedPhaseSinceUpdate -= std::numbers::pi;
-        else if(m_params.updateMode == UpdateMode::PerCycle)
-            m_accumulatedPhaseSinceUpdate -= 2.0 * std::numbers::pi;
-        else
-            m_accumulatedPhaseSinceUpdate = 0.0;
-    }
+    // 누적된 위상을 보고 Mode에 맞춰 업데이트
+    processUpdateByMode(true); // 누적 위상 리셋
     advanceSimulationTime();
 }
 
@@ -193,7 +167,13 @@ void SimulationEngine::recalculateCaptureInterval()
 
 void SimulationEngine::onRedrawRequest()
 {
-    emit dataUpdated(m_data);
+    if(!isRunning()) {
+        emit dataUpdated(m_data);
+        return;
+    }
+
+    // 누적된 위상을 보고 Mode에 맞춰 update 요청
+    processUpdateByMode(false); // 누적 위상 리셋 안함
 }
 void SimulationEngine::onRedrawAnalysisRequest()
 {
@@ -266,4 +246,37 @@ void SimulationEngine::calculateCycleData()
 
     // 5. 버퍼 비우기
     m_cycleSampleBuffer.clear();
+}
+
+void SimulationEngine::processUpdateByMode(bool resetAccumulatedPhase)
+{
+    bool shouldEmitUpdate = false;
+    switch (m_params.updateMode) {
+    case UpdateMode::PerSample:
+        shouldEmitUpdate = true;
+        break;
+    case UpdateMode::PerHalfCycle:
+        // 누적된 위상이 PI(180도) 이상 변했는지 확인
+        if(m_accumulatedPhaseSinceUpdate >= std::numbers::pi) {
+            shouldEmitUpdate = true;
+        }
+        break;
+    case UpdateMode::PerCycle:
+        // 누적된 위상이 2*PI 이상 변했는지 확인
+        if(m_accumulatedPhaseSinceUpdate >= 2.0 * std::numbers::pi) {
+            shouldEmitUpdate = true;
+        }
+        break;
+    }
+    if(shouldEmitUpdate) {
+        emit dataUpdated(m_data);
+        if(resetAccumulatedPhase) {
+            if(m_params.updateMode == UpdateMode::PerHalfCycle)
+                m_accumulatedPhaseSinceUpdate -= std::numbers::pi;
+            else if(m_params.updateMode == UpdateMode::PerCycle)
+                m_accumulatedPhaseSinceUpdate -= 2.0 * std::numbers::pi;
+            else
+                m_accumulatedPhaseSinceUpdate = 0.0;
+        }
+    }
 }
