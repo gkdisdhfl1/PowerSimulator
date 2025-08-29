@@ -57,6 +57,9 @@ void MainWindow::createMenus()
 void MainWindow::setupUiComponents()
 {
     // 중앙 위젯을 사용하지 않도록 설정 (도킹 공간으로만 사용)
+    // QWidget* dummyCentral = new QWidget();
+    // dummyCentral->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
+    // setCentralWidget(dummyCentral);
     setCentralWidget(nullptr);
 
     setDockNestingEnabled(true);
@@ -64,10 +67,27 @@ void MainWindow::setupUiComponents()
     // 컨트롤 패널 도킹 위젯 생성
     m_controlPanel = new ControlPanel(this);
     QDockWidget *controlDock = new QDockWidget("Control Panel", this);
+    m_controlDock = controlDock;
     controlDock->setWidget(m_controlPanel);
     controlDock->setMinimumWidth(200);
     controlDock->setMaximumWidth(375);
     addDockWidget(Qt::LeftDockWidgetArea, controlDock);
+
+    // 왼쪽 도킹 영역 유지를 위한 플레이스홀더 생성
+    m_placeholderDock = new QDockWidget(this);
+    m_placeholderDock->setWidget(new QWidget());
+    m_placeholderDock->setTitleBarWidget(new QWidget());
+    m_placeholderDock->setFeatures(QDockWidget::NoDockWidgetFeatures);
+    m_placeholderDock->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX); // 최대 크기 제한 해제
+    m_placeholderDock->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored); // 크기 정책 변경
+    m_placeholderDock->setMaximumWidth(0); // 너비를 0으로 고정
+    addDockWidget(Qt::LeftDockWidgetArea, m_placeholderDock);
+    m_placeholderDock->hide();
+
+    // 컨트롤 패널의 상태 변경 시 시그널과 슬롯 연결
+    connect(m_controlDock, &QDockWidget::dockLocationChanged, this, &MainWindow::updatePlaceholderVisibility);
+    connect(m_controlDock, &QDockWidget::topLevelChanged, this, &MainWindow::updatePlaceholderVisibility);
+
 
     // 그래프 창 도킹 위젯 생성
     m_graphWindow = new GraphWindow(m_engine, this);
@@ -150,4 +170,18 @@ void MainWindow::createSignalSlotConnections()
     // ---- GraphWindow 시그널 -> engine 슬롯
     connect(m_graphWindow, &GraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawRequest);
     connect(m_analysisGraphWindow, &AnalysisGraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawAnalysisRequest);
+}
+
+void MainWindow::updatePlaceholderVisibility()
+{
+    // 컨트롤 패널이 부유 상태이거나, 왼쪽 영역에 도킹되어 있지 않다면
+    if (m_controlDock->isFloating() || dockWidgetArea(m_controlDock) != Qt::LeftDockWidgetArea) {
+        // 왼쪽 영역을 유지하고, 드롭을 감지할 수 있도록 최소한의 너비를 설정
+        m_placeholderDock->setMinimumWidth(10); // 10px 정도면 충분히 감지
+        m_placeholderDock->show();
+    } else {
+        // 컨트롤 패널이 왼쪽 영역에 제대로 도킹되었다면 숨기고 너비도 0으로 만들어 공간 차지를 없앰
+        m_placeholderDock->hide();
+        m_placeholderDock->setMinimumWidth(0);
+    }
 }

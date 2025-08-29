@@ -21,17 +21,22 @@ public:
     explicit MainWindow(SimulationEngine *engine, QWidget *parent = nullptr);
     ~MainWindow();
 
+private slots:
+    void updatePlaceholderVisibility();
+
 private:
     QAction* m_actionSettings;
     SimulationEngine *m_engine;
 
     // View와 Controller들을 소유
     ControlPanel* m_controlPanel;
+    QDockWidget* m_controlDock;
     GraphWindow* m_graphWindow;
     AnalysisGraphWindow* m_analysisGraphWindow;
     PhasorView* m_phasorView;
     std::unique_ptr<SettingsManager> m_settingsManager;
     std::unique_ptr<SettingsUiController> m_settingsUiController;
+    QDockWidget* m_placeholderDock;
 
     void createSignalSlotConnections(); // 조립 역할
     void setupUiComponents();
