@@ -64,7 +64,7 @@ void SettingsUiController::onRequestPresetList()
 {
     auto result = m_settingsManager.getAllPresetNames();
     if(result) {
-        qDebug() << "result value: " << result.value();
+        // qDebug() << "result value: " << result.value();
         emit presetListChanged(result.value());
     }
     else {
@@ -80,37 +80,6 @@ void SettingsUiController::onRequestPresetValues(const QString& presetName)
 
     // m_settingsMap을 순회하며 모든 키에 대해 DB값을 읽음
     for(const auto& [key, info] : m_settingsMap) {
-        // std::expected<SettingValue, std::string> result = std::visit([&](auto&& defaultValue)->std::expected<SettingValue, std::string> { // 반환 타입 명시
-        //     return m_settingsManager.loadSetting(presetStdString, key, defaultValue);
-        // }, info.defaultValue);
-
-        // if(result) {
-        //     QString displayName = m_keyNameMap.value(QString::fromStdString(key));
-        //     if(displayName.isEmpty()) continue;
-
-        //     // QVariant로 변환하는 작업을 visit 바깥에서 수행
-        //     QVariant displayValue;
-        //     std::visit([&](auto&& value) {
-        //         displayValue = QVariant::fromValue(value);
-        //     }, *result);
-
-        //     if(QString::fromStdString(key) == "updateMode") {
-        //         int mode = displayValue.toInt();
-        //         // qDebug() << "display value : " << displayValue;
-        //         // qDebug() << "mode : " << mode;
-        //         QString modeStr = (mode == 0) ? "Per Sample" : (mode == 1) ? "Per Half Cycle" :
-        //                                                        "Per Cycle";
-        //         // qDebug() << "modeStr : " << modeStr;
-        //         previewData[displayName] = modeStr;
-        //     } else {
-        //         previewData[displayName] = displayValue;
-        //     }
-        // } else {
-        //     qWarning() << "Could not load setting" << QString::fromStdString(key)
-        //                << "for preset" << presetName;
-        // }
-
-
         QVariant loadedValueAsVariant = std::visit([&](auto&& defaultValue) -> QVariant {
             // DB에서 설정을 불러옴
             auto loadResult = m_settingsManager.loadSetting(presetStdString, key, defaultValue);
@@ -168,8 +137,8 @@ void SettingsUiController::onCurrentAmplitudeChanged(double value)
 }
 void SettingsUiController::onFrequencyChanged(double value)
 {
-    if(m_blockUiSignals) return;
     m_engine->parameters().frequency = value;
+    if(m_blockUiSignals) return;
     m_engine->recalculateCaptureInterval();
 }
 void SettingsUiController::onCurrentPhaseChanged(int degrees)
@@ -178,21 +147,20 @@ void SettingsUiController::onCurrentPhaseChanged(int degrees)
 }
 void SettingsUiController::onTimeScaleChanged(double value)
 {
-    if(m_blockUiSignals) return;
     m_engine->parameters().timeScale = value;
+    if(m_blockUiSignals) return;
     m_engine->updateCaptureTimer();
 }
 void SettingsUiController::onSamplingCyclesChanged(double value)
 {
-    if(m_blockUiSignals) return;
     m_engine->parameters().samplingCycles = value;
+    if(m_blockUiSignals) return;
     m_engine->recalculateCaptureInterval();
 }
 void SettingsUiController::onSamplesPerCycleChanged(int value)
 {
-    qDebug() << "onSamplesPerCycleChanged value: " << value;
-    if(m_blockUiSignals) return;
     m_engine->parameters().samplesPerCycle = value;
+    if(m_blockUiSignals) return;
     m_engine->recalculateCaptureInterval();
 }
 void SettingsUiController::onUpdateModeChanged()
@@ -272,19 +240,6 @@ void SettingsUiController::initializeSettingsMap()
         },
         config::Sampling::DefaultSamplesPerCycle
     };
-    // m_settingsMap["maxDataSize"] = {
-    //     [this] { return m_engine->parameters().maxDataSize; },
-    //     [this](const SettingValue& val) {
-    //         m_engine->parameters().maxDataSize = std::get<int>(val);
-    //     },
-    //     config::Simulation::DefaultDataSize
-    // };
-    // m_settingsMap["graphWidthSec"] = {
-    //     [this] { return m_view->getUi()->graphViewPlaceholder->getGraphWidth();},
-    //     [this](const SettingValue& val) { m_view->getUi()->graphViewPlaceholder->setGraphWidth(std::get<double>(val));},
-    //     config::View::GraphWidth::Default
-    // };
-
     m_settingsMap["updateMode"] = {
         [](const ControlPanelState& s) {
             return static_cast<int>(s.updateMode);

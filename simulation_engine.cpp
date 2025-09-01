@@ -146,7 +146,13 @@ void SimulationEngine::recalculateCaptureInterval()
     using namespace std::chrono_literals;
 
     double totalSamplesPerSecond = m_params.samplingCycles * m_params.samplesPerCycle;
-    qDebug() << "totalSamplesPerSecond: " << totalSamplesPerSecond;
+    // qDebug() << "---------------------------------------";
+    // qDebug() << "SimulationEngine::recalculateCaptureInterval()";
+    // qDebug() << "---------------------------------------";
+    // qDebug() << "m_params.samplingCycles : " << m_params.samplingCycles;
+    // qDebug() << "m_params.samplesPerCycle : " << m_params.samplesPerCycle;
+    // qDebug() << "totalSamplesPerSecond: " << totalSamplesPerSecond;
+    // qDebug() << "---------------------------------------";
 
     if(totalSamplesPerSecond > config::Sampling::MaxSamplesPerSecond) {
         totalSamplesPerSecond = config::Sampling::MaxSamplesPerSecond;
