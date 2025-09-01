@@ -287,10 +287,10 @@ void SettingsUiController::initializeSettingsMap()
 
     m_settingsMap["updateMode"] = {
         [](const ControlPanelState& s) {
-            return s.updateMode;
+            return static_cast<int>(s.updateMode);
         },
         [](ControlPanelState& s, const SettingValue& val) {
-            s.updateMode = std::get<int>(val);
+            s.updateMode = static_cast<SimulationEngine::UpdateMode>(std::get<int>(val));
         },
         0
     };

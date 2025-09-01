@@ -33,11 +33,11 @@ ControlPanelState ControlPanel::getState() const
     state.samplesPerCycle = static_cast<int>(m_samplesPerCycleControlWidget->value());
 
     if(m_perSampleRadioButton->isChecked()) {
-        state.updateMode = 0;
+        state.updateMode = SimulationEngine::UpdateMode::PerSample;
     } else if(m_perHalfCycleRadioButton->isChecked()) {
-        state.updateMode = 1;
+        state.updateMode = SimulationEngine::UpdateMode::PerHalfCycle;
     } else {
-        state.updateMode = 2;
+        state.updateMode = SimulationEngine::UpdateMode::PerCycle;
     }
 
     state.isRunning = (m_startStopButton->text() == "일시정지");
@@ -56,9 +56,9 @@ void ControlPanel::setState(const ControlPanelState& state)
     m_samplingCyclesControlWidget->setValue(state.samplingCycles);
     m_samplesPerCycleControlWidget->setValue(state.samplesPerCycle);
 
-    if(state.updateMode == 0) {
+    if(state.updateMode == SimulationEngine::UpdateMode::PerSample) {
         m_perSampleRadioButton->setChecked(true);
-    } else if(state.updateMode == 1) {
+    } else if(state.updateMode == SimulationEngine::UpdateMode::PerHalfCycle) {
         m_perHalfCycleRadioButton->setChecked(true);
     } else {
         m_perCycleRadioButton->setChecked(true);
