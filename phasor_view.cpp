@@ -9,10 +9,8 @@
 
 namespace {
     // 페이저를 그릴 때 사용하는 상수들
-    constexpr double VOLTAGE_RADIUS = 100.0;
-    constexpr double CURRENT_RADIUS = 80.0;
     constexpr int AXIS_PADDING = 10;
-    constexpr double ARROW_HEAD_LENGTH = 15.0;
+    constexpr double ARROW_HEAD_LENGTH = 5.0;
     constexpr double ARROW_HEAD_ANGLE = std::numbers::pi / 6.0; // 30도
 }
 
@@ -86,45 +84,49 @@ void PhasorView::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // --- 그리기 영역 계산 ---
+    // --- 그리기 영역 및 두 원의 반지름 정의 ---
     const int controlHeight = m_controlContainer->height();
     // 컨트롤 영역을 제외한 위쪽 영역을 그리기 영역으로 설정
     const QRect drawingRect = rect().adjusted(0, 0, 0, -controlHeight);
-
     const QPointF origin = drawingRect.center();
+    const double maxRadius = std::min(drawingRect.width(), drawingRect.height()) / 2.0 - AXIS_PADDING;
+
     painter.translate(origin);
 
-    const double maxRadius = std::min(drawingRect.width(), drawingRect.height()) / 2.0 - AXIS_PADDING;
+    const double outerRadius = maxRadius * 0.95; // 큰 원 (전압 페이저 최대 길이)
+    const double innerRadius = maxRadius * 0.60; // 작은 원 (전류 페이저 최대 길이
+    const double annulusHeight = outerRadius - innerRadius; // 두 원 사이의 높이
+
 
     // 좌표 축 그리기
     painter.setPen(Qt::gray);
-    painter.drawLine(-drawingRect.width()/2 + AXIS_PADDING, 0, drawingRect.width()/2 - AXIS_PADDING, 0); // X축
-    painter.drawLine(0, -drawingRect.height()/2 + AXIS_PADDING, 0, drawingRect.height()/2 - AXIS_PADDING); // X축
+    painter.drawLine(-maxRadius, 0, maxRadius, 0);
+    painter.drawLine(0, -maxRadius, 0, maxRadius);
 
-    // 화면에 맞게 스케일 조절
-    const double maxMag = std::max(m_voltage.magnitude, m_current.magnitude);
-    const double scaleFactor = (maxMag > 1e-6) ? (maxRadius / maxMag) : 0;
+    // --- 로그 스케일을 이용한 각 페이저의 표시 길이 계산 ---
 
-    const double scaledVoltageRadius = m_voltage.magnitude * scaleFactor;
-    const double scaledCurrentRadius = m_voltage.magnitude * scaleFactor;
+    // 전압 크기를 로그 스케일 비율로 계산 (log(0)을 피하기 위해 1을 더함
+    double voltageRatio = log10(1 + m_voltage.magnitude)/ log10(1 + config::Source::Amplitude::Max);
+    voltageRatio = std::clamp(voltageRatio, 0.0, 1.0);
+    const double voltageDisplayLength = innerRadius + (annulusHeight * voltageRatio);
 
-    // 전압이 항상 바깥쪽
-    const double finalVoltageRadius = std::max(scaledVoltageRadius, scaledCurrentRadius);
-    const double finalCurrentRadius = std::min(scaledVoltageRadius, scaledCurrentRadius);
+    double currentRatio = log10(1 + m_current.magnitude) / log10(1 + config::Source::Current::MaxAmplitude);
+    currentRatio = std::clamp(currentRatio, 0.0, 1.0);
+    const double currentDisplayLength = innerRadius * currentRatio;
 
-    // 기준 원 그리기
+    // --- 가이드라인 원과 페이저 그리기 ---
     painter.setPen(QPen(Qt::lightGray, 1, Qt::DashLine));
-    painter.drawEllipse(QPointF(0, 0), finalVoltageRadius, finalVoltageRadius);
-    if(finalCurrentRadius > 1e-6) { // 전류가 0이 아닐 때만 내부 원 그림
-        painter.drawEllipse(QPointF(0, 0), finalCurrentRadius, finalCurrentRadius);
-    }
+    painter.drawEllipse(QPointF(0, 0), outerRadius, outerRadius);
+    painter.drawEllipse(QPointF(0, 0), innerRadius, innerRadius);
 
     // 페이저 그리기
     if(m_voltageVisibleCheck->isChecked()) {
-        drawPhasor(painter, m_voltage, Qt::blue, VOLTAGE_RADIUS);
+        // qDebug() << "voltageDisplayLength: " << voltageDisplayLength;
+        drawPhasor(painter, m_voltage, Qt::blue, voltageDisplayLength);
     }
     if(m_currentVisibleCheck->isChecked()) {
-        drawPhasor(painter, m_current, Qt::red, CURRENT_RADIUS);
+        // qDebug() << "currentDisplayLength: " << currentDisplayLength;
+        drawPhasor(painter, m_current, Qt::red, currentDisplayLength);
     }
 }
 
