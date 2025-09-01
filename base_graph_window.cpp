@@ -17,6 +17,7 @@ BaseGraphWindow::BaseGraphWindow(SimulationEngine *engine, QWidget *parent)
     , m_axisX(new QValueAxis())
     , m_chartView(new CustomChartView(m_chart.get(), this))
     , m_engine(engine)
+    , m_isAutoScrollEnabled(true)
 {
     setupBaseChart();
 }
