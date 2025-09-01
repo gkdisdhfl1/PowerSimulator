@@ -113,13 +113,13 @@ void SimulationEngine::advanceSimulationTime()
 
 }
 
-double SimulationEngine::calculateCurrentVoltage()
+double SimulationEngine::calculateCurrentVoltage() const
 {
     const double finalPhase = m_currentPhaseRadians + m_params.phaseRadians;
     return m_params.amplitude * sin(finalPhase);
 }
 
-double SimulationEngine::calculateCurrentAmperage()
+double SimulationEngine::calculateCurrentAmperage() const
 {
     const double finalPhase = m_currentPhaseRadians + m_params.phaseRadians + m_params.currentPhaseOffsetRadians;
     return m_params.currentAmplitude * sin(finalPhase);

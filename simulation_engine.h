@@ -71,8 +71,8 @@ private:
     };
 
     void advanceSimulationTime();
-    double calculateCurrentVoltage();
-    double calculateCurrentAmperage();
+    double calculateCurrentVoltage() const;
+    double calculateCurrentAmperage() const;
     void addNewDataPoint(double voltage, double current);
     void calculateCycleData(); // RMS, 전력 계산 함수
     void processUpdateByMode(bool resetAccumulatedPhase);
