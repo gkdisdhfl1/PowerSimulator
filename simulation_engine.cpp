@@ -18,10 +18,12 @@ SimulationEngine::SimulationEngine()
     updateCaptureTimer(); // 첫 타이머 간격 설정
 }
 
+// ---- public -----
 bool SimulationEngine::isRunning() const { return m_captureTimer.isActive(); }
 int SimulationEngine::getDataSize() const { return m_data.size(); }
 SimulationEngine::Parameters& SimulationEngine::parameters() { return m_params; };
 const SimulationEngine::Parameters& SimulationEngine::parameters() const { return m_params; };
+// -----------------
 
 // ---- public slots ----
 void SimulationEngine::start()
@@ -60,6 +62,72 @@ void SimulationEngine::onMaxDataSizeChanged(int newSize)
     emit dataUpdated(m_data);
 }
 
+void SimulationEngine::updateCaptureTimer()
+{
+    // 기본 캡처 간격에 시간 비율을 곱해서 실제 타이머 주기를 계산
+    double scaledIntervalMs = (m_captureIntervalsMs * m_params.timeScale).count();
+
+    // 간격이 0이 되는 것을 방지
+    if(scaledIntervalMs < config::Simulation::Timer::MinIntervalMs)
+        scaledIntervalMs = config::Simulation::Timer::MinIntervalMs;
+
+    // int 최대값 초과 방지
+    const double maxTimerInterval = static_cast<double>(std::numeric_limits<int>::max());
+    if(scaledIntervalMs > maxTimerInterval)
+        scaledIntervalMs = maxTimerInterval;
+
+    m_captureTimer.setInterval(static_cast<int>(std::round(scaledIntervalMs)));
+    qDebug() << "m_captureTimer.interval()" << m_captureTimer.interval();
+}
+
+void SimulationEngine::recalculateCaptureInterval()
+{
+    using namespace std::chrono_literals;
+
+    double totalSamplesPerSecond = m_params.samplingCycles * m_params.samplesPerCycle;
+    // qDebug() << "---------------------------------------";
+    // qDebug() << "SimulationEngine::recalculateCaptureInterval()";
+    // qDebug() << "---------------------------------------";
+    // qDebug() << "m_params.samplingCycles : " << m_params.samplingCycles;
+    // qDebug() << "m_params.samplesPerCycle : " << m_params.samplesPerCycle;
+    // qDebug() << "totalSamplesPerSecond: " << totalSamplesPerSecond;
+    // qDebug() << "---------------------------------------";
+
+    if(totalSamplesPerSecond > config::Sampling::MaxSamplesPerSecond) {
+        totalSamplesPerSecond = config::Sampling::MaxSamplesPerSecond;
+        qWarning() << "Sampling rate 이 너무 높음. 최대값으로 조정됨.";
+    }
+    if(totalSamplesPerSecond > 0) {
+        m_captureIntervalsMs = 1.0s / totalSamplesPerSecond;
+        qDebug() << "m_captureIntervalsMs: " << m_captureIntervalsMs;
+    } else {
+        m_captureIntervalsMs = FpMilliseconds(1.0e9);
+    }
+
+    updateCaptureTimer();
+}
+
+void SimulationEngine::onRedrawRequest()
+{
+    // 시뮬레이션이 멈춰있을 때만 전체 데이터 강제 업데이트
+    // (예: 자동 스크롤이 꺼진 상태에서 줌 리셋 시)
+    if(!isRunning()) {
+        emit dataUpdated(m_data);
+        return;
+    }
+
+    // 누적된 위상을 보고 Mode에 맞춰 update 요청
+    processUpdateByMode(false); // 누적 위상 리셋 안함
+}
+
+void SimulationEngine::onRedrawAnalysisRequest()
+{
+    emit measuredDataUpdated(m_measuredData);
+}
+
+// -----------------------
+
+// ---- private slots ----
 void SimulationEngine::captureData()
 {
     double currentVoltage = calculateCurrentVoltage();
@@ -86,26 +154,9 @@ void SimulationEngine::captureData()
     processUpdateByMode(true); // 누적 위상 리셋
     advanceSimulationTime();
 }
+// -----------------------
 
-void SimulationEngine::updateCaptureTimer()
-{
-    // 기본 캡처 간격에 시간 비율을 곱해서 실제 타이머 주기를 계산
-    double scaledIntervalMs = (m_captureIntervalsMs * m_params.timeScale).count();
-
-    // 간격이 0이 되는 것을 방지
-    if(scaledIntervalMs < config::Simulation::Timer::MinIntervalMs)
-        scaledIntervalMs = config::Simulation::Timer::MinIntervalMs;
-
-    // int 최대값 초과 방지
-    const double maxTimerInterval = static_cast<double>(std::numeric_limits<int>::max());
-    if(scaledIntervalMs > maxTimerInterval)
-        scaledIntervalMs = maxTimerInterval;
-
-    m_captureTimer.setInterval(static_cast<int>(std::round(scaledIntervalMs)));
-    qDebug() << "m_captureTimer.interval()" << m_captureTimer.interval();
-}
-
-
+// ---- private 함수들 ----
 void SimulationEngine::advanceSimulationTime()
 {
     m_simulationTimeNs += std::chrono::duration_cast<Nanoseconds>(m_captureIntervalsMs);
@@ -139,48 +190,6 @@ void SimulationEngine::addNewDataPoint(double voltage, double current)
         m_data.pop_front();
     }
 
-}
-
-void SimulationEngine::recalculateCaptureInterval()
-{
-    using namespace std::chrono_literals;
-
-    double totalSamplesPerSecond = m_params.samplingCycles * m_params.samplesPerCycle;
-    // qDebug() << "---------------------------------------";
-    // qDebug() << "SimulationEngine::recalculateCaptureInterval()";
-    // qDebug() << "---------------------------------------";
-    // qDebug() << "m_params.samplingCycles : " << m_params.samplingCycles;
-    // qDebug() << "m_params.samplesPerCycle : " << m_params.samplesPerCycle;
-    // qDebug() << "totalSamplesPerSecond: " << totalSamplesPerSecond;
-    // qDebug() << "---------------------------------------";
-
-    if(totalSamplesPerSecond > config::Sampling::MaxSamplesPerSecond) {
-        totalSamplesPerSecond = config::Sampling::MaxSamplesPerSecond;
-        qWarning() << "Sampling rate 이 너무 높음. 최대값으로 조정됨.";
-    }
-    if(totalSamplesPerSecond > 0) {
-        m_captureIntervalsMs = 1.0s / totalSamplesPerSecond;
-        qDebug() << "m_captureIntervalsMs: " << m_captureIntervalsMs;
-    } else {
-        m_captureIntervalsMs = FpMilliseconds(1.0e9);
-    }
-
-    updateCaptureTimer();
-}
-
-void SimulationEngine::onRedrawRequest()
-{
-    if(!isRunning()) {
-        emit dataUpdated(m_data);
-        return;
-    }
-
-    // 누적된 위상을 보고 Mode에 맞춰 update 요청
-    processUpdateByMode(false); // 누적 위상 리셋 안함
-}
-void SimulationEngine::onRedrawAnalysisRequest()
-{
-    emit measuredDataUpdated(m_measuredData);
 }
 
 void SimulationEngine::calculateCycleData()

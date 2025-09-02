@@ -1,4 +1,4 @@
-#ifndef SETTINGS_UI_CONTROLLER_H
+ #ifndef SETTINGS_UI_CONTROLLER_H
 #define SETTINGS_UI_CONTROLLER_H
 
 #include <QVariantMap>

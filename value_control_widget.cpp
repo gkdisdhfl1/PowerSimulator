@@ -85,8 +85,10 @@ void ValueControlWidget::setDataType(DataType type)
         m_spinBox->setDecimals(2);
     }
 }
+// --------------------
 
-// event handler 구현
+
+// ---- protected 구현 ----
 void ValueControlWidget::mouseDoubleClickEvent(QMouseEvent *event)
 {
     // 정수 모드에서는 미세 조정 모드로 진입하지 않음
@@ -97,6 +99,8 @@ void ValueControlWidget::mouseDoubleClickEvent(QMouseEvent *event)
 
     QWidget::mouseDoubleClickEvent(event);
 }
+// ------------------------------
+
 
 // --- private 구현 ---
 void ValueControlWidget::setupUi()
@@ -133,32 +137,6 @@ void ValueControlWidget::setMode(Mode newMode)
     updateUiAppearance();
     syncSliderToValue();
     m_slider->blockSignals(false);
-}
-
-void ValueControlWidget::onSpinBoxValueChanged(double value)
-{
-    // 사용자가 직접 입력한 값으로 슬라이더 위치 동기화 및 외부 알림
-    syncSliderToValue();
-    if(m_dataType == DataType::Integer) {
-        emit intValueChanged(static_cast<int>(std::round(value)));
-    } else {
-        emit valueChanged(value);
-    }
-}
-
-void ValueControlWidget::onSliderMoved(int position)
-{
-    double newValue = calculateNewValue(position);
-
-    m_spinBox->blockSignals(true);
-    m_spinBox->setValue(newValue);
-    m_spinBox->blockSignals(false);
-
-    if(m_dataType == DataType::Integer) {
-        emit intValueChanged(static_cast<int>(std::round(newValue)));
-    } else {
-        emit valueChanged(newValue);
-    }
 }
 
 void ValueControlWidget::updateUiAppearance()
@@ -242,3 +220,33 @@ inline double ValueControlWidget::getFractionalPart(double value) const
 {
     return std::abs(std::fmod(value, 1.0));
 }
+// --------------------
+
+
+// ---- private slot -----
+void ValueControlWidget::onSpinBoxValueChanged(double value)
+{
+    // 사용자가 직접 입력한 값으로 슬라이더 위치 동기화 및 외부 알림
+    syncSliderToValue();
+    if(m_dataType == DataType::Integer) {
+        emit intValueChanged(static_cast<int>(std::round(value)));
+    } else {
+        emit valueChanged(value);
+    }
+}
+
+void ValueControlWidget::onSliderMoved(int position)
+{
+    double newValue = calculateNewValue(position);
+
+    m_spinBox->blockSignals(true);
+    m_spinBox->setValue(newValue);
+    m_spinBox->blockSignals(false);
+
+    if(m_dataType == DataType::Integer) {
+        emit intValueChanged(static_cast<int>(std::round(newValue)));
+    } else {
+        emit valueChanged(newValue);
+    }
+}
+// -----------------------

@@ -68,6 +68,7 @@ void GraphWindow::setupSeries()
     m_currentSeries->attachAxis(m_axisY);
 }
 
+// --- public slot ----
 void GraphWindow::stretchGraph(double factor)
 {
     // if(!m_isAutoScrollEnabled)
@@ -136,8 +137,9 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
         emit pointHovered(*nearestPoint);
     }
 }
+// -----------------------
 
-
+// ---- private -----
 void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
 {
     // 멤버 변수에 결과 저장
@@ -210,3 +212,4 @@ void GraphWindow::updateYAxisRange(double minY, double maxY)
 
     m_axisY->setRange(minY - padding, maxY + padding);
 }
+// -------------------------------

@@ -211,6 +211,7 @@ void ControlPanel::setAutoScroll(bool enabled)
 {
     m_autoScrollCheckBox->setChecked(enabled);
 }
+// --------------------
 
 // --- private slots ---
 void ControlPanel::updateCurrentPhaseLabel(int value)

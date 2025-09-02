@@ -38,7 +38,7 @@ SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsM
     m_settingsDialog = std::make_unique<SettingsDialog>(this, m_parent);
 }
 
-// --- slot 구현 ---
+// --- public slot 구현 ---
 void SettingsUiController::onSaveAsPresetRequested(const QString& presetName)
 {
     auto result = saveUiToSettings(presetName.toStdString());
@@ -187,7 +187,9 @@ void SettingsUiController::showSettingsDialog()
         }
     }
 }
+// -------------------------
 
+// ----- private 헬퍼 함수들 ------
 void SettingsUiController::initializeSettingsMap()
 {
     // 각 설정 항목의 정보를 맵에 등록

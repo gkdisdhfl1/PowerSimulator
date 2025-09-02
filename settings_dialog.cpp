@@ -58,6 +58,7 @@ SettingsDialog::~SettingsDialog()
 {
 }
 
+// ------- public ----------
 void SettingsDialog::setupUi()
 {
     setWindowTitle("SettingDialog");
@@ -160,8 +161,73 @@ SettingsDialog::DialogResult SettingsDialog::getResultState() const
 {
     return m_resultState;
 }
+// ---------------------------
 
-// ----- 슬롯 구현 -----
+// --- public slots ---
+void SettingsDialog::onControllerTaskFinished(const std::expected<void, std::string>& result, const QString& successMessage)
+{
+    if(result) {
+        // 작업 성공했을 경우
+        qDebug() << "Controller task success:" <<  successMessage;
+        // 성공 메시지 상태바 표시
+        // 작업 성공했으므로, 최산 상태 반영
+        refreshPresetList();
+    } else {
+        // 작업 실패했을 경우
+        QMessageBox::warning(this, "작업 실패", QString::fromStdString(result.error()));
+    }
+}
+
+void SettingsDialog::onPresetListChanged(const std::vector<std::string>& presetList)
+{
+    // 목록을 새로고침 후에도 선택 상태를 유지하기 위해 현재 선택된 항목을 기억해둠
+    QString currentSelection = m_presetListWidget->currentItem() ? m_presetListWidget->currentItem()->text() : "";
+
+    m_presetListWidget->clear();
+    for(const auto& name : presetList) {
+        m_presetListWidget->addItem(QString::fromStdString(name));
+    }
+
+    // 이전에 선택했던 항목이 새 목록에도 존재하면 다시 선택
+    for(int i = 0; i < m_presetListWidget->count(); ++i) {
+        if(m_presetListWidget->item(i)->text() == currentSelection) {
+            m_presetListWidget->setCurrentRow(i);
+            break;
+        }
+    }
+}
+
+// Controller가 보내준 선택된 프리셋의 상세 값으로 오른쪽 UI를 업데이트
+void SettingsDialog::onPresetValuesFetched(const QVariantMap& data)
+{
+    m_previewTableWidget->clearContents();
+    m_previewTableWidget->setRowCount(0);
+
+    // QVariantMap을 순회하며 테이블을 동적으로 채움
+    for(auto it = data.constBegin(); it != data.constEnd(); ++it) {
+        int currentRow = m_previewTableWidget->rowCount();
+        m_previewTableWidget->insertRow(currentRow);
+
+        // 0번 컬럼: 속성 이름
+        QTableWidgetItem* keyItem = new QTableWidgetItem(it.key());
+        keyItem->setFlags(keyItem->flags() & ~Qt::ItemIsEditable);
+        m_previewTableWidget->setItem(currentRow, 0, keyItem);
+
+        // 1번 컬럼: 속성 값
+        QTableWidgetItem* valueItem = new QTableWidgetItem(it.value().toString());
+        valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable);
+        m_previewTableWidget->setItem(currentRow, 1, valueItem);
+    }
+}
+
+void SettingsDialog::onCurrentSettingsFetched(int maxDataSize, double graphWidth)
+{
+    m_maxDataSizeSpinBox->setValue(maxDataSize);
+    m_graphWidthSpinBox->setValue(graphWidth);
+}
+// ---------------------
+
+// ----- private 슬롯 구현 -----
 void SettingsDialog::onNewPresetClicked()
 {
     if(!m_controller) return;
@@ -241,71 +307,9 @@ void SettingsDialog::onPresetSelectionChanged()
         m_controller->onRequestPresetValues(m_presetListWidget->currentItem()->text());
     }
 }
+// -----------------------------
 
 
-
-// --- public slots ---
-void SettingsDialog::onControllerTaskFinished(const std::expected<void, std::string>& result, const QString& successMessage)
-{
-    if(result) {
-        // 작업 성공했을 경우
-        qDebug() << "Controller task success:" <<  successMessage;
-        // 성공 메시지 상태바 표시
-        // 작업 성공했으므로, 최산 상태 반영
-        refreshPresetList();
-    } else {
-        // 작업 실패했을 경우
-        QMessageBox::warning(this, "작업 실패", QString::fromStdString(result.error()));
-    }
-}
-
-void SettingsDialog::onPresetListChanged(const std::vector<std::string>& presetList)
-{
-    // 목록을 새로고침 후에도 선택 상태를 유지하기 위해 현재 선택된 항목을 기억해둠
-    QString currentSelection = m_presetListWidget->currentItem() ? m_presetListWidget->currentItem()->text() : "";
-
-    m_presetListWidget->clear();
-    for(const auto& name : presetList) {
-        m_presetListWidget->addItem(QString::fromStdString(name));
-    }
-
-    // 이전에 선택했던 항목이 새 목록에도 존재하면 다시 선택
-    for(int i = 0; i < m_presetListWidget->count(); ++i) {
-        if(m_presetListWidget->item(i)->text() == currentSelection) {
-            m_presetListWidget->setCurrentRow(i);
-            break;
-        }
-    }
-}
-
-// Controller가 보내준 선택된 프리셋의 상세 값으로 오른쪽 UI를 업데이트
-void SettingsDialog::onPresetValuesFetched(const QVariantMap& data)
-{
-    m_previewTableWidget->clearContents();
-    m_previewTableWidget->setRowCount(0);
-
-    // QVariantMap을 순회하며 테이블을 동적으로 채움
-    for(auto it = data.constBegin(); it != data.constEnd(); ++it) {
-        int currentRow = m_previewTableWidget->rowCount();
-        m_previewTableWidget->insertRow(currentRow);
-
-        // 0번 컬럼: 속성 이름
-        QTableWidgetItem* keyItem = new QTableWidgetItem(it.key());
-        keyItem->setFlags(keyItem->flags() & ~Qt::ItemIsEditable);
-        m_previewTableWidget->setItem(currentRow, 0, keyItem);
-
-        // 1번 컬럼: 속성 값
-        QTableWidgetItem* valueItem = new QTableWidgetItem(it.value().toString());
-        valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable);
-        m_previewTableWidget->setItem(currentRow, 1, valueItem);
-    }
-}
-
-void SettingsDialog::onCurrentSettingsFetched(int maxDataSize, double graphWidth)
-{
-    m_maxDataSizeSpinBox->setValue(maxDataSize);
-    m_graphWidthSpinBox->setValue(graphWidth);
-}
 
 // --- private 헬퍼 함수 ---
 void SettingsDialog::refreshPresetList()
