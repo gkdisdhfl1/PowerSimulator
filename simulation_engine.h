@@ -18,6 +18,13 @@ public:
         PerCycle        // 한 주기마다 갱신
     };
 
+    // 주파수 추적 모드를 관리하기 위한 enum
+    enum class TrackingState {
+        Idle,   // 유휴 상태
+        Coarse, // 대략적인 주파수 탐색 (Zero-Crossing)
+        Fine    // 정밀한 주파수 추적 (PPL)
+    };
+
     // 시뮬레이션 매개변수를 담는 구조체
     struct Parameters {
         double amplitude = config::Source::Amplitude::Default;
@@ -78,7 +85,12 @@ private:
     void addNewDataPoint(double voltage, double current);
     void calculateCycleData(); // RMS, 전력 계산 함수
     void processUpdateByMode(bool resetAccumulatedPhase);
-    void processFrequencyTracking(); // PLL 로직 처리 함수
+
+    // 자동 추적 관련 함수들
+    void startCoarseSearch(); // 거친 탐색을 시작하는 헬퍼 함수
+    void processCoarseSearch(); // 거친 탐색 데이터 수집 및 분석
+    void processFineTune(); // PLL 로직 처리 함수
+    double estimateFrequencyByZeroCrossing(); // zero-crossing 계산 함수
 
     QTimer m_captureTimer;
     std::deque<DataPoint> m_data;
@@ -94,9 +106,13 @@ private:
     std::vector<DataPoint> m_cycleSampleBuffer; // 1사이클 동안의 샘플을 모으는 버퍼
 
     // PLL 관련 멤버 변수
-    bool m_isFrequencyTrackingEnabled;
     double m_previousVoltagePhase; // 이전 사이클의 전압 위상
     double m_integralError; // 위상 오차의 누적값
+
+    // CoarseSearch 용 변수
+    std::vector<DataPoint> m_coarseSearchBuffer; // 데이터 수집용 버퍼
+    int m_coarseSearchSamplesNeeded; // 필요한 샘플 개수
+    TrackingState m_trackingState;
 };
 
 #endif // SIMULATION_ENGINE_H

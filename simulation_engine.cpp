@@ -7,9 +7,10 @@ SimulationEngine::SimulationEngine()
     , m_accumulatedPhaseSinceUpdate(0.0)
     , m_captureIntervalsMs(0.0)
     , m_simulationTimeNs(0)
-    , m_isFrequencyTrackingEnabled(false)
-    ,m_previousVoltagePhase(0.0)
-    ,m_integralError(0.0)
+    , m_previousVoltagePhase(0.0)
+    , m_integralError(0.0)
+    , m_trackingState(TrackingState::Idle)
+    , m_coarseSearchSamplesNeeded(0)
 {
     using namespace std::chrono_literals;
 
@@ -130,10 +131,14 @@ void SimulationEngine::onRedrawAnalysisRequest()
 
 void SimulationEngine::enableFrequencyTracking(bool enabled)
 {
-    m_isFrequencyTrackingEnabled = enabled;
-    if(!enabled) {
-        // 기능이 꺼지면 오차 누적값 리셋
+    if(enabled) {
+        // 추적 시작
+        startCoarseSearch();
+    } else {
+        // 추적 중지
+        m_trackingState = TrackingState::Idle;
         m_integralError = 0.0;
+        m_coarseSearchBuffer.clear();
     }
 }
 // -----------------------
@@ -146,12 +151,32 @@ void SimulationEngine::captureData()
     double currentAmperage = calculateCurrentAmperage();
     addNewDataPoint(currentVoltage, currentAmperage);
 
-    // 1 사이클 계산을 위한 현재 샘플을 버퍼에 추가
-    m_cycleSampleBuffer.push_back(m_data.back());
+    // --- 자동 추적 상태에 따른 분기 처리 ---
+    switch (m_trackingState) {
+    case TrackingState::Coarse:
+        processCoarseSearch(); // 거친 탐색 로직 실행
+        break;
+    case TrackingState::Fine:
+        // 정밀 조정 상태일 때만 사이클 데이터 계산
+        // 버퍼에 설정된 samplesPerCycle 만큼 데이터가 쌓이면 계산을 실행
+        if(m_cycleSampleBuffer.size() >= static_cast<size_t>(m_params.samplesPerCycle)) {
+            calculateCycleData();
+        }
+        break;
+    case TrackingState::Idle:
+        if(m_cycleSampleBuffer.size() >= static_cast<size_t>(m_params.samplesPerCycle)) {
+            calculateCycleData();
+        }
+        break;
+    default:
+        break;
+    }
+    // -----------------------------------
 
-    // 버퍼에 설정된 samplesPerCycle 만큼 데이터가 쌓이면 계산을 실행
-    if(m_cycleSampleBuffer.size() >= static_cast<size_t>(m_params.samplesPerCycle)) {
-        calculateCycleData();
+    // 사이클 계산을 위해 버퍼 채우기
+    m_cycleSampleBuffer.push_back(m_data.back());
+    if(m_cycleSampleBuffer.size() > static_cast<size_t>(m_params.samplesPerCycle)) {
+        m_cycleSampleBuffer.erase(m_cycleSampleBuffer.begin());
     }
 
     // 다음 스텝을 위해 현재 진행 위상 업데이트
@@ -270,7 +295,8 @@ void SimulationEngine::calculateCycleData()
     emit measuredDataUpdated(m_measuredData);
 
     // 5. 자동 주파수 추적 로직 실행
-    processFrequencyTracking();
+    if(m_trackingState == TrackingState::Fine)
+        processFineTune();
 
     // 6. 버퍼 비우기
     m_cycleSampleBuffer.clear();
@@ -309,12 +335,11 @@ void SimulationEngine::processUpdateByMode(bool resetAccumulatedPhase)
     }
 }
 
-void SimulationEngine::processFrequencyTracking()
+void SimulationEngine::processFineTune()
 {
-    if(!m_isFrequencyTrackingEnabled || m_measuredData.empty()) {
+    if(m_trackingState != TrackingState::Fine || m_measuredData.empty()) {
         return;
     }
-    qDebug() << "frequency : " << m_params.frequency;
 
     // 1. (PD) 현재 위상과 이전 위상을 비교하여 위상차 계산
     // arctan 계산
@@ -327,13 +352,10 @@ void SimulationEngine::processFrequencyTracking()
     }
     // 위상차 계산
     double phaseError = currentPhasorAngle - m_previousVoltagePhase;
-    qDebug() << "phaseError : " << currentPhasorAngle << " - " << m_previousVoltagePhase;
-    qDebug() << "phaseError : " << phaseError;
 
     // 위상 wrapping 처리 (-pi ~ pi 정규화)
     while(phaseError <= -std::numbers::pi) phaseError += 2.0 * std::numbers::pi;
     while(phaseError > std::numbers::pi) phaseError -= 2.0 * std::numbers::pi;
-    qDebug() << "phaseError after wrapping : " << phaseError;
 
     m_previousVoltagePhase = currentPhasorAngle;
 
@@ -347,13 +369,9 @@ void SimulationEngine::processFrequencyTracking()
     // 적분 오차 누적
     m_integralError += phaseError;
     m_integralError = std::clamp(m_integralError, IntegralMin, IntegralMax);
-    qDebug() << "integralError : " << m_integralError;
-
 
     // PI 제어기에 따른 주파수 조정량 계산
     double lf_output = (Kp * phaseError) + (Ki * m_integralError);
-    qDebug() << "lf_output : (" << Kp << " * " << phaseError << ") + (" << Ki << " * " << m_integralError << ")";
-    qDebug() << "lf_output : " << lf_output;
 
     // PLL의 포착 범위를 위한 출력 제한
     constexpr double maxFreqChangePerStep = 0.5;
@@ -361,8 +379,6 @@ void SimulationEngine::processFrequencyTracking()
 
     // 3. (NCO) 계산된 조정량으로 Sampling 주파수 업데이트
     double newSamplingCycles = m_params.samplingCycles + lf_output; // 위상차와 반대 방향으로 조정
-    qDebug() << "newSamplingCycles: " << m_params.samplingCycles << " + " << lf_output;
-    qDebug() << "newSamplingCycles: " << newSamplingCycles;
 
     // 주파수가 비정상적인 값으로 가지 않도록 범위 제한
     newSamplingCycles = std::clamp(newSamplingCycles, (double)config::Sampling::MinValue, (double)config::Sampling::maxValue);
@@ -372,5 +388,82 @@ void SimulationEngine::processFrequencyTracking()
         recalculateCaptureInterval(); //  변경된 주파수에 맞춰 샘플링 간격 재계산
         emit samplingCyclesUpdated(newSamplingCycles); // UI에 알림
     }
-    qDebug() << "------------------------";
+}
+
+void SimulationEngine::startCoarseSearch()
+{
+    m_trackingState = TrackingState::Coarse;
+    m_coarseSearchBuffer.clear();
+
+    // 0.5초의 분량의 샘플 개수를 계산
+    const double currentSamplingRate = m_params.samplingCycles * m_params.samplesPerCycle;
+    if(currentSamplingRate > 1.0) {
+        m_coarseSearchSamplesNeeded = static_cast<int>(currentSamplingRate * 0.5);
+    } else {
+        // 샘플링 속도가 너무 느릴 경우 최소 샘플 개수 보장
+        m_coarseSearchSamplesNeeded = 10;
+    }
+
+    // 버퍼 공간 미리 할당
+    m_coarseSearchBuffer.reserve(m_coarseSearchSamplesNeeded);
+}
+
+void SimulationEngine::processCoarseSearch()
+{
+    // 1. 데이터 수집
+    m_coarseSearchBuffer.push_back(m_data.back());
+
+    // 2. 필요한 샘플이 모두 모였는지 확인
+    if(m_coarseSearchBuffer.size() < m_coarseSearchSamplesNeeded) {
+        return; // 아직 샘플이 더 필요함
+    }
+
+    // 3. 샘플이 다 모였으면, Zero-Crossing으로 주파수 추정
+    double estimatedFreq = estimateFrequencyByZeroCrossing();
+
+    // 4. 추정된 주파수로 파라미터 업데이트
+    if(estimatedFreq > 0) {
+        // 에일리어싱 방지를 위해 상한선 제한
+        const double maxTrackingFrequency = estimatedFreq * 1.8;
+        const double minTrackingFrequency = config::Sampling::MinValue;
+
+        m_params.samplingCycles = std::clamp(estimatedFreq, minTrackingFrequency, maxTrackingFrequency);
+
+        recalculateCaptureInterval();
+        emit samplingCyclesUpdated(m_params.samplingCycles);
+
+        // 5. 정밀 조정  상태로 전환
+        m_trackingState = TrackingState::Fine;
+        m_previousVoltagePhase = 0.0; // PLL 초기화를 위해 이전 위상 리셋
+        m_integralError = 0.0;
+    }
+}
+
+double SimulationEngine::estimateFrequencyByZeroCrossing()
+{
+    if(m_coarseSearchBuffer.size() < 2) {
+        return 0.0;
+    }
+
+    int zeroCrossings = 0;
+    for(size_t i = 1; i < m_coarseSearchBuffer.size(); ++i) {
+        // 이전 샘플과 현재 샘플의 부호가 다르면 Zero-Crossing으로 간주
+        if((m_coarseSearchBuffer[i - 1].voltage < 0 && m_coarseSearchBuffer[i].voltage >= 0) ||
+             (m_coarseSearchBuffer[i - 1].voltage > 0 && m_coarseSearchBuffer[i].voltage <= 0))
+        {
+            zeroCrossings++;
+        }
+    }
+
+    // 수집된 데이터의 총 시간 계산
+    const auto& firstSample = m_coarseSearchBuffer.front();
+    const auto& lastSample = m_coarseSearchBuffer.back();
+    const double durationSeconds = std::chrono::duration_cast<FpSeconds>(lastSample.timestamp - firstSample.timestamp).count();
+
+    if(durationSeconds < 1e-6) {
+        return 0.0;
+    }
+
+    // 주파수 계산: (교차 횟수 / 2) / 시간
+    return (static_cast<double>(zeroCrossings) / 2.0) / durationSeconds;
 }
