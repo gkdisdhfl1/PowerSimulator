@@ -88,6 +88,7 @@ void ControlPanel::setupUi()
     m_perCycleRadioButton = new QRadioButton("1 Cycle");
 
     m_autoScrollCheckBox = new QCheckBox("자동 스크롤");
+    m_trackingButton = new QPushButton("자동 추적 시작", this);
 
     // 레이아웃 설정
     auto mainLayout = new QVBoxLayout(this);
@@ -97,6 +98,7 @@ void ControlPanel::setupUi()
     buttonLayout->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
     buttonLayout->addWidget(m_startStopButton);
     buttonLayout->addWidget(m_settingButton);
+    buttonLayout->addWidget(m_trackingButton);
     buttonLayout->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
 
     // 파라미터 폼 레이아웃
@@ -179,6 +181,17 @@ void ControlPanel::createConnections()
     // 버튼 클릭 연결
     connect(m_startStopButton, &QPushButton::clicked, this, &ControlPanel::startStopClicked);
     connect(m_settingButton, &QPushButton::clicked, this, &ControlPanel::settingsClicked);
+    connect(m_trackingButton, &QPushButton::clicked, this, [this]() {
+        bool isTrackingNow = (m_trackingButton->text() == "자동 추적 중지");
+
+        if(isTrackingNow) {
+            m_trackingButton->setText("자동 추적 시작");
+            emit trackingToggled(false);
+        } else {
+            m_trackingButton->setText("자동 추적 중지");
+            emit trackingToggled(true);
+        }
+    });
 
     // 파라미터 변경
     connect(m_voltageControlWidget, &ValueControlWidget::valueChanged, this, &ControlPanel::amplitudeChanged);
@@ -210,6 +223,14 @@ void ControlPanel::setRunningState(bool isRunning)
 void ControlPanel::setAutoScroll(bool enabled)
 {
     m_autoScrollCheckBox->setChecked(enabled);
+}
+
+void ControlPanel::onEngineSamplingCyclesChanged(double newFrequency)
+{
+    // 이 슬롯은 엔진의 상태를 UI에 반영하는 역할
+    // valueChanged 시그널이 다시 발생하여 로직이 꼬이면 안됨
+    QSignalBlocker blocker(m_samplingCyclesControlWidget);
+    m_samplingCyclesControlWidget->setValue(newFrequency);
 }
 // --------------------
 

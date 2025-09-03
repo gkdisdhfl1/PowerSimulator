@@ -31,16 +31,17 @@ public slots:
     // MainWindow 또는 다른 컨트롤러가 이 위젯의 상태를 변경할 때 사용
     void setRunningState(bool isRunning);
     void setAutoScroll(bool enabled);
+    void onEngineSamplingCyclesChanged(double newFrequency);
 
 private slots:
     void updateCurrentPhaseLabel(int value);
 
 signals:
-    // UI 컨트롤의 이벤트를 외부로 전달하는 시그널들
-
     // ui control의 이벤트를 외부로 전달하는 시그널들
     void startStopClicked();
     void settingsClicked();
+    void autoScrollToggled(bool enabled);
+    void trackingToggled(bool enabled); // 자동 추적 토글 시그널
 
     // 파라미터 변경 시그널
     void amplitudeChanged(double value);
@@ -51,7 +52,6 @@ signals:
     void samplingCyclesChanged(double value);
     void samplesPerCycleChanged(int value);
     void updateModeChanged();
-    void autoScrollToggled(bool enabled);
 
 private:
     // UI 생성 및 초기화를 위한 헬퍼 함수들
@@ -78,6 +78,7 @@ private:
     QRadioButton* m_perCycleRadioButton;
 
     QCheckBox* m_autoScrollCheckBox;
+    QPushButton* m_trackingButton;
 };
 
 #endif // CONTROL_PANEL_H

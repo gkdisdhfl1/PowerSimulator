@@ -50,11 +50,13 @@ public slots:
     void onMaxDataSizeChanged(int newSize);
     void updateCaptureTimer();
     void recalculateCaptureInterval();
+    void enableFrequencyTracking(bool enabled); // 자동 주파수 추적 활성화/바활성화 슬롯
 
 signals:
     void dataUpdated(const std::deque<DataPoint>& data);
     void runningStateChanged(bool isRunning);
     void measuredDataUpdated(const std::deque<MeasuredData>& data);
+    void samplingCyclesUpdated(double newFrequency); // 자동 추적에 의해 변경될 주파수를 UI에 알리는 시그널
 
 private slots:
     void captureData();
@@ -76,6 +78,7 @@ private:
     void addNewDataPoint(double voltage, double current);
     void calculateCycleData(); // RMS, 전력 계산 함수
     void processUpdateByMode(bool resetAccumulatedPhase);
+    void processFrequencyTracking(); // PLL 로직 처리 함수
 
     QTimer m_captureTimer;
     std::deque<DataPoint> m_data;
@@ -89,6 +92,11 @@ private:
     // measuredData 관련 변수
     std::deque<MeasuredData> m_measuredData; // 계산된 데이터를 저장할 컨테이너
     std::vector<DataPoint> m_cycleSampleBuffer; // 1사이클 동안의 샘플을 모으는 버퍼
+
+    // PLL 관련 멤버 변수
+    bool m_isFrequencyTrackingEnabled;
+    double m_previousVoltagePhase; // 이전 사이클의 전압 위상
+    double m_integralError; // 위상 오차의 누적값
 };
 
 #endif // SIMULATION_ENGINE_H

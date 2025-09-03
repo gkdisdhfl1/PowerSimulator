@@ -7,6 +7,9 @@ SimulationEngine::SimulationEngine()
     , m_accumulatedPhaseSinceUpdate(0.0)
     , m_captureIntervalsMs(0.0)
     , m_simulationTimeNs(0)
+    , m_isFrequencyTrackingEnabled(false)
+    ,m_previousVoltagePhase(0.0)
+    ,m_integralError(0.0)
 {
     using namespace std::chrono_literals;
 
@@ -87,7 +90,7 @@ void SimulationEngine::recalculateCaptureInterval()
     double totalSamplesPerSecond = m_params.samplingCycles * m_params.samplesPerCycle;
     // qDebug() << "---------------------------------------";
     // qDebug() << "SimulationEngine::recalculateCaptureInterval()";
-    // qDebug() << "---------------------------------------";
+    // qDebug() << "---------------------------------------";/*
     // qDebug() << "m_params.samplingCycles : " << m_params.samplingCycles;
     // qDebug() << "m_params.samplesPerCycle : " << m_params.samplesPerCycle;
     // qDebug() << "totalSamplesPerSecond: " << totalSamplesPerSecond;
@@ -110,7 +113,7 @@ void SimulationEngine::recalculateCaptureInterval()
 void SimulationEngine::onRedrawRequest()
 {
     // 시뮬레이션이 멈춰있을 때만 전체 데이터 강제 업데이트
-    // (예: 자동 스크롤이 꺼진 상태에서 줌 리셋 시)
+    // (예: 자동 스크롤이 꺼진 상태에서 그래프와 상호작용할 때)
     if(!isRunning()) {
         emit dataUpdated(m_data);
         return;
@@ -125,7 +128,16 @@ void SimulationEngine::onRedrawAnalysisRequest()
     emit measuredDataUpdated(m_measuredData);
 }
 
+void SimulationEngine::enableFrequencyTracking(bool enabled)
+{
+    m_isFrequencyTrackingEnabled = enabled;
+    if(!enabled) {
+        // 기능이 꺼지면 오차 누적값 리셋
+        m_integralError = 0.0;
+    }
+}
 // -----------------------
+
 
 // ---- private slots ----
 void SimulationEngine::captureData()
@@ -155,6 +167,7 @@ void SimulationEngine::captureData()
     advanceSimulationTime();
 }
 // -----------------------
+
 
 // ---- private 함수들 ----
 void SimulationEngine::advanceSimulationTime()
@@ -215,12 +228,12 @@ void SimulationEngine::calculateCycleData()
         // 전압 데이터 집계
         voltageData.squareSum += sample.voltage * sample.voltage;
         voltageData.phasorX_sum += sample.voltage * cos_angle;
-        voltageData.phasorY_sum += sample.voltage * sin_angle;
+        voltageData.phasorY_sum -= sample.voltage * sin_angle;
 
         // 전류 데이터 집계
         currentData.squareSum += sample.current * sample.current;
         currentData.phasorX_sum += sample.current * cos_angle;
-        currentData.phasorY_sum += sample.current * sin_angle;
+        currentData.phasorY_sum -= sample.current * sin_angle;
 
         // 유효 전력 데이터 집계
         powerSum += sample.voltage * sample.current;        
@@ -256,7 +269,10 @@ void SimulationEngine::calculateCycleData()
     // 4. UI에 업데이트 알림
     emit measuredDataUpdated(m_measuredData);
 
-    // 5. 버퍼 비우기
+    // 5. 자동 주파수 추적 로직 실행
+    processFrequencyTracking();
+
+    // 6. 버퍼 비우기
     m_cycleSampleBuffer.clear();
 }
 
@@ -291,4 +307,70 @@ void SimulationEngine::processUpdateByMode(bool resetAccumulatedPhase)
                 m_accumulatedPhaseSinceUpdate = 0.0;
         }
     }
+}
+
+void SimulationEngine::processFrequencyTracking()
+{
+    if(!m_isFrequencyTrackingEnabled || m_measuredData.empty()) {
+        return;
+    }
+    qDebug() << "frequency : " << m_params.frequency;
+
+    // 1. (PD) 현재 위상과 이전 위상을 비교하여 위상차 계산
+    // arctan 계산
+    const double currentPhasorAngle = std::atan2(m_measuredData.back().voltagePhasorY, m_measuredData.back().voltagePhasorX);
+
+    // 첫 번째 실행인지 확인
+    if(m_previousVoltagePhase == 0.0) {
+        m_previousVoltagePhase = currentPhasorAngle;
+        return;
+    }
+    // 위상차 계산
+    double phaseError = currentPhasorAngle - m_previousVoltagePhase;
+    qDebug() << "phaseError : " << currentPhasorAngle << " - " << m_previousVoltagePhase;
+    qDebug() << "phaseError : " << phaseError;
+
+    // 위상 wrapping 처리 (-pi ~ pi 정규화)
+    while(phaseError <= -std::numbers::pi) phaseError += 2.0 * std::numbers::pi;
+    while(phaseError > std::numbers::pi) phaseError -= 2.0 * std::numbers::pi;
+    qDebug() << "phaseError after wrapping : " << phaseError;
+
+    m_previousVoltagePhase = currentPhasorAngle;
+
+    // 2. (LF) PI 제어기로 주파수 조정값 계산
+    // Kp, Ki는 실험적으로 튜닝해야함
+    constexpr double Kp = 0.1;// 비례 이득(Proportional gain)
+    constexpr double Ki = 0.005; // 적분 이득 (Integral gain)
+    constexpr double IntegralMax = 5.0; // 적분항 최대값 (튜닝 필요)
+    constexpr double IntegralMin = -5.0; // 적분항 최소값 (튜닝 필요)
+
+    // 적분 오차 누적
+    m_integralError += phaseError;
+    m_integralError = std::clamp(m_integralError, IntegralMin, IntegralMax);
+    qDebug() << "integralError : " << m_integralError;
+
+
+    // PI 제어기에 따른 주파수 조정량 계산
+    double lf_output = (Kp * phaseError) + (Ki * m_integralError);
+    qDebug() << "lf_output : (" << Kp << " * " << phaseError << ") + (" << Ki << " * " << m_integralError << ")";
+    qDebug() << "lf_output : " << lf_output;
+
+    // PLL의 포착 범위를 위한 출력 제한
+    constexpr double maxFreqChangePerStep = 0.5;
+    lf_output = std::clamp(lf_output, -maxFreqChangePerStep, maxFreqChangePerStep);
+
+    // 3. (NCO) 계산된 조정량으로 Sampling 주파수 업데이트
+    double newSamplingCycles = m_params.samplingCycles + lf_output; // 위상차와 반대 방향으로 조정
+    qDebug() << "newSamplingCycles: " << m_params.samplingCycles << " + " << lf_output;
+    qDebug() << "newSamplingCycles: " << newSamplingCycles;
+
+    // 주파수가 비정상적인 값으로 가지 않도록 범위 제한
+    newSamplingCycles = std::clamp(newSamplingCycles, (double)config::Sampling::MinValue, (double)config::Sampling::maxValue);
+
+    if(std::abs(m_params.samplingCycles - newSamplingCycles) > 1e-6) {
+        m_params.samplingCycles = newSamplingCycles;
+        recalculateCaptureInterval(); //  변경된 주파수에 맞춰 샘플링 간격 재계산
+        emit samplingCyclesUpdated(newSamplingCycles); // UI에 알림
+    }
+    qDebug() << "------------------------";
 }

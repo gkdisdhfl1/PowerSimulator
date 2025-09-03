@@ -187,6 +187,11 @@ void SettingsUiController::showSettingsDialog()
         }
     }
 }
+
+void SettingsUiController::onTrackingToggled(bool enabled)
+{
+    m_engine->enableFrequencyTracking(enabled);
+}
 // -------------------------
 
 // ----- private 헬퍼 함수들 ------

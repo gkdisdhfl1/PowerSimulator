@@ -47,6 +47,7 @@ public slots:
     void onSamplingCyclesChanged(double value);
     void onSamplesPerCycleChanged(int value);
     void onUpdateModeChanged(); // 라디오 버튼은 매개변수 필요 없음
+    void onTrackingToggled(bool enabled);
 
 private:
     using SettingValue = std::variant<int, double>;
