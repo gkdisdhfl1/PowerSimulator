@@ -235,58 +235,29 @@ void SimulationEngine::calculateCycleData()
     if(m_cycleSampleBuffer.empty())
         return;
 
-    const size_t N = m_cycleSampleBuffer.size();
-    const double two_pi_over_N = 2.0 * std::numbers::pi / N;
+    // 1. 헬퍼 함수를 이용해 전압/전류의 핵심 지표들을 계산
+    CycleMetrics voltageMetrics = calculateMetricsFor(DataType::Voltage);
+    CycleMetrics currentMetrics = calculateMetricsFor(DataType::Current);
 
-    // 1. 데이터 집계
-    CycleCalculationData voltageData;
-    CycleCalculationData currentData;
+    // 2. 유효 전력 계산
     double powerSum = 0.0;
-
-
-    for(size_t n = 0 ; n < N; ++n) {
-        const auto& sample = m_cycleSampleBuffer[n];
-        const double angle = two_pi_over_N * n;
-        const double cos_angle = std::cos(angle);
-        const double sin_angle = std::sin(angle);
-
-        // 전압 데이터 집계
-        voltageData.squareSum += sample.voltage * sample.voltage;
-        voltageData.phasorX_sum += sample.voltage * cos_angle;
-        voltageData.phasorY_sum -= sample.voltage * sin_angle;
-
-        // 전류 데이터 집계
-        currentData.squareSum += sample.current * sample.current;
-        currentData.phasorX_sum += sample.current * cos_angle;
-        currentData.phasorY_sum -= sample.current * sin_angle;
-
-        // 유효 전력 데이터 집계
-        powerSum += sample.voltage * sample.current;        
+    for(const auto& sample : m_cycleSampleBuffer) {
+        powerSum += sample.voltage * sample.current;
     }
-
-    // 2. 최종 값 계산
-    const double voltageRms = std::sqrt(voltageData.squareSum / N);
-    const double currentRms = std::sqrt(currentData.squareSum / N);
-    const double activePower = powerSum / N;
-
-    // DFT 정규화( 2/N 곱하기)
-    const double normFactor = 2.0 / N;
-    const double voltagePhasorX = normFactor * voltageData.phasorX_sum;
-    const double voltagePhasorY = normFactor * voltageData.phasorY_sum;
-    const double currentPhasorX = normFactor * currentData.phasorX_sum;
-    const double currentPhasorY = normFactor * currentData.phasorY_sum;
+    const double activePower = powerSum / m_cycleSampleBuffer.size();
 
     // 3. 계산된 데이터 구조체를 담아 컨테이너 추가
     m_measuredData.push_back({
         m_simulationTimeNs, // 현재 시간 (사이클 종료 시점)
-        voltageRms,
-        currentRms,
+        voltageMetrics.rms,
+        currentMetrics.rms,
         activePower,
-        voltagePhasorX,
-        voltagePhasorY,
-        currentPhasorX,
-        currentPhasorY
+        voltageMetrics.phasorX,
+        voltageMetrics.phasorY,
+        currentMetrics.phasorX,
+        currentMetrics.phasorY,
     });
+
     if(m_measuredData.size() > static_cast<size_t>(m_params.maxDataSize)) {
         m_measuredData.pop_front();
     }
@@ -361,8 +332,8 @@ void SimulationEngine::processFineTune()
 
     // 2. (LF) PI 제어기로 주파수 조정값 계산
     // Kp, Ki는 실험적으로 튜닝해야함
-    constexpr double Kp = 0.1;// 비례 이득(Proportional gain)
-    constexpr double Ki = 0.005; // 적분 이득 (Integral gain)
+    constexpr double Kp = 0.2;// 비례 이득(Proportional gain)
+    constexpr double Ki = 0.01; // 적분 이득 (Integral gain)
     constexpr double IntegralMax = 5.0; // 적분항 최대값 (튜닝 필요)
     constexpr double IntegralMin = -5.0; // 적분항 최소값 (튜닝 필요)
 
@@ -466,4 +437,39 @@ double SimulationEngine::estimateFrequencyByZeroCrossing()
 
     // 주파수 계산: (교차 횟수 / 2) / 시간
     return (static_cast<double>(zeroCrossings) / 2.0) / durationSeconds;
+}
+
+SimulationEngine::CycleMetrics SimulationEngine::calculateMetricsFor(DataType type) const
+{
+    if(m_cycleSampleBuffer.empty()) {
+        return {0.0, 0.0, 0.0};
+    }
+
+    const size_t N = m_cycleSampleBuffer.size();
+    const double two_pi_over_N = 2.0 * std::numbers::pi / N;
+
+    double squareSum = 0.0;
+    double phasorX_sum = 0.0;
+    double phasorY_sum = 0.0;
+
+    for(size_t n = 0; n < N; ++n) {
+        const auto& sample = m_cycleSampleBuffer[n];
+        const double value = (type == DataType::Voltage) ? sample.voltage : sample.current;
+
+        const double angle = two_pi_over_N * n;
+        const double cos_angle = std::cos(angle);
+        const double sin_angle = std::sin(angle);
+
+        squareSum += value * value;
+        phasorX_sum += value * cos_angle;
+        phasorY_sum -= value * sin_angle; // 허수부는 -sin을 곱함
+    }
+
+    // DFT 정규화
+    const double normFactor = 2.0 / N;
+    return {
+        .rms = std::sqrt(squareSum / N),
+        .phasorX = normFactor * phasorX_sum,
+        .phasorY = normFactor * phasorY_sum
+    };
 }

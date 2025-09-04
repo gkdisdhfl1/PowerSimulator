@@ -73,11 +73,13 @@ private:
     using FpMilliseconds = std::chrono::duration<double, std::milli>;
     using Nanoseconds = std::chrono::nanoseconds;
 
-    struct CycleCalculationData {
-        double squareSum = 0.0; // RMS 계산을 위한 제곱의 합
-        double phasorX_sum = 0.0; // Phasor의 X 성분(실수부) 합
-        double phasorY_sum = 0.0; // Phasor의 Y 성분(허수부) 합
+    struct CycleMetrics {
+        double rms;
+        double phasorX;
+        double phasorY;
     };
+    enum class DataType { Voltage, Current};
+    CycleMetrics calculateMetricsFor(DataType type) const;
 
     void advanceSimulationTime();
     double calculateCurrentVoltage() const;
