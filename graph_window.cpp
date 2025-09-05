@@ -143,28 +143,40 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
 // ---- private -----
 void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
 {
+    auto [minX_sec, maxX_sec] = getVisibleXRange(data);
+
+    const qint64 minX_ns = static_cast<qint64>(minX_sec * 1.0e9);
+    const qint64 maxX_ns = static_cast<qint64>(maxX_sec * 1.0e9);
+
+    //보이는 범위의 반복자를 얻음
+    auto [first, last] = getVisibleRangeIterators(data, minX_ns, maxX_ns);
+
     // 멤버 변수에 결과 저장
     m_voltagePoints.clear();
     m_currentPoints.clear();
 
-    const auto [minX, maxX] = getVisibleXRange(data);
-
-    // C++20 ranges를 사용해, 현재 보이는 X축 범위 내의 점들만 필터링하는 뷰를 생성
-    auto pointsView = data
-                      | std::views::transform([](const DataPoint& p) {
-                            const auto x = utils::to_qpointf(p).x();
-                            return std::make_pair(QPointF(x, p.voltage), QPointF(x, p.current));
-                        })
-                      | std::views::filter([minX, maxX](const auto& pair) {
-                            return pair.first.x() >= minX && pair.first.x() <= maxX;
-                        });
-
-
-    for(const auto& pair : pointsView) {
-        // qDebug() << "pointsview.size: " << std::ranges::distance(pointsView);
-        m_voltagePoints.append(pair.first);
-        m_currentPoints.append(pair.second);
+    for(auto it = first; it != last; ++it) {
+        const double timeSec = std::chrono::duration<double>(it->timestamp).count();
+        m_voltagePoints.append(QPointF(timeSec, it->voltage));
+        m_currentPoints.append(QPointF(timeSec, it->current));
     }
+
+    // // C++20 ranges를 사용해, 현재 보이는 X축 범위 내의 점들만 필터링하는 뷰를 생성
+    // auto pointsView = data
+    //                   | std::views::transform([](const DataPoint& p) {
+    //                         const auto x = utils::to_qpointf(p).x();
+    //                         return std::make_pair(QPointF(x, p.voltage), QPointF(x, p.current));
+    //                     })
+    //                   | std::views::filter([minX, maxX](const auto& pair) {
+    //                         return pair.first.x() >= minX && pair.first.x() <= maxX;
+    //                     });
+
+
+    // for(const auto& pair : pointsView) {
+    //     // qDebug() << "pointsview.size: " << std::ranges::distance(pointsView);
+    //     m_voltagePoints.append(pair.first);
+    //     m_currentPoints.append(pair.second);
+    // }
 }
 
 void GraphWindow::updateSeriesData()
