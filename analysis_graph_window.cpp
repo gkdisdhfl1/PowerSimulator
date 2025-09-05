@@ -103,11 +103,15 @@ void AnalysisGraphWindow::updateGraph(const std::deque<MeasuredData>& data)
 
 void AnalysisGraphWindow::updateVisiblePoints(const std::deque<MeasuredData>& data)
 {
+    // 축에서 초단위 시간 범위를 가져옴
     auto [minX_sec, maxX_sec] = getVisibleXRange(data);
 
-    const qint64 minX_ns = static_cast<qint64>(minX_sec * 1.0e9);
-    const qint64 maxX_ns = static_cast<qint64>(maxX_sec * 1.0e9);
+    // std::chrono를 사용하여 초에서 나노초로 변환
+    using FpSeconds = std::chrono::duration<double>;
+    const auto minX_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(FpSeconds(minX_sec)).count();
+    const auto maxX_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(FpSeconds(maxX_sec)).count();
 
+    //보이는 범위의 반복자를 얻음
     auto [first, last] = getVisibleRangeIterators(data, minX_ns, maxX_ns);
 
     m_voltagePoints.clear();
@@ -120,27 +124,6 @@ void AnalysisGraphWindow::updateVisiblePoints(const std::deque<MeasuredData>& da
         m_currentPoints.append(QPointF(timeSec, it->currentRms));
         m_powerPoints.append(QPointF(timeSec, it->activePower));
     }
-
-    // auto pointsView = data
-    //                   | std::ranges::views::transform([](const MeasuredData& d) {
-    //                         const double timeSec = std::chrono::duration<double>(d.timestamp).count();
-    //                         return std::make_tuple(
-    //                             QPointF(timeSec, d.voltageRms),
-    //                             QPointF(timeSec, d.currentRms),
-    //                             QPointF(timeSec, d.activePower)
-    //                             );
-    //                     })
-    //                   | std::views::filter([minX, maxX](const auto& tpl) {
-    //                         // 튜플의 첫 번째 qPointF의 x좌표를 기준으로 필터링
-    //                         return std::get<0>(tpl).x() >= minX && std::get<0>(tpl).x() <= maxX;
-    //                     });
-
-    // // 필터링된 결과를 멤버 변수에 저장
-    // for(const auto& [voltageP, currentP, powerP]: pointsView) {
-    //     m_voltagePoints.append(voltageP);
-    //     m_currentPoints.append(currentP);
-    //     m_powerPoints.append(powerP);
-    // }
 }
 
 void AnalysisGraphWindow::updateSeriesData()

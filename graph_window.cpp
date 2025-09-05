@@ -143,10 +143,13 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
 // ---- private -----
 void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
 {
+    // 축에서 초단위 시간 범위를 가져옴
     auto [minX_sec, maxX_sec] = getVisibleXRange(data);
 
-    const qint64 minX_ns = static_cast<qint64>(minX_sec * 1.0e9);
-    const qint64 maxX_ns = static_cast<qint64>(maxX_sec * 1.0e9);
+    // std::chrono를 사용하여 초에서 나노초로 변환
+    using FpSeconds = std::chrono::duration<double>;
+    const auto minX_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(FpSeconds(minX_sec)).count();
+    const auto maxX_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(FpSeconds(maxX_sec)).count();
 
     //보이는 범위의 반복자를 얻음
     auto [first, last] = getVisibleRangeIterators(data, minX_ns, maxX_ns);
@@ -161,22 +164,6 @@ void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
         m_currentPoints.append(QPointF(timeSec, it->current));
     }
 
-    // // C++20 ranges를 사용해, 현재 보이는 X축 범위 내의 점들만 필터링하는 뷰를 생성
-    // auto pointsView = data
-    //                   | std::views::transform([](const DataPoint& p) {
-    //                         const auto x = utils::to_qpointf(p).x();
-    //                         return std::make_pair(QPointF(x, p.voltage), QPointF(x, p.current));
-    //                     })
-    //                   | std::views::filter([minX, maxX](const auto& pair) {
-    //                         return pair.first.x() >= minX && pair.first.x() <= maxX;
-    //                     });
-
-
-    // for(const auto& pair : pointsView) {
-    //     // qDebug() << "pointsview.size: " << std::ranges::distance(pointsView);
-    //     m_voltagePoints.append(pair.first);
-    //     m_currentPoints.append(pair.second);
-    // }
 }
 
 void GraphWindow::updateSeriesData()
