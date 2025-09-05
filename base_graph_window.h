@@ -2,6 +2,7 @@
 #define BASE_GRAPH_WINDOW_H
 
 #include <QWidget>
+#include <deque>
 
 // 전방 선언
 class QChart;
@@ -33,6 +34,21 @@ protected:
     // X축의 현재 보이는 범위를 계산하는 헬퍼 함수
     template<typename Container>
     std::pair<double, double> getVisibleXRange(const Container& data);
+
+    template<typename T>
+    auto getVisibleRangeIterators(const std::deque<T>& data, qint64 minTimestamp, qint64 maxTimestamp) const {
+        // 이진 탐색으로 시작점 찾기
+        auto first = std::lower_bound(data.begin(), data.end(), minTimestamp,
+                                      [](const T& point, qint64 time){
+            return point.timestamp.count() < time;});
+
+        // 시작점부터 순회하며 끝점 찾기
+        auto last = first;
+        while(last != data.end() && (*last).timestamp.count() <= maxTimestamp) {
+            ++last;
+        }
+        return std::make_pair(first, last);
+    }
 };
 
 #endif // BASE_GRAPH_WINDOW_H
