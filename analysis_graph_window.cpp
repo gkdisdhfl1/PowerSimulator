@@ -103,44 +103,32 @@ void AnalysisGraphWindow::updateGraph(const std::deque<MeasuredData>& data)
 
 void AnalysisGraphWindow::updateVisiblePoints(const std::deque<MeasuredData>& data)
 {
-    auto [minX_sec, maxX_sec] = getVisibleXRange(data);
-
-    const qint64 minX_ns = static_cast<qint64>(minX_sec * 1.0e9);
-    const qint64 maxX_ns = static_cast<qint64>(maxX_sec * 1.0e9);
-
-    auto [first, last] = getVisibleRangeIterators(data, minX_ns, maxX_ns);
-
     m_voltagePoints.clear();
     m_currentPoints.clear();
     m_powerPoints.clear();
 
-    for(auto it = first; it != last; ++it) {
-        const double timeSec = std::chrono::duration<double>(it->timestamp).count();
-        m_voltagePoints.append(QPointF(timeSec, it->voltageRms));
-        m_currentPoints.append(QPointF(timeSec, it->currentRms));
-        m_powerPoints.append(QPointF(timeSec, it->activePower));
+    const auto [minX, maxX] = getVisibleXRange(data);
+
+    auto pointsView = data
+                      | std::ranges::views::transform([](const MeasuredData& d) {
+                            const double timeSec = std::chrono::duration<double>(d.timestamp).count();
+                            return std::make_tuple(
+                                QPointF(timeSec, d.voltageRms),
+                                QPointF(timeSec, d.currentRms),
+                                QPointF(timeSec, d.activePower)
+                                );
+                        })
+                      | std::views::filter([minX, maxX](const auto& tpl) {
+                            // 튜플의 첫 번째 qPointF의 x좌표를 기준으로 필터링
+                            return std::get<0>(tpl).x() >= minX && std::get<0>(tpl).x() <= maxX;
+                        });
+
+    // 필터링된 결과를 멤버 변수에 저장
+    for(const auto& [voltageP, currentP, powerP]: pointsView) {
+        m_voltagePoints.append(voltageP);
+        m_currentPoints.append(currentP);
+        m_powerPoints.append(powerP);
     }
-
-    // auto pointsView = data
-    //                   | std::ranges::views::transform([](const MeasuredData& d) {
-    //                         const double timeSec = std::chrono::duration<double>(d.timestamp).count();
-    //                         return std::make_tuple(
-    //                             QPointF(timeSec, d.voltageRms),
-    //                             QPointF(timeSec, d.currentRms),
-    //                             QPointF(timeSec, d.activePower)
-    //                             );
-    //                     })
-    //                   | std::views::filter([minX, maxX](const auto& tpl) {
-    //                         // 튜플의 첫 번째 qPointF의 x좌표를 기준으로 필터링
-    //                         return std::get<0>(tpl).x() >= minX && std::get<0>(tpl).x() <= maxX;
-    //                     });
-
-    // // 필터링된 결과를 멤버 변수에 저장
-    // for(const auto& [voltageP, currentP, powerP]: pointsView) {
-    //     m_voltagePoints.append(voltageP);
-    //     m_currentPoints.append(currentP);
-    //     m_powerPoints.append(powerP);
-    // }
 }
 
 void AnalysisGraphWindow::updateSeriesData()
