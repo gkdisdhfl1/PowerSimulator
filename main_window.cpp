@@ -13,10 +13,15 @@
 #include <QMenuBar>
 #include <QMenu>
 #include <QApplication>
+#include <QLabel>
+#include <QTimer>
 
 MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     : QMainWindow(parent)
     , m_engine(engine)
+    , m_fpsLabel(new QLabel("FPS: 0", this))
+    , m_fpsTimer(new QTimer(this))
+    , m_frameCount(0)
 {
     // 메뉴바 생성
     createMenus();
@@ -37,6 +42,8 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     // 시그널-슬롯 연결
     createSignalSlotConnections();
     statusBar()->showMessage("Ready");
+    statusBar()->addPermanentWidget(m_fpsLabel);
+    m_fpsTimer->start(1000);
     resize(1200,720);
 }
 
@@ -47,7 +54,7 @@ MainWindow::~MainWindow()
 void MainWindow::createMenus()
 {
     // '파일' 메뉴 생성
-    QMenu *fileMenu = menuBar()->addMenu("파일(&F");
+    QMenu *fileMenu = menuBar()->addMenu("파일(&F)");
 
     // '설정' 액션 생성 및 메뉴에 추가
     m_actionSettings = new QAction("설정(&S)", this);
@@ -127,6 +134,7 @@ void MainWindow::createSignalSlotConnections()
 {
     // 메뉴바 액션 연결
     connect(m_actionSettings, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showSettingsDialog);
+    connect(m_fpsTimer, &QTimer::timeout, this, &MainWindow::updateFpsLabel);
 
     connect(m_settingsUiController.get(), &SettingsUiController::maxDataSizeChangeRequested, m_engine, &SimulationEngine::onMaxDataSizeChanged);
 
@@ -171,6 +179,9 @@ void MainWindow::createSignalSlotConnections()
 
     // ---- GraphWindow 시그널 -> engine 슬롯
     connect(m_graphWindow, &GraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawRequest);
+    connect(m_graphWindow, &GraphWindow::framePainted, this, [this](){
+        ++m_frameCount;
+    });
     connect(m_analysisGraphWindow, &AnalysisGraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawAnalysisRequest);
 }
 
@@ -186,4 +197,13 @@ void MainWindow::updatePlaceholderVisibility()
         m_placeholderDock->hide();
         m_placeholderDock->setMinimumWidth(0);
     }
+}
+
+void MainWindow::updateFpsLabel()
+{
+    // 1초간 누적도니 프레임 카운트를 라벨에 표시
+    m_fpsLabel->setText(QString("FPs: %1").arg(m_frameCount));
+
+    // 다음 1초를 위해 카운터 리셋
+    m_frameCount = 0;
 }

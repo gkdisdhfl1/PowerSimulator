@@ -12,6 +12,8 @@ class GraphWindow;
 class QAction;
 class AnalysisGraphWindow;
 class PhasorView;
+class QLabel;
+class QTimer;
 
 class MainWindow : public QMainWindow
 {
@@ -23,6 +25,7 @@ public:
 
 private slots:
     void updatePlaceholderVisibility();
+    void updateFpsLabel();
 
 private:
     QAction* m_actionSettings;
@@ -37,6 +40,9 @@ private:
     std::unique_ptr<SettingsManager> m_settingsManager;
     std::unique_ptr<SettingsUiController> m_settingsUiController;
     QDockWidget* m_placeholderDock;
+    QLabel* m_fpsLabel;
+    QTimer* m_fpsTimer;
+    int m_frameCount;
 
     void createSignalSlotConnections(); // 조립 역할
     void setupUiComponents();

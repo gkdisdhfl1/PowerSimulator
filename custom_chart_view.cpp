@@ -2,6 +2,7 @@
 #include "config.h"
 #include <QtCharts/QValueAxis>
 #include <QtCharts/QAbstractSeries>
+#include <QPaintEvent>
 
 CustomChartView::CustomChartView(QChart *chart, QWidget *parent) : QChartView(chart, parent)
     , m_isPanning(false)
@@ -116,4 +117,10 @@ void CustomChartView::mouseDoubleClickEvent(QMouseEvent *event)
     // 더블 클릭 시 줌 리셋
     chart()->zoomReset();
     event->accept();
+}
+
+void CustomChartView::paintEvent(QPaintEvent *event)
+{
+    QChartView::paintEvent(event);
+    emit framePainted();
 }

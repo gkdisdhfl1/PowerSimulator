@@ -16,6 +16,7 @@ signals:
     void stretchRequested(double factor);
     void mouseMoved(const QPointF& point);
     void doubleClicked();
+    void framePainted();
 
 protected:
     // 재정의할 마우스 및 휠 이벤트 헨들러
@@ -24,6 +25,7 @@ protected:
     void mouseReleaseEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
     void mouseDoubleClickEvent(QMouseEvent *event) override;
+    void paintEvent(QPaintEvent *event) override;
 
 private:
     bool m_isPanning;

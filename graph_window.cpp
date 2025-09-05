@@ -28,6 +28,7 @@ GraphWindow::GraphWindow(SimulationEngine* engine, QWidget *parent)
 
     connect(m_chartView, &CustomChartView::stretchRequested, this, &GraphWindow::stretchGraph);
     connect(m_chartView, &CustomChartView::mouseMoved, this, &GraphWindow::findNearestPoint);
+    connect(m_chartView, &CustomChartView::framePainted, this, &GraphWindow::framePainted);
 
     // 그래프에 점 표시
     m_voltageSeries->setPointsVisible(true);

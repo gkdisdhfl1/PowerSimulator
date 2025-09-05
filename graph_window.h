@@ -21,6 +21,7 @@ signals:
     void autoScrollToggled(bool enabled);
     void pointHovered(const QPointF& point);
     void redrawNeeded();
+    void framePainted();
 
 public slots:
     void updateGraph(const std::deque<DataPoint>& data);
