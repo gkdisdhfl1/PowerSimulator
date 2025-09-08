@@ -167,19 +167,22 @@ void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
 
 void GraphWindow::updateSeriesData()
 {
-    QList<QPointF> voltagePoints;
-    QList<QPointF> currentPoints;
-    voltagePoints.reserve(m_visibleDataPoints.size());
-    currentPoints.reserve(m_visibleDataPoints.size());
+    m_voltagePoints.clear();
+    m_currentPoints.clear();
 
-    for(const auto& p : m_visibleDataPoints) {
+    m_voltagePoints.reserve(m_visibleDataPoints.size());
+    m_currentPoints.reserve(m_visibleDataPoints.size());
+
+    // 멤버 변수들을 채움
+    for(const auto& p : std::as_const(m_visibleDataPoints)) {
         const double timeSec = std::chrono::duration<double>(p.timestamp).count();
-        voltagePoints.emplace_back(timeSec, p.voltage);
-        currentPoints.emplace_back(timeSec, p.current);
+        m_voltagePoints.emplace_back(timeSec, p.voltage);
+        m_currentPoints.emplace_back(timeSec, p.current);
     }
 
-    m_voltageSeries->replace(voltagePoints);
-    m_currentSeries->replace(currentPoints);
+    // 멤버 변수들로 시리즈 업데이트
+    m_voltageSeries->replace(m_voltagePoints);
+    m_currentSeries->replace(m_currentPoints);
 }
 
 void GraphWindow::updateAxes(const std::deque<DataPoint> &data)
@@ -192,7 +195,7 @@ void GraphWindow::updateAxes(const std::deque<DataPoint> &data)
         double maxY = std::numeric_limits<double>::lowest();
 
         // 보이는 점들을 한 번만 순회하여 전체 Y축 범위를 찾음
-        for(const auto& p : m_visibleDataPoints) {
+        for(const auto& p : std::as_const(m_visibleDataPoints)) {
             minY = std::min(minY, p.voltage);
             maxY = std::max(maxY, p.voltage);
             minY = std::min(minY, p.current);

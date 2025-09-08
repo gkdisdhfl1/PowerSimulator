@@ -47,7 +47,9 @@ private:
     QLineSeries *m_currentSeries;
     QValueAxis *m_axisY;
 
-    QList<DataPoint> m_visibleDataPoints;
+    std::vector<DataPoint> m_visibleDataPoints;
+    QList<QPointF> m_voltagePoints;
+    QList<QPointF> m_currentPoints;
 };
 
 #endif // GRAPH_WINDOW_H
