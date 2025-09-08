@@ -64,9 +64,6 @@ void MainWindow::createMenus()
 void MainWindow::setupUiComponents()
 {
     // 중앙 위젯을 사용하지 않도록 설정 (도킹 공간으로만 사용)
-    // QWidget* dummyCentral = new QWidget();
-    // dummyCentral->setSizePolicy(QSizePolicy::Minimum, QSizePolicy::Minimum);
-    // setCentralWidget(dummyCentral);
     setCentralWidget(nullptr);
 
     setDockNestingEnabled(true);
@@ -170,8 +167,13 @@ void MainWindow::createSignalSlotConnections()
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_phasorView, &PhasorView::updateData);
 
     // ---- GraphWindow 시그널 -> UI 슬롯 ----
-    connect(m_graphWindow, &GraphWindow::pointHovered, this, [this](const QPointF& point) {
-        statusBar()->showMessage(QString("Time: %1 s, Voltage: %2 V").arg(point.x(), 0, 'f', 3).arg(point.y(), 0, 'f', 3));
+    connect(m_graphWindow, &GraphWindow::pointHovered, this, [this](const DataPoint& point) {
+        const double timeSec = std::chrono::duration<double>(point.timestamp).count();
+        QString status = QString::asprintf("Time: %.3f s, Voltage: %.3f V, Current: %.3f A",
+                                           timeSec,
+                                           point.voltage,
+                                           point.current);
+        statusBar()->showMessage(status);
     });
     connect(m_graphWindow, &GraphWindow::autoScrollToggled, m_controlPanel, &ControlPanel::setAutoScroll);
     connect(m_analysisGraphWindow, &AnalysisGraphWindow::autoScrollToggled, m_controlPanel, &ControlPanel::setAutoScroll);

@@ -19,7 +19,7 @@ public:
 signals:
     // 자동 스크롤 상태가 변경되었음을 알리는 시그널
     void autoScrollToggled(bool enabled);
-    void pointHovered(const QPointF& point);
+    void pointHovered(const DataPoint& point);
     void redrawNeeded();
     void framePainted();
 
@@ -35,7 +35,6 @@ private:
 
     // Y축 범위 계산 관련 함수들
     void updateYAxisRange(double minY, double maxY);
-    void updateMinMaxY(const QList<QPointF>& points, double& minY, double& maxY);
 
     // 데이터 처리 관련 함수들
     void updateVisiblePoints(const std::deque<DataPoint>& data);
@@ -48,8 +47,7 @@ private:
     QLineSeries *m_currentSeries;
     QValueAxis *m_axisY;
 
-    QList<QPointF> m_voltagePoints; // 현재 보이는 전압 데이터
-    QList<QPointF> m_currentPoints; // 현재 보이는 전류 데이터
+    QList<DataPoint> m_visibleDataPoints;
 };
 
 #endif // GRAPH_WINDOW_H
