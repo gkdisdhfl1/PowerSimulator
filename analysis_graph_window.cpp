@@ -148,20 +148,12 @@ void AnalysisGraphWindow::updateAxes(const std::deque<MeasuredData>& data)
         axis->setRange(minY - padding, maxY + padding);
     };
 
-    calculateRange(m_voltagePoints, m_axisY_voltage);
-    calculateRange(m_currentPoints, m_axisY_current);
-    calculateRange(m_powerPoints, m_axisY_power);
-
-    // X축 범위는 자동  스크롤 모드일 때만 업데이트
     if(m_isAutoScrollEnabled) {
+        calculateRange(m_voltagePoints, m_axisY_voltage);
+        calculateRange(m_currentPoints, m_axisY_current);
+        calculateRange(m_powerPoints, m_axisY_power);
+
         const auto [minX, maxX] = getVisibleXRange(data);
         m_axisX->setRange(minX, maxX);
-    } else {
-        // // 꺼져있을 때는 사용자가 줌/팬한 상태이므로 X축 범위를 변경하지 않음
-        // if(!data.empty()) {
-        //     const double minX = std::chrono::duration<double>(data.front().timestamp).count();
-        //     const double maxX = std::chrono::duration<double>(data.back().timestamp).count();
-        //     m_axisX->setRange(minX, maxX > minX ? maxX : minX + 1);
-        // }
     }
 }
