@@ -116,15 +116,41 @@ void AnalysisGraphWindow::updateVisiblePoints(const std::deque<MeasuredData>& da
     //보이는 범위의 반복자를 얻음
     auto [first, last] = getVisibleRangeIterators(data, minX_ns, maxX_ns);
 
-    m_voltagePoints.clear();
-    m_currentPoints.clear();
-    m_powerPoints.clear();
+    const int pointCount = std::distance(first, last);
+    const int threshold = m_chartView->width(); // 픽셀 너비만큼 점을 뽑음
 
-    for(auto it = first; it != last; ++it) {
-        const double timeSec = FpSeconds(it->timestamp).count();
-        m_voltagePoints.append(QPointF(timeSec, it->voltageRms));
-        m_currentPoints.append(QPointF(timeSec, it->currentRms));
-        m_powerPoints.append(QPointF(timeSec, it->activePower));
+    if(pointCount > threshold) {
+        // Vrms, Irms, Power 값을 추출하는 람다의 벡터를 전달
+        std::vector<std::function<double(const MeasuredData&)>> extractors = {
+            [](const MeasuredData& d) { return d.voltageRms; },
+            [](const MeasuredData& d) { return d.currentRms; },
+            [](const MeasuredData& d) { return d.activePower; },
+        };
+
+        auto sampled_data = downsampleLTTB(first, last, threshold, extractors);
+
+        // LTTB 결과로 멤버 변수 채우기
+        m_voltagePoints.clear();
+        m_currentPoints.clear();
+        m_powerPoints.clear();
+
+        for(const auto& d : sampled_data) {
+            const double timeSec = FpSeconds(d.timestamp).count();
+            m_voltagePoints.append(QPointF(timeSec, d.voltageRms));
+            m_currentPoints.append(QPointF(timeSec, d.currentRms));
+            m_powerPoints.append(QPointF(timeSec, d.activePower));
+        }
+    } else {
+        m_voltagePoints.clear();
+        m_currentPoints.clear();
+        m_powerPoints.clear();
+
+        for(auto it = first; it != last; ++it) {
+            const double timeSec = FpSeconds(it->timestamp).count();
+            m_voltagePoints.append(QPointF(timeSec, it->voltageRms));
+            m_currentPoints.append(QPointF(timeSec, it->currentRms));
+            m_powerPoints.append(QPointF(timeSec, it->activePower));
+        }
     }
 }
 

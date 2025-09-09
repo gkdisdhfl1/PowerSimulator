@@ -8,7 +8,6 @@
 #include <QChart>
 #include <QDebug>
 #include <QGridLayout>
-#include <ranges>
 
 using utils::FpSeconds;
 using utils::Nanoseconds;
@@ -163,8 +162,19 @@ void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
     //보이는 범위의 반복자를 얻음
     auto [first, last] = getVisibleRangeIterators(data, minX_ns, maxX_ns);
 
-    // 멤버에 직접 할당
-    m_visibleDataPoints.assign(first, last);
+    const int pointCount = std::distance(first, last);
+    const int threshold = m_chartView->width(); // 픽셀 너비만큼 점을 뽑음
+
+    if(pointCount > threshold) {
+        // 전압과 전류 값을 추출하는 람다의 벡터를 전달
+        std::vector<std::function<double(const DataPoint&)>> extractors = {
+            [](const DataPoint& p) { return p.voltage; },
+            [](const DataPoint& p) { return p.current; }
+        };
+        m_visibleDataPoints = downsampleLTTB(first, last, threshold, extractors);
+    } else {
+        m_visibleDataPoints.assign(first, last);
+    }
 }
 
 void GraphWindow::updateSeriesData()
