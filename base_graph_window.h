@@ -21,6 +21,8 @@ public slots:
     void toggleAutoScroll(bool enabled);
 
 protected:
+    using Nanoseconds = std::chrono::nanoseconds;
+
     void setupBaseChart();
     virtual void setupSeries() = 0; // 순수 가상 함수
 
@@ -36,17 +38,18 @@ protected:
     std::pair<double, double> getVisibleXRange(const Container& data);
 
     template<typename T>
-    auto getVisibleRangeIterators(const std::deque<T>& data, qint64 minTimestamp, qint64 maxTimestamp) const {
+    auto getVisibleRangeIterators(const std::deque<T>& data, Nanoseconds minTime, Nanoseconds maxTime) const {
         // 이진 탐색으로 시작점 찾기
-        auto first = std::lower_bound(data.begin(), data.end(), minTimestamp,
-                                      [](const T& point, qint64 time){
-            return point.timestamp.count() < time;});
+        auto first = std::lower_bound(data.begin(), data.end(), minTime,
+                                      [](const T& point, Nanoseconds time){
+            return point.timestamp < time;});
 
-        // 시작점부터 순회하며 끝점 찾기
-        auto last = first;
-        while(last != data.end() && (*last).timestamp.count() <= maxTimestamp) {
-            ++last;
-        }
+        // 이진 탐색으로 끝점 찾기
+        auto last = std::upper_bound(first, data.end(), maxTime,
+                                     [](Nanoseconds time, const T& point) {
+            return time < point.timestamp;
+        });
+
         return std::make_pair(first, last);
     }
 };

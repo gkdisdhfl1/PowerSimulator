@@ -102,6 +102,8 @@ namespace config {
 
 namespace utils {
 using FpSeconds = std::chrono::duration<double>;
+using FpMilliseconds = std::chrono::duration<double, std::milli>;
+using Nanoseconds = std::chrono::nanoseconds;
 
     constexpr double degreesToRadians(double degrees) {
         return degrees * (std::numbers::pi / 180.0);

@@ -69,9 +69,9 @@ private slots:
     void captureData();
 
 private:
-    using FpSeconds = std::chrono::duration<double>;
-    using FpMilliseconds = std::chrono::duration<double, std::milli>;
-    using Nanoseconds = std::chrono::nanoseconds;
+    using FpMilliseconds = utils::FpMilliseconds;
+    using Nanoseconds = utils::Nanoseconds;
+    using FpSeconds = utils::FpSeconds;
 
     struct CycleMetrics {
         double rms;

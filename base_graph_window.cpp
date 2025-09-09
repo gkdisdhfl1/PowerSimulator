@@ -11,6 +11,7 @@ template std::pair<double, double> BaseGraphWindow::getVisibleXRange<std::deque<
 template std::pair<double, double> BaseGraphWindow::getVisibleXRange<std::deque<MeasuredData>>(const std::deque<MeasuredData>&);
 
 
+
 BaseGraphWindow::BaseGraphWindow(SimulationEngine *engine, QWidget *parent)
     :QWidget(parent)
     , m_chart(std::make_unique<QChart>())

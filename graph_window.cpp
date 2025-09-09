@@ -10,6 +10,9 @@
 #include <QGridLayout>
 #include <ranges>
 
+using utils::FpSeconds;
+using utils::Nanoseconds;
+
 GraphWindow::GraphWindow(SimulationEngine* engine, QWidget *parent)
     : BaseGraphWindow(engine, parent)
     , m_voltageSeries(new QLineSeries(this)) // 부모를 지정하여 메모리 관리 위임
@@ -106,7 +109,7 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
     // 1. 이진 탐색으로 chartPos.x() 이상인 첫 번째 점을 찾음
     auto it = std::lower_bound(m_visibleDataPoints.begin(), m_visibleDataPoints.end(), chartPos.x(),
                                [&](const DataPoint& p, double x) {
-                                   const double timeSec = std::chrono::duration<double>(p.timestamp).count();
+                                   const double timeSec = FpSeconds(p.timestamp).count();
                                    return timeSec < x;
                                });
 
@@ -125,7 +128,7 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
     double minDistance = std::numeric_limits<double>::max();
 
     for(const DataPoint* p : candidates) {
-        const double timeSec = std::chrono::duration<double>(p->timestamp).count();
+        const double timeSec = FpSeconds(p->timestamp).count();
         QPointF screenPosV = m_chart->mapToPosition(QPointF(timeSec, p->voltage), m_voltageSeries);
         QPointF screenPosC = m_chart->mapToPosition(QPointF(timeSec, p->current), m_currentSeries);
 
@@ -154,9 +157,8 @@ void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
     auto [minX_sec, maxX_sec] = getVisibleXRange(data);
 
     // std::chrono를 사용하여 초에서 나노초로 변환
-    using FpSeconds = std::chrono::duration<double>;
-    const auto minX_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(FpSeconds(minX_sec)).count();
-    const auto maxX_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(FpSeconds(maxX_sec)).count();
+    const auto minX_ns = std::chrono::duration_cast<Nanoseconds>(FpSeconds(minX_sec));
+    const auto maxX_ns = std::chrono::duration_cast<Nanoseconds>(FpSeconds(maxX_sec));
 
     //보이는 범위의 반복자를 얻음
     auto [first, last] = getVisibleRangeIterators(data, minX_ns, maxX_ns);
@@ -175,7 +177,7 @@ void GraphWindow::updateSeriesData()
 
     // 멤버 변수들을 채움
     for(const auto& p : std::as_const(m_visibleDataPoints)) {
-        const double timeSec = std::chrono::duration<double>(p.timestamp).count();
+        const double timeSec = FpSeconds(p.timestamp).count();
         m_voltagePoints.emplace_back(timeSec, p.voltage);
         m_currentPoints.emplace_back(timeSec, p.current);
     }

@@ -8,6 +8,9 @@
 #include <QPen>
 #include <ranges>
 
+using utils::FpSeconds;
+using utils::Nanoseconds;
+
 AnalysisGraphWindow::AnalysisGraphWindow(SimulationEngine *engine, QWidget *parent)
     : BaseGraphWindow(engine, parent)
     , m_voltageRmsSeries(new QLineSeries(this))
@@ -107,9 +110,8 @@ void AnalysisGraphWindow::updateVisiblePoints(const std::deque<MeasuredData>& da
     auto [minX_sec, maxX_sec] = getVisibleXRange(data);
 
     // std::chrono를 사용하여 초에서 나노초로 변환
-    using FpSeconds = std::chrono::duration<double>;
-    const auto minX_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(FpSeconds(minX_sec)).count();
-    const auto maxX_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(FpSeconds(maxX_sec)).count();
+    const auto minX_ns = std::chrono::duration_cast<Nanoseconds>(FpSeconds(minX_sec));
+    const auto maxX_ns = std::chrono::duration_cast<Nanoseconds>(FpSeconds(maxX_sec));
 
     //보이는 범위의 반복자를 얻음
     auto [first, last] = getVisibleRangeIterators(data, minX_ns, maxX_ns);
@@ -119,7 +121,7 @@ void AnalysisGraphWindow::updateVisiblePoints(const std::deque<MeasuredData>& da
     m_powerPoints.clear();
 
     for(auto it = first; it != last; ++it) {
-        const double timeSec = std::chrono::duration<double>(it->timestamp).count();
+        const double timeSec = FpSeconds(it->timestamp).count();
         m_voltagePoints.append(QPointF(timeSec, it->voltageRms));
         m_currentPoints.append(QPointF(timeSec, it->currentRms));
         m_powerPoints.append(QPointF(timeSec, it->activePower));
