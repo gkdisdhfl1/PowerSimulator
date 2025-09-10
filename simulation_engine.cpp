@@ -11,6 +11,7 @@ SimulationEngine::SimulationEngine()
     , m_integralError(0.0)
     , m_trackingState(TrackingState::Idle)
     , m_coarseSearchSamplesNeeded(0)
+    , m_fineTuneFailCounter(0)
 {
     using namespace std::chrono_literals;
 
@@ -139,6 +140,7 @@ void SimulationEngine::enableFrequencyTracking(bool enabled)
         m_trackingState = TrackingState::Idle;
         m_integralError = 0.0;
         m_coarseSearchBuffer.clear();
+        m_fineTuneFailCounter = 0;
     }
 }
 // -----------------------
@@ -328,14 +330,31 @@ void SimulationEngine::processFineTune()
     while(phaseError <= -std::numbers::pi) phaseError += 2.0 * std::numbers::pi;
     while(phaseError > std::numbers::pi) phaseError -= 2.0 * std::numbers::pi;
 
+    //  --- 실패 감지 및 재탐색 ---
+    constexpr double failureThreshold = 0.5; // 0.5 라디안 이상 벌어지면 실패로 간주 (튜닝 필요)
+    constexpr int maxFailCount = 5; // 5번 연속 실패하면 재탐색
+
+    if(std::abs(phaseError) > failureThreshold) {
+        ++m_fineTuneFailCounter;
+    } else {
+        m_fineTuneFailCounter = 0; // 정상 범위에 들어오면 리셋
+    }
+
+    if(m_fineTuneFailCounter >= maxFailCount) {
+        qDebug() << "PLL 실패. 거친 탐색 다시 시작";
+        startCoarseSearch();
+        return; // 현재 사이클의 PLL은 건너뜀
+    }
+    // ------------------------
+
     m_previousVoltagePhase = currentPhasorAngle;
 
     // 2. (LF) PI 제어기로 주파수 조정값 계산
     // Kp, Ki는 실험적으로 튜닝해야함
-    constexpr double Kp = 0.2;// 비례 이득(Proportional gain)
-    constexpr double Ki = 0.01; // 적분 이득 (Integral gain)
-    constexpr double IntegralMax = 5.0; // 적분항 최대값 (튜닝 필요)
-    constexpr double IntegralMin = -5.0; // 적분항 최소값 (튜닝 필요)
+    constexpr double Kp = 0.85;// 비례 이득(Proportional gain)
+    constexpr double Ki = 0.055; // 적분 이득 (Integral gain)
+    constexpr double IntegralMax = 2.5; // 적분항 최대값 (튜닝 필요)
+    constexpr double IntegralMin = -2.5; // 적분항 최소값 (튜닝 필요)
 
     // 적분 오차 누적
     m_integralError += phaseError;
@@ -365,6 +384,7 @@ void SimulationEngine::startCoarseSearch()
 {
     m_trackingState = TrackingState::Coarse;
     m_coarseSearchBuffer.clear();
+    m_fineTuneFailCounter = 0;
 
     // 0.5초의 분량의 샘플 개수를 계산
     const double currentSamplingRate = m_params.samplingCycles * m_params.samplesPerCycle;
@@ -445,8 +465,22 @@ SimulationEngine::CycleMetrics SimulationEngine::calculateMetricsFor(DataType ty
         return {0.0, 0.0, 0.0};
     }
 
+    // // -- 디버그 코드 ---
+    // if(type == DataType::Voltage) { // 전압 계산 시 한 번만 출력
+    //     qDebug() << "--- Cycle Buffer (Voltage) ---";
+    //     for(size_t i = 0; i < m_cycleSampleBuffer.size(); ++i) {
+    //         qDebug() << i << ":" << m_cycleSampleBuffer[i].voltage;
+    //     }
+    //     qDebug() << "------------------------------";
+    // }
+    // // ----------------
+
     const size_t N = m_cycleSampleBuffer.size();
-    const double two_pi_over_N = 2.0 * std::numbers::pi / N;
+
+    const double total_time_in_buffer = N * (m_captureIntervalsMs.count() / 1000.0);
+    const double k = total_time_in_buffer * m_params.samplingCycles;
+
+    const double two_pi_k_over_N = 2.0 * std::numbers::pi * k / N;
 
     double squareSum = 0.0;
     double phasorX_sum = 0.0;
@@ -456,7 +490,7 @@ SimulationEngine::CycleMetrics SimulationEngine::calculateMetricsFor(DataType ty
         const auto& sample = m_cycleSampleBuffer[n];
         const double value = (type == DataType::Voltage) ? sample.voltage : sample.current;
 
-        const double angle = two_pi_over_N * n;
+        const double angle = two_pi_k_over_N * n;
         const double cos_angle = std::cos(angle);
         const double sin_angle = std::sin(angle);
 

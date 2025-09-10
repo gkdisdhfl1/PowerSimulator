@@ -110,6 +110,7 @@ private:
     // PLL 관련 멤버 변수
     double m_previousVoltagePhase; // 이전 사이클의 전압 위상
     double m_integralError; // 위상 오차의 누적값
+    int m_fineTuneFailCounter; // 실패 카운터
 
     // CoarseSearch 용 변수
     std::vector<DataPoint> m_coarseSearchBuffer; // 데이터 수집용 버퍼

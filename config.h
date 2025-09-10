@@ -16,7 +16,7 @@ namespace config {
 
     // Simulation 핵심 동작과 관련된 설정
     struct Simulation {
-        static constexpr int DefaultDataSize = 100;
+        static constexpr int DefaultDataSize = 1000;
         static constexpr int MinDataSize = 1;
         static constexpr int MaxDataSize = 100000;
 
