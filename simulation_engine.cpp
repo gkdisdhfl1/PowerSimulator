@@ -325,6 +325,7 @@ void SimulationEngine::processFineTune()
     }
     // 위상차 계산
     double phaseError = currentPhasorAngle - m_previousVoltagePhase;
+    qDebug() << "abs(phaseError) : " << std::abs(phaseError);
 
     // 위상 wrapping 처리 (-pi ~ pi 정규화)
     while(phaseError <= -std::numbers::pi) phaseError += 2.0 * std::numbers::pi;
@@ -332,8 +333,8 @@ void SimulationEngine::processFineTune()
 
     //  --- 실패 감지 및 재탐색 ---
     constexpr double failureThreshold = 0.5; // 0.5 라디안 이상 벌어지면 실패로 간주 (튜닝 필요)
+    qDebug() << "failureThreshold : " << failureThreshold;
     constexpr int maxFailCount = 5; // 5번 연속 실패하면 재탐색
-
     if(std::abs(phaseError) > failureThreshold) {
         ++m_fineTuneFailCounter;
     } else {
@@ -477,10 +478,7 @@ SimulationEngine::CycleMetrics SimulationEngine::calculateMetricsFor(DataType ty
 
     const size_t N = m_cycleSampleBuffer.size();
 
-    const double total_time_in_buffer = N * (m_captureIntervalsMs.count() / 1000.0);
-    const double k = total_time_in_buffer * m_params.samplingCycles;
-
-    const double two_pi_k_over_N = 2.0 * std::numbers::pi * k / N;
+    const double two_pi_over_N = 2.0 * std::numbers::pi / N;
 
     double squareSum = 0.0;
     double phasorX_sum = 0.0;
@@ -490,7 +488,7 @@ SimulationEngine::CycleMetrics SimulationEngine::calculateMetricsFor(DataType ty
         const auto& sample = m_cycleSampleBuffer[n];
         const double value = (type == DataType::Voltage) ? sample.voltage : sample.current;
 
-        const double angle = two_pi_k_over_N * n;
+        const double angle = two_pi_over_N * n;
         const double cos_angle = std::cos(angle);
         const double sin_angle = std::sin(angle);
 
