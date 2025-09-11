@@ -1,4 +1,4 @@
-#include "simulation_engine.h"
+     #include "simulation_engine.h"
 #include <QDebug>
 
 SimulationEngine::SimulationEngine()
@@ -12,6 +12,10 @@ SimulationEngine::SimulationEngine()
     , m_trackingState(TrackingState::Idle)
     , m_coarseSearchSamplesNeeded(0)
     , m_fineTuneFailCounter(0)
+    , m_isFrequencyLocked(false)
+    , m_frequencyLockCounter(0)
+    , m_phaseIntegralError(0.0)
+    , m_previousZcPhaseError(0.0)
 {
     using namespace std::chrono_literals;
 
@@ -82,7 +86,7 @@ void SimulationEngine::updateCaptureTimer()
         scaledIntervalMs = maxTimerInterval;
 
     m_captureTimer.setInterval(static_cast<int>(std::round(scaledIntervalMs)));
-    qDebug() << "m_captureTimer.interval()" << m_captureTimer.interval();
+    // qDebug() << "m_captureTimer.interval()" << m_captureTimer.interval();
 }
 
 void SimulationEngine::recalculateCaptureInterval()
@@ -104,7 +108,7 @@ void SimulationEngine::recalculateCaptureInterval()
     }
     if(totalSamplesPerSecond > 0) {
         m_captureIntervalsMs = 1.0s / totalSamplesPerSecond;
-        qDebug() << "m_captureIntervalsMs: " << m_captureIntervalsMs;
+        // qDebug() << "m_captureIntervalsMs: " << m_captureIntervalsMs;
     } else {
         m_captureIntervalsMs = FpMilliseconds(1.0e9);
     }
@@ -139,8 +143,12 @@ void SimulationEngine::enableFrequencyTracking(bool enabled)
         // 추적 중지
         m_trackingState = TrackingState::Idle;
         m_integralError = 0.0;
+        m_phaseIntegralError = 0.0;
         m_coarseSearchBuffer.clear();
         m_fineTuneFailCounter = 0;
+        m_isFrequencyLocked = false;
+        m_frequencyLockCounter = 0.0;
+        m_previousZcPhaseError = 0.0;
     }
 }
 // -----------------------
@@ -181,7 +189,7 @@ void SimulationEngine::captureData()
         m_cycleSampleBuffer.erase(m_cycleSampleBuffer.begin());
     }
 
-    // 다음 스텝을 위해 현재 진행 위상 업데이트
+    // 다음 스텝을 위해 현재 진행 위상 업데이트`
     const FpSeconds timeDelta = m_captureIntervalsMs;
     const double phaseDelta = 2.0 * std::numbers::pi * m_params.frequency * timeDelta.count();
     m_currentPhaseRadians = std::fmod(m_currentPhaseRadians + phaseDelta, 2.0 * std::numbers::pi);
@@ -314,7 +322,7 @@ void SimulationEngine::processFineTune()
         return;
     }
 
-    // 1. (PD) 현재 위상과 이전 위상을 비교하여 위상차 계산
+    // (PD) 현재 위상과 이전 위상을 비교하여 위상차 계산
     // arctan 계산
     const double currentPhasorAngle = std::atan2(m_measuredData.back().voltagePhasorY, m_measuredData.back().voltagePhasorX);
 
@@ -325,7 +333,7 @@ void SimulationEngine::processFineTune()
     }
     // 위상차 계산
     double phaseError = currentPhasorAngle - m_previousVoltagePhase;
-    qDebug() << "abs(phaseError) : " << std::abs(phaseError);
+    // qDebug() << "abs(phaseError) : " << std::abs(phaseError);
 
     // 위상 wrapping 처리 (-pi ~ pi 정규화)
     while(phaseError <= -std::numbers::pi) phaseError += 2.0 * std::numbers::pi;
@@ -333,7 +341,6 @@ void SimulationEngine::processFineTune()
 
     //  --- 실패 감지 및 재탐색 ---
     constexpr double failureThreshold = 0.5; // 0.5 라디안 이상 벌어지면 실패로 간주 (튜닝 필요)
-    qDebug() << "failureThreshold : " << failureThreshold;
     constexpr int maxFailCount = 5; // 5번 연속 실패하면 재탐색
     if(std::abs(phaseError) > failureThreshold) {
         ++m_fineTuneFailCounter;
@@ -350,34 +357,111 @@ void SimulationEngine::processFineTune()
 
     m_previousVoltagePhase = currentPhasorAngle;
 
-    // 2. (LF) PI 제어기로 주파수 조정값 계산
-    // Kp, Ki는 실험적으로 튜닝해야함
-    constexpr double Kp = 0.85;// 비례 이득(Proportional gain)
-    constexpr double Ki = 0.055; // 적분 이득 (Integral gain)
-    constexpr double IntegralMax = 2.5; // 적분항 최대값 (튜닝 필요)
-    constexpr double IntegralMin = -2.5; // 적분항 최소값 (튜닝 필요)
+    // ---- 순차적 제어 로직 ----
+    if(!m_isFrequencyLocked) {
+        // --- 1단계: 주파수 추적 ---
 
-    // 적분 오차 누적
-    m_integralError += phaseError;
-    m_integralError = std::clamp(m_integralError, IntegralMin, IntegralMax);
+        // (LF) PI 제어기로 주파수 조정값 계산
+        constexpr double Kp = 0.85;// 비례 이득(Proportional gain)
+        constexpr double Ki = 0.055; // 적분 이득 (Integral gain)
+        constexpr double IntegralMax = 2.5; // 적분항 최대값 (튜닝 필요)
+        constexpr double IntegralMin = -2.5; // 적분항 최소값 (튜닝 필요)
 
-    // PI 제어기에 따른 주파수 조정량 계산
-    double lf_output = (Kp * phaseError) + (Ki * m_integralError);
+        // 적분 오차 누적
+        m_integralError += phaseError;
+        m_integralError = std::clamp(m_integralError, IntegralMin, IntegralMax);
 
-    // PLL의 포착 범위를 위한 출력 제한
-    constexpr double maxFreqChangePerStep = 0.5;
-    lf_output = std::clamp(lf_output, -maxFreqChangePerStep, maxFreqChangePerStep);
+        // PI 제어기에 따른 주파수 조정량 계산
+        double lf_output = (Kp * phaseError) + (Ki * m_integralError);
 
-    // 3. (NCO) 계산된 조정량으로 Sampling 주파수 업데이트
-    double newSamplingCycles = m_params.samplingCycles + lf_output; // 위상차와 반대 방향으로 조정
+        // PLL의 포착 범위를 위한 출력 제한
+        constexpr double maxFreqChangePerStep = 0.5;
+        lf_output = std::clamp(lf_output, -maxFreqChangePerStep, maxFreqChangePerStep);
 
-    // 주파수가 비정상적인 값으로 가지 않도록 범위 제한
-    newSamplingCycles = std::clamp(newSamplingCycles, (double)config::Sampling::MinValue, (double)config::Sampling::maxValue);
+        // 3. (NCO) 계산된 조정량으로 Sampling 주파수 업데이트
+        double newSamplingCycles = m_params.samplingCycles + lf_output; // 위상차와 반대 방향으로 조정
 
-    if(std::abs(m_params.samplingCycles - newSamplingCycles) > 1e-6) {
-        m_params.samplingCycles = newSamplingCycles;
-        recalculateCaptureInterval(); //  변경된 주파수에 맞춰 샘플링 간격 재계산
-        emit samplingCyclesUpdated(newSamplingCycles); // UI에 알림
+        // 주파수가 비정상적인 값으로 가지 않도록 범위 제한
+        newSamplingCycles = std::clamp(newSamplingCycles, (double)config::Sampling::MinValue, (double)config::Sampling::maxValue);
+
+        if(std::abs(m_params.samplingCycles - newSamplingCycles) > 1e-6) {
+            m_params.samplingCycles = newSamplingCycles;
+            recalculateCaptureInterval(); //  변경된 주파수에 맞춰 샘플링 간격 재계산
+            emit samplingCyclesUpdated(newSamplingCycles); // UI에 알림
+        }
+
+        // 주파수 고정 감지
+        constexpr double lockThreshold = 0.005; // 0.005라디안 이내면 안정된 것으로 간주
+        constexpr int minLockCount = 10; // 10번 연속 안정적이면 고정된 것으로 판단
+        if(std::abs(phaseError) < lockThreshold) {
+            ++m_frequencyLockCounter;
+        } else {
+            m_frequencyLockCounter = 0;
+        }
+
+        if(m_frequencyLockCounter >= minLockCount) {
+            qDebug() << "주파수 고정됨. 위상 추적중..";
+            m_isFrequencyLocked = true;
+        }
+    } else {
+        // --- 2단계: 위상(ZC)추적 ---
+        // 주파수가 lock을 잃었는지 확인(잃었으면 다시 1단계로)
+        constexpr double unlockThreshold = 0.1;
+        if(std::abs(phaseError) > unlockThreshold) {
+            qDebug() << "주파수 고정 잃음. 주파수 추적으로 돌아감";
+            m_isFrequencyLocked = false;
+            m_frequencyLockCounter = 0;
+            return;
+        }
+
+        // 1. 목표 위상을 동적으로 결정
+        const double targetPhaseMinus90 = -std::numbers::pi / 2.0;
+        const double targetPhasePlus90 = std::numbers::pi / 2.0;
+
+        // 현재 각도에서 두 목표까지의 거리 계산
+        double errorMinus90 = currentPhasorAngle - targetPhaseMinus90;
+        while(errorMinus90 <= -std::numbers::pi) errorMinus90 += 2.0 * std::numbers::pi;
+        while(errorMinus90 > std::numbers::pi)  errorMinus90 -= 2.0 * std::numbers::pi;
+
+        double errorPlus90 = currentPhasorAngle - targetPhasePlus90;
+        while(errorPlus90 <= -std::numbers::pi) errorPlus90 += 2.0 * std::numbers::pi;
+        while(errorPlus90 > std::numbers::pi) errorPlus90 -= 2.0 * std::numbers::pi;
+
+        // 더 작은 에러를 최종 위상 에러로 선택
+        double zcPhaseError = (std::abs(errorMinus90) < std::abs(errorPlus90)) ? errorMinus90 : errorPlus90;
+        qDebug() << "current zcPhaseError : " << zcPhaseError;
+
+        // 2. 위상 추적용 PID 제어기
+        constexpr double zcKp = 0.015;
+        constexpr double zcKd = 0.265;
+        constexpr double zcKi = 0.00001;
+
+        double derivative = zcPhaseError - m_previousZcPhaseError;
+
+        constexpr double integration_threshold = 0.01;
+        if(std::abs(zcPhaseError) < integration_threshold) {
+            m_phaseIntegralError += zcPhaseError;
+        } else {
+            m_phaseIntegralError = 0.0;
+        }
+
+        m_phaseIntegralError = std::clamp(m_phaseIntegralError, -1.0, 1.0);
+
+        double phase_lf_output = (zcKp * zcPhaseError) + (zcKi * m_phaseIntegralError) + (zcKd * derivative);
+
+        m_previousZcPhaseError = zcPhaseError;
+
+        // samplingCycles 값을 아주 미세하게 조정하여 위상 변경
+        double newSamplingCycles = m_params.samplingCycles + phase_lf_output;
+        qDebug() << "newSamplingCycles = " << newSamplingCycles;
+        qDebug() << "-------------------------------------------";
+
+        newSamplingCycles = std::clamp(newSamplingCycles, static_cast<double>(config::Sampling::MinValue), static_cast<double>(config::Sampling::maxValue));
+        if(std::abs(m_params.samplingCycles - newSamplingCycles) > 1e-9) {
+            m_params.samplingCycles = newSamplingCycles;
+            recalculateCaptureInterval();
+            emit samplingCyclesUpdated(newSamplingCycles);
+        }
     }
 }
 
@@ -386,6 +470,9 @@ void SimulationEngine::startCoarseSearch()
     m_trackingState = TrackingState::Coarse;
     m_coarseSearchBuffer.clear();
     m_fineTuneFailCounter = 0;
+    m_isFrequencyLocked = false;
+    m_frequencyLockCounter = 0;
+    m_phaseIntegralError = 0.0;
 
     // 0.5초의 분량의 샘플 개수를 계산
     const double currentSamplingRate = m_params.samplingCycles * m_params.samplesPerCycle;

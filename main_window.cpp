@@ -204,7 +204,7 @@ void MainWindow::updatePlaceholderVisibility()
 void MainWindow::updateFpsLabel()
 {
     // 1초간 누적도니 프레임 카운트를 라벨에 표시
-    m_fpsLabel->setText(QString("FPs: %1").arg(m_frameCount));
+    m_fpsLabel->setText(QString("FPS: %1").arg(m_frameCount));
 
     // 다음 1초를 위해 카운터 리셋
     m_frameCount = 0;

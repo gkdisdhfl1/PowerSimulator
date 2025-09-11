@@ -111,6 +111,12 @@ private:
     double m_previousVoltagePhase; // 이전 사이클의 전압 위상
     double m_integralError; // 위상 오차의 누적값
     int m_fineTuneFailCounter; // 실패 카운터
+    bool m_isFrequencyLocked; // 주파수 고정 플래그
+    int m_frequencyLockCounter; // 주파수 고정 감지 카운터
+
+    // ZC 추적용 멤버 변수
+    double m_phaseIntegralError; // 위상 오차 누적값
+     double m_previousZcPhaseError;
 
     // CoarseSearch 용 변수
     std::vector<DataPoint> m_coarseSearchBuffer; // 데이터 수집용 버퍼
