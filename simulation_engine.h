@@ -22,7 +22,8 @@ public:
     enum class TrackingState {
         Idle,   // 유휴 상태
         Coarse, // 대략적인 주파수 탐색 (Zero-Crossing)
-        Fine    // 정밀한 주파수 추적 (PPL)
+        FLL_Acquisition, // FLL 상태
+        FineTune    // 정밀한 주파수 추적 (PPL)
     };
 
     // 시뮬레이션 매개변수를 담는 구조체
@@ -96,6 +97,8 @@ private:
     void trackFrequency(double phaseError); // 주파수 추적 헬퍼
     void trackPhase(double phaseError, double currentPhasorAngle); // 위상 추적 헬퍼
     void checkFrequencyLock(double phaseError); // Lock 감지 헬퍼
+    void processFll(double phaseError);
+    void checkFllLock(double frequencyError);
 
     QTimer m_captureTimer;
     std::deque<DataPoint> m_data;

@@ -166,7 +166,13 @@ void SimulationEngine::captureData()
     case TrackingState::Coarse:
         processCoarseSearch(); // 거친 탐색 로직 실행
         break;
-    case TrackingState::Fine:
+    case TrackingState::FLL_Acquisition:
+        // FLL은 매 사이클 데이터가 필요
+        if(m_cycleSampleBuffer.size() >= static_cast<size_t>(m_params.samplesPerCycle)) {
+            calculateCycleData(); // 내부에서 processFll 호출
+        }
+        break;
+    case TrackingState::FineTune:
         // 정밀 조정 상태일 때만 사이클 데이터 계산
         // 버퍼에 설정된 samplesPerCycle 만큼 데이터가 쌓이면 계산을 실행
         if(m_cycleSampleBuffer.size() >= static_cast<size_t>(m_params.samplesPerCycle)) {
@@ -276,8 +282,18 @@ void SimulationEngine::calculateCycleData()
     emit measuredDataUpdated(m_measuredData);
 
     // 5. 자동 주파수 추적 로직 실행
-    if(m_trackingState == TrackingState::Fine)
+    if(m_trackingState == TrackingState::FLL_Acquisition) {
+        // FLL은 위상차만 필요로함
+        const double currentPhasorAngle = std::atan2(voltageMetrics.phasorY, voltageMetrics.phasorX);
+        double phaseError = currentPhasorAngle - m_previousVoltagePhase;
+        while(phaseError <= -std::numbers::pi) phaseError += 2.0 * std::numbers::pi;
+        while(phaseError > std::numbers::pi) phaseError -= 2.0 * std::numbers::pi;
+
+        processFll(phaseError);
+        m_previousVoltagePhase = currentPhasorAngle;
+    } else if(m_trackingState == TrackingState::FineTune) {
         processFineTune();
+    }
 
     // 6. 버퍼 비우기
     m_cycleSampleBuffer.clear();
@@ -318,7 +334,7 @@ void SimulationEngine::processUpdateByMode(bool resetAccumulatedPhase)
 
 void SimulationEngine::processFineTune()
 {
-    if(m_trackingState != TrackingState::Fine || m_measuredData.empty()) {
+    if(m_trackingState != TrackingState::FineTune || m_measuredData.empty()) {
         return;
     }
 
@@ -341,7 +357,7 @@ void SimulationEngine::processFineTune()
     while(phaseError > std::numbers::pi) phaseError -= 2.0 * std::numbers::pi;
 
     //  --- 실패 감지 및 재탐색 ---
-    constexpr double failureThreshold = 0.5; // 0.5 라디안 이상 벌어지면 실패로 간주 (튜닝 필요)
+    constexpr double failureThreshold = 0.2; // 0.5 라디안 이상 벌어지면 실패로 간주 (튜닝 필요)
     constexpr int maxFailCount = 5; // 5번 연속 실패하면 재탐색
     if(std::abs(phaseError) > failureThreshold) {
         ++m_fineTuneFailCounter;
@@ -350,20 +366,69 @@ void SimulationEngine::processFineTune()
     }
 
     if(m_fineTuneFailCounter >= maxFailCount) {
-        qDebug() << "PLL 실패. 거친 탐색 다시 시작";
-        startCoarseSearch();
+        qDebug() << "PLL 실패. FLL 다시 시작";
+        m_trackingState = TrackingState::FLL_Acquisition;
+        m_integralError = 0.0;
         return; // 현재 사이클의 PLL은 건너뜀
     }
     //  ------------------------
 
     m_previousVoltagePhase = currentPhasorAngle;
 
-    // ---- 순차적 제어 로직 ----
-    if(!m_isFrequencyLocked) {
-        trackFrequency(phaseError);
-        checkFrequencyLock(phaseError);
+    // // ---- 순차적 제어 로직 ----
+    // if(!m_isFrequencyLocked) {
+    //     trackFrequency(phaseError);
+    //     checkFrequencyLock(phaseError);
+    // } else {
+    //     trackPhase(phaseError, currentPhasorAngle);
+    // }
+
+    // 1. 목표 위상을 동적으로 결정
+    const double targetPhaseMinus90 = -std::numbers::pi / 2.0;
+    const double targetPhasePlus90 = std::numbers::pi / 2.0;
+
+    // 현재 각도에서 두 목표까지의 거리 계산
+    double errorMinus90 = currentPhasorAngle - targetPhaseMinus90;
+    while(errorMinus90 <= -std::numbers::pi) errorMinus90 += 2.0 * std::numbers::pi;
+    while(errorMinus90 > std::numbers::pi)  errorMinus90 -= 2.0 * std::numbers::pi;
+
+    double errorPlus90 = currentPhasorAngle - targetPhasePlus90;
+    while(errorPlus90 <= -std::numbers::pi) errorPlus90 += 2.0 * std::numbers::pi;
+    while(errorPlus90 > std::numbers::pi) errorPlus90 -= 2.0 * std::numbers::pi;
+
+    // 더 작은 에러를 최종 위상 에러로 선택
+    double zcPhaseError = (std::abs(errorMinus90) < std::abs(errorPlus90)) ? errorMinus90 : errorPlus90;
+    qDebug() << "current zcPhaseError : " << zcPhaseError;
+
+    // 2. 위상 추적용 PID 제어기
+    constexpr double zcKp = 0.015;
+    constexpr double zcKd = 0.265;
+    constexpr double zcKi = 0.00001;
+
+    double derivative = zcPhaseError - m_previousZcPhaseError;
+
+    constexpr double integration_threshold = 0.01;
+    if(std::abs(zcPhaseError) < integration_threshold) {
+        m_phaseIntegralError += zcPhaseError;
     } else {
-        trackPhase(phaseError, currentPhasorAngle);
+        m_phaseIntegralError = 0.0;
+    }
+
+    m_phaseIntegralError = std::clamp(m_phaseIntegralError, -1.0, 1.0);
+
+    double phase_lf_output = (zcKp * zcPhaseError) + (zcKi * m_phaseIntegralError) + (zcKd * derivative);
+
+    m_previousZcPhaseError = zcPhaseError;
+
+    double newSamplingCycles = m_params.samplingCycles + phase_lf_output;
+    qDebug() << "newSamplingCycles = " << newSamplingCycles;
+    qDebug() << "-------------------------------------------";
+
+    newSamplingCycles = std::clamp(newSamplingCycles, static_cast<double>(config::Sampling::MinValue), static_cast<double>(config::Sampling::maxValue));
+    if(std::abs(m_params.samplingCycles - newSamplingCycles) > 1e-9) {
+        m_params.samplingCycles = newSamplingCycles;
+        recalculateCaptureInterval();
+        emit samplingCyclesUpdated(newSamplingCycles);
     }
 }
 
@@ -413,9 +478,9 @@ void SimulationEngine::processCoarseSearch()
         recalculateCaptureInterval();
         emit samplingCyclesUpdated(m_params.samplingCycles);
 
-        // 5. 정밀 조정  상태로 전환
-        m_trackingState = TrackingState::Fine;
-        m_previousVoltagePhase = 0.0; // PLL 초기화를 위해 이전 위상 리셋
+        // 5. FLL 획득 상태로 전환
+        m_trackingState = TrackingState::FLL_Acquisition;
+        m_previousVoltagePhase = 0.0; // 이전 위상 리셋
         m_integralError = 0.0;
     }
 }
@@ -608,3 +673,55 @@ SimulationEngine::CycleMetrics SimulationEngine::calculateMetricsFor(DataType ty
     };
 }
 
+void SimulationEngine::processFll(double phaseError)
+{
+    // FLL은 주파수 에러를 직접 제어
+    const double cycleDuration = m_params.samplesPerCycle * (m_captureIntervalsMs.count() / 1000.0);
+    const double frequencyError = phaseError / (2.0 * std::numbers::pi * cycleDuration);
+    qDebug() << "current frequencyError = " << frequencyError;
+
+    // FLL용 PI 제어기
+    constexpr double fll_kp = 0.40;
+    constexpr double fll_ki = 0.025;
+
+    m_integralError += frequencyError;
+    m_integralError = std::clamp(m_integralError, -10.0, 10.0);
+
+    double lf_output = (fll_kp * frequencyError) + (fll_ki * m_integralError);
+
+    lf_output = std::clamp(lf_output, -1.0, 1.0);
+
+    double newSamplingCycles = m_params.samplingCycles + lf_output;
+    qDebug() << "newSamplingCycles = " << newSamplingCycles;
+    qDebug() << "-------------------------------------------";
+    newSamplingCycles = std::clamp(newSamplingCycles, (double)config::Sampling::MinValue, (double)config::Sampling::maxValue);
+
+    if(std::abs(m_params.samplingCycles - newSamplingCycles) > 1e-6) {
+        m_params.samplingCycles = newSamplingCycles;
+        recalculateCaptureInterval();
+        emit samplingCyclesUpdated(newSamplingCycles);
+    }
+
+    checkFllLock(frequencyError);
+}
+
+void SimulationEngine::checkFllLock(double frequencyError)
+{
+    constexpr double lockThreshold_hz = 0.1; // 0.1Hz 이내면 Lock 간주
+    constexpr int minLockCount = 10;
+
+    if(std::abs(frequencyError) < lockThreshold_hz) {
+        m_frequencyLockCounter++;
+    } else {
+        m_frequencyLockCounter = 0;
+    }
+
+    if (m_frequencyLockCounter >= minLockCount) {
+        qDebug() << "FLL locked! Starting Fine-tuning (PLL)...";
+        m_trackingState = TrackingState::FineTune;
+        // PLL을 위한 상태 초기화
+        m_integralError = 0.0;
+        m_phaseIntegralError = 0.0;
+        m_previousZcPhaseError = 0.0;
+    }
+}
