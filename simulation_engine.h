@@ -92,7 +92,10 @@ private:
     void startCoarseSearch(); // 거친 탐색을 시작하는 헬퍼 함수
     void processCoarseSearch(); // 거친 탐색 데이터 수집 및 분석
     void processFineTune(); // PLL 로직 처리 함수
-    double estimateFrequencyByZeroCrossing(); // zero-crossing 계산 함수
+    double estimateFrequencyByZeroCrossing(); // zero-crossing 주파수 계산 함수
+    void trackFrequency(double phaseError); // 주파수 추적 헬퍼
+    void trackPhase(double phaseError, double currentPhasorAngle); // 위상 추적 헬퍼
+    void checkFrequencyLock(double phaseError); // Lock 감지 헬퍼
 
     QTimer m_captureTimer;
     std::deque<DataPoint> m_data;

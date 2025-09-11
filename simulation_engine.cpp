@@ -331,6 +331,7 @@ void SimulationEngine::processFineTune()
         m_previousVoltagePhase = currentPhasorAngle;
         return;
     }
+
     // 위상차 계산
     double phaseError = currentPhasorAngle - m_previousVoltagePhase;
     // qDebug() << "abs(phaseError) : " << std::abs(phaseError);
@@ -353,115 +354,16 @@ void SimulationEngine::processFineTune()
         startCoarseSearch();
         return; // 현재 사이클의 PLL은 건너뜀
     }
-    // ------------------------
+    //  ------------------------
 
     m_previousVoltagePhase = currentPhasorAngle;
 
     // ---- 순차적 제어 로직 ----
     if(!m_isFrequencyLocked) {
-        // --- 1단계: 주파수 추적 ---
-
-        // (LF) PI 제어기로 주파수 조정값 계산
-        constexpr double Kp = 0.85;// 비례 이득(Proportional gain)
-        constexpr double Ki = 0.055; // 적분 이득 (Integral gain)
-        constexpr double IntegralMax = 2.5; // 적분항 최대값 (튜닝 필요)
-        constexpr double IntegralMin = -2.5; // 적분항 최소값 (튜닝 필요)
-
-        // 적분 오차 누적
-        m_integralError += phaseError;
-        m_integralError = std::clamp(m_integralError, IntegralMin, IntegralMax);
-
-        // PI 제어기에 따른 주파수 조정량 계산
-        double lf_output = (Kp * phaseError) + (Ki * m_integralError);
-
-        // PLL의 포착 범위를 위한 출력 제한
-        constexpr double maxFreqChangePerStep = 0.5;
-        lf_output = std::clamp(lf_output, -maxFreqChangePerStep, maxFreqChangePerStep);
-
-        // 3. (NCO) 계산된 조정량으로 Sampling 주파수 업데이트
-        double newSamplingCycles = m_params.samplingCycles + lf_output; // 위상차와 반대 방향으로 조정
-
-        // 주파수가 비정상적인 값으로 가지 않도록 범위 제한
-        newSamplingCycles = std::clamp(newSamplingCycles, (double)config::Sampling::MinValue, (double)config::Sampling::maxValue);
-
-        if(std::abs(m_params.samplingCycles - newSamplingCycles) > 1e-6) {
-            m_params.samplingCycles = newSamplingCycles;
-            recalculateCaptureInterval(); //  변경된 주파수에 맞춰 샘플링 간격 재계산
-            emit samplingCyclesUpdated(newSamplingCycles); // UI에 알림
-        }
-
-        // 주파수 고정 감지
-        constexpr double lockThreshold = 0.005; // 0.005라디안 이내면 안정된 것으로 간주
-        constexpr int minLockCount = 10; // 10번 연속 안정적이면 고정된 것으로 판단
-        if(std::abs(phaseError) < lockThreshold) {
-            ++m_frequencyLockCounter;
-        } else {
-            m_frequencyLockCounter = 0;
-        }
-
-        if(m_frequencyLockCounter >= minLockCount) {
-            qDebug() << "주파수 고정됨. 위상 추적중..";
-            m_isFrequencyLocked = true;
-        }
+        trackFrequency(phaseError);
+        checkFrequencyLock(phaseError);
     } else {
-        // --- 2단계: 위상(ZC)추적 ---
-        // 주파수가 lock을 잃었는지 확인(잃었으면 다시 1단계로)
-        constexpr double unlockThreshold = 0.1;
-        if(std::abs(phaseError) > unlockThreshold) {
-            qDebug() << "주파수 고정 잃음. 주파수 추적으로 돌아감";
-            m_isFrequencyLocked = false;
-            m_frequencyLockCounter = 0;
-            return;
-        }
-
-        // 1. 목표 위상을 동적으로 결정
-        const double targetPhaseMinus90 = -std::numbers::pi / 2.0;
-        const double targetPhasePlus90 = std::numbers::pi / 2.0;
-
-        // 현재 각도에서 두 목표까지의 거리 계산
-        double errorMinus90 = currentPhasorAngle - targetPhaseMinus90;
-        while(errorMinus90 <= -std::numbers::pi) errorMinus90 += 2.0 * std::numbers::pi;
-        while(errorMinus90 > std::numbers::pi)  errorMinus90 -= 2.0 * std::numbers::pi;
-
-        double errorPlus90 = currentPhasorAngle - targetPhasePlus90;
-        while(errorPlus90 <= -std::numbers::pi) errorPlus90 += 2.0 * std::numbers::pi;
-        while(errorPlus90 > std::numbers::pi) errorPlus90 -= 2.0 * std::numbers::pi;
-
-        // 더 작은 에러를 최종 위상 에러로 선택
-        double zcPhaseError = (std::abs(errorMinus90) < std::abs(errorPlus90)) ? errorMinus90 : errorPlus90;
-        qDebug() << "current zcPhaseError : " << zcPhaseError;
-
-        // 2. 위상 추적용 PID 제어기
-        constexpr double zcKp = 0.015;
-        constexpr double zcKd = 0.265;
-        constexpr double zcKi = 0.00001;
-
-        double derivative = zcPhaseError - m_previousZcPhaseError;
-
-        constexpr double integration_threshold = 0.01;
-        if(std::abs(zcPhaseError) < integration_threshold) {
-            m_phaseIntegralError += zcPhaseError;
-        } else {
-            m_phaseIntegralError = 0.0;
-        }
-
-        m_phaseIntegralError = std::clamp(m_phaseIntegralError, -1.0, 1.0);
-
-        double phase_lf_output = (zcKp * zcPhaseError) + (zcKi * m_phaseIntegralError) + (zcKd * derivative);
-
-        m_previousZcPhaseError = zcPhaseError;
-
-        // samplingCycles 값을 아주 미세하게 조정하여 위상 변경
-        double newSamplingCycles = m_params.samplingCycles + phase_lf_output;
-        qDebug() << "newSamplingCycles = " << newSamplingCycles;
-        qDebug() << "-------------------------------------------";
-
-        newSamplingCycles = std::clamp(newSamplingCycles, static_cast<double>(config::Sampling::MinValue), static_cast<double>(config::Sampling::maxValue));
-        if(std::abs(m_params.samplingCycles - newSamplingCycles) > 1e-9) {
-            m_params.samplingCycles = newSamplingCycles;
-            recalculateCaptureInterval();
-            emit samplingCyclesUpdated(newSamplingCycles);
-        }
+        trackPhase(phaseError, currentPhasorAngle);
     }
 }
 
@@ -515,6 +417,119 @@ void SimulationEngine::processCoarseSearch()
         m_trackingState = TrackingState::Fine;
         m_previousVoltagePhase = 0.0; // PLL 초기화를 위해 이전 위상 리셋
         m_integralError = 0.0;
+    }
+}
+
+void SimulationEngine::trackFrequency(double phaseError)
+{
+    // --- 1단계: 주파수 추적 ---
+
+    // (LF) PI 제어기로 주파수 조정값 계산
+    constexpr double Kp = 0.85;// 비례 이득(Proportional gain)
+    constexpr double Ki = 0.055; // 적분 이득 (Integral gain)
+    constexpr double IntegralMax = 2.5; // 적분항 최대값 (튜닝 필요)
+    constexpr double IntegralMin = -2.5; // 적분항 최소값 (튜닝 필요)
+
+    // 적분 오차 누적
+    m_integralError += phaseError;
+    m_integralError = std::clamp(m_integralError, IntegralMin, IntegralMax);
+
+    // PI 제어기에 따른 주파수 조정량 계산
+    double lf_output = (Kp * phaseError) + (Ki * m_integralError);
+
+    // PLL의 포착 범위를 위한 출력 제한
+    constexpr double maxFreqChangePerStep = 0.5;
+    lf_output = std::clamp(lf_output, -maxFreqChangePerStep, maxFreqChangePerStep);
+
+    // 3. (NCO) 계산된 조정량으로 Sampling 주파수 업데이트
+    double newSamplingCycles = m_params.samplingCycles + lf_output; // 위상차와 반대 방향으로 조정
+
+    // 주파수가 비정상적인 값으로 가지 않도록 범위 제한
+    newSamplingCycles = std::clamp(newSamplingCycles, (double)config::Sampling::MinValue, (double)config::Sampling::maxValue);
+
+    if(std::abs(m_params.samplingCycles - newSamplingCycles) > 1e-6) {
+        m_params.samplingCycles = newSamplingCycles;
+        recalculateCaptureInterval(); //  변경된 주파수에 맞춰 샘플링 간격 재계산
+        emit samplingCyclesUpdated(newSamplingCycles); // UI에 알림
+    }
+}
+
+void SimulationEngine::trackPhase(double phaseError, double currentPhasorAngle)
+{
+    // --- 2단계: 위상(ZC)추적 ---
+    // 주파수가 lock을 잃었는지 확인(잃었으면 다시 1단계로)
+    constexpr double unlockThreshold = 0.1;
+    if(std::abs(phaseError) > unlockThreshold) {
+        qDebug() << "주파수 고정 잃음. 주파수 추적으로 돌아감";
+        m_isFrequencyLocked = false;
+        m_frequencyLockCounter = 0;
+        return;
+    }
+
+    // 1. 목표 위상을 동적으로 결정
+    const double targetPhaseMinus90 = -std::numbers::pi / 2.0;
+    const double targetPhasePlus90 = std::numbers::pi / 2.0;
+
+    // 현재 각도에서 두 목표까지의 거리 계산
+    double errorMinus90 = currentPhasorAngle - targetPhaseMinus90;
+    while(errorMinus90 <= -std::numbers::pi) errorMinus90 += 2.0 * std::numbers::pi;
+    while(errorMinus90 > std::numbers::pi)  errorMinus90 -= 2.0 * std::numbers::pi;
+
+    double errorPlus90 = currentPhasorAngle - targetPhasePlus90;
+    while(errorPlus90 <= -std::numbers::pi) errorPlus90 += 2.0 * std::numbers::pi;
+    while(errorPlus90 > std::numbers::pi) errorPlus90 -= 2.0 * std::numbers::pi;
+
+    // 더 작은 에러를 최종 위상 에러로 선택
+    double zcPhaseError = (std::abs(errorMinus90) < std::abs(errorPlus90)) ? errorMinus90 : errorPlus90;
+    qDebug() << "current zcPhaseError : " << zcPhaseError;
+
+    // 2. 위상 추적용 PID 제어기
+    constexpr double zcKp = 0.015;
+    constexpr double zcKd = 0.265;
+    constexpr double zcKi = 0.00001;
+
+    double derivative = zcPhaseError - m_previousZcPhaseError;
+
+    constexpr double integration_threshold = 0.01;
+    if(std::abs(zcPhaseError) < integration_threshold) {
+        m_phaseIntegralError += zcPhaseError;
+    } else {
+        m_phaseIntegralError = 0.0;
+    }
+
+    m_phaseIntegralError = std::clamp(m_phaseIntegralError, -1.0, 1.0);
+
+    double phase_lf_output = (zcKp * zcPhaseError) + (zcKi * m_phaseIntegralError) + (zcKd * derivative);
+
+    m_previousZcPhaseError = zcPhaseError;
+
+    // samplingCycles 값을 아주 미세하게 조정하여 위상 변경
+    double newSamplingCycles = m_params.samplingCycles + phase_lf_output;
+    qDebug() << "newSamplingCycles = " << newSamplingCycles;
+    qDebug() << "-------------------------------------------";
+
+    newSamplingCycles = std::clamp(newSamplingCycles, static_cast<double>(config::Sampling::MinValue), static_cast<double>(config::Sampling::maxValue));
+    if(std::abs(m_params.samplingCycles - newSamplingCycles) > 1e-9) {
+        m_params.samplingCycles = newSamplingCycles;
+        recalculateCaptureInterval();
+        emit samplingCyclesUpdated(newSamplingCycles);
+    }
+}
+
+void SimulationEngine::checkFrequencyLock(double phaseError)
+{
+    // 주파수 고정 감지
+    constexpr double lockThreshold = 0.005; // 0.005라디안 이내면 안정된 것으로 간주
+    constexpr int minLockCount = 10; // 10번 연속 안정적이면 고정된 것으로 판단
+    if(std::abs(phaseError) < lockThreshold) {
+        ++m_frequencyLockCounter;
+    } else {
+        m_frequencyLockCounter = 0;
+    }
+
+    if(m_frequencyLockCounter >= minLockCount) {
+        qDebug() << "주파수 고정됨. 위상 추적중..";
+        m_isFrequencyLocked = true;
     }
 }
 
@@ -592,3 +607,4 @@ SimulationEngine::CycleMetrics SimulationEngine::calculateMetricsFor(DataType ty
         .phasorY = normFactor * phasorY_sum
     };
 }
+
