@@ -357,23 +357,32 @@ void SimulationEngine::processFineTune()
     while(phaseError > std::numbers::pi) phaseError -= 2.0 * std::numbers::pi;
 
     //  --- 실패 감지 및 재탐색 ---
-    constexpr double failureThreshold = 0.2; // 0.5 라디안 이상 벌어지면 실패로 간주 (튜닝 필요)
+    constexpr double coarseSearchThreshold = 0.6; //  심각한 실패
+    constexpr double fllFallbackThreshold = 0.3; // 중간 실패
     constexpr int maxFailCount = 5; // 5번 연속 실패하면 재탐색
-    if(std::abs(phaseError) > failureThreshold) {
+
+    if(std::abs(phaseError) > fllFallbackThreshold) {
         ++m_fineTuneFailCounter;
     } else {
         m_fineTuneFailCounter = 0; // 정상 범위에 들어오면 리셋
     }
 
     if(m_fineTuneFailCounter >= maxFailCount) {
-        qDebug() << "PLL 실패. FLL 다시 시작";
-        m_trackingState = TrackingState::FLL_Acquisition;
-        m_integralError = 0.0;
+        // 심각성 판단
+        if(std::abs(phaseError) > coarseSearchThreshold) {
+            qDebug() << "PLL 실패 (심각). 거친 탐색 다시 시작";
+            startCoarseSearch();
+        } else {
+            qDebug() << "PLL 실패 (중간). FLL 복귀";
+            m_trackingState = TrackingState::FLL_Acquisition;
+            m_integralError = 0.0;
+        }
         return; // 현재 사이클의 PLL은 건너뜀
     }
-    //  ------------------------
 
     m_previousVoltagePhase = currentPhasorAngle;
+    //  ------------------------
+
 
     // 1. 목표 위상을 동적으로 결정
     const double targetPhaseMinus90 = -std::numbers::pi / 2.0;
@@ -390,7 +399,7 @@ void SimulationEngine::processFineTune()
 
     // 더 작은 에러를 최종 위상 에러로 선택
     double zcPhaseError = (std::abs(errorMinus90) < std::abs(errorPlus90)) ? errorMinus90 : errorPlus90;
-    // qDebug() << "current zcPhaseError : " << zcPhaseError;
+    qDebug() << "current zcPhaseError : " << zcPhaseError;
 
     // 2. 위상 추적용 PID 제어기
     constexpr double zcKp = 0.015;
@@ -413,8 +422,8 @@ void SimulationEngine::processFineTune()
     m_previousZcPhaseError = zcPhaseError;
 
     double newSamplingCycles = m_params.samplingCycles + phase_lf_output;
-    // qDebug() << "newSamplingCycles = " << newSamplingCycles;
-    // qDebug() << "-------------------------------------------";
+    qDebug() << "newSamplingCycles = " << newSamplingCycles;
+    qDebug() << "-------------------------------------------";
 
     newSamplingCycles = std::clamp(newSamplingCycles, static_cast<double>(config::Sampling::MinValue), static_cast<double>(config::Sampling::maxValue));
     if(std::abs(m_params.samplingCycles - newSamplingCycles) > 1e-9) {
@@ -574,7 +583,7 @@ void SimulationEngine::processFll(double phaseError)
     // FLL은 주파수 에러를 직접 제어
     const double cycleDuration = m_params.samplesPerCycle * (m_captureIntervalsMs.count() / 1000.0);
     const double frequencyError = phaseError / (2.0 * std::numbers::pi * cycleDuration);
-    // qDebug() << "current frequencyError = " << frequencyError;
+    qDebug() << "current frequencyError = " << frequencyError;
 
     // FLL용 PI 제어기
     constexpr double fll_kp = 0.40;
@@ -588,8 +597,8 @@ void SimulationEngine::processFll(double phaseError)
     lf_output = std::clamp(lf_output, -1.0, 1.0);
 
     double newSamplingCycles = m_params.samplingCycles + lf_output;
-    // qDebug() << "newSamplingCycles = " << newSamplingCycles;
-    // qDebug() << "-------------------------------------------";
+    qDebug() << "newSamplingCycles = " << newSamplingCycles;
+    qDebug() << "-------------------------------------------";
     newSamplingCycles = std::clamp(newSamplingCycles, (double)config::Sampling::MinValue, (double)config::Sampling::maxValue);
 
     if(std::abs(m_params.samplingCycles - newSamplingCycles) > 1e-6) {
@@ -603,7 +612,7 @@ void SimulationEngine::processFll(double phaseError)
 
 void SimulationEngine::checkFllLock(double frequencyError)
 {
-    constexpr double lockThreshold_hz = 0.1; // 0.1Hz 이내면 Lock 간주
+    constexpr double lockThreshold_hz = 0.05; // 0.1Hz 이내면 Lock 간주
     constexpr int minLockCount = 10;
 
     if(std::abs(frequencyError) < lockThreshold_hz) {
