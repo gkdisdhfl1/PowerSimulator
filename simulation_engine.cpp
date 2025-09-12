@@ -16,6 +16,10 @@ SimulationEngine::SimulationEngine()
     , m_frequencyLockCounter(0)
     , m_phaseIntegralError(0.0)
     , m_previousZcPhaseError(0.0)
+    , m_fineTuneCycleCounter(0)
+    , m_fllFailCounter(0)
+    , m_isVerifying(false)
+    , m_previousFrequencyError(0.0)
 {
     using namespace std::chrono_literals;
 
@@ -149,6 +153,10 @@ void SimulationEngine::enableFrequencyTracking(bool enabled)
         m_isFrequencyLocked = false;
         m_frequencyLockCounter = 0.0;
         m_previousZcPhaseError = 0.0;
+        m_fineTuneCycleCounter = 0;
+        m_fllFailCounter = 0;
+        m_isVerifying = false;
+        m_previousFrequencyError = 0.0;
     }
 }
 // -----------------------
@@ -160,6 +168,10 @@ void SimulationEngine::captureData()
     double currentVoltage = calculateCurrentVoltage();
     double currentAmperage = calculateCurrentAmperage();
     addNewDataPoint(currentVoltage, currentAmperage);
+
+    // 백그라운드 검증 데이터 수집
+    if(m_isVerifying)
+        processVerification();
 
     // --- 자동 추적 상태에 따른 분기 처리 ---
     switch (m_trackingState) {
@@ -338,6 +350,17 @@ void SimulationEngine::processFineTune()
         return;
     }
 
+    // 주기적인 검증
+    ++m_fineTuneCycleCounter;
+    constexpr int verificationCycleInterval = 200; // 200 사이클마다 검증
+    if(m_fineTuneCycleCounter > verificationCycleInterval) {
+        if(!m_isVerifying) { // 이미 검증 중이 아닐 때만 시작
+            startVerification();
+        }
+        return;
+    }
+    qDebug() << "m_fineTuneCycleCounter: " << m_fineTuneCycleCounter;
+
     // (PD) 현재 위상과 이전 위상을 비교하여 위상차 계산
     // arctan 계산
     const double currentPhasorAngle = std::atan2(m_measuredData.back().voltagePhasorY, m_measuredData.back().voltagePhasorX);
@@ -399,6 +422,8 @@ void SimulationEngine::processFineTune()
 
     // 더 작은 에러를 최종 위상 에러로 선택
     double zcPhaseError = (std::abs(errorMinus90) < std::abs(errorPlus90)) ? errorMinus90 : errorPlus90;
+    qDebug() << "errorMinus90 : " << errorMinus90;
+    qDebug() << "errorPlus90 : " << errorPlus90;
     qDebug() << "current zcPhaseError : " << zcPhaseError;
 
     // 2. 위상 추적용 PID 제어기
@@ -441,6 +466,10 @@ void SimulationEngine::startCoarseSearch()
     m_isFrequencyLocked = false;
     m_frequencyLockCounter = 0;
     m_phaseIntegralError = 0.0;
+    m_fineTuneCycleCounter = 0;
+    m_fllFailCounter = 0;
+    m_isVerifying = false;
+    m_previousFrequencyError = 0.0;
 
     // 0.5초의 분량의 샘플 개수를 계산
     const double currentSamplingRate = m_params.samplingCycles * m_params.samplesPerCycle;
@@ -585,14 +614,37 @@ void SimulationEngine::processFll(double phaseError)
     const double frequencyError = phaseError / (2.0 * std::numbers::pi * cycleDuration);
     qDebug() << "current frequencyError = " << frequencyError;
 
+    // --- FLL 실패 감지 로직 ---
+    constexpr double fllFailureThreshold = 10.0; // 10Hz 이상 에러가 감지되면 FLL의 처리 범위를 벗어난 것으로 간주
+    constexpr int maxFllFailCount = 10;
+    if(std::abs(frequencyError) > fllFailureThreshold) {
+        ++m_fllFailCounter;
+    } else {
+        m_fllFailCounter = 0;
+    }
+
+    if(m_fllFailCounter >= maxFllFailCount) {
+        qDebug() << "FLL 실패. 거친 탐색 다시 시작";
+        startCoarseSearch();
+        return; // 현재 FLL 중단
+    }
+    // ------------------------
+
     // FLL용 PI 제어기
     constexpr double fll_kp = 0.40;
     constexpr double fll_ki = 0.025;
+    constexpr double fll_kd = 0.65;
 
+    // D항 계산
+    double derivative = frequencyError - m_previousFrequencyError;
+
+    // I항 누적
     m_integralError += frequencyError;
     m_integralError = std::clamp(m_integralError, -10.0, 10.0);
 
-    double lf_output = (fll_kp * frequencyError) + (fll_ki * m_integralError);
+    // PID 출력 계산
+    double lf_output = (fll_kp * frequencyError) + (fll_ki * m_integralError) + (fll_kd * derivative);
+    m_previousFrequencyError = frequencyError;
 
     lf_output = std::clamp(lf_output, -1.0, 1.0);
 
@@ -628,5 +680,59 @@ void SimulationEngine::checkFllLock(double frequencyError)
         m_integralError = 0.0;
         m_phaseIntegralError = 0.0;
         m_previousZcPhaseError = 0.0;
+        m_fineTuneCycleCounter = 0;
+        m_previousFrequencyError = 0.0;
     }
+}
+
+void SimulationEngine::startVerification()
+{
+    qDebug() << "주기적인 Lock 검증 시작...";
+    m_isVerifying = true;
+    m_coarseSearchBuffer.clear(); //Coarse Search 버퍼 재사용
+
+    // 0.2초 분량의 샘플을 수집하여 검증
+    const double currentSamplingRate = m_params.samplingCycles * m_params.samplesPerCycle;
+    if(currentSamplingRate > 1.0) {
+        m_coarseSearchSamplesNeeded = static_cast<int>(currentSamplingRate * 0.2);
+    } else {
+        m_coarseSearchSamplesNeeded = 10;
+    }
+    m_coarseSearchBuffer.reserve(m_coarseSearchSamplesNeeded);
+}
+
+void SimulationEngine::processVerification()
+{
+    // 1. 데이터 수집
+    m_coarseSearchBuffer.push_back(m_data.back());
+    if(m_coarseSearchBuffer.size() < m_coarseSearchSamplesNeeded) {
+        return; // 샘플 더 필요
+    }
+
+    // 2. ZC로 주파수 재추정
+    double zc_freq = estimateFrequencyByZeroCrossing();
+    double pll_freq = m_params.samplingCycles;
+
+    if(zc_freq > 0) {
+        double ratio = pll_freq / zc_freq;
+        qDebug() << "Lock 검증: PLL Freq =" << pll_freq << ", ZC Freq =" << zc_freq << ", Ratio =" << ratio;
+
+        // 3. 비율 확인 (0.8 ~ 1.2 범위를 정상으로 간주)
+        if(ratio > 1.2 || ratio < 0.8) {
+            // 정수배 혹은 정수비에 Lock된 것으로 판단
+            qDebug() << "잘못된 고조파 Lock 감지! 거친 탐색 다시 시작.";
+            startCoarseSearch();
+            return;
+        }
+    }
+
+    // 4. 검증 통과 시, 다시 FineTune 상태로 복귀
+    qDebug() << "Lock 검증 통과. Fine-tuning 계속...";
+    m_isVerifying = false;
+    m_fineTuneCycleCounter = 0; // 다음 검증을 위해 카운터 리셋
+
+    // // pll 상태 초기화
+    // m_previousVoltagePhase = 0.0;
+    // m_phaseIntegralError = 0.0;
+    // m_previousZcPhaseError = 0.0;
 }
