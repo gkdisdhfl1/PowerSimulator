@@ -22,7 +22,8 @@ public:
     enum class TrackingState {
         Idle,   // 유휴 상태
         Coarse, // 대략적인 주파수 탐색 (Zero-Crossing)
-        Fine    // 정밀한 주파수 추적 (PPL)
+        FLL_Acquisition, // FLL 상태
+        FineTune,    // 정밀한 주파수 추적 (PPL)
     };
 
     // 시뮬레이션 매개변수를 담는 구조체
@@ -93,9 +94,11 @@ private:
     void processCoarseSearch(); // 거친 탐색 데이터 수집 및 분석
     void processFineTune(); // PLL 로직 처리 함수
     double estimateFrequencyByZeroCrossing(); // zero-crossing 주파수 계산 함수
-    void trackFrequency(double phaseError); // 주파수 추적 헬퍼
-    void trackPhase(double phaseError, double currentPhasorAngle); // 위상 추적 헬퍼
     void checkFrequencyLock(double phaseError); // Lock 감지 헬퍼
+    void processFll(double phaseError);
+    void checkFllLock(double frequencyError);
+    void startVerification(); // 검증 시작 함수
+    void processVerification(); // 검증 처리 함수
 
     QTimer m_captureTimer;
     std::deque<DataPoint> m_data;
@@ -119,12 +122,20 @@ private:
 
     // ZC 추적용 멤버 변수
     double m_phaseIntegralError; // 위상 오차 누적값
-     double m_previousZcPhaseError;
+    double m_previousZcPhaseError;
+
+    // FLL 관련 변수
+    double m_previousFrequencyError;
+    int m_fllFailCounter; // FLL 실패 카운터
+    double m_previousLfOutput; // 이전 제어기 출력을 저장할 변수
+    int m_oscillationCounter; // 진동 횟수 카운터
 
     // CoarseSearch 용 변수
     std::vector<DataPoint> m_coarseSearchBuffer; // 데이터 수집용 버퍼
     int m_coarseSearchSamplesNeeded; // 필요한 샘플 개수
     TrackingState m_trackingState;
+    int m_fineTuneCycleCounter; // FineTune 실패 카운터
+    bool m_isVerifying;
 };
 
 #endif // SIMULATION_ENGINE_H
