@@ -124,13 +124,17 @@ private:
     double m_phaseIntegralError; // 위상 오차 누적값
     double m_previousZcPhaseError;
 
+    // FLL 관련 변수
     double m_previousFrequencyError;
+    int m_fllFailCounter; // FLL 실패 카운터
+    double m_previousLfOutput; // 이전 제어기 출력을 저장할 변수
+    int m_oscillationCounter; // 진동 횟수 카운터
+
     // CoarseSearch 용 변수
     std::vector<DataPoint> m_coarseSearchBuffer; // 데이터 수집용 버퍼
     int m_coarseSearchSamplesNeeded; // 필요한 샘플 개수
     TrackingState m_trackingState;
     int m_fineTuneCycleCounter; // FineTune 실패 카운터
-    int m_fllFailCounter; // FLL 실패 카운터
     bool m_isVerifying;
 };
 

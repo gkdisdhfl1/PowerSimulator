@@ -20,6 +20,8 @@ SimulationEngine::SimulationEngine()
     , m_fllFailCounter(0)
     , m_isVerifying(false)
     , m_previousFrequencyError(0.0)
+    , m_previousLfOutput(0.0)
+    , m_oscillationCounter(0)
 {
     using namespace std::chrono_literals;
 
@@ -157,6 +159,8 @@ void SimulationEngine::enableFrequencyTracking(bool enabled)
         m_fllFailCounter = 0;
         m_isVerifying = false;
         m_previousFrequencyError = 0.0;
+        m_previousLfOutput = 0.0;
+        m_oscillationCounter = 0;
     }
 }
 // -----------------------
@@ -470,6 +474,8 @@ void SimulationEngine::startCoarseSearch()
     m_fllFailCounter = 0;
     m_isVerifying = false;
     m_previousFrequencyError = 0.0;
+    m_previousLfOutput = 0.0;
+    m_oscillationCounter = 0;
 
     // 0.5초의 분량의 샘플 개수를 계산
     const double currentSamplingRate = m_params.samplingCycles * m_params.samplesPerCycle;
@@ -617,6 +623,7 @@ void SimulationEngine::processFll(double phaseError)
     // --- FLL 실패 감지 로직 ---
     constexpr double fllFailureThreshold = 10.0; // 10Hz 이상 에러가 감지되면 FLL의 처리 범위를 벗어난 것으로 간주
     constexpr int maxFllFailCount = 10;
+
     if(std::abs(frequencyError) > fllFailureThreshold) {
         ++m_fllFailCounter;
     } else {
@@ -631,8 +638,8 @@ void SimulationEngine::processFll(double phaseError)
     // ------------------------
 
     // FLL용 PI 제어기
-    constexpr double fll_kp = 0.40;
-    constexpr double fll_ki = 0.025;
+    constexpr double fll_kp = 0.45;
+    constexpr double fll_ki = 0.0001;
     constexpr double fll_kd = 0.65;
 
     // D항 계산
@@ -644,8 +651,28 @@ void SimulationEngine::processFll(double phaseError)
 
     // PID 출력 계산
     double lf_output = (fll_kp * frequencyError) + (fll_ki * m_integralError) + (fll_kd * derivative);
-    m_previousFrequencyError = frequencyError;
 
+    // --- 진동 감지 ---
+    constexpr int maxOscillations = 10; // 부호가 10번 연속 바뀌면 진동으로 간주
+
+    // 현재 출력과 이전 출력의 부호가 다르고, 둘 다 0이 나닐 때
+    if(std::signbit(lf_output) != std::signbit(m_previousLfOutput) && m_previousLfOutput != 0.0) {
+        ++m_oscillationCounter;
+    } else {
+        // 부호가 같거나, 한쪽이 0이면 카운터 리셋
+        m_oscillationCounter = 0;
+    }
+
+    // 진동이 감지되면 Coarse Search로 복귀
+    if(m_oscillationCounter >= maxOscillations) {
+        qDebug() << "FLL 진동 감지! 거친 탐색 다시 시작.";
+        startCoarseSearch();
+        return;
+    }
+    m_previousLfOutput = lf_output; // 다음 계산을 위해 현재 출력값 저장
+    // ----------------
+
+    m_previousFrequencyError = frequencyError;
     lf_output = std::clamp(lf_output, -1.0, 1.0);
 
     double newSamplingCycles = m_params.samplingCycles + lf_output;
@@ -731,8 +758,4 @@ void SimulationEngine::processVerification()
     m_isVerifying = false;
     m_fineTuneCycleCounter = 0; // 다음 검증을 위해 카운터 리셋
 
-    // // pll 상태 초기화
-    // m_previousVoltagePhase = 0.0;
-    // m_phaseIntegralError = 0.0;
-    // m_previousZcPhaseError = 0.0;
 }
