@@ -6,16 +6,16 @@ SimulationEngine::SimulationEngine()
     : QObject()
     , m_currentPhaseRadians(0.0)
     , m_accumulatedPhaseSinceUpdate(0.0)
-    , m_captureIntervalsMs(0.0)
+    , m_captureIntervalsNs(0)
     , m_simulationTimeNs(0)
 {
     using namespace std::chrono_literals;
 
     m_captureTimer.setTimerType(Qt::PreciseTimer);
 
-    m_captureIntervalsMs = 1.0s / (m_params.samplingCycles * m_params.samplesPerCycle);
+    m_captureIntervalsNs = 1.0s / (m_params.samplingCycles * m_params.samplesPerCycle);
 
-    connect(&m_captureTimer, &QTimer::timeout, this, &SimulationEngine::captureData);
+    connect(&m_captureTimer, &QChronoTimer::timeout, this, &SimulationEngine::captureData);
     updateCaptureTimer(); // 첫 타이머 간격 설정
 
     // FrequencyTracker 생성 및 시그널 연결
@@ -74,18 +74,11 @@ void SimulationEngine::onMaxDataSizeChanged(int newSize)
 void SimulationEngine::updateCaptureTimer()
 {
     // 기본 캡처 간격에 시간 비율을 곱해서 실제 타이머 주기를 계산
-    double scaledIntervalMs = (m_captureIntervalsMs * m_params.timeScale).count();
+    const auto scaledIntervalNs = m_captureIntervalsNs * m_params.timeScale;
 
-    // 간격이 0이 되는 것을 방지
-    if(scaledIntervalMs < config::Simulation::Timer::MinIntervalMs)
-        scaledIntervalMs = config::Simulation::Timer::MinIntervalMs;
+    // QChornoTimer는 std::chrono::duration을 직접 인자로 받음
+    m_captureTimer.setInterval(std::chrono::duration_cast<Nanoseconds>(scaledIntervalNs));
 
-    // int 최대값 초과 방지
-    const double maxTimerInterval = static_cast<double>(std::numeric_limits<int>::max());
-    if(scaledIntervalMs > maxTimerInterval)
-        scaledIntervalMs = maxTimerInterval;
-
-    m_captureTimer.setInterval(static_cast<int>(std::round(scaledIntervalMs)));
     // qDebug() << "m_captureTimer.interval()" << m_captureTimer.interval();
 }
 
@@ -102,15 +95,16 @@ void SimulationEngine::recalculateCaptureInterval()
     // qDebug() << "totalSamplesPerSecond: " << totalSamplesPerSecond;
     // qDebug() << "---------------------------------------";
 
-    if(totalSamplesPerSecond > config::Sampling::MaxSamplesPerSecond) {
-        totalSamplesPerSecond = config::Sampling::MaxSamplesPerSecond;
-        qWarning() << "Sampling rate 이 너무 높음. 최대값으로 조정됨.";
-    }
+    // if(totalSamplesPerSecond > config::Sampling::MaxSamplesPerSecond) {
+    //     totalSamplesPerSecond = config::Sampling::MaxSamplesPerSecond;
+    //     qWarning() << "Sampling rate 이 너무 높음. 최대값으로 조정됨.";
+    // }
     if(totalSamplesPerSecond > 0) {
-        m_captureIntervalsMs = 1.0s / totalSamplesPerSecond;
-        // qDebug() << "m_captureIntervalsMs: " << m_captureIntervalsMs;
+        m_captureIntervalsNs = 1.0s / totalSamplesPerSecond;
+        qDebug() << "m_captureIntervalsMs: " << m_captureIntervalsNs / 1000000;
+        qDebug() << "totalSamplesPerSecond: " << totalSamplesPerSecond;
     } else {
-        m_captureIntervalsMs = FpMilliseconds(1.0e9);
+        m_captureIntervalsNs = FpNanoseconds(1.0e9);
     }
 
     updateCaptureTimer();
@@ -167,7 +161,7 @@ void SimulationEngine::captureData()
     }
 
     // 다음 스텝을 위해 현재 진행 위상 업데이트
-    const FpSeconds timeDelta = m_captureIntervalsMs;
+    const FpSeconds timeDelta = m_captureIntervalsNs;
     const double phaseDelta = 2.0 * std::numbers::pi * m_params.frequency * timeDelta.count();
     m_currentPhaseRadians = std::fmod(m_currentPhaseRadians + phaseDelta, 2.0 * std::numbers::pi);
 
@@ -184,7 +178,7 @@ void SimulationEngine::captureData()
 // ---- private 함수들 ----
 void SimulationEngine::advanceSimulationTime()
 {
-    m_simulationTimeNs += std::chrono::duration_cast<Nanoseconds>(m_captureIntervalsMs);
+    m_simulationTimeNs += std::chrono::duration_cast<Nanoseconds>(m_captureIntervalsNs);
     // qDebug() << "m_simulationTimeNs: " << m_simulationTimeNs;
 
 }

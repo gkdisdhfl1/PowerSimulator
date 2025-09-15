@@ -20,10 +20,6 @@ namespace config {
         static constexpr int MinDataSize = 1;
         static constexpr int MaxDataSize = 100000;
 
-        // 타이머 관련 설정
-        struct Timer {
-            static constexpr double MinIntervalMs = 1.0;
-        };
     };
 
     // 데이터 source(파형)의 특성과 관련된 설정
@@ -102,7 +98,7 @@ namespace config {
 
 namespace utils {
 using FpSeconds = std::chrono::duration<double>;
-using FpMilliseconds = std::chrono::duration<double, std::milli>;
+using FpNanoseconds = std::chrono::duration<double, std::nano>;
 using Nanoseconds = std::chrono::nanoseconds;
 
     constexpr double degreesToRadians(double degrees) {

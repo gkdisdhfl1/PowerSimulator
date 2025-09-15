@@ -2,7 +2,7 @@
 #define SIMULATION_ENGINE_H
 
 #include <QObject>
-#include <QTimer>
+#include <QChronoTimer>
 #include <deque>
 #include "data_point.h"
 #include "config.h"
@@ -66,7 +66,7 @@ private slots:
 private:
     friend FrequencyTracker;
 
-    using FpMilliseconds = utils::FpMilliseconds;
+    using FpNanoseconds = utils::FpNanoseconds;
     using Nanoseconds = utils::Nanoseconds;
     using FpSeconds = utils::FpSeconds;
 
@@ -86,13 +86,13 @@ private:
     void processUpdateByMode(bool resetAccumulatedPhase);
 
 
-    QTimer m_captureTimer;
+    QChronoTimer m_captureTimer;
     std::deque<DataPoint> m_data;
     Parameters m_params;
 
     double m_currentPhaseRadians; // 현재 누적 위상
     double m_accumulatedPhaseSinceUpdate; // 마지막 갱신 후 누적된 위상 변화량
-    FpMilliseconds m_captureIntervalsMs; // 기본 캡처 간격 (double, ms)
+    FpNanoseconds m_captureIntervalsNs; // 기본 캡처 간격 (double, ns)
     Nanoseconds m_simulationTimeNs; // 시뮬레이션 누적 시간 (정수, ns)
 
     // measuredData 관련 변수

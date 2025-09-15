@@ -154,7 +154,7 @@ void FrequencyTracker::processFll(const MeasuredData& latestMeasuredData)
     while(phaseError > std::numbers::pi) phaseError -= 2.0 * std::numbers::pi;
 
     // FLL에서 주파수 에러를 직접 제어
-    const double cycleDuration = m_engine->parameters().samplesPerCycle * (m_engine->m_captureIntervalsMs.count() / 1000.0);
+    const double cycleDuration = m_engine->parameters().samplesPerCycle * m_engine->m_captureIntervalsNs.count();
     const double frequencyError = phaseError / (2.0 * std::numbers::pi * cycleDuration);
 
     // FLL 실패 감지
