@@ -65,12 +65,14 @@ FrequencyTracker::FrequencyTracker(SimulationEngine* engine, QObject *parent)
 // ==== public 함수 ==================
 void FrequencyTracker::startTracking()
 {
+    qDebug() << "-- 추적 시작 --";
     resetAllStates();
     startCoarseSearch();
 }
 
 void FrequencyTracker::stopTracking()
 {
+    qDebug() << "-- 추적 끝 --";
     resetAllStates();
 }
 
@@ -127,15 +129,19 @@ void FrequencyTracker::processCoarseSearch(const DataPoint& latestDataPoint)
 
     // 3. 샘플이 다 모였으면, Zero-Crossing으로 주파수 설정
     double estimateFreq = estimateFrequencyByZeroCrossing();
+    qDebug() << "estimate Freq : " << estimateFreq;
 
     // 4. 추정된 주파수로 파라미터 업데이트
     if(estimateFreq > 0) {
         // 에일리어싱 방지를 위해 상한선 제한
-        double newSamplingCycles = std::clamp(estimateFreq, CoarseSearchConstants::MinTrackingFreq, CoarseSearchConstants::MaxTrackingFreqRatio);
+        const double maxTrackingFrequency = estimateFreq * CoarseSearchConstants::MaxTrackingFreqRatio;
+        double newSamplingCycles = std::clamp(estimateFreq, CoarseSearchConstants::MinTrackingFreq, maxTrackingFrequency);
+        qDebug() << "new smpling Cycles : " << newSamplingCycles;
         emit samplingCyclesUpdated(newSamplingCycles);
 
         // FLL 획득 상태로 전환
         m_trackingState = TrackingState::FLL_Acquisition;
+        qDebug() << " --- FLL로 전환됨 ---";
         m_pll_previousVoltagePhase = 0.0;
         m_fll_integralError = 0.0;
     }
@@ -299,13 +305,13 @@ void FrequencyTracker::processVerification(const DataPoint& latestDataPoint)
         // 3. 비율 확인 (0.8 ~ 1.2 범위를 정상으로 간주)
         if(ratio > 1.2 || ratio < 0.8) {
             // 정수배 혹은 정수비에 Lock된 것으로 판단
-            qDebug() << "잘못된 고조파 Lock 감지! 거친 탐색 다시 시작.";
+            qDebug() << "잘못된 Lock 감지! 거친 탐색 다시 시작.";
             startCoarseSearch();
             return;
         }
     }
 
-    qDebug() << "잘못된 고조파 Lock 감지! 거친 탐색 다시 시작.";
+    qDebug() << "Lock 감지 통과";
     m_isVerifying = false;
     m_pll_cycleCounter = 0;
 }
@@ -326,6 +332,7 @@ void FrequencyTracker::startCoarseSearch()
         // 샘플링 속도가 너무 느릴 경우 최소 샘플 개수 보장
         m_coarseSearchSamplesNeeded = CoarseSearchConstants::MinSamples;
     }
+    qDebug() << "m_coarseSearchSamplesNeeded : " << m_coarseSearchSamplesNeeded;
 
     // 버퍼 공간 미리 할당
     m_coarseSearchBuffer.reserve(m_coarseSearchSamplesNeeded);
@@ -358,13 +365,13 @@ void FrequencyTracker::resetAllStates()
 
 double FrequencyTracker::estimateFrequencyByZeroCrossing()
 {
-    if(m_coarseSearchBuffer.size() > 2) {
+    if(m_coarseSearchBuffer.size() < 2) {
         return 0.0;
     }
 
     int zeroCrossings = 0;
     for(size_t i{1}; i < m_coarseSearchBuffer.size(); ++i) {
-        // 이전 샘플가 환져 샘플의 부호가 다르면 Zero-Crossing으로 간주
+        // 이전 샘플과 현재 샘플의 부호가 다르면 Zero-Crossing으로 간주
         if((m_coarseSearchBuffer[i - 1].voltage < 0 && m_coarseSearchBuffer[i].voltage >= 0) ||
             (m_coarseSearchBuffer[i - 1].voltage > 0 && m_coarseSearchBuffer[i].voltage <= 0))
         {

@@ -101,8 +101,8 @@ void SimulationEngine::recalculateCaptureInterval()
     // }
     if(totalSamplesPerSecond > 0) {
         m_captureIntervalsNs = 1.0s / totalSamplesPerSecond;
-        qDebug() << "m_captureIntervalsMs: " << m_captureIntervalsNs / 1000000;
-        qDebug() << "totalSamplesPerSecond: " << totalSamplesPerSecond;
+        // qDebug() << "m_captureIntervalsMs: " << m_captureIntervalsNs / 1000000;
+        // qDebug() << "totalSamplesPerSecond: " << totalSamplesPerSecond;
     } else {
         m_captureIntervalsNs = FpNanoseconds(1.0e9);
     }
