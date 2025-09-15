@@ -1,3 +1,4 @@
+#include "frequency_tracker.h"
 #include "main_window.h"
 #include "simulation_engine.h"
 #include <QApplication>
