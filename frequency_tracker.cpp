@@ -7,7 +7,6 @@ namespace {
         static constexpr double Duration_S = 0.5; // 데이터 수집 시간
         static constexpr int MinSamples = 10;
         static constexpr double MinTrackingFreq = 1.0;
-        static constexpr double MaxTrackingFreqRatio = 1.8; // 에일리어싱 방지
     };
     struct FllConstants {
         static constexpr double Kp = 0.45;
@@ -27,17 +26,17 @@ namespace {
         static constexpr int MaxFailCount = 5;
     };
     struct ZcTrackerConstants {
-        static constexpr double Kp = 0.015;
-        static constexpr double Ki = 0.000008;
-        static constexpr double Kd = 0.265;
+        static constexpr double Kp = 0.03 ;
+        static constexpr double Ki = 0.000004;
+        static constexpr double Kd = 0.48;
         static constexpr double IntegralActivationThresholdRad = 0.01;
         static constexpr double Integral_Limit = 10;
     };
     struct VerificationConstants {
         static constexpr int IntervalCycles = 200;
-        static constexpr double Durationi_S = 0.2;
+        static constexpr double Durationi_S = 0.2; // 샘플을 수집할 기간(초)
         static constexpr double ValidRatioMin = 0.8;
-        static constexpr double ValidRatioMax = 1.2;
+        static constexpr double ValidRatioMax = 1.27;
     };
 }
 
@@ -133,11 +132,8 @@ void FrequencyTracker::processCoarseSearch(const DataPoint& latestDataPoint)
 
     // 4. 추정된 주파수로 파라미터 업데이트
     if(estimateFreq > 0) {
-        // 에일리어싱 방지를 위해 상한선 제한
-        const double maxTrackingFrequency = estimateFreq * CoarseSearchConstants::MaxTrackingFreqRatio;
-        double newSamplingCycles = std::clamp(estimateFreq, CoarseSearchConstants::MinTrackingFreq, maxTrackingFrequency);
-        qDebug() << "new smpling Cycles : " << newSamplingCycles;
-        emit samplingCyclesUpdated(newSamplingCycles);
+        // FLL이 위상차를 쉽게 감지하도록 샘플링 주파수를 추정치보다 높게 설정
+        emit samplingCyclesUpdated(estimateFreq);
 
         // FLL 획득 상태로 전환
         m_trackingState = TrackingState::FLL_Acquisition;
@@ -303,7 +299,7 @@ void FrequencyTracker::processVerification(const DataPoint& latestDataPoint)
         qDebug() << "Lock 검증: PLL Freq =" << pll_freq << ", ZC Freq =" << zc_freq << ", Ratio =" << ratio;
 
         // 3. 비율 확인 (0.8 ~ 1.2 범위를 정상으로 간주)
-        if(ratio > 1.2 || ratio < 0.8) {
+        if(ratio > VerificationConstants::ValidRatioMax || ratio < VerificationConstants::ValidRatioMin) {
             // 정수배 혹은 정수비에 Lock된 것으로 판단
             qDebug() << "잘못된 Lock 감지! 거친 탐색 다시 시작.";
             startCoarseSearch();
@@ -311,7 +307,7 @@ void FrequencyTracker::processVerification(const DataPoint& latestDataPoint)
         }
     }
 
-    qDebug() << "Lock 감지 통과";
+    qDebug() << "Lock 검증 통과";
     m_isVerifying = false;
     m_pll_cycleCounter = 0;
 }
@@ -409,6 +405,7 @@ void FrequencyTracker::checkFllLock(double frequencyError)
         m_zc_integralError = 0.0;
         m_zc_previousPhaseError = 0.0;
         m_pll_cycleCounter = 0.0;
+        m_pll_previousVoltagePhase = 0.0;
     }
 }
 
