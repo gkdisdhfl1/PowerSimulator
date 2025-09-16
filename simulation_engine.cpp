@@ -5,9 +5,9 @@
 SimulationEngine::SimulationEngine()
     : QObject()
     , m_currentPhaseRadians(0.0)
-    , m_accumulatedPhaseSinceUpdate(0.0)
     , m_captureIntervalsNs(0)
     , m_simulationTimeNs(0)
+    , m_sampleCounterForUpdate(0)
 {
     using namespace std::chrono_literals;
 
@@ -167,7 +167,7 @@ void SimulationEngine::captureData()
     m_currentPhaseRadians = std::fmod(m_currentPhaseRadians + phaseDelta, 2.0 * std::numbers::pi);
 
     // UI 갱신 및 사이클 계산을 위한 누적 위상 업데이트
-    m_accumulatedPhaseSinceUpdate += phaseDelta;
+    ++m_sampleCounterForUpdate;
 
     // 누적된 위상을 보고 Mode에 맞춰 업데이트
     processUpdateByMode(true); // 누적 위상 리셋
@@ -251,35 +251,38 @@ void SimulationEngine::calculateCycleData()
     m_cycleSampleBuffer.clear();
 }
 
-void SimulationEngine::processUpdateByMode(bool resetAccumulatedPhase)
+void SimulationEngine::processUpdateByMode(bool resetCounter)
 {
     bool shouldEmitUpdate = false;
+    const int samplesPerCycle = m_params.samplesPerCycle;
+
     switch (m_params.updateMode) {
     case UpdateMode::PerSample:
         shouldEmitUpdate = true;
         break;
     case UpdateMode::PerHalfCycle:
-        // 누적된 위상이 PI(180도) 이상 변했는지 확인
-        if(m_accumulatedPhaseSinceUpdate >= std::numbers::pi) {
+        // 샘플 카운터가 한 사이클을 넘으면 업데이트
+        if(m_sampleCounterForUpdate >= samplesPerCycle / 2) {
             shouldEmitUpdate = true;
         }
         break;
     case UpdateMode::PerCycle:
-        // 누적된 위상이 2*PI 이상 변했는지 확인
-        if(m_accumulatedPhaseSinceUpdate >= 2.0 * std::numbers::pi) {
+        // 샘플 카운터가 한 사이클을 넘으면 업데이트
+        if(m_sampleCounterForUpdate >= samplesPerCycle) {
             shouldEmitUpdate = true;
         }
         break;
     }
     if(shouldEmitUpdate) {
         emit dataUpdated(m_data);
-        if(resetAccumulatedPhase) {
+        if(resetCounter) {
+            // 사용된 만큼만 카운터를 빼서 오차를 줄임
             if(m_params.updateMode == UpdateMode::PerHalfCycle)
-                m_accumulatedPhaseSinceUpdate -= std::numbers::pi;
+                m_sampleCounterForUpdate -= samplesPerCycle / 2;
             else if(m_params.updateMode == UpdateMode::PerCycle)
-                m_accumulatedPhaseSinceUpdate -= 2.0 * std::numbers::pi;
+                m_sampleCounterForUpdate -= samplesPerCycle;
             else
-                m_accumulatedPhaseSinceUpdate = 0.0;
+                m_sampleCounterForUpdate = 0;
         }
     }
 }

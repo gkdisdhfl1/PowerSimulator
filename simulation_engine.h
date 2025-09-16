@@ -85,7 +85,7 @@ private:
     double calculateCurrentAmperage() const;
     void addNewDataPoint(double voltage, double current);
     void calculateCycleData(); // RMS, 전력 계산 함수
-    void processUpdateByMode(bool resetAccumulatedPhase);
+    void processUpdateByMode(bool resetCounter);
 
 
     QChronoTimer m_captureTimer;
@@ -93,7 +93,7 @@ private:
     Parameters m_params;
 
     double m_currentPhaseRadians; // 현재 누적 위상
-    double m_accumulatedPhaseSinceUpdate; // 마지막 갱신 후 누적된 위상 변화량
+    int m_sampleCounterForUpdate;
     FpNanoseconds m_captureIntervalsNs; // 기본 캡처 간격 (double, ns)
     Nanoseconds m_simulationTimeNs; // 시뮬레이션 누적 시간 (정수, ns)
 
