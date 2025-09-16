@@ -4,7 +4,6 @@
 #include <QObject>
 #include "data_point.h"
 #include "measured_data.h"
-#include "config.h"
 
 // SimulationEngine 전방선언
 struct SimulationEngine;
@@ -20,12 +19,25 @@ public:
         FLL_Acquisition, // FLL 상태
         FineTune,    // 정밀한 주파수 추적 (PPL)
     };
+
+    struct PidCoefficients {
+        double Kp = 0.0;
+        double Ki = 0.0;
+        double Kd = 0.0;
+    };
+
     explicit FrequencyTracker(SimulationEngine* engine, QObject *parent = nullptr);
 
     void process(const DataPoint& latestDataPoint, const MeasuredData& latestMeasuredData, const std::vector<DataPoint>& cycleBuffer);
     void startTracking();
     void stopTracking();
     TrackingState currentState() const;
+
+    // PID 계수를 외부에서 설정하고 가져오는 함수들
+    void setFllCoefficients(const PidCoefficients& coeffs);
+    void setZcCoefficients(const PidCoefficients& coeffs);
+    PidCoefficients getFllCoefficients() const;
+    PidCoefficients getZcCoefficients() const;
 
 signals:
     void samplingCyclesUpdated(double newFrequency);// 자동 추적에 의해 변경될 주파수를 UI에 알리는 시그널
@@ -71,6 +83,10 @@ private:
     // ZC 추적 관련 변수
     double m_zc_integralError;
     double m_zc_previousPhaseError;
+
+    // PID 계수
+    PidCoefficients m_fllCoeffs;
+    PidCoefficients m_zcCoeffs;
 };
 
 #endif // FREQUENCY_TRACKER_H

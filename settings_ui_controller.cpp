@@ -1,6 +1,7 @@
 #include "settings_ui_controller.h"
 #include "control_panel.h"
 #include "config.h"
+#include "pid_tuning_dialog.h"
 #include "settings_dialog.h"
 #include "settings_manager.h"
 #include "simulation_engine.h"
@@ -36,6 +37,7 @@ SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsM
     initializeKeyNameMap();
 
     m_settingsDialog = std::make_unique<SettingsDialog>(this, m_parent);
+    m_pidTuningDialog = std::make_unique<PidTuningDialog>(m_parent);
 }
 
 // --- public slot 구현 ---
@@ -191,6 +193,36 @@ void SettingsUiController::showSettingsDialog()
 void SettingsUiController::onTrackingToggled(bool enabled)
 {
     m_engine->enableFrequencyTracking(enabled);
+}
+
+void SettingsUiController::showPidTuningDialog()
+{
+    // FrequencyTracker로부터 현재 PID 계수를 가져옴
+    auto fllCoeffs = m_engine->getFrequencyTracker()->getFllCoefficients();
+    auto zcCoeffs = m_engine->getFrequencyTracker()->getZcCoefficients();
+
+    // 다이얼로그 현재 값 설정
+    m_pidTuningDialog->setInitialValues(fllCoeffs, zcCoeffs);
+
+    // 다이얼로그의 시그널을 이 컨트롤러의 슬롯에 연결
+    // 매번 dialog 열 때마다 연결을 다시 설정하여 중복 연결 방지
+    disconnect(m_pidTuningDialog.get(), nullptr, this, nullptr); // 기존 연결 모두 해제
+    connect(m_pidTuningDialog.get(), &PidTuningDialog::fllCoefficientsChanged, this, &SettingsUiController::onFllCoefficientsChanged);
+    connect(m_pidTuningDialog.get(), &PidTuningDialog::zcCoefficientsChanged, this, &SettingsUiController::onzcCoefficientsChanged);
+
+    m_pidTuningDialog->show();
+    m_pidTuningDialog->raise();
+    m_pidTuningDialog->activateWindow();
+}
+
+void SettingsUiController::onFllCoefficientsChanged(const FrequencyTracker::PidCoefficients& coeffs)
+{
+    m_engine->getFrequencyTracker()->setFllCoefficients(coeffs);
+}
+
+void SettingsUiController::onzcCoefficientsChanged(const FrequencyTracker::PidCoefficients& coeffs)
+{
+    m_engine->getFrequencyTracker()->setZcCoefficients(coeffs);
 }
 // -------------------------
 

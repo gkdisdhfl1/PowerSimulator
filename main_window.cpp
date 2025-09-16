@@ -1,4 +1,5 @@
 #include "main_window.h"
+#include "pid_tuning_dialog.h"
 #include "settings_dialog.h"
 #include "simulation_engine.h"
 #include "settings_manager.h"
@@ -59,6 +60,13 @@ void MainWindow::createMenus()
     // '설정' 액션 생성 및 메뉴에 추가
     m_actionSettings = new QAction("설정(&S)", this);
     fileMenu->addAction(m_actionSettings);
+
+    // '도구' 메뉴 생성
+    QMenu *toolsMenu = menuBar()->addMenu("도구(&T)");
+
+    // 'PID 튜닝' 액션 생성 및 메뉴에 추가
+    m_actionPidTuning = new QAction("PID 튜닝", this);
+    toolsMenu->addAction(m_actionPidTuning);
 }
 
 void MainWindow::setupUiComponents()
@@ -131,6 +139,7 @@ void MainWindow::createSignalSlotConnections()
 {
     // 메뉴바 액션 연결
     connect(m_actionSettings, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showSettingsDialog);
+    connect(m_actionPidTuning, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showPidTuningDialog);
     connect(m_fpsTimer, &QTimer::timeout, this, &MainWindow::updateFpsLabel);
 
     connect(m_settingsUiController.get(), &SettingsUiController::maxDataSizeChangeRequested, m_engine, &SimulationEngine::onMaxDataSizeChanged);

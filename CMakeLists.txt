@@ -51,6 +51,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Core)
 
     qt_add_executable(PowerSimulator
         MANUAL_FINALIZATION
@@ -73,6 +74,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
         analysis_graph_window.h analysis_graph_window.cpp
         phasor_view.h phasor_view.cpp
         frequency_tracker.h frequency_tracker.cpp
+        pid_tuning_dialog.h pid_tuning_dialog.cpp
 
 
     )
@@ -106,6 +108,7 @@ target_link_libraries(PowerSimulator PRIVATE
 )
 target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
+target_link_libraries(PowerSimulator PRIVATE Qt6::Core)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Core)
 
 

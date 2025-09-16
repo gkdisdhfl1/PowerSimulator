@@ -4,8 +4,10 @@
 #include <QVariantMap>
 #include <expected>
 #include "control_panel_state.h"
+#include "frequency_tracker.h"
 
 class SettingsDialog;
+class PidTuningDialog;
 class ControlPanel;
 class SettingsManager;
 class SimulationEngine;
@@ -49,6 +51,11 @@ public slots:
     void onUpdateModeChanged(); // 라디오 버튼은 매개변수 필요 없음
     void onTrackingToggled(bool enabled);
 
+    // PID 튜닝 다이얼로그 관련 슬롯
+    void showPidTuningDialog();
+    void onFllCoefficientsChanged(const FrequencyTracker::PidCoefficients& coeffs);
+    void onzcCoefficientsChanged(const FrequencyTracker::PidCoefficients& coeffs);
+
 private:
     using SettingValue = std::variant<int, double>;
     using StateGetter = std::function<SettingValue(const ControlPanelState&)>;
@@ -65,6 +72,7 @@ private:
     SimulationEngine* m_engine;
     QWidget* m_parent;        
     std::unique_ptr<SettingsDialog> m_settingsDialog; // SettingsDialog 소유권 이전
+    std::unique_ptr<PidTuningDialog> m_pidTuningDialog;
 
     std::unordered_map<std::string, SettingInfo> m_settingsMap;
     QMap<QString, QString> m_keyNameMap;

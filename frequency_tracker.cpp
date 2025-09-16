@@ -59,7 +59,13 @@ FrequencyTracker::FrequencyTracker(SimulationEngine* engine, QObject *parent)
     , m_pll_cycleCounter(0)
     , m_zc_integralError(0.0)
     , m_zc_previousPhaseError(0.0)
-{}
+{
+    // FLL 기본값 설정
+    m_fllCoeffs = { .Kp = 0.45, .Ki = 0.0001, .Kd = 0.65};
+
+    // ZC 기본값 설정
+    m_zcCoeffs = { .Kp = 0.03, .Ki = 0.000004, .Kd = 0.48};
+}
 
 // ==== public 함수 ==================
 void FrequencyTracker::startTracking()
@@ -110,6 +116,23 @@ void FrequencyTracker::process(const DataPoint& latestDataPoint, const MeasuredD
         }
         break;
     }
+}
+
+void FrequencyTracker::setFllCoefficients(const PidCoefficients& coeffs)
+{
+    m_fllCoeffs = coeffs;
+}
+void FrequencyTracker::setZcCoefficients(const PidCoefficients& coeffs)
+{
+    m_zcCoeffs = coeffs;
+}
+FrequencyTracker::PidCoefficients FrequencyTracker::getFllCoefficients() const
+{
+    return m_fllCoeffs;
+}
+FrequencyTracker::PidCoefficients FrequencyTracker::getZcCoefficients() const
+{
+    return m_zcCoeffs;
 }
 // ==================================
 
@@ -178,7 +201,7 @@ void FrequencyTracker::processFll(const MeasuredData& latestMeasuredData)
     double derivative = frequencyError - m_fll_previousFrequencyError;
 
     // PID 출력 계산
-    double lf_output = (FllConstants::Kp * frequencyError) + (FllConstants::Ki * m_fll_integralError) + (FllConstants::Kd * derivative);
+    double lf_output = (m_fllCoeffs.Kp * frequencyError) + (m_fllCoeffs.Ki * m_fll_integralError) + (m_fllCoeffs.Kd * derivative);
 
     // 진동 감지
     if(std::signbit(lf_output) != std::signbit(m_fll_previousLfOutput) && m_fll_previousLfOutput!= 0.0) {
@@ -272,7 +295,9 @@ void FrequencyTracker::processFineTune(const MeasuredData& latestMeasuredData)
     }
     m_zc_integralError = std::clamp(m_zc_integralError, -ZcTrackerConstants::Integral_Limit, ZcTrackerConstants::Integral_Limit);
 
-    double phase_lf_output = (ZcTrackerConstants::Kp * zcPhaseError) + (ZcTrackerConstants::Ki * m_zc_integralError) + (ZcTrackerConstants::Kd * derivative);
+    double phase_lf_output = (m_zcCoeffs.Kp * zcPhaseError) + (m_zcCoeffs.Ki * m_zc_integralError) + (m_zcCoeffs.Kd * derivative);
+    // qDebug() << "(" << m_zcCoeffs.Kp << " * " << zcPhaseError << ") + (" << m_zcCoeffs.Ki << " * " << m_zc_integralError << ") + (" << m_zcCoeffs.Kd << " * " << derivative << ") : ";
+    // qDebug() << "phaselfoutput : " << phase_lf_output;
     m_zc_previousPhaseError = zcPhaseError;
 
     double newSamplingCycles = m_engine->parameters().samplingCycles + phase_lf_output;

@@ -44,6 +44,8 @@ public:
     Parameters& parameters();
     const Parameters& parameters() const;
 
+    FrequencyTracker* getFrequencyTracker() const;
+
 public slots:
     void start();
     void stop();

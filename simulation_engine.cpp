@@ -32,6 +32,7 @@ bool SimulationEngine::isRunning() const { return m_captureTimer.isActive(); }
 int SimulationEngine::getDataSize() const { return m_data.size(); }
 SimulationEngine::Parameters& SimulationEngine::parameters() { return m_params; };
 const SimulationEngine::Parameters& SimulationEngine::parameters() const { return m_params; };
+FrequencyTracker* SimulationEngine::getFrequencyTracker() const { return m_frequencyTracker.get(); }
 // -----------------
 
 // ---- public slots ----
