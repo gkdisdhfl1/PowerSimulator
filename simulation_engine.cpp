@@ -212,7 +212,8 @@ void SimulationEngine::addNewDataPoint(double voltage, double current)
 
 }
 
-void SimulationEngine::calculateCycleData()
+void SimulationEngine::
+    calculateCycleData()
 {
     if(m_cycleSampleBuffer.empty())
         return;
@@ -325,7 +326,8 @@ SimulationEngine::CycleMetrics SimulationEngine::calculateMetricsFor(DataType ty
     }
 
     // DFT 정규화
-    const double normFactor = 2.0 / N;
+    // 최대 진폭(2/N)을 sqrt(2)로 나누어 실효값(RMS)을 구한는 계수를 구함
+    const double normFactor = std::sqrt(2.0) / N;
     return {
         .rms = std::sqrt(squareSum / N),
         .phasorX = normFactor * phasorX_sum,
