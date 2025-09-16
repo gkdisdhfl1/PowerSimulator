@@ -38,6 +38,9 @@ SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsM
 
     m_settingsDialog = std::make_unique<SettingsDialog>(this, m_parent);
     m_pidTuningDialog = std::make_unique<PidTuningDialog>(m_parent);
+
+    connect(m_pidTuningDialog.get(), &PidTuningDialog::fllCoefficientsChanged, this, &SettingsUiController::onFllCoefficientsChanged);
+    connect(m_pidTuningDialog.get(), &PidTuningDialog::zcCoefficientsChanged, this, &SettingsUiController::onzcCoefficientsChanged);
 }
 
 // --- public slot 구현 ---
@@ -203,12 +206,6 @@ void SettingsUiController::showPidTuningDialog()
 
     // 다이얼로그 현재 값 설정
     m_pidTuningDialog->setInitialValues(fllCoeffs, zcCoeffs);
-
-    // 다이얼로그의 시그널을 이 컨트롤러의 슬롯에 연결
-    // 매번 dialog 열 때마다 연결을 다시 설정하여 중복 연결 방지
-    disconnect(m_pidTuningDialog.get(), nullptr, this, nullptr); // 기존 연결 모두 해제
-    connect(m_pidTuningDialog.get(), &PidTuningDialog::fllCoefficientsChanged, this, &SettingsUiController::onFllCoefficientsChanged);
-    connect(m_pidTuningDialog.get(), &PidTuningDialog::zcCoefficientsChanged, this, &SettingsUiController::onzcCoefficientsChanged);
 
     m_pidTuningDialog->show();
     m_pidTuningDialog->raise();

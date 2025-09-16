@@ -34,8 +34,11 @@ void PidTuningDialog::setupUi()
     m_fllKiControl = new ValueControlWidget();
     m_fllKdControl = new ValueControlWidget();
     m_fllKpControl->setRange(0, 5); m_fllKpControl->setSteps(0.1, 0.01);
-    m_fllKiControl->setRange(0, 0.1); m_fllKpControl->setSteps(0.001, 0.0001);
-    m_fllKdControl->setRange(0, 5); m_fllKpControl->setSteps(0.1, 0.01);
+    m_fllKpControl->setDecimals(4);
+    m_fllKiControl->setRange(0, 0.1); m_fllKiControl->setSteps(0.001, 0.0001);
+    m_fllKiControl->setDecimals(6);
+    m_fllKdControl->setRange(0, 5); m_fllKdControl->setSteps(0.1, 0.01);
+    m_fllKdControl->setDecimals(4);
 
     auto fllLayout = new QFormLayout(m_fllGroup);
     fllLayout->addRow("P (Kp)", m_fllKpControl);
@@ -48,8 +51,11 @@ void PidTuningDialog::setupUi()
     m_zcKiControl = new ValueControlWidget();
     m_zcKdControl = new ValueControlWidget();
     m_zcKpControl->setRange(0, 1); m_zcKpControl->setSteps(0.01, 0.001);
-    m_zcKiControl->setRange(0, 0.001); m_zcKpControl->setSteps(0.00001, 0.000001);
-    m_zcKdControl->setRange(0, 1); m_zcKpControl->setSteps(0.01, 0.001);
+    m_zcKpControl->setDecimals(4);
+    m_zcKiControl->setRange(0, 0.001); m_zcKiControl->setSteps(0.00001, 0.000001);
+    m_zcKiControl->setDecimals(7);
+    m_zcKdControl->setRange(0, 1); m_zcKdControl->setSteps(0.01, 0.001);
+    m_zcKdControl->setDecimals(4);
 
     auto zcLayout = new QFormLayout(m_zcGroup);
     zcLayout->addRow("P (Kp)", m_zcKpControl);

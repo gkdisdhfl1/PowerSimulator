@@ -85,6 +85,11 @@ void ValueControlWidget::setDataType(DataType type)
         m_spinBox->setDecimals(2);
     }
 }
+
+void ValueControlWidget::setDecimals(int decimals)
+{
+    m_spinBox->setDecimals(decimals);
+}
 // --------------------
 
 

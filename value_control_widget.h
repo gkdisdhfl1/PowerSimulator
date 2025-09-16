@@ -29,6 +29,7 @@ public:
     void setSteps(double singleStep, double fineStep);
     void setSuffix(const QString &suffix);
     void setDataType(DataType type);
+    void setDecimals(int decimals);
     double value() const; // 현재 값을 가져오는 함수
 
 protected:
