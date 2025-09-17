@@ -39,8 +39,7 @@ SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsM
     m_settingsDialog = std::make_unique<SettingsDialog>(this, m_parent);
     m_pidTuningDialog = std::make_unique<PidTuningDialog>(m_parent);
 
-    connect(m_pidTuningDialog.get(), &PidTuningDialog::fllCoefficientsChanged, this, &SettingsUiController::onFllCoefficientsChanged);
-    connect(m_pidTuningDialog.get(), &PidTuningDialog::zcCoefficientsChanged, this, &SettingsUiController::onzcCoefficientsChanged);
+    connect(m_pidTuningDialog.get(), &PidTuningDialog::settingsApplied, this, &SettingsUiController::onCoefficientsChanged);
 }
 
 // --- public slot 구현 ---
@@ -212,14 +211,14 @@ void SettingsUiController::showPidTuningDialog()
     m_pidTuningDialog->activateWindow();
 }
 
-void SettingsUiController::onFllCoefficientsChanged(const FrequencyTracker::PidCoefficients& coeffs)
+void SettingsUiController::onCoefficientsChanged(const FrequencyTracker::PidCoefficients& fllCoeffs, const FrequencyTracker::PidCoefficients& zcCoeffs)
 {
-    m_engine->getFrequencyTracker()->setFllCoefficients(coeffs);
-}
+    m_engine->getFrequencyTracker()->setFllCoefficients(fllCoeffs);
+    m_engine->getFrequencyTracker()->setZcCoefficients(zcCoeffs);
 
-void SettingsUiController::onzcCoefficientsChanged(const FrequencyTracker::PidCoefficients& coeffs)
-{
-    m_engine->getFrequencyTracker()->setZcCoefficients(coeffs);
+    qDebug() << "PID 계수 설정 완료";
+    qDebug() << "pllCoeffs : " << fllCoeffs.Kd << ", " << fllCoeffs.Ki << ", " << fllCoeffs.Kd;
+    qDebug() << "zclCoeffs : " << zcCoeffs.Kd << ", " << zcCoeffs.Ki << ", " << zcCoeffs.Kd;
 }
 // -------------------------
 

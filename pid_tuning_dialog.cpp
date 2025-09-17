@@ -12,16 +12,8 @@ PidTuningDialog::PidTuningDialog(QWidget *parent)
     setupUi();
 
     // 시그널 슬롯 연결
-    connect(m_closeButton, &QPushButton::clicked, this, &PidTuningDialog::accept);
-
-    // 각 ValueControlWidget 값이 변경될 때 슬롯 호출
-    connect(m_fllKpControl, &ValueControlWidget::valueChanged, this, &PidTuningDialog::onFllValuesChanged);
-    connect(m_fllKiControl, &ValueControlWidget::valueChanged, this, &PidTuningDialog::onFllValuesChanged);
-    connect(m_fllKdControl, &ValueControlWidget::valueChanged, this, &PidTuningDialog::onFllValuesChanged);
-
-    connect(m_zcKpControl, &ValueControlWidget::valueChanged, this, &PidTuningDialog::onZcValuesChanged);
-    connect(m_zcKiControl, &ValueControlWidget::valueChanged, this, &PidTuningDialog::onZcValuesChanged);
-    connect(m_zcKdControl, &ValueControlWidget::valueChanged, this, &PidTuningDialog::onZcValuesChanged);
+    connect(m_applyButton, &QPushButton::clicked, this, &PidTuningDialog::accept);
+    connect(m_closeButton, &QPushButton::clicked, this, &PidTuningDialog::reject);
 }
 
 void PidTuningDialog::setupUi()
@@ -63,6 +55,7 @@ void PidTuningDialog::setupUi()
     zcLayout->addRow("D (Kd)", m_zcKdControl);
 
     // 버튼 생성
+    m_applyButton = new QPushButton("적용");
     m_closeButton = new QPushButton("닫기");
 
     // 레이아웃 생성
@@ -71,8 +64,13 @@ void PidTuningDialog::setupUi()
     pidLayout->addWidget(m_fllGroup);
     pidLayout->addWidget(m_zcGroup);
 
+    auto buttonLayout = new QHBoxLayout();
+    buttonLayout->addStretch();
+    buttonLayout->addWidget(m_applyButton);
+    buttonLayout->addWidget(m_closeButton);
+
     mainLayout->addLayout(pidLayout);
-    mainLayout->addWidget(m_closeButton, 0, Qt::AlignRight);
+    mainLayout->addLayout(buttonLayout, Qt::AlignRight);
 }
 
 void PidTuningDialog::setInitialValues(const FrequencyTracker::PidCoefficients& fllCoeffs, const FrequencyTracker::PidCoefficients& zcCoeffs)
@@ -88,25 +86,19 @@ void PidTuningDialog::setInitialValues(const FrequencyTracker::PidCoefficients& 
     m_zcKdControl->setValue(zcCoeffs.Kd);
 }
 
-void PidTuningDialog::onFllValuesChanged()
+void PidTuningDialog::accept()
 {
-    FrequencyTracker::PidCoefficients coeffs;
-    coeffs.Kp = m_fllKpControl->value();
-    coeffs.Ki = m_fllKiControl->value();
-    coeffs.Kd = m_fllKdControl->value();
-    emit fllCoefficientsChanged(coeffs);
-}
+    FrequencyTracker::PidCoefficients pllCoeffs;
+    pllCoeffs.Kp = m_fllKpControl->value();
+    pllCoeffs.Ki = m_fllKiControl->value();
+    pllCoeffs.Kd = m_fllKdControl->value();
 
-void PidTuningDialog::onZcValuesChanged()
-{
-    FrequencyTracker::PidCoefficients coeffs;
-    coeffs.Kp = m_zcKpControl->value();
-    coeffs.Ki = m_zcKiControl->value();
-    coeffs.Kd = m_zcKdControl->value();
-    emit zcCoefficientsChanged(coeffs);
-}
+    FrequencyTracker::PidCoefficients zcCoeffs;
+    zcCoeffs.Kp = m_zcKpControl->value();
+    zcCoeffs.Ki = m_zcKiControl->value();
+    zcCoeffs.Kd = m_zcKdControl->value();
 
-void PidTuningDialog::applyChanges()
-{
+    emit settingsApplied(pllCoeffs, zcCoeffs);
 
+    QDialog::accept();
 }

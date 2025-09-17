@@ -53,8 +53,7 @@ public slots:
 
     // PID 튜닝 다이얼로그 관련 슬롯
     void showPidTuningDialog();
-    void onFllCoefficientsChanged(const FrequencyTracker::PidCoefficients& coeffs);
-    void onzcCoefficientsChanged(const FrequencyTracker::PidCoefficients& coeffs);
+    void onCoefficientsChanged(const FrequencyTracker::PidCoefficients& fllCoeffs, const FrequencyTracker::PidCoefficients& zcCoeffs);
 
 private:
     using SettingValue = std::variant<int, double>;

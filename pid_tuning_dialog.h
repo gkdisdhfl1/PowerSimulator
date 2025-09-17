@@ -19,17 +19,11 @@ public:
     void setInitialValues(const FrequencyTracker::PidCoefficients& fllCoeffs, const FrequencyTracker::PidCoefficients& zcCoeffs);
 
 signals:
-    // PID 계수가 변경될 때마다 발생하는 시그널
-    void fllCoefficientsChanged(const FrequencyTracker::PidCoefficients& coeffs);
-    void zcCoefficientsChanged(const FrequencyTracker::PidCoefficients& coeffs);
-
-public slots:
-    void onFllValuesChanged();
-    void onZcValuesChanged();
-    void applyChanges();
+    void settingsApplied(FrequencyTracker::PidCoefficients& fllCoeffs, FrequencyTracker::PidCoefficients& zcCoeffs);
 
 private:
     void setupUi();
+    void accept() override;
 
     // FLL 그룹
     QGroupBox* m_fllGroup;
