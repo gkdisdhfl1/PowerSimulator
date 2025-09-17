@@ -92,8 +92,8 @@ void PidTuningDialog::onFllValuesChanged()
 {
     FrequencyTracker::PidCoefficients coeffs;
     coeffs.Kp = m_fllKpControl->value();
-    coeffs.Ki = m_fllKpControl->value();
-    coeffs.Kd = m_fllKpControl->value();
+    coeffs.Ki = m_fllKiControl->value();
+    coeffs.Kd = m_fllKdControl->value();
     emit fllCoefficientsChanged(coeffs);
 }
 
@@ -101,8 +101,8 @@ void PidTuningDialog::onZcValuesChanged()
 {
     FrequencyTracker::PidCoefficients coeffs;
     coeffs.Kp = m_zcKpControl->value();
-    coeffs.Ki = m_zcKpControl->value();
-    coeffs.Kd = m_zcKpControl->value();
+    coeffs.Ki = m_zcKiControl->value();
+    coeffs.Kd = m_zcKdControl->value();
     emit zcCoefficientsChanged(coeffs);
 }
 
