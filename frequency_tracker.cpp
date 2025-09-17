@@ -24,8 +24,6 @@ namespace {
         static constexpr double FailureThresholdRad = 0.3;
         static constexpr double SevereFailureThresholdRad = 0.6;
         static constexpr int MaxFailCount = 5;
-    };
-    struct ZcTrackerConstants {
         static constexpr double Kp = 0.03 ;
         static constexpr double Ki = 0.000004;
         static constexpr double Kd = 0.48;
@@ -61,10 +59,10 @@ FrequencyTracker::FrequencyTracker(SimulationEngine* engine, QObject *parent)
     , m_zc_previousPhaseError(0.0)
 {
     // FLL 기본값 설정
-    m_fllCoeffs = { .Kp = 0.45, .Ki = 0.0001, .Kd = 0.65};
+    m_fllCoeffs = { .Kp = FllConstants::Kp, .Ki = FllConstants::Ki, .Kd = FllConstants::Kd};
 
     // ZC 기본값 설정
-    m_zcCoeffs = { .Kp = 0.03, .Ki = 0.000004, .Kd = 0.48};
+    m_zcCoeffs = { .Kp = PllConstants::Kp, .Ki = PllConstants::Ki, .Kd = PllConstants::Kd};
 }
 
 // ==== public 함수 ==================
@@ -288,12 +286,12 @@ void FrequencyTracker::processFineTune(const MeasuredData& latestMeasuredData)
 
     double derivative = zcPhaseError - m_zc_previousPhaseError;
 
-    if(std::abs(zcPhaseError) < ZcTrackerConstants::IntegralActivationThresholdRad)     {
+    if(std::abs(zcPhaseError) < PllConstants::IntegralActivationThresholdRad)     {
         m_zc_integralError += zcPhaseError;
     } else {
         m_zc_integralError = 0.0;
     }
-    m_zc_integralError = std::clamp(m_zc_integralError, -ZcTrackerConstants::Integral_Limit, ZcTrackerConstants::Integral_Limit);
+    m_zc_integralError = std::clamp(m_zc_integralError, -PllConstants::Integral_Limit, PllConstants::Integral_Limit);
 
     double phase_lf_output = (m_zcCoeffs.Kp * zcPhaseError) + (m_zcCoeffs.Ki * m_zc_integralError) + (m_zcCoeffs.Kd * derivative);
     // qDebug() << "(" << m_zcCoeffs.Kp << " * " << zcPhaseError << ") + (" << m_zcCoeffs.Ki << " * " << m_zc_integralError << ") + (" << m_zcCoeffs.Kd << " * " << derivative << ") : ";
