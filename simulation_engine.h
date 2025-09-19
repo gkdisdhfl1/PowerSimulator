@@ -4,6 +4,7 @@
 #include <QObject>
 #include <QChronoTimer>
 #include <deque>
+#include <complex>
 #include "data_point.h"
 #include "config.h"
 #include "measured_data.h"
@@ -42,6 +43,7 @@ public:
     const Parameters& parameters() const;
 
     FrequencyTracker* getFrequencyTracker() const;
+    enum class DataType { Voltage, Current};
 
 public slots:
     void start();
@@ -69,13 +71,7 @@ private:
     using Nanoseconds = utils::Nanoseconds;
     using FpSeconds = utils::FpSeconds;
 
-    struct CycleMetrics {
-        double rms;
-        double phasorX;
-        double phasorY;
-    };
-    enum class DataType { Voltage, Current};
-    CycleMetrics calculateMetricsFor(DataType type) const;
+   std::vector<std::complex<double>> analyzeSpectrum(DataType type) const;
 
     void advanceSimulationTime();
     double calculateCurrentVoltage() const;

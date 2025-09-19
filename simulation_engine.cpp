@@ -239,34 +239,105 @@ void SimulationEngine::calculateCycleData()
     if(m_cycleSampleBuffer.empty())
         return;
 
-    // 1. 헬퍼 함수를 이용해 전압/전류의 핵심 지표들을 계산
-    CycleMetrics voltageMetrics = calculateMetricsFor(DataType::Voltage);
-    CycleMetrics currentMetrics = calculateMetricsFor(DataType::Current);
+    // 1. (측정) 파형의 전체 주파수 스펙트럼 분석
+    auto voltageSpectrum = analyzeSpectrum(DataType::Voltage);
+    auto currentSpectrum = analyzeSpectrum(DataType::Current);
 
-    // 2. 유효 전력 계산
+    // 2. (해석) 스펙트럼에서 가장 큰 두 개의 성분(기본파, 고조파)를 찾음
+    auto findSignificantHarmoics = [](const std::vector<std::complex<double>>& spectrum) {
+        std::vector<HarmonicAnalysisResult> results;
+        if(spectrum.size() < 2) return results;
+
+        int fundamentalOrder = -1;
+        double fundamentalMagSq = -1.0;
+
+        int harmonicOrder = -1;
+        double harmonicMagSq = -1.0;
+
+        // DC(0Hz)를 제외하고, 가장 큰 두 개의 피크를 찾음
+        for(size_t k = 1; k < spectrum.size(); ++k) {
+            double magSq = std::norm(spectrum[k]); // 크기의 제곱으로 비교
+            if(magSq > fundamentalMagSq) {
+                // 기존의 Fundamental을 harmonic으로 내림
+                harmonicMagSq = fundamentalMagSq;
+                harmonicOrder = fundamentalOrder;
+                // 새로운 fundamental 설정
+                fundamentalMagSq = magSq;
+                fundamentalOrder = k;
+            } else if(magSq > harmonicMagSq) {
+                harmonicMagSq = magSq;
+                harmonicOrder = k;
+            }
+        }
+
+        // 노이즈와 구분하기 위한 최소 임계값
+        const double noiseThresholdSq = fundamentalMagSq * 0.001;
+
+        // 기본파 결과 추가
+        if(fundamentalMagSq != -1) {
+            const auto& phasor = spectrum[fundamentalOrder];
+            results.push_back({
+                .order = fundamentalOrder,
+                .rms = std::abs(phasor) / std::sqrt(2.0),
+                .phase = std::arg(phasor),
+                .phasorX = phasor.real(),
+                .phasorY = phasor.imag()
+            });
+        }
+
+        // 유의미한 고조파 결과 추가
+        if(harmonicOrder != -1 && harmonicMagSq > noiseThresholdSq) {
+            const auto& phasor = spectrum[harmonicOrder];
+            results.push_back({
+                .order = harmonicOrder,
+                .rms = std::abs(phasor) / std::sqrt(2.0),
+                .phase = std::arg(phasor),
+                .phasorX = phasor.real(),
+                .phasorY = phasor.imag()
+            });
+        }
+
+        // 차수 순으로 정렬
+        std::sort(results.begin(), results.end(), [](const auto& a, const auto& b) {
+            return a.order < b.order;
+        });
+
+        return results;
+    };
+
+    auto voltageHarmonics = findSignificantHarmoics(voltageSpectrum);
+    auto currentHarmonics = findSignificantHarmoics(currentSpectrum);
+
+    // 3. 전체 RMS 및 유효 전력 계산
+    double voltageSquareSum = 0.0;
+    double currentSquareSum = 0.0;
     double powerSum = 0.0;
+    const size_t N = m_cycleSampleBuffer.size();
+
     for(const auto& sample : m_cycleSampleBuffer) {
+        voltageSquareSum += sample.voltage * sample.voltage;
+        currentSquareSum += sample.current * sample.current;
         powerSum += sample.voltage * sample.current;
     }
-    const double activePower = powerSum / m_cycleSampleBuffer.size();
+    const double totalVoltageRms = std::sqrt(voltageSquareSum / N);
+    const double totalCurrentRms = std::sqrt(currentSquareSum / N);
+    const double activePower = powerSum / N;
 
-    // 3. 계산된 데이터 구조체를 담아 컨테이너 추가
+    // 4. 계산된 데이터 구조체를 담아 컨테이너 추가
     m_measuredData.push_back({
         m_simulationTimeNs, // 현재 시간 (사이클 종료 시점)
-        voltageMetrics.rms,
-        currentMetrics.rms,
+        totalVoltageRms,
+        totalCurrentRms,
         activePower,
-        voltageMetrics.phasorX,
-        voltageMetrics.phasorY,
-        currentMetrics.phasorX,
-        currentMetrics.phasorY,
+        voltageHarmonics,
+        currentHarmonics,
     });
 
     if(m_measuredData.size() > static_cast<size_t>(m_params.maxDataSize)) {
         m_measuredData.pop_front();
     }
 
-    // 4. UI에 업데이트 알림
+    // 5. UI에 업데이트 알림
     emit measuredDataUpdated(m_measuredData);
 
     // 6. 버퍼 비우기
@@ -309,12 +380,8 @@ void SimulationEngine::processUpdateByMode(bool resetCounter)
     }
 }
 
-SimulationEngine::CycleMetrics SimulationEngine::calculateMetricsFor(DataType type) const
+std::vector<std::complex<double>> SimulationEngine::analyzeSpectrum(SimulationEngine::DataType type) const
 {
-    if(m_cycleSampleBuffer.empty()) {
-        return {0.0, 0.0, 0.0};
-    }
-
     // // -- 디버그 코드 ---
     // if(type == DataType::Voltage) { // 전압 계산 시 한 번만 출력
     //     qDebug() << "--- Cycle Buffer (Voltage) ---";
@@ -326,32 +393,30 @@ SimulationEngine::CycleMetrics SimulationEngine::calculateMetricsFor(DataType ty
     // // ----------------
 
     const size_t N = m_cycleSampleBuffer.size();
+    if(N < 2) return {};
 
+    const size_t spectrumSize = N / 2; // Nyquist 주파수까지 분석
+    std::vector<std::complex<double>> spectrum(spectrumSize, {0.0, 0.0});
     const double two_pi_over_N = 2.0 * std::numbers::pi / N;
 
-    double squareSum = 0.0;
-    double phasorX_sum = 0.0;
-    double phasorY_sum = 0.0;
+    for(size_t k = 1; k < spectrumSize; ++k) { // k = 1(기본파) 부터 시작
+        double phasorX_sum = 0.0;
+        double phasorY_sum = 0.0;
 
-    for(size_t n = 0; n < N; ++n) {
-        const auto& sample = m_cycleSampleBuffer[n];
-        const double value = (type == DataType::Voltage) ? sample.voltage : sample.current;
+        for(size_t n = 0; n < N; ++n) {
+            const auto& sample = m_cycleSampleBuffer[n];
+            const double value = (type == DataType::Voltage) ? sample.voltage : sample.current;
 
-        const double angle = two_pi_over_N * n;
-        const double cos_angle = std::cos(angle);
-        const double sin_angle = std::sin(angle);
+            const double angle = k * two_pi_over_N * n;
+            phasorX_sum += value * cos(angle);
+            phasorY_sum -= value * sin(angle); // 허수부는 -sin을 곱함
+        }
 
-        squareSum += value * value;
-        phasorX_sum += value * cos_angle;
-        phasorY_sum -= value * sin_angle; // 허수부는 -sin을 곱함
+        // DFT 정규화
+        // 최대 진폭(2/N)을 sqrt(2)로 나누어 실효값(RMS)을 구한는 계수를 구함
+        const double normFactor = std::sqrt(2.0) / N;
+        spectrum[k] = {normFactor * phasorX_sum, normFactor * phasorY_sum};
     }
 
-    // DFT 정규화
-    // 최대 진폭(2/N)을 sqrt(2)로 나누어 실효값(RMS)을 구한는 계수를 구함
-    const double normFactor = std::sqrt(2.0) / N;
-    return {
-        .rms = std::sqrt(squareSum / N),
-        .phasorX = normFactor * phasorX_sum,
-        .phasorY = normFactor * phasorY_sum
-    };
+    return spectrum;
 }
