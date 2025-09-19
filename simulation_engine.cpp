@@ -212,8 +212,7 @@ void SimulationEngine::addNewDataPoint(double voltage, double current)
 
 }
 
-void SimulationEngine::
-    calculateCycleData()
+void SimulationEngine::calculateCycleData()
 {
     if(m_cycleSampleBuffer.empty())
         return;

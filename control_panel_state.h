@@ -3,6 +3,13 @@
 
 #include "simulation_engine.h"
 
+// 고조파 성분
+struct HarmonicComponent {
+    int order;
+    double magnitude;
+    double phase;
+};
+
 struct ControlPanelState {
     // Source 파라미터
     double amplitude;
@@ -14,6 +21,10 @@ struct ControlPanelState {
     double timeScale;
     double samplingCycles;
     int samplesPerCycle;
+
+    // 고조파 성분
+    HarmonicComponent voltageHarmonic;
+    HarmonicComponent currentHarmonic;
 
     // UI 상태
     bool isRunning;

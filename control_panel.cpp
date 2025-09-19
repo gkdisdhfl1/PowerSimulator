@@ -2,6 +2,7 @@
 #include "value_control_widget.h"
 #include "fine_tuning_dial.h"
 #include "config.h"
+#include "collapsible_groupbox.h"
 
 #include <QPushButton>
 #include <QRadioButton>
@@ -32,6 +33,13 @@ ControlPanelState ControlPanel::getState() const
     state.samplingCycles = m_samplingCyclesControlWidget->value();
     state.samplesPerCycle = static_cast<int>(m_samplesPerCycleControlWidget->value());
 
+    state.voltageHarmonic.order = static_cast<int>(m_voltageHarmonicOrder->value());
+    state.voltageHarmonic.magnitude = m_voltageHarmonicMagnitude->value();
+    state.voltageHarmonic.phase = m_voltageHarmonicPhase->value();
+    state.currentHarmonic.order = static_cast<int>(m_currentHarmonicOrder->value());
+    state.currentHarmonic.magnitude = m_currentHarmonicMagnitude->value();
+    state.currentHarmonic.phase = m_currentHarmonicPhase->value();
+
     if(m_perSampleRadioButton->isChecked()) {
         state.updateMode = SimulationEngine::UpdateMode::PerSample;
     } else if(m_perHalfCycleRadioButton->isChecked()) {
@@ -56,6 +64,13 @@ void ControlPanel::setState(const ControlPanelState& state)
     m_samplingCyclesControlWidget->setValue(state.samplingCycles);
     m_samplesPerCycleControlWidget->setValue(state.samplesPerCycle);
 
+    m_voltageHarmonicOrder->setValue(state.voltageHarmonic.order);
+    m_voltageHarmonicMagnitude->setValue(state.voltageHarmonic.magnitude);
+    m_voltageHarmonicPhase->setValue(state.voltageHarmonic.phase);
+    m_currentHarmonicOrder->setValue(state.currentHarmonic.order);
+    m_currentHarmonicMagnitude->setValue(state.currentHarmonic.magnitude);
+    m_currentHarmonicPhase->setValue(state.currentHarmonic.phase);
+
     if(state.updateMode == SimulationEngine::UpdateMode::PerSample) {
         m_perSampleRadioButton->setChecked(true);
     } else if(state.updateMode == SimulationEngine::UpdateMode::PerHalfCycle) {
@@ -79,6 +94,12 @@ void ControlPanel::setupUi()
     m_timeScaleControlWidget = new ValueControlWidget();
     m_samplingCyclesControlWidget = new ValueControlWidget();
     m_samplesPerCycleControlWidget = new ValueControlWidget();
+    m_voltageHarmonicOrder = new ValueControlWidget();
+    m_voltageHarmonicMagnitude = new ValueControlWidget();
+    m_voltageHarmonicPhase= new ValueControlWidget();
+    m_currentHarmonicOrder = new ValueControlWidget();
+    m_currentHarmonicMagnitude = new ValueControlWidget();
+    m_currentHarmonicPhase= new ValueControlWidget();
 
     m_currentPhaseDial = new FineTuningDial();
     m_currentPhaseLabel = new QLabel();
@@ -119,6 +140,22 @@ void ControlPanel::setupUi()
     auto phaseGroupBox = new QGroupBox("전류 위상차");
     phaseGroupBox->setLayout(phaseLayout);
 
+    // 전압 고조파 그룹
+    auto voltageHarmonicGroupBox = new CollapsibleGroupBox("전압 고조파");
+    auto voltageHarmonicLayout = new QFormLayout();
+    voltageHarmonicLayout->addRow("차수", m_voltageHarmonicOrder);
+    voltageHarmonicLayout->addRow("크기", m_voltageHarmonicMagnitude);
+    voltageHarmonicLayout->addRow("위상", m_voltageHarmonicPhase);
+    voltageHarmonicGroupBox->contentLayoutPtr()->addLayout(voltageHarmonicLayout);
+
+    // 전류 고조파 그룹
+    auto currentHarmonicGroupBox = new CollapsibleGroupBox("전류 고조파");
+    auto currentHarmonicLayout = new QFormLayout();
+    currentHarmonicLayout->addRow("차수", m_currentHarmonicOrder);
+    currentHarmonicLayout->addRow("크기", m_currentHarmonicMagnitude);
+    currentHarmonicLayout->addRow("위상", m_currentHarmonicPhase);
+    currentHarmonicGroupBox->contentLayoutPtr()->addLayout(currentHarmonicLayout);
+
     // 화면 갱신 그룹박스 레이아웃
     auto updateModeLayout = new QHBoxLayout();
     updateModeLayout->addWidget(m_perSampleRadioButton);
@@ -134,6 +171,8 @@ void ControlPanel::setupUi()
     mainLayout->addLayout(buttonLayout);
     mainLayout->addLayout(formLayout);
     mainLayout->addWidget(phaseGroupBox);
+    mainLayout->addWidget(voltageHarmonicGroupBox);
+    mainLayout->addWidget(currentHarmonicGroupBox);
     mainLayout->addWidget(updateModeGroupBox);
     mainLayout->addSpacerItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::MinimumExpanding));
 }
@@ -168,6 +207,32 @@ void ControlPanel::initializeUiValues()
     m_currentPhaseDial->setNotchesVisible(true);
     updateCurrentPhaseLabel(m_currentPhaseDial->value());
 
+    // 전압 고조파 초기화
+    m_voltageHarmonicOrder->setRange(2, 100);
+    m_voltageHarmonicOrder->setValue(2);
+    m_voltageHarmonicOrder->setDataType(ValueControlWidget::DataType::Integer);
+
+    m_voltageHarmonicMagnitude->setRange(0, 1000);
+    m_voltageHarmonicMagnitude->setValue(0.0);
+    m_voltageHarmonicMagnitude->setSuffix(" V");
+
+    m_voltageHarmonicPhase->setRange(0, 360);
+    m_voltageHarmonicPhase->setValue(0.0);
+    m_voltageHarmonicPhase->setSuffix(" °");
+
+    // 전류 고조파 초기화
+    m_currentHarmonicOrder->setRange(2, 100);
+    m_currentHarmonicOrder->setValue(2);
+    m_currentHarmonicOrder->setDataType(ValueControlWidget::DataType::Integer);
+
+    m_currentHarmonicMagnitude->setRange(0, 1000);
+    m_currentHarmonicMagnitude->setValue(0.0);
+    m_currentHarmonicMagnitude->setSuffix(" A");
+
+    m_currentHarmonicPhase->setRange(0, 360);
+    m_currentHarmonicPhase->setValue(0.0);
+    m_currentHarmonicPhase->setSuffix(" °");
+
     QFontMetrics fm(m_currentPhaseLabel->font());
     int width = fm.horizontalAdvance("359 °"); // 가장 긴 텍스트의 너비 계산
     m_currentPhaseLabel->setMinimumWidth(width);
@@ -201,6 +266,12 @@ void ControlPanel::createConnections()
     connect(m_timeScaleControlWidget, &ValueControlWidget::valueChanged, this, &ControlPanel::timeScaleChanged);
     connect(m_samplingCyclesControlWidget, &ValueControlWidget::valueChanged, this, &ControlPanel::samplingCyclesChanged);
     connect(m_samplesPerCycleControlWidget, &ValueControlWidget::intValueChanged, this, &ControlPanel::samplesPerCycleChanged);
+    connect(m_voltageHarmonicOrder, &ValueControlWidget::intValueChanged, this, &ControlPanel::harmonicChanged);
+    connect(m_voltageHarmonicMagnitude, &ValueControlWidget::valueChanged, this, &ControlPanel::harmonicChanged);
+    connect(m_voltageHarmonicPhase, &ValueControlWidget::valueChanged, this, &ControlPanel::harmonicChanged);
+    connect(m_currentHarmonicOrder, &ValueControlWidget::intValueChanged, this, &ControlPanel::harmonicChanged);
+    connect(m_currentHarmonicMagnitude, &ValueControlWidget::valueChanged, this, &ControlPanel::harmonicChanged);
+    connect(m_currentHarmonicPhase, &ValueControlWidget::valueChanged, this, &ControlPanel::harmonicChanged);
 
     // 라디오 버튼 연결
     connect(m_perSampleRadioButton, &QRadioButton::toggled, this, &ControlPanel::updateModeChanged);

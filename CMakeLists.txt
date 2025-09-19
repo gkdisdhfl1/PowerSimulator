@@ -52,6 +52,7 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS Core)
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
     qt_add_executable(PowerSimulator
         MANUAL_FINALIZATION
@@ -75,6 +76,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
         phasor_view.h phasor_view.cpp
         frequency_tracker.h frequency_tracker.cpp
         pid_tuning_dialog.h pid_tuning_dialog.cpp
+        collapsible_groupbox.h collapsible_groupbox.cpp
 
 
     )
@@ -110,6 +112,7 @@ target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Core)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Core)
+target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

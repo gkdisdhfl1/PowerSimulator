@@ -52,6 +52,7 @@ signals:
     void samplingCyclesChanged(double value);
     void samplesPerCycleChanged(int value);
     void updateModeChanged();
+    void harmonicChanged();
 
 private:
     // UI 생성 및 초기화를 위한 헬퍼 함수들
@@ -69,6 +70,13 @@ private:
     ValueControlWidget* m_timeScaleControlWidget;
     ValueControlWidget* m_samplingCyclesControlWidget;
     ValueControlWidget* m_samplesPerCycleControlWidget;
+
+    ValueControlWidget* m_voltageHarmonicOrder;
+    ValueControlWidget* m_voltageHarmonicMagnitude;
+    ValueControlWidget* m_voltageHarmonicPhase;
+    ValueControlWidget* m_currentHarmonicOrder;
+    ValueControlWidget* m_currentHarmonicMagnitude;
+    ValueControlWidget* m_currentHarmonicPhase;
 
     FineTuningDial* m_currentPhaseDial;
     QLabel* m_currentPhaseLabel;
