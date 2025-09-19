@@ -14,6 +14,7 @@
 #include <QSpacerItem>
 #include <QGroupBox>
 #include <QCheckBox>
+#include <QScrollArea>
 
 ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
 {
@@ -111,8 +112,22 @@ void ControlPanel::setupUi()
     m_autoScrollCheckBox = new QCheckBox("자동 스크롤");
     m_trackingButton = new QPushButton("자동 추적 시작", this);
 
+    // 스크롤 영역 생성
+    auto scrollArea = new QScrollArea(this);
+    scrollArea->setWidgetResizable(true);
+    scrollArea->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff); // 수평 스크롤 바는 항상 끔
+
+    // 스크롤 영역에 들어갈 컨테이너 위젯 생성
+    auto containerWidget = new QWidget();
+    scrollArea->setWidget(containerWidget);
+
     // 레이아웃 설정
-    auto mainLayout = new QVBoxLayout(this);
+    auto mainLayout = new QVBoxLayout(containerWidget);
+
+    // ControlPanel 최상위 레이아웃 설정
+    auto topLayout = new QVBoxLayout(this);
+    topLayout->setContentsMargins(0, 0, 0, 0);
+    topLayout->addWidget(scrollArea);
 
     // 버튼 레이아웃
     auto buttonLayout = new QHBoxLayout();
