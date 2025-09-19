@@ -55,6 +55,7 @@ public slots:
     void showPidTuningDialog();
     void onCoefficientsChanged(const FrequencyTracker::PidCoefficients& fllCoeffs, const FrequencyTracker::PidCoefficients& zcCoeffs);
 
+    void onHarmonicsChanged();
 private:
     using SettingValue = std::variant<int, double>;
     using StateGetter = std::function<SettingValue(const ControlPanelState&)>;

@@ -186,14 +186,36 @@ void SimulationEngine::advanceSimulationTime()
 
 double SimulationEngine::calculateCurrentVoltage() const
 {
-    const double finalPhase = m_currentPhaseRadians + m_params.phaseRadians;
-    return m_params.amplitude * sin(finalPhase);
+    // 1. 기본파 계산
+    const double fundamentalPhase = m_currentPhaseRadians + m_params.phaseRadians;
+    double voltage = m_params.amplitude * sin(fundamentalPhase);
+
+    // 2. 고조파 계산 (크기가 0보다 클 때만)
+    const auto& harmonic = m_params.voltageHarmonic;
+    if(harmonic.magnitude > 0.0) {
+        const double harmonicPhaseOffset = utils::degreesToRadians(harmonic.phase) ;
+        const double harmonicPhase = harmonic.order * fundamentalPhase + harmonicPhaseOffset;
+        voltage += harmonic.magnitude * sin(harmonicPhase);
+    }
+
+    return voltage;
 }
 
 double SimulationEngine::calculateCurrentAmperage() const
 {
-    const double finalPhase = m_currentPhaseRadians + m_params.phaseRadians + m_params.currentPhaseOffsetRadians;
-    return m_params.currentAmplitude * sin(finalPhase);
+    // 1. 기본파 계산
+    const double fundamentalPhase = m_currentPhaseRadians + m_params.phaseRadians + m_params.currentPhaseOffsetRadians;
+    double current = m_params.amplitude * sin(fundamentalPhase);
+
+    // 2. 고조파 계산 (크기가 0보다 클 때만)
+    const auto& harmonic = m_params.currentHarmonic;
+    if(harmonic.magnitude > 0.0) {
+        const double harmonicPhaseOffset = utils::degreesToRadians(harmonic.phase) ;
+        const double harmonicPhase = harmonic.order * fundamentalPhase + harmonicPhaseOffset;
+        current += harmonic.magnitude * sin(harmonicPhase);
+    }
+
+    return current;
 }
 
 void SimulationEngine::addNewDataPoint(double voltage, double current)

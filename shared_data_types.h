@@ -3,17 +3,20 @@
 
 #include <QString>
 
-// 프리셋 데이터의 키와 UI에 표시될 이름을 정의하는 상수 네임스페이스
-namespace PresetKeys {
-    const QString Amplitude         = "진폭 (Voltage)";
-    const QString CurrentAmplitude  = "진폭 (Current)";
-    const QString Frequency         = "주파수";
-    const QString CurrentPhase      = "위상차";
-    const QString TimeScale         = "시간 배율";
-    const QString SamplingCycles    = "초당 cycle";
-    const QString SamplesPerCycle   = "cycle당 sample";
-    const QString MaxDataSize       = "데이터 최대 개수";
-    const QString GraphWidth        = "그래프 시간 폭";
-    const QString UpdateMode        = "갱신 모드";
-}
+// 고조파 성분을 정의하는 구조체
+// magnitude가 0이면 비활성화된 것으로 간주
+struct HarmonicComponent {
+    int order;
+    double magnitude;
+    double phase;
+};
+
+// 시뮬레이션 화면 갱신 모드
+enum class UpdateMode {
+    PerSample,      // 매 샘플마다 갱신
+    PerHalfCycle,   // 반 주기마다 갱신
+    PerCycle        // 한 주기마다 갱신
+};
+
+
 #endif // SHARED_DATA_TYPES_H

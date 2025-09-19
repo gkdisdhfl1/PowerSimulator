@@ -7,6 +7,7 @@
 #include "data_point.h"
 #include "config.h"
 #include "measured_data.h"
+#include "shared_data_types.h"
 
 class FrequencyTracker;
 
@@ -14,13 +15,7 @@ class SimulationEngine : public QObject
 {
     Q_OBJECT
 public:
-    enum class UpdateMode {
-        PerSample,      // 매 샘플마다 갱신
-        PerHalfCycle,   // 반 주기마다 갱신
-        PerCycle        // 한 주기마다 갱신
-    };
-
-    // 시뮬레이션 매개변수를 담는 구조체
+   // 시뮬레이션 매개변수를 담는 구조체
     struct Parameters {
         double amplitude = config::Source::Amplitude::Default;
         double currentAmplitude = config::Source::Current::DefaultAmplitude;
@@ -33,6 +28,8 @@ public:
         int maxDataSize = config::Simulation::DefaultDataSize;
         double graphWidthSec = config::View::GraphWidth::Default;
         UpdateMode updateMode = UpdateMode::PerSample;
+        HarmonicComponent voltageHarmonic = {config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefualtPhase};
+        HarmonicComponent currentHarmonic = {config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefualtPhase};
     };
 
     explicit SimulationEngine();

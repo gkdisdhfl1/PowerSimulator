@@ -94,6 +94,13 @@ namespace config {
             };
         };
     };
+
+    // 고조파 설정
+    struct Harmonics {
+        static constexpr int DefaultOrder = 2;
+        static constexpr double DefaultMagnitude = 0.0;
+        static constexpr double DefualtPhase = 0.0;
+    };
 }
 
 namespace utils {

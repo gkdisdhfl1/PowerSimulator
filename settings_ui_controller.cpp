@@ -172,7 +172,7 @@ void SettingsUiController::onUpdateModeChanged()
     ControlPanelState state = m_controlPanel->getState();
 
     // state 객체에 담긴 updateMode 값을 엔진의 파라미터에 직접 설정
-    m_engine->parameters().updateMode = static_cast<SimulationEngine::UpdateMode>(state.updateMode);
+    m_engine->parameters().updateMode = static_cast<UpdateMode>(state.updateMode);
 }
 
 void SettingsUiController::showSettingsDialog()
@@ -219,6 +219,15 @@ void SettingsUiController::onCoefficientsChanged(const FrequencyTracker::PidCoef
     qDebug() << "PID 계수 설정 완료";
     qDebug() << "pllCoeffs : " << fllCoeffs.Kd << ", " << fllCoeffs.Ki << ", " << fllCoeffs.Kd;
     qDebug() << "zclCoeffs : " << zcCoeffs.Kd << ", " << zcCoeffs.Ki << ", " << zcCoeffs.Kd;
+}
+
+void SettingsUiController::onHarmonicsChanged()
+{
+    const auto state = m_controlPanel->getState();
+    auto& params = m_engine->parameters();
+
+    params.voltageHarmonic = state.voltageHarmonic;
+    params.currentHarmonic = state.currentHarmonic;
 }
 // -------------------------
 
@@ -280,7 +289,7 @@ void SettingsUiController::initializeSettingsMap()
             return static_cast<int>(s.updateMode);
         },
         [](ControlPanelState& s, const SettingValue& val) {
-            s.updateMode = static_cast<SimulationEngine::UpdateMode>(std::get<int>(val));
+            s.updateMode = static_cast<UpdateMode>(std::get<int>(val));
         },
         0
     };

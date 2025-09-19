@@ -1,14 +1,7 @@
 #ifndef CONTROL_PANEL_STATE_H
 #define CONTROL_PANEL_STATE_H
 
-#include "simulation_engine.h"
-
-// 고조파 성분
-struct HarmonicComponent {
-    int order;
-    double magnitude;
-    double phase;
-};
+#include "shared_data_types.h"
 
 struct ControlPanelState {
     // Source 파라미터
@@ -28,7 +21,7 @@ struct ControlPanelState {
 
     // UI 상태
     bool isRunning;
-    SimulationEngine::UpdateMode updateMode;
+    UpdateMode updateMode;
 };
 
 #endif // CONTROL_PANEL_STATE_H

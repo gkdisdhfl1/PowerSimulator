@@ -3,6 +3,7 @@
 #include "fine_tuning_dial.h"
 #include "config.h"
 #include "collapsible_groupbox.h"
+#include "shared_data_types.h"
 
 #include <QPushButton>
 #include <QRadioButton>
@@ -42,11 +43,11 @@ ControlPanelState ControlPanel::getState() const
     state.currentHarmonic.phase = m_currentHarmonicPhase->value();
 
     if(m_perSampleRadioButton->isChecked()) {
-        state.updateMode = SimulationEngine::UpdateMode::PerSample;
+        state.updateMode = UpdateMode::PerSample;
     } else if(m_perHalfCycleRadioButton->isChecked()) {
-        state.updateMode = SimulationEngine::UpdateMode::PerHalfCycle;
+        state.updateMode = UpdateMode::PerHalfCycle;
     } else {
-        state.updateMode = SimulationEngine::UpdateMode::PerCycle;
+        state.updateMode = UpdateMode::PerCycle;
     }
 
     state.isRunning = (m_startStopButton->text() == "일시정지");
@@ -72,9 +73,9 @@ void ControlPanel::setState(const ControlPanelState& state)
     m_currentHarmonicMagnitude->setValue(state.currentHarmonic.magnitude);
     m_currentHarmonicPhase->setValue(state.currentHarmonic.phase);
 
-    if(state.updateMode == SimulationEngine::UpdateMode::PerSample) {
+    if(state.updateMode == UpdateMode::PerSample) {
         m_perSampleRadioButton->setChecked(true);
-    } else if(state.updateMode == SimulationEngine::UpdateMode::PerHalfCycle) {
+    } else if(state.updateMode == UpdateMode::PerHalfCycle) {
         m_perHalfCycleRadioButton->setChecked(true);
     } else {
         m_perCycleRadioButton->setChecked(true);
