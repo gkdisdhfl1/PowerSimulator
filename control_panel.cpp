@@ -16,6 +16,7 @@
 #include <QGroupBox>
 #include <QCheckBox>
 #include <QScrollArea>
+#include <QTabWidget>
 
 ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
 {
@@ -37,10 +38,10 @@ ControlPanelState ControlPanel::getState() const
 
     state.voltageHarmonic.order = static_cast<int>(m_voltageHarmonicOrder->value());
     state.voltageHarmonic.magnitude = m_voltageHarmonicMagnitude->value();
-    state.voltageHarmonic.phase = m_voltageHarmonicPhase->value();
+    state.voltageHarmonic.phase = m_voltageHarmonicPhaseDial->value();
     state.currentHarmonic.order = static_cast<int>(m_currentHarmonicOrder->value());
     state.currentHarmonic.magnitude = m_currentHarmonicMagnitude->value();
-    state.currentHarmonic.phase = m_currentHarmonicPhase->value();
+    state.currentHarmonic.phase = m_currentHarmonicPhaseDial->value();
 
     if(m_perSampleRadioButton->isChecked()) {
         state.updateMode = UpdateMode::PerSample;
@@ -68,10 +69,10 @@ void ControlPanel::setState(const ControlPanelState& state)
 
     m_voltageHarmonicOrder->setValue(state.voltageHarmonic.order);
     m_voltageHarmonicMagnitude->setValue(state.voltageHarmonic.magnitude);
-    m_voltageHarmonicPhase->setValue(state.voltageHarmonic.phase);
+    m_voltageHarmonicPhaseDial->setValue(state.voltageHarmonic.phase);
     m_currentHarmonicOrder->setValue(state.currentHarmonic.order);
     m_currentHarmonicMagnitude->setValue(state.currentHarmonic.magnitude);
-    m_currentHarmonicPhase->setValue(state.currentHarmonic.phase);
+    m_currentHarmonicPhaseDial->setValue(state.currentHarmonic.phase);
 
     if(state.updateMode == UpdateMode::PerSample) {
         m_perSampleRadioButton->setChecked(true);
@@ -96,12 +97,17 @@ void ControlPanel::setupUi()
     m_timeScaleControlWidget = new ValueControlWidget();
     m_samplingCyclesControlWidget = new ValueControlWidget();
     m_samplesPerCycleControlWidget = new ValueControlWidget();
+
+    // 고조파 위젯
+    m_harmonicsTabWidget = new QTabWidget();
     m_voltageHarmonicOrder = new ValueControlWidget();
     m_voltageHarmonicMagnitude = new ValueControlWidget();
-    m_voltageHarmonicPhase= new ValueControlWidget();
+    m_voltageHarmonicPhaseDial= new FineTuningDial();
+    m_voltageHarmonicPhaseLabel = new QLabel();
     m_currentHarmonicOrder = new ValueControlWidget();
     m_currentHarmonicMagnitude = new ValueControlWidget();
-    m_currentHarmonicPhase= new ValueControlWidget();
+    m_currentHarmonicPhaseDial= new FineTuningDial();
+    m_currentHarmonicPhaseLabel = new QLabel();
 
     m_currentPhaseDial = new FineTuningDial();
     m_currentPhaseLabel = new QLabel();
@@ -138,7 +144,8 @@ void ControlPanel::setupUi()
     buttonLayout->addWidget(m_trackingButton);
     buttonLayout->addSpacerItem(new QSpacerItem(40, 20, QSizePolicy::Expanding, QSizePolicy::Minimum));
 
-    // 파라미터 폼 레이아웃
+    // 기본 파라미터 그룹
+    auto parameterGroupBox = new QGroupBox("기본 파라미터");
     auto formLayout = new QFormLayout();
     formLayout->addRow("진폭", m_voltageControlWidget);
     formLayout->addRow("전류 진폭", m_currentAmplitudeControlWidget);
@@ -146,6 +153,7 @@ void ControlPanel::setupUi()
     formLayout->addRow("시간 배율", m_timeScaleControlWidget);
     formLayout->addRow("초당 cycle", m_samplingCyclesControlWidget);
     formLayout->addRow("cycle당 sample", m_samplesPerCycleControlWidget);
+    parameterGroupBox->setLayout(formLayout);
     // formLayout->addRow(m_currentPhaseLabel, m_currentPhaseDial);
 
     // 위상차 다이얼 레이아웃
@@ -156,21 +164,31 @@ void ControlPanel::setupUi()
     auto phaseGroupBox = new QGroupBox("전류 위상차");
     phaseGroupBox->setLayout(phaseLayout);
 
+    // ---- 고조파 탭 위젯 설정 ----
+    auto voltageHarmonicTab = new QWidget();
+    auto voltageHarmonicLayout = new QFormLayout(voltageHarmonicTab);
+
     // 전압 고조파 그룹
-    auto voltageHarmonicGroupBox = new CollapsibleGroupBox("전압 고조파");
-    auto voltageHarmonicLayout = new QFormLayout();
     voltageHarmonicLayout->addRow("차수", m_voltageHarmonicOrder);
     voltageHarmonicLayout->addRow("크기", m_voltageHarmonicMagnitude);
-    voltageHarmonicLayout->addRow("위상", m_voltageHarmonicPhase);
-    voltageHarmonicGroupBox->contentLayoutPtr()->addLayout(voltageHarmonicLayout);
+    auto voltageHarmonicPhaseLayout = new QHBoxLayout();
+    voltageHarmonicPhaseLayout->addWidget(m_voltageHarmonicPhaseDial, 1);
+    voltageHarmonicPhaseLayout->addWidget(m_voltageHarmonicPhaseLabel, 0, Qt::AlignHCenter);
+    voltageHarmonicLayout->addRow("위상", voltageHarmonicPhaseLayout);
 
     // 전류 고조파 그룹
-    auto currentHarmonicGroupBox = new CollapsibleGroupBox("전류 고조파");
-    auto currentHarmonicLayout = new QFormLayout();
+    auto currentHarmonicTab = new QWidget();
+    auto currentHarmonicLayout = new QFormLayout(currentHarmonicTab);
     currentHarmonicLayout->addRow("차수", m_currentHarmonicOrder);
     currentHarmonicLayout->addRow("크기", m_currentHarmonicMagnitude);
-    currentHarmonicLayout->addRow("위상", m_currentHarmonicPhase);
-    currentHarmonicGroupBox->contentLayoutPtr()->addLayout(currentHarmonicLayout);
+    auto currentHarmonicPhaseLayout = new QHBoxLayout();
+    currentHarmonicPhaseLayout->addWidget(m_currentHarmonicPhaseDial, 1);
+    currentHarmonicPhaseLayout->addWidget(m_currentHarmonicPhaseLabel, 0, Qt::AlignHCenter);
+    currentHarmonicLayout->addRow("위상", currentHarmonicPhaseLayout);
+
+    m_harmonicsTabWidget->addTab(voltageHarmonicTab, "전압 고조파");
+    m_harmonicsTabWidget->addTab(currentHarmonicTab, "전류 고조파");
+    // --------------------------
 
     // 화면 갱신 그룹박스 레이아웃
     auto updateModeLayout = new QHBoxLayout();
@@ -185,10 +203,9 @@ void ControlPanel::setupUi()
 
     // 메인 레이아웃에 추가
     mainLayout->addLayout(buttonLayout);
-    mainLayout->addLayout(formLayout);
+    mainLayout->addWidget(parameterGroupBox);
     mainLayout->addWidget(phaseGroupBox);
-    mainLayout->addWidget(voltageHarmonicGroupBox);
-    mainLayout->addWidget(currentHarmonicGroupBox);
+    mainLayout->addWidget(m_harmonicsTabWidget);
     mainLayout->addWidget(updateModeGroupBox);
     mainLayout->addSpacerItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::MinimumExpanding));
 }
@@ -225,33 +242,40 @@ void ControlPanel::initializeUiValues()
 
     // 전압 고조파 초기화
     m_voltageHarmonicOrder->setRange(2, 100);
-    m_voltageHarmonicOrder->setValue(2);
+    m_voltageHarmonicOrder->setValue(config::Harmonics::DefaultOrder);
     m_voltageHarmonicOrder->setDataType(ValueControlWidget::DataType::Integer);
 
     m_voltageHarmonicMagnitude->setRange(0, 1000);
-    m_voltageHarmonicMagnitude->setValue(0.0);
+    m_voltageHarmonicMagnitude->setValue(config::Harmonics::DefaultMagnitude);
     m_voltageHarmonicMagnitude->setSuffix(" V");
 
-    m_voltageHarmonicPhase->setRange(0, 360);
-    m_voltageHarmonicPhase->setValue(0.0);
-    m_voltageHarmonicPhase->setSuffix(" °");
+    m_voltageHarmonicPhaseDial->setRange(0, 359);
+    m_voltageHarmonicPhaseDial->setValue(config::Harmonics::DefaultPhase);
+    m_voltageHarmonicPhaseDial->setWrapping(true);
+    m_voltageHarmonicPhaseDial->setNotchesVisible(true);
+    updateVoltageHarmonicPhaseLabel(m_voltageHarmonicPhaseDial->value());
 
     // 전류 고조파 초기화
     m_currentHarmonicOrder->setRange(2, 100);
-    m_currentHarmonicOrder->setValue(2);
+    m_currentHarmonicOrder->setValue(config::Harmonics::DefaultOrder);
     m_currentHarmonicOrder->setDataType(ValueControlWidget::DataType::Integer);
 
     m_currentHarmonicMagnitude->setRange(0, 1000);
-    m_currentHarmonicMagnitude->setValue(0.0);
+    m_currentHarmonicMagnitude->setValue(config::Harmonics::DefaultMagnitude);
     m_currentHarmonicMagnitude->setSuffix(" A");
 
-    m_currentHarmonicPhase->setRange(0, 360);
-    m_currentHarmonicPhase->setValue(0.0);
-    m_currentHarmonicPhase->setSuffix(" °");
+    m_currentHarmonicPhaseDial->setRange(0, 359);
+    m_currentHarmonicPhaseDial->setValue(config::Harmonics::DefaultPhase);
+    m_currentHarmonicPhaseDial->setWrapping(true);
+    m_currentHarmonicPhaseDial->setNotchesVisible(true);
+    updateCurrentHarmonicPhaseLabel(m_currentHarmonicPhaseDial->value());
 
+    // 라벨 너비 고정
     QFontMetrics fm(m_currentPhaseLabel->font());
     int width = fm.horizontalAdvance("359 °"); // 가장 긴 텍스트의 너비 계산
     m_currentPhaseLabel->setMinimumWidth(width);
+    m_voltageHarmonicPhaseLabel->setMinimumWidth(width);
+    m_currentHarmonicPhaseLabel->setMinimumWidth(width);
 
     m_perSampleRadioButton->setChecked(true);
     m_autoScrollCheckBox->setChecked(true);
@@ -282,12 +306,14 @@ void ControlPanel::createConnections()
     connect(m_timeScaleControlWidget, &ValueControlWidget::valueChanged, this, &ControlPanel::timeScaleChanged);
     connect(m_samplingCyclesControlWidget, &ValueControlWidget::valueChanged, this, &ControlPanel::samplingCyclesChanged);
     connect(m_samplesPerCycleControlWidget, &ValueControlWidget::intValueChanged, this, &ControlPanel::samplesPerCycleChanged);
+
+    // 고조파 파리미터 변경
     connect(m_voltageHarmonicOrder, &ValueControlWidget::intValueChanged, this, &ControlPanel::harmonicChanged);
     connect(m_voltageHarmonicMagnitude, &ValueControlWidget::valueChanged, this, &ControlPanel::harmonicChanged);
-    connect(m_voltageHarmonicPhase, &ValueControlWidget::valueChanged, this, &ControlPanel::harmonicChanged);
+    connect(m_voltageHarmonicPhaseDial, &FineTuningDial::valueChanged, this, &ControlPanel::harmonicChanged);
     connect(m_currentHarmonicOrder, &ValueControlWidget::intValueChanged, this, &ControlPanel::harmonicChanged);
     connect(m_currentHarmonicMagnitude, &ValueControlWidget::valueChanged, this, &ControlPanel::harmonicChanged);
-    connect(m_currentHarmonicPhase, &ValueControlWidget::valueChanged, this, &ControlPanel::harmonicChanged);
+    connect(m_currentHarmonicPhaseDial, &FineTuningDial::valueChanged, this, &ControlPanel::harmonicChanged);
 
     // 라디오 버튼 연결
     connect(m_perSampleRadioButton, &QRadioButton::toggled, this, &ControlPanel::updateModeChanged);
@@ -296,6 +322,8 @@ void ControlPanel::createConnections()
 
     // 내부 UI 업데이트 연결
     connect(m_currentPhaseDial, &FineTuningDial::valueChanged, this, &ControlPanel::updateCurrentPhaseLabel);
+    connect(m_voltageHarmonicPhaseDial, &FineTuningDial::valueChanged, this, &ControlPanel::updateVoltageHarmonicPhaseLabel);
+    connect(m_currentHarmonicPhaseDial, &FineTuningDial::valueChanged, this, &ControlPanel::updateCurrentHarmonicPhaseLabel);
 
     // 체크박스 시그널 연결
     connect(m_autoScrollCheckBox, &QCheckBox::toggled, this, &ControlPanel::autoScrollToggled);
@@ -325,4 +353,14 @@ void ControlPanel::onEngineSamplingCyclesChanged(double newFrequency)
 void ControlPanel::updateCurrentPhaseLabel(int value)
 {
     m_currentPhaseLabel->setText(QString::number(value) + " °");
+}
+
+void ControlPanel::updateVoltageHarmonicPhaseLabel(int value)
+{
+    m_voltageHarmonicPhaseLabel->setText(QString::number(value) + " °");
+}
+
+void ControlPanel::updateCurrentHarmonicPhaseLabel(int value)
+{
+    m_currentHarmonicPhaseLabel->setText(QString::number(value) + " °");
 }

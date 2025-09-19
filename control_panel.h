@@ -15,6 +15,7 @@ class QGroupBox;
 class QFormLayout;
 class QVBoxLayout;
 class QGridLayout;
+class QTabWidget;
 
 class ControlPanel : public QWidget
 {
@@ -35,6 +36,8 @@ public slots:
 
 private slots:
     void updateCurrentPhaseLabel(int value);
+    void updateVoltageHarmonicPhaseLabel(int value);
+    void updateCurrentHarmonicPhaseLabel(int value);
 
 signals:
     // ui control의 이벤트를 외부로 전달하는 시그널들
@@ -71,12 +74,16 @@ private:
     ValueControlWidget* m_samplingCyclesControlWidget;
     ValueControlWidget* m_samplesPerCycleControlWidget;
 
+    // 고조파 UI
+    QTabWidget* m_harmonicsTabWidget;
     ValueControlWidget* m_voltageHarmonicOrder;
     ValueControlWidget* m_voltageHarmonicMagnitude;
-    ValueControlWidget* m_voltageHarmonicPhase;
+    FineTuningDial* m_voltageHarmonicPhaseDial;
+    QLabel* m_voltageHarmonicPhaseLabel;
     ValueControlWidget* m_currentHarmonicOrder;
     ValueControlWidget* m_currentHarmonicMagnitude;
-    ValueControlWidget* m_currentHarmonicPhase;
+    FineTuningDial* m_currentHarmonicPhaseDial;
+    QLabel* m_currentHarmonicPhaseLabel;
 
     FineTuningDial* m_currentPhaseDial;
     QLabel* m_currentPhaseLabel;

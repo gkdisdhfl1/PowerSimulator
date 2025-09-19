@@ -28,8 +28,8 @@ public:
         int maxDataSize = config::Simulation::DefaultDataSize;
         double graphWidthSec = config::View::GraphWidth::Default;
         UpdateMode updateMode = UpdateMode::PerSample;
-        HarmonicComponent voltageHarmonic = {config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefualtPhase};
-        HarmonicComponent currentHarmonic = {config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefualtPhase};
+        HarmonicComponent voltageHarmonic = {config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase};
+        HarmonicComponent currentHarmonic = {config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase};
     };
 
     explicit SimulationEngine();

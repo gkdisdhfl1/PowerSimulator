@@ -99,7 +99,7 @@ namespace config {
     struct Harmonics {
         static constexpr int DefaultOrder = 2;
         static constexpr double DefaultMagnitude = 0.0;
-        static constexpr double DefualtPhase = 0.0;
+        static constexpr double DefaultPhase = 0.0;
     };
 }
 
