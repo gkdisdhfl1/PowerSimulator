@@ -1,16 +1,14 @@
-#include "analysis_graph_window.h"
 #include "custom_chart_view.h"
 #include "simulation_engine.h"
+#include "fundamental_rms_graph_window.h"
+#include "AnalysisUtils.h"
+#include <QChart>
 #include <QLineSeries>
 #include <QValueAxis>
-#include <QChart>
-#include <QDebug>
-#include <QPen>
 
-using utils::FpSeconds;
-using utils::Nanoseconds;
 
-AnalysisGraphWindow::AnalysisGraphWindow(SimulationEngine *engine, QWidget *parent)
+
+FundamentalRmsGraphWindow::FundamentalRmsGraphWindow(SimulationEngine *engine, QWidget *parent)
     : BaseGraphWindow(engine, parent)
     , m_voltageRmsSeries(new QLineSeries(this))
     , m_currentRmsSeries(new QLineSeries(this))
@@ -19,7 +17,7 @@ AnalysisGraphWindow::AnalysisGraphWindow(SimulationEngine *engine, QWidget *pare
     , m_axisY_current(new QValueAxis(this))
     , m_axisY_power(new QValueAxis(this))
 {
-    m_chart->setTitle("Cycle-based Analysis");
+    m_chart->setTitle("Fundamental Component Analysis");
 
     // 사용자가 그래프 조작 시 자동  스크롤 해제 및 ControlPanel에 알림
     connect(m_chartView, &CustomChartView::userInteracted, this, [this]() {
@@ -45,12 +43,12 @@ AnalysisGraphWindow::AnalysisGraphWindow(SimulationEngine *engine, QWidget *pare
     setupSeries();
 }
 
-void AnalysisGraphWindow::setupSeries()
+void FundamentalRmsGraphWindow::setupSeries()
 {
     // 시리즈 생성 및 이름/색상 설정
-    m_voltageRmsSeries->setName("Voltage RMS");
-    m_currentRmsSeries->setName("Current RMS");
-    m_activePowerSeries->setName("Active Power");
+    m_voltageRmsSeries->setName("Voltage RMS (Fund.)");
+    m_currentRmsSeries->setName("Current RMS (Fund.)");
+    m_activePowerSeries->setName("Active Power (Fund.)");
 
     m_voltageRmsSeries->setColor(QColor("blue"));
     m_currentRmsSeries->setColor(QColor("red"));
@@ -89,7 +87,7 @@ void AnalysisGraphWindow::setupSeries()
     m_activePowerSeries->attachAxis(m_axisY_power);
 }
 
-void AnalysisGraphWindow::updateGraph(const std::deque<MeasuredData>& data)
+void FundamentalRmsGraphWindow::updateGraph(const std::deque<MeasuredData>& data)
 {
     if(data.empty()) {
         m_voltageRmsSeries->clear();
@@ -103,7 +101,7 @@ void AnalysisGraphWindow::updateGraph(const std::deque<MeasuredData>& data)
     updateAxes(data);
 }
 
-void AnalysisGraphWindow::updateVisiblePoints(const std::deque<MeasuredData>& data)
+void FundamentalRmsGraphWindow::updateVisiblePoints(const std::deque<MeasuredData>& data)
 {
     // 축에서 초단위 시간 범위를 가져옴
     auto [minX_sec, maxX_sec] = getVisibleXRange(data);
@@ -115,72 +113,52 @@ void AnalysisGraphWindow::updateVisiblePoints(const std::deque<MeasuredData>& da
     //보이는 범위의 반복자를 얻음
     auto [first, last] = getVisibleRangeIterators(data, minX_ns, maxX_ns);
 
-    const int pointCount = std::distance(first, last);
-    const int threshold = m_chartView->width(); // 픽셀 너비만큼 점을 뽑음
-
-    if(pointCount > threshold) {
-        // Vrms, Irms, Power 값을 추출하는 람다의 벡터를 전달
-        std::vector<std::function<double(const MeasuredData&)>> extractors = {
-            [](const MeasuredData& d) { return d.voltageRms; },
-            [](const MeasuredData& d) { return d.currentRms; },
-            [](const MeasuredData& d) { return d.activePower; },
-        };
-
-        auto sampled_data = downsampleLTTB(first, last, threshold, extractors);
-
-        // LTTB 결과로 멤버 변수 채우기
-        m_voltagePoints.clear();
-        m_currentPoints.clear();
-        m_powerPoints.clear();
-
-        for(const auto& d : sampled_data) {
-            const double timeSec = FpSeconds(d.timestamp).count();
-            m_voltagePoints.append(QPointF(timeSec, d.voltageRms));
-            m_currentPoints.append(QPointF(timeSec, d.currentRms));
-            m_powerPoints.append(QPointF(timeSec, d.activePower));
+    // LTTB 다운샘플링을 위한 데이터 추출기 정의
+    std::vector<std::function<double(const MeasuredData&)>> extractors {
+                                                                        [](const MeasuredData& d) {
+            const auto* v = AnalysisUtils::getHarmonicComponent(d.voltageHarmonics, 1);
+            return v ? v->rms : 0.0;
+        },
+        [](const MeasuredData& d) {
+            const auto* i = AnalysisUtils::getHarmonicComponent(d.currentHarmonics, 1);
+            return i ? i->rms : 0.0;
+        },
+        [](const MeasuredData& d) {
+            const auto* v = AnalysisUtils::getHarmonicComponent(d.voltageHarmonics, 1);
+            const auto* i = AnalysisUtils::getHarmonicComponent(d.currentHarmonics, 1);
+            return AnalysisUtils::calculateActivePower(v, i);
         }
-    } else {
-        m_voltagePoints.clear();
-        m_currentPoints.clear();
-        m_powerPoints.clear();
 
-        for(auto it = first; it != last; ++it) {
-            const double timeSec = FpSeconds(it->timestamp).count();
-            m_voltagePoints.append(QPointF(timeSec, it->voltageRms));
-            m_currentPoints.append(QPointF(timeSec, it->currentRms));
-            m_powerPoints.append(QPointF(timeSec, it->activePower));
-        }
-    }
-}
-
-void AnalysisGraphWindow::updateSeriesData()
-{
-    m_voltageRmsSeries->replace(m_voltagePoints);
-    m_currentRmsSeries->replace(m_currentPoints);
-    m_activePowerSeries->replace(m_powerPoints);
-}
-
-void AnalysisGraphWindow::updateAxes(const std::deque<MeasuredData>& data)
-{
-    auto calculateRange = [](const auto& points, auto& axis) {
-        if(points.isEmpty()) return;
-        double minY = std::numeric_limits<double>::max();
-        double maxY = std::numeric_limits<double>::lowest();
-        for(const auto& p : points) {
-            minY = std::min(minY, p.y());
-            maxY = std::max(maxY, p.y());
-        }
-        double padding = (maxY - minY) * 0.1;
-        padding = std::max(padding, 0.5);
-        axis->setRange(minY - padding, maxY + padding);
     };
 
-    if(m_isAutoScrollEnabled) {
-        calculateRange(m_voltagePoints, m_axisY_voltage);
-        calculateRange(m_currentPoints, m_axisY_current);
-        calculateRange(m_powerPoints, m_axisY_power);
+    const int pointCount = std::distance(first, last);
+    const int threshold = m_chartView->width();
 
-        const auto [minX, maxX] = getVisibleXRange(data);
-        m_axisX->setRange(minX, maxX);
+    m_voltagePoints.clear();
+    m_currentPoints.clear();
+    m_powerPoints.clear();
+
+    if(pointCount > threshold && threshold > 0) {
+        auto sample_data = downsampleLTTB(first, last, threshold, extractors);
+        for(const auto& d : sample_data) {
+            const double timeSec = FpSeconds(d.timestamp).count();
+            const auto* v_fund = AnalysisUtils::getHarmonicComponent(d.voltageHarmonics, 1);
+            const auto* i_fund = AnalysisUtils::getHarmonicComponent(d.currentHarmonics, 1);
+
+            m_voltagePoints.append(QPointF(timeSec, v_fund ? v_fund->rms : 0.0));
+            m_currentPoints.append(QPointF(timeSec, i_fund ? i_fund->rms : 0.0));
+            m_powerPoints.append(QPointF(timeSec, AnalysisUtils::calculateActivePower(v_fund, i_fund)));
+        }
+    } else {
+        // 다운샘플링 안할 때도 동일한 로직으로 데이터 추출
+        for(auto it = first; it != last; ++it) {
+            const double timeSec = FpSeconds(it->timestamp).count();
+            const auto* v_fund = AnalysisUtils::getHarmonicComponent(it->voltageHarmonics, 1);
+            const auto* i_fund = AnalysisUtils::getHarmonicComponent(it->currentHarmonics, 1);
+
+            m_voltagePoints.append(QPointF(timeSec, v_fund ? v_fund->rms : 0.0));
+            m_currentPoints.append(QPointF(timeSec, i_fund ? i_fund->rms : 0.0));
+            m_powerPoints.append(QPointF(timeSec, AnalysisUtils::calculateActivePower(v_fund, i_fund)));
+        }
     }
 }

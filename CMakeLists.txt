@@ -78,6 +78,8 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
         pid_tuning_dialog.h pid_tuning_dialog.cpp
         collapsible_groupbox.h collapsible_groupbox.cpp
         shared_data_types.h
+        fundamental_rms_graph_window.h fundamental_rms_graph_window.cpp
+        AnalysisUtils.h
 
     )
 # Define target properties for Android with Qt 6 as:

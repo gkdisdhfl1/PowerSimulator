@@ -52,29 +52,29 @@ PhasorView::PhasorView(QWidget *parent)
 
 void PhasorView::updateData(const std::deque<MeasuredData>& data)
 {
-    if(data.empty()) {
-        m_voltage = PhasorInfo();
-        m_current= PhasorInfo();
-        m_voltageInfoLabel->clear();
-        m_currentInfoLabel->clear();
-    } else {
-        const auto& latestData = data.back();
+    // if(data.empty()) {
+    //     m_voltage = PhasorInfo();
+    //     m_current= PhasorInfo();
+    //     m_voltageInfoLabel->clear();
+    //     m_currentInfoLabel->clear();
+    // } else {
+    //     const auto& latestData = data.back();
 
-        // 전압 정보 계산 및 저장
-        m_voltage.components = QPointF(latestData.voltagePhasorX, latestData.voltagePhasorY);
-        m_voltage.magnitude = std::sqrt(m_voltage.components.x() * m_voltage.components.x() + m_voltage.components.y() * m_voltage.components.y());
-        m_voltage.phaseDegrees = utils::radiansToDegrees(std::atan2(m_voltage.components.y(), m_voltage.components.x()));
-        m_voltageInfoLabel->setText(QString::asprintf("%.1f V, %.1f°", m_voltage.magnitude, m_voltage.phaseDegrees));
+    //     // 전압 정보 계산 및 저장
+    //     m_voltage.components = QPointF(latestData.voltagePhasorX, latestData.voltagePhasorY);
+    //     m_voltage.magnitude = std::sqrt(m_voltage.components.x() * m_voltage.components.x() + m_voltage.components.y() * m_voltage.components.y());
+    //     m_voltage.phaseDegrees = utils::radiansToDegrees(std::atan2(m_voltage.components.y(), m_voltage.components.x()));
+    //     m_voltageInfoLabel->setText(QString::asprintf("%.1f V, %.1f°", m_voltage.magnitude, m_voltage.phaseDegrees));
 
-        // 전류 정보 계산 및 저장
-        m_current.components = QPointF(latestData.currentPhasorX, latestData.currentPhasorY);
-        m_current.magnitude = std::sqrt(m_current.components.x() * m_current.components.x() + m_current.components.y() * m_current.components.y());
-        m_current.phaseDegrees = utils::radiansToDegrees(std::atan2(m_current.components.y(), m_current.components.x()));
-        m_currentInfoLabel->setText(QString::asprintf("%.1f V, %.1f°", m_current.magnitude, m_current.phaseDegrees));
-    }
+    //     // 전류 정보 계산 및 저장
+    //     m_current.components = QPointF(latestData.currentPhasorX, latestData.currentPhasorY);
+    //     m_current.magnitude = std::sqrt(m_current.components.x() * m_current.components.x() + m_current.components.y() * m_current.components.y());
+    //     m_current.phaseDegrees = utils::radiansToDegrees(std::atan2(m_current.components.y(), m_current.components.x()));
+    //     m_currentInfoLabel->setText(QString::asprintf("%.1f V, %.1f°", m_current.magnitude, m_current.phaseDegrees));
+    // }
 
-    // 새로운 데이터가 들어왔으니 위젯을 다시 그림
-    update();
+    // // 새로운 데이터가 들어왔으니 위젯을 다시 그림
+    // update();
 }
 
 void PhasorView::paintEvent(QPaintEvent *event)

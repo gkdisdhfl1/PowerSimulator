@@ -23,13 +23,8 @@ struct MeasuredData {
     std::vector<HarmonicAnalysisResult> voltageHarmonics;
 
     // 전압의 주파수 성분 분석 결과 (harmonics[0]: 기본파)
-    std::vector<HarmonicAnalysisResult> currentarmonics;
+    std::vector<HarmonicAnalysisResult> currentHarmonics;
 
-    // DFT 연산 결과 (Phasor)를 저장할 변수 추가
-    double voltagePhasorX;
-    double voltagePhasorY;
-    double currentPhasorX;
-    double currentPhasorY;
 };
 
 #endif // MEASURED_DATA_H

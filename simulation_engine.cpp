@@ -244,69 +244,60 @@ void SimulationEngine::calculateCycleData()
     auto currentSpectrum = analyzeSpectrum(DataType::Current);
 
     // 2. (해석) 스펙트럼에서 가장 큰 두 개의 성분(기본파, 고조파)를 찾음
-    auto findSignificantHarmoics = [](const std::vector<std::complex<double>>& spectrum) {
+    auto findSignificantHarmoics = [&](const std::vector<std::complex<double>>& spectrum) {
         std::vector<HarmonicAnalysisResult> results;
         if(spectrum.size() < 2) return results;
 
-        int fundamentalOrder = -1;
-        double fundamentalMagSq = -1.0;
+        auto createResult = [&](int order) -> HarmonicAnalysisResult {
+            if(order <= 0 || order >= spectrum.size()) return {};
 
+            const auto& phasorRms = spectrum[order];
+            const double rms = std::abs(phasorRms);
+
+            return {
+                .order = order,
+                .rms = rms,
+                .phase = std::arg(phasorRms),
+                .phasorX = phasorRms.real(),
+                .phasorY = phasorRms.imag()
+            };
+        };
+
+        // 기본파는 항상 결과에 추가
+        results.push_back(createResult(1));
+
+        // 나머지 중에서 가장 큰 고조파를 찾음
         int harmonicOrder = -1;
-        double harmonicMagSq = -1.0;
+        double maxHarmonicMagSq = -1.0;
 
-        // DC(0Hz)를 제외하고, 가장 큰 두 개의 피크를 찾음
-        for(size_t k = 1; k < spectrum.size(); ++k) {
+        for(size_t k = 2; k < spectrum.size(); ++k) {
             double magSq = std::norm(spectrum[k]); // 크기의 제곱으로 비교
-            if(magSq > fundamentalMagSq) {
+            if(magSq > maxHarmonicMagSq) {
                 // 기존의 Fundamental을 harmonic으로 내림
-                harmonicMagSq = fundamentalMagSq;
-                harmonicOrder = fundamentalOrder;
-                // 새로운 fundamental 설정
-                fundamentalMagSq = magSq;
-                fundamentalOrder = k;
-            } else if(magSq > harmonicMagSq) {
-                harmonicMagSq = magSq;
+                maxHarmonicMagSq= magSq;
                 harmonicOrder = k;
             }
         }
 
         // 노이즈와 구분하기 위한 최소 임계값
-        const double noiseThresholdSq = fundamentalMagSq * 0.001;
-
-        // 기본파 결과 추가
-        if(fundamentalMagSq != -1) {
-            const auto& phasor = spectrum[fundamentalOrder];
-            results.push_back({
-                .order = fundamentalOrder,
-                .rms = std::abs(phasor) / std::sqrt(2.0),
-                .phase = std::arg(phasor),
-                .phasorX = phasor.real(),
-                .phasorY = phasor.imag()
-            });
-        }
+        // 기본파 RMS의 1%보다 커야 함
+        const double fundamentalRmsSq = std::norm(spectrum.size() > 1 ? spectrum[1] : 0);
+        const double noiseThresholdSq = fundamentalRmsSq * 0.0001;
 
         // 유의미한 고조파 결과 추가
-        if(harmonicOrder != -1 && harmonicMagSq > noiseThresholdSq) {
-            const auto& phasor = spectrum[harmonicOrder];
-            results.push_back({
-                .order = harmonicOrder,
-                .rms = std::abs(phasor) / std::sqrt(2.0),
-                .phase = std::arg(phasor),
-                .phasorX = phasor.real(),
-                .phasorY = phasor.imag()
-            });
+        if(harmonicOrder != -1 && maxHarmonicMagSq > noiseThresholdSq) {
+            results.push_back(createResult(harmonicOrder));
         }
-
-        // 차수 순으로 정렬
-        std::sort(results.begin(), results.end(), [](const auto& a, const auto& b) {
-            return a.order < b.order;
-        });
 
         return results;
     };
 
     auto voltageHarmonics = findSignificantHarmoics(voltageSpectrum);
     auto currentHarmonics = findSignificantHarmoics(currentSpectrum);
+
+    for(auto& value : voltageHarmonics) {
+        qDebug() << value.order;
+    }
 
     // 3. 전체 RMS 및 유효 전력 계산
     double voltageSquareSum = 0.0;
@@ -395,11 +386,11 @@ std::vector<std::complex<double>> SimulationEngine::analyzeSpectrum(SimulationEn
     const size_t N = m_cycleSampleBuffer.size();
     if(N < 2) return {};
 
-    const size_t spectrumSize = N / 2; // Nyquist 주파수까지 분석
+    const size_t spectrumSize = N / 2 + 1; // Nyquist 주파수까지 분석
     std::vector<std::complex<double>> spectrum(spectrumSize, {0.0, 0.0});
     const double two_pi_over_N = 2.0 * std::numbers::pi / N;
 
-    for(size_t k = 1; k < spectrumSize; ++k) { // k = 1(기본파) 부터 시작
+    for(size_t k = 1; k < N / 2; ++k) { // k = 1(기본파) 부터 시작
         double phasorX_sum = 0.0;
         double phasorY_sum = 0.0;
 
@@ -416,6 +407,24 @@ std::vector<std::complex<double>> SimulationEngine::analyzeSpectrum(SimulationEn
         // 최대 진폭(2/N)을 sqrt(2)로 나누어 실효값(RMS)을 구한는 계수를 구함
         const double normFactor = std::sqrt(2.0) / N;
         spectrum[k] = {normFactor * phasorX_sum, normFactor * phasorY_sum};
+    }
+
+    // k = N / 2(나이퀴스트 주파수) 특별 처리
+    if(N % 2 == 0) { // 샘플 수가 짝수일 때만 나이퀴스트 주파수가 의미 있음
+        const size_t k_nyquist = N / 2;
+        double phasorX_sum = 0.0;
+
+        for(size_t n = 0; n < N; ++n) {
+            const auto& sample = m_cycleSampleBuffer[n];
+            const double value = (type == DataType::Voltage) ? sample.voltage : sample.current;
+            // cos(k * 2*pi/N  n) = cos(N/2  2*pi/N * n) = cos(pi * n)
+            // cos(pi * n)은 n이 짝수면 1, 홀수면 -1
+            phasorX_sum += value * ((n % 2 == 0) ? 1.0 : -1.0);
+        }
+
+        // 나이퀴스트 주파수 정규화
+        const double normFactor = 1.0 / N;
+        spectrum[k_nyquist] = {normFactor * phasorX_sum, 0.0}; // sin은 항상 0
     }
 
     return spectrum;
