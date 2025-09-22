@@ -162,3 +162,36 @@ void FundamentalRmsGraphWindow::updateVisiblePoints(const std::deque<MeasuredDat
         }
     }
 }
+
+void FundamentalRmsGraphWindow::updateSeriesData()
+{
+    m_voltageRmsSeries->replace(m_voltagePoints);
+    m_currentRmsSeries->replace(m_currentPoints);
+    m_activePowerSeries->replace(m_powerPoints);
+}
+
+void FundamentalRmsGraphWindow::updateAxes(const std::deque<MeasuredData>& data)
+{
+    auto calculateRange = [](const auto& points, auto& axis) {
+        if(points.isEmpty()) return;
+        double minY = std::numeric_limits<double>::max();
+        double maxY = std::numeric_limits<double>::lowest();
+        for(const auto& p : points) {
+            minY = std::min(minY, p.y());
+            maxY = std::max(maxY, p.y());
+        }
+        double padding = (maxY - minY) * 0.1;
+        padding = std::max(padding, 0.5);
+        axis->setRange(minY - padding, maxY + padding);
+    };
+
+    if(m_isAutoScrollEnabled) {
+        calculateRange(m_voltagePoints, m_axisY_voltage);
+        calculateRange(m_currentPoints, m_axisY_current);
+        calculateRange(m_powerPoints, m_axisY_power);
+
+        const auto [minX, maxX] = getVisibleXRange(data);
+        m_axisX->setRange(minX, maxX);
+    }
+
+}
