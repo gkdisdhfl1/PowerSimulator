@@ -1,4 +1,6 @@
 #include "main_window.h"
+#include "fundamental_analysis_graph_window.h"
+#include "harmonic_analysis_graph_window.h"
 #include "pid_tuning_dialog.h"
 #include "settings_dialog.h",
 #include "simulation_engine.h"
@@ -118,9 +120,14 @@ void MainWindow::setupUiComponents()
     phasorDock->setWidget(m_phasorView);
 
     // 기본파 RMS 그래프 창 도킹 위젯 생성
-    m_fundamentalAnalysisGraphWindow = new FundamentalRmsGraphWindow(m_engine, this);
+    m_fundamentalAnalysisGraphWindow = new FundamentalAnalysisGraphWindow(m_engine, this);
     QDockWidget *fundamentalRmsDock = new QDockWidget("fundamental Analysis", this);
     fundamentalRmsDock->setWidget(m_fundamentalAnalysisGraphWindow);
+
+    // 고조파 RMS 그래프 창 도킹 위젯 생성
+    m_harmonicAnalysisGraphWindow = new HarmonicAnalysisGraphWindow(m_engine, this) ;
+    QDockWidget *harmonicRmsDock = new QDockWidget("Harmonic Analysis", this);
+    harmonicRmsDock->setWidget(m_harmonicAnalysisGraphWindow);
 
     // 상하로 분할
     splitDockWidget(graphDock, analysisGraphDock, Qt::Vertical);
@@ -130,6 +137,7 @@ void MainWindow::setupUiComponents()
     // splitDockWidget(phasorDock, analysisGraphDock, Qt::Horizontal);
 
     tabifyDockWidget(analysisGraphDock, fundamentalRmsDock);
+    tabifyDockWidget(analysisGraphDock, harmonicRmsDock);
     analysisGraphDock->raise(); // 전체 RMS를 기본으로 선택
 
     // 하단 두 위젯 너비 비율 설정
@@ -174,7 +182,8 @@ void MainWindow::createSignalSlotConnections()
 
     connect(m_controlPanel, &ControlPanel::autoScrollToggled, m_graphWindow, &GraphWindow::toggleAutoScroll);
     connect(m_controlPanel, &ControlPanel::autoScrollToggled, m_analysisGraphWindow, &AnalysisGraphWindow::toggleAutoScroll);
-    connect(m_controlPanel, &ControlPanel::autoScrollToggled, m_fundamentalAnalysisGraphWindow, &FundamentalRmsGraphWindow::toggleAutoScroll);
+    connect(m_controlPanel, &ControlPanel::autoScrollToggled, m_fundamentalAnalysisGraphWindow, &FundamentalAnalysisGraphWindow::toggleAutoScroll);
+    connect(m_controlPanel, &ControlPanel::autoScrollToggled, m_harmonicAnalysisGraphWindow, &HarmonicAnalysisGraphWindow::toggleAutoScroll);
     connect(m_controlPanel, &ControlPanel::trackingToggled, m_settingsUiController.get(), &SettingsUiController::onTrackingToggled);
     // ----------------------
 
@@ -184,7 +193,8 @@ void MainWindow::createSignalSlotConnections()
     connect(m_engine, &SimulationEngine::samplingCyclesUpdated, m_controlPanel, &ControlPanel::onEngineSamplingCyclesChanged);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_analysisGraphWindow, &AnalysisGraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_phasorView, &PhasorView::updateData);
-    connect(m_engine, &SimulationEngine::measuredDataUpdated, m_fundamentalAnalysisGraphWindow, &FundamentalRmsGraphWindow::updateGraph);
+    connect(m_engine, &SimulationEngine::measuredDataUpdated, m_fundamentalAnalysisGraphWindow, &FundamentalAnalysisGraphWindow::updateGraph);
+    connect(m_engine, &SimulationEngine::measuredDataUpdated, m_harmonicAnalysisGraphWindow, &HarmonicAnalysisGraphWindow::updateGraph);
 
     // ---- GraphWindow 시그널 -> UI 슬롯 ----
     connect(m_graphWindow, &GraphWindow::pointHovered, this, [this](const DataPoint& point) {
@@ -197,7 +207,7 @@ void MainWindow::createSignalSlotConnections()
     });
     connect(m_graphWindow, &GraphWindow::autoScrollToggled, m_controlPanel, &ControlPanel::setAutoScroll);
     connect(m_analysisGraphWindow, &AnalysisGraphWindow::autoScrollToggled, m_controlPanel, &ControlPanel::setAutoScroll);
-    connect(m_fundamentalAnalysisGraphWindow, &FundamentalRmsGraphWindow::autoScrollToggled, m_controlPanel, &ControlPanel::setAutoScroll);
+    connect(m_fundamentalAnalysisGraphWindow, &FundamentalAnalysisGraphWindow::autoScrollToggled, m_controlPanel, &ControlPanel::setAutoScroll);
     // --------------------------
 
     // ---- GraphWindow 시그널 -> engine 슬롯
@@ -206,7 +216,8 @@ void MainWindow::createSignalSlotConnections()
         ++m_frameCount;
     });
     connect(m_analysisGraphWindow, &AnalysisGraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawAnalysisRequest);
-    connect(m_fundamentalAnalysisGraphWindow, &FundamentalRmsGraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawAnalysisRequest);
+    connect(m_fundamentalAnalysisGraphWindow, &FundamentalAnalysisGraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawAnalysisRequest);
+    connect(m_harmonicAnalysisGraphWindow, &HarmonicAnalysisGraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawAnalysisRequest);
 }
 
 void MainWindow::updatePlaceholderVisibility()

@@ -1,8 +1,6 @@
 #ifndef MAIN_WINDOW_H
 #define MAIN_WINDOW_H
 
-#include "fundamental_rms_graph_window.h"
-
 #include <QMainWindow>
 
 // 전방 선언
@@ -13,6 +11,8 @@ class ControlPanel;
 class GraphWindow;
 class QAction;
 class AnalysisGraphWindow;
+class FundamentalAnalysisGraphWindow;
+class HarmonicAnalysisGraphWindow;
 class PhasorView;
 class QLabel;
 class QTimer;
@@ -39,7 +39,8 @@ private:
     QDockWidget* m_controlDock;
     GraphWindow* m_graphWindow;
     AnalysisGraphWindow* m_analysisGraphWindow;
-    FundamentalRmsGraphWindow* m_fundamentalAnalysisGraphWindow;
+    FundamentalAnalysisGraphWindow *m_fundamentalAnalysisGraphWindow;
+    HarmonicAnalysisGraphWindow *m_harmonicAnalysisGraphWindow;
     PhasorView* m_phasorView;
     std::unique_ptr<SettingsManager> m_settingsManager;
     std::unique_ptr<SettingsUiController> m_settingsUiController;

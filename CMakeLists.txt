@@ -53,6 +53,7 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
     qt_add_executable(PowerSimulator
         MANUAL_FINALIZATION
@@ -78,8 +79,9 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
         pid_tuning_dialog.h pid_tuning_dialog.cpp
         collapsible_groupbox.h collapsible_groupbox.cpp
         shared_data_types.h
-        fundamental_rms_graph_window.h fundamental_rms_graph_window.cpp
+        fundamental_analysis_graph_window.h fundamental_analysis_graph_window.cpp
         AnalysisUtils.h
+        harmonic_analysis_graph_window.h harmonic_analysis_graph_window.cpp
 
     )
 # Define target properties for Android with Qt 6 as:
@@ -114,6 +116,7 @@ target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Core)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Core)
+target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 
 

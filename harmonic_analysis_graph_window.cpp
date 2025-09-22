@@ -1,14 +1,14 @@
+#include "harmonic_analysis_graph_window.h"
+
+#include "AnalysisUtils.h"
 #include "custom_chart_view.h"
 #include "simulation_engine.h"
-#include "fundamental_rms_graph_window.h"
-#include "AnalysisUtils.h"
-#include <QChart>
+
 #include <QLineSeries>
 #include <QValueAxis>
+#include <QChart>
 
-
-
-FundamentalRmsGraphWindow::FundamentalRmsGraphWindow(SimulationEngine *engine, QWidget *parent)
+HarmonicAnalysisGraphWindow::HarmonicAnalysisGraphWindow(SimulationEngine *engine, QWidget *parent)
     : BaseGraphWindow(engine, parent)
     , m_voltageRmsSeries(new QLineSeries(this))
     , m_currentRmsSeries(new QLineSeries(this))
@@ -17,7 +17,7 @@ FundamentalRmsGraphWindow::FundamentalRmsGraphWindow(SimulationEngine *engine, Q
     , m_axisY_current(new QValueAxis(this))
     , m_axisY_power(new QValueAxis(this))
 {
-    m_chart->setTitle("Fundamental Component Analysis");
+    m_chart->setTitle("Dominant Harmonic Analysis");
 
     // 사용자가 그래프 조작 시 자동  스크롤 해제 및 ControlPanel에 알림
     connect(m_chartView, &CustomChartView::userInteracted, this, [this]() {
@@ -43,12 +43,12 @@ FundamentalRmsGraphWindow::FundamentalRmsGraphWindow(SimulationEngine *engine, Q
     setupSeries();
 }
 
-void FundamentalRmsGraphWindow::setupSeries()
+void HarmonicAnalysisGraphWindow::setupSeries()
 {
     // 시리즈 생성 및 이름/색상 설정
-    m_voltageRmsSeries->setName("Voltage RMS (Fund.)");
-    m_currentRmsSeries->setName("Current RMS (Fund.)");
-    m_activePowerSeries->setName("Active Power (Fund.)");
+    m_voltageRmsSeries->setName("Voltage RMS (Harm.)");
+    m_currentRmsSeries->setName("Current RMS (Harm.)");
+    m_activePowerSeries->setName("Active Power (Harm.)");
 
     m_voltageRmsSeries->setColor(QColor("blue"));
     m_currentRmsSeries->setColor(QColor("red"));
@@ -85,9 +85,10 @@ void FundamentalRmsGraphWindow::setupSeries()
     m_chart->addAxis(m_axisY_power, Qt::AlignRight);
     m_activePowerSeries->attachAxis(m_axisX);
     m_activePowerSeries->attachAxis(m_axisY_power);
+
 }
 
-void FundamentalRmsGraphWindow::updateGraph(const std::deque<MeasuredData>& data)
+void HarmonicAnalysisGraphWindow::updateGraph(const std::deque<MeasuredData>& data)
 {
     if(data.empty()) {
         m_voltageRmsSeries->clear();
@@ -101,7 +102,7 @@ void FundamentalRmsGraphWindow::updateGraph(const std::deque<MeasuredData>& data
     updateAxes(data);
 }
 
-void FundamentalRmsGraphWindow::updateVisiblePoints(const std::deque<MeasuredData>& data)
+void HarmonicAnalysisGraphWindow::updateVisiblePoints(const std::deque<MeasuredData>& data)
 {
     // 축에서 초단위 시간 범위를 가져옴
     auto [minX_sec, maxX_sec] = getVisibleXRange(data);
@@ -113,22 +114,36 @@ void FundamentalRmsGraphWindow::updateVisiblePoints(const std::deque<MeasuredDat
     //보이는 범위의 반복자를 얻음
     auto [first, last] = getVisibleRangeIterators(data, minX_ns, maxX_ns);
 
+    // --- 데이터 추출 헬퍼 람다 ---
+    // 가장 지배적인 고조파 성분을 찾음
+    auto getDominantHarmonic = [](const std::vector<HarmonicAnalysisResult>& harmonics) -> const HarmonicAnalysisResult* {
+        const HarmonicAnalysisResult* dominant = nullptr;
+        double maxRms = -1.0;
+
+        for(const auto& h : harmonics) {
+            if(h.order > 1 && h.rms > maxRms) {
+                maxRms = h.rms;
+                dominant = &h;
+            }
+        }
+        return dominant;
+    };
+
     // LTTB 다운샘플링을 위한 데이터 추출기 정의
     std::vector<std::function<double(const MeasuredData&)>> extractors {
-                                                                        [](const MeasuredData& d) {
-            const auto* v = AnalysisUtils::getHarmonicComponent(d.voltageHarmonics, 1);
+        [&getDominantHarmonic](const MeasuredData& d) {
+            const auto* v = getDominantHarmonic(d.voltageHarmonics);
             return v ? v->rms : 0.0;
         },
-        [](const MeasuredData& d) {
-            const auto* i = AnalysisUtils::getHarmonicComponent(d.currentHarmonics, 1);
+        [&getDominantHarmonic](const MeasuredData& d) {
+            const auto* i = getDominantHarmonic(d.currentHarmonics);
             return i ? i->rms : 0.0;
         },
-        [](const MeasuredData& d) {
-            const auto* v = AnalysisUtils::getHarmonicComponent(d.voltageHarmonics, 1);
-            const auto* i = AnalysisUtils::getHarmonicComponent(d.currentHarmonics, 1);
+        [&getDominantHarmonic](const MeasuredData& d) {
+            const auto* v = getDominantHarmonic(d.voltageHarmonics) ;
+            const auto* i = getDominantHarmonic(d.currentHarmonics) ;
             return AnalysisUtils::calculateActivePower(v, i);
         }
-
     };
 
     const int pointCount = std::distance(first, last);
@@ -142,35 +157,35 @@ void FundamentalRmsGraphWindow::updateVisiblePoints(const std::deque<MeasuredDat
         auto sample_data = downsampleLTTB(first, last, threshold, extractors);
         for(const auto& d : sample_data) {
             const double timeSec = FpSeconds(d.timestamp).count();
-            const auto* v_fund = AnalysisUtils::getHarmonicComponent(d.voltageHarmonics, 1);
-            const auto* i_fund = AnalysisUtils::getHarmonicComponent(d.currentHarmonics, 1);
+            const auto* v_harm = getDominantHarmonic(d.voltageHarmonics);
+            const auto* i_harm = getDominantHarmonic(d.currentHarmonics);
 
-            m_voltagePoints.append(QPointF(timeSec, v_fund ? v_fund->rms : 0.0));
-            m_currentPoints.append(QPointF(timeSec, i_fund ? i_fund->rms : 0.0));
-            m_powerPoints.append(QPointF(timeSec, AnalysisUtils::calculateActivePower(v_fund, i_fund)));
+            m_voltagePoints.append(QPointF(timeSec, v_harm ? v_harm->rms : 0.0));
+            m_currentPoints.append(QPointF(timeSec, i_harm ? i_harm->rms : 0.0));
+            m_powerPoints.append(QPointF(timeSec, AnalysisUtils::calculateActivePower(v_harm, i_harm)));
         }
     } else {
         // 다운샘플링 안할 때도 동일한 로직으로 데이터 추출
         for(auto it = first; it != last; ++it) {
             const double timeSec = FpSeconds(it->timestamp).count();
-            const auto* v_fund = AnalysisUtils::getHarmonicComponent(it->voltageHarmonics, 1);
-            const auto* i_fund = AnalysisUtils::getHarmonicComponent(it->currentHarmonics, 1);
+            const auto* v_harm = getDominantHarmonic(it->voltageHarmonics);
+            const auto* i_harm = getDominantHarmonic(it->currentHarmonics);
 
-            m_voltagePoints.append(QPointF(timeSec, v_fund ? v_fund->rms : 0.0));
-            m_currentPoints.append(QPointF(timeSec, i_fund ? i_fund->rms : 0.0));
-            m_powerPoints.append(QPointF(timeSec, AnalysisUtils::calculateActivePower(v_fund, i_fund)));
+            m_voltagePoints.append(QPointF(timeSec, v_harm ? v_harm->rms : 0.0));
+            m_currentPoints.append(QPointF(timeSec, i_harm ? i_harm->rms : 0.0));
+            m_powerPoints.append(QPointF(timeSec, AnalysisUtils::calculateActivePower(v_harm, i_harm)));
         }
     }
 }
 
-void FundamentalRmsGraphWindow::updateSeriesData()
+void HarmonicAnalysisGraphWindow::updateSeriesData()
 {
     m_voltageRmsSeries->replace(m_voltagePoints);
     m_currentRmsSeries->replace(m_currentPoints);
     m_activePowerSeries->replace(m_powerPoints);
 }
 
-void FundamentalRmsGraphWindow::updateAxes(const std::deque<MeasuredData>& data)
+void HarmonicAnalysisGraphWindow::updateAxes(const std::deque<MeasuredData>& data)
 {
     auto calculateRange = [](const auto& points, auto& axis) {
         if(points.isEmpty()) return;

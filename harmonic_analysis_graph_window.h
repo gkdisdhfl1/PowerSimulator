@@ -1,16 +1,16 @@
-#ifndef FUNDAMENTAL_RMS_GRAPH_WINDOW_H
-#define FUNDAMENTAL_RMS_GRAPH_WINDOW_H
+#ifndef HARMONIC_ANALYSIS_GRAPH_WINDOW_H
+#define HARMONIC_ANALYSIS_GRAPH_WINDOW_H
 
 #include "base_graph_window.h"
 #include "measured_data.h"
 
 class QLineSeries;
 
-class FundamentalRmsGraphWindow : public BaseGraphWindow
+class HarmonicAnalysisGraphWindow : public BaseGraphWindow
 {
     Q_OBJECT
 public:
-    explicit FundamentalRmsGraphWindow(SimulationEngine *engine, QWidget *parent = nullptr);
+    explicit HarmonicAnalysisGraphWindow(SimulationEngine *engine, QWidget *parent = nullptr);
 
 signals:
     void autoScrollToggled(bool enabled); // 사용자가 그래프를 조작했을 때 ControlPanel에 알림
@@ -19,7 +19,7 @@ signals:
 public slots:
     void updateGraph(const std::deque<MeasuredData>& data);
 
-private:
+ private:
     void setupSeries() override;
     void updateAxes(const std::deque<MeasuredData>& data);
     void updateVisiblePoints(const std::deque<MeasuredData>& data);
@@ -41,4 +41,4 @@ private:
     QList<QPointF> m_powerPoints;
 };
 
-#endif // FUNDAMENTAL_RMS_GRAPH_WINDOW_H
+#endif // HARMONIC_ANALYSIS_GRAPH_WINDOW_H
