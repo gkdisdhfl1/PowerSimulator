@@ -2,7 +2,7 @@
 #include "fundamental_analysis_graph_window.h"
 #include "harmonic_analysis_graph_window.h"
 #include "pid_tuning_dialog.h"
-#include "settings_dialog.h",
+#include "settings_dialog.h"
 #include "simulation_engine.h"
 #include "settings_manager.h"
 #include "settings_ui_controller.h"

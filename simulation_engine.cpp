@@ -295,10 +295,6 @@ void SimulationEngine::calculateCycleData()
     auto voltageHarmonics = findSignificantHarmoics(voltageSpectrum);
     auto currentHarmonics = findSignificantHarmoics(currentSpectrum);
 
-    for(auto& value : voltageHarmonics) {
-        qDebug() << value.order;
-    }
-
     // 3. 전체 RMS 및 유효 전력 계산
     double voltageSquareSum = 0.0;
     double currentSquareSum = 0.0;

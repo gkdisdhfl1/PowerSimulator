@@ -28,18 +28,24 @@ private:
         double phaseDegrees = 0.0;
     };
 
+    double getVoltageLength(double magnitude, double maxRadius);
+    double getCurrentLength(double magnitude, double maxRadius);
     void drawPhasor(QPainter& painter, const PhasorInfo& phasor, const QColor& color, double radius);
 
     // UI 요소
     QWidget* m_controlContainer;
-    QCheckBox* m_voltageVisibleCheck;
-    QCheckBox* m_currentVisibleCheck;
+    QCheckBox* m_totalVoltageCheck;
+    QCheckBox* m_totalCurrentCheck;
+    QCheckBox* m_fundVoltageCheck;
+    QCheckBox* m_fundCurrentCheck;
     QLabel* m_voltageInfoLabel;
     QLabel* m_currentInfoLabel;
 
     // 표시할 데이터
-    PhasorInfo m_voltage;
-    PhasorInfo m_current;
+    PhasorInfo m_totalVoltage;
+    PhasorInfo m_totalCurrent;
+    PhasorInfo m_fundamentalVoltage;
+    PhasorInfo m_fundamentalCurrent;
 
 };
 
