@@ -113,14 +113,6 @@ void PhasorView::updateData(const std::deque<MeasuredData>& data)
                                     .arg(m_fundamentalCurrent.magnitude, 0, 'f', 2)
                                     .arg(m_fundamentalCurrent.phaseDegrees, 0, 'f', 1));
 
-    // --- 위상차 시그널 발생 ---
-    if (v_fund && i_fund) {
-        double phaseDiff = v_fund->phase - i_fund->phase;
-        while(phaseDiff <= -std::numbers::pi) phaseDiff += 2.0 * std::numbers::pi;
-        while(phaseDiff > std::numbers::pi) phaseDiff -= 2.0 * std::numbers::pi;
-        emit newPhaseDifference(phaseDiff);
-    }
-
     update();
 }
 
