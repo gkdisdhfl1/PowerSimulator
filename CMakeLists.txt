@@ -82,6 +82,8 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
         fundamental_analysis_graph_window.h fundamental_analysis_graph_window.cpp
         AnalysisUtils.h
         harmonic_analysis_graph_window.h harmonic_analysis_graph_window.cpp
+        iir_filter.h
+        iir_filter.h
 
     )
 # Define target properties for Android with Qt 6 as:

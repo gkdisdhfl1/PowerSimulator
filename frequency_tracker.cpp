@@ -1,6 +1,7 @@
 #include "frequency_tracker.h"
 #include "simulation_engine.h"
 #include "AnalysisUtils.h"
+#include "iir_filter.h"
 #include <QDebug>
 
 namespace {
@@ -34,7 +35,7 @@ namespace {
     struct VerificationConstants {
         static constexpr int IntervalCycles = 200;
         static constexpr double Durationi_S = 0.2; // 샘플을 수집할 기간(초)
-        static constexpr double ValidRatioMin = 0.8;
+        static constexpr double ValidRatioMin = 0.5;
         static constexpr double ValidRatioMax = 1.27;
     };
 }
@@ -141,25 +142,58 @@ FrequencyTracker::PidCoefficients FrequencyTracker::getZcCoefficients() const
 void FrequencyTracker::processCoarseSearch(const DataPoint& latestDataPoint)
 {
     // 1. 데이터 수집
-    m_coarseSearchBuffer.push_back(latestDataPoint);
+    DataPoint filteredPoint = latestDataPoint;
 
-    // 2. 필요한 샘플이 모두 모였는지 확인
+    // 2. 이 변수의 voltage 값만 필터링된 결과로 대체함.
+    filteredPoint.voltage = Iir::processSample(latestDataPoint.voltage, m_lpfCoeffs, m_lpfState);
+
+    // 3. 필터링이 완료된 데이터 포인트를 버퍼에 추가
+    m_coarseSearchBuffer.push_back(filteredPoint);
+
+    // 4. 필요한 샘플이 모두 모였는지 확인
     if(m_coarseSearchBuffer.size() < m_coarseSearchSamplesNeeded) {
         return; // 아직 샘플이 더 필요함
     }
 
-    // 3. 샘플이 다 모였으면, Zero-Crossing으로 주파수 설정
+    // 5. 샘플이 다 모였으면, Zero-Crossing으로 주파수 설정
     double estimateFreq = estimateFrequencyByZeroCrossing();
     qDebug() << "estimate Freq : " << estimateFreq;
 
-    // 4. 추정된 주파수로 파라미터 업데이트
-    if(estimateFreq > 0) {
-        // FLL이 위상차를 쉽게 감지하도록 샘플링 주파수를 추정치보다 높게 설정
-        emit samplingCyclesUpdated(estimateFreq);
+    // 6. 추정된 주파수로 파라미터 업데이트
+    if(estimateFreq < 1.0) {
+        qDebug() << "거친 탐색 실패: 주파수가 너무 낮음. 재시작..";
+        startCoarseSearch();
+        return;
+    }
 
-        // FLL 획득 상태로 전환
+    if(!m_isSecondCoarsePass) {
+        // --- 1단계 통과 ---
+        qDebug() << "Coarse Pass 1 Estimate Freq: " << estimateFreq;
+
+        // 2단계 탐색 준비
+        m_isSecondCoarsePass = true;
+        emit samplingCyclesUpdated(estimateFreq); // 1차 추정치로 변경
+
+        // 2단계에 필요한 샘플 수 다시 계산
+        const double newSamplingRate = estimateFreq * m_engine->parameters().samplesPerCycle;
+        m_lpfCoeffs = Iir::calcLowpassCoeffs(newSamplingRate, estimateFreq * 1.5);
+        m_coarseSearchSamplesNeeded = static_cast<int>(newSamplingRate * CoarseSearchConstants::Duration_S);
+        qDebug() << "Coarse Pass 2 - Samples Needed : " << m_coarseSearchSamplesNeeded;
+
+        // 버퍼 비우고 2단계 데이터 수집 시작
+        m_coarseSearchBuffer.clear();
+        m_coarseSearchBuffer.reserve(m_coarseSearchSamplesNeeded);
+        m_lpfState = {}; // 필터 상태 리셋
+    } else {
+        // --- 2단계 통과 ---
+        qDebug() << "Coarse Pass 2 Estimate Freq : " << estimateFreq;
+
+        // 최종 추정치로 FLL 시작
+        emit samplingCyclesUpdated(estimateFreq);
         m_trackingState = TrackingState::FLL_Acquisition;
         qDebug() << " --- FLL로 전환됨 ---";
+
+        // FLL 상태 초기화
         m_pll_previousVoltagePhase = 0.0;
         m_fll_integralError = 0.0;
     }
@@ -371,15 +405,22 @@ void FrequencyTracker::startCoarseSearch()
     m_coarseSearchBuffer.clear();
     m_trackingState = TrackingState::Coarse;
 
+    // 1단계 탐색을 20Hz에서 시작
+    emit samplingCyclesUpdated(20.0);
+
+    // LPF 계수 계산 (차단 주파수 20 * 1.5 = 30Hz)
+    const double currentSamplingRate = 20.0 * m_engine->parameters().samplesPerCycle;
+    m_lpfCoeffs = Iir::calcLowpassCoeffs(currentSamplingRate, 20.0 * 1.5);
+    m_lpfState = {};
+
     // 0.5초 분량의 샘플 개수를 계산
-    const double currentSamplingRate = m_engine->parameters().samplingCycles * m_engine->parameters().samplesPerCycle;
     if(currentSamplingRate > 1.0) {
         m_coarseSearchSamplesNeeded = static_cast<int>(currentSamplingRate * CoarseSearchConstants::Duration_S);
     } else {
         // 샘플링 속도가 너무 느릴 경우 최소 샘플 개수 보장
         m_coarseSearchSamplesNeeded = CoarseSearchConstants::MinSamples;
     }
-    qDebug() << "m_coarseSearchSamplesNeeded : " << m_coarseSearchSamplesNeeded;
+    qDebug() << "Coarse Pass 1 - Samples Needed : " << m_coarseSearchSamplesNeeded;
 
     // 버퍼 공간 미리 할당
     m_coarseSearchBuffer.reserve(m_coarseSearchSamplesNeeded);
@@ -391,6 +432,7 @@ void FrequencyTracker::resetAllStates()
 
     m_coarseSearchBuffer.clear();
     m_coarseSearchSamplesNeeded = 0;
+    m_isSecondCoarsePass = false;
     m_isVerifying = false;
 
     m_fll_integralError = 0.0;
