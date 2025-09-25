@@ -3,7 +3,6 @@
 
 #include <QObject>
 #include "data_point.h"
-#include "iir_filter.h"
 #include "measured_data.h"
 
 // SimulationEngine 전방선언
@@ -53,7 +52,8 @@ private:
     // --- 헬퍼 함수 ---
     void startCoarseSearch(); // 거친 탐색을 시작하는 헬퍼 함수
     void resetAllStates();
-    double estimateFrequencyByZeroCrossing(); // zero-crossing 주파수 계산 함수
+    double estimateFrequencyByZeroCrossing(const std::vector<double>& wave); // zero-crossing 주파수 계산 함수
+    std::vector<double> generateFrequencyByDft();
     void checkFllLock(double frequencyError);
     void startVerification();
 
@@ -61,14 +61,9 @@ private:
     SimulationEngine* m_engine; // 엔진에 대한 포인터 (소유권 없음)
     TrackingState m_trackingState;
 
-    // LPF for CoarseSearch 용 변수
-    Iir::BiquadCoeffs m_lpfCoeffs;
-    Iir::BiquadState m_lpfState;
-
     std::vector<DataPoint> m_coarseSearchBuffer; // 데이터 수집용 버퍼
     int m_coarseSearchSamplesNeeded; // 필요한 샘플 개수
     bool m_isVerifying;
-    bool m_isSecondCoarsePass;
 
     // FLL 관련 변수
     double m_fll_integralError;

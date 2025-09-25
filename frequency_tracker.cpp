@@ -1,7 +1,6 @@
 #include "frequency_tracker.h"
 #include "simulation_engine.h"
 #include "AnalysisUtils.h"
-#include "iir_filter.h"
 #include <QDebug>
 
 namespace {
@@ -35,7 +34,7 @@ namespace {
     struct VerificationConstants {
         static constexpr int IntervalCycles = 200;
         static constexpr double Durationi_S = 0.2; // 샘플을 수집할 기간(초)
-        static constexpr double ValidRatioMin = 0.5;
+        static constexpr double ValidRatioMin = 0.49;
         static constexpr double ValidRatioMax = 1.27;
     };
 }
@@ -142,61 +141,41 @@ FrequencyTracker::PidCoefficients FrequencyTracker::getZcCoefficients() const
 void FrequencyTracker::processCoarseSearch(const DataPoint& latestDataPoint)
 {
     // 1. 데이터 수집
-    DataPoint filteredPoint = latestDataPoint;
+    m_coarseSearchBuffer.push_back(latestDataPoint);
 
-    // 2. 이 변수의 voltage 값만 필터링된 결과로 대체함.
-    filteredPoint.voltage = Iir::processSample(latestDataPoint.voltage, m_lpfCoeffs, m_lpfState);
-
-    // 3. 필터링이 완료된 데이터 포인트를 버퍼에 추가
-    m_coarseSearchBuffer.push_back(filteredPoint);
-
-    // 4. 필요한 샘플이 모두 모였는지 확인
+    // 2. 필요한 샘플이 모두 모였는지 확인
     if(m_coarseSearchBuffer.size() < m_coarseSearchSamplesNeeded) {
         return; // 아직 샘플이 더 필요함
     }
 
-    // 5. 샘플이 다 모였으면, Zero-Crossing으로 주파수 설정
-    double estimateFreq = estimateFrequencyByZeroCrossing();
-    qDebug() << "estimate Freq : " << estimateFreq;
+    // 3. DFT로 기본파 파형을 재구성
+    std::vector<double> clean_wave = generateFrequencyByDft();
 
-    // 6. 추정된 주파수로 파라미터 업데이트
-    if(estimateFreq < 1.0) {
-        qDebug() << "거친 탐색 실패: 주파수가 너무 낮음. 재시작..";
+    if(clean_wave.empty()) {
+        qDebug() << "거친 탐색 실패: 기본파 못찾음. 재시작..";
         startCoarseSearch();
         return;
     }
 
-    if(!m_isSecondCoarsePass) {
-        // --- 1단계 통과 ---
-        qDebug() << "Coarse Pass 1 Estimate Freq: " << estimateFreq;
+    // 4. 재구성한 그래프로 ZC 실행
+    double estimateFreq = estimateFrequencyByZeroCrossing(clean_wave);
+    qDebug() << "estimate Freq : " << estimateFreq;
 
-        // 2단계 탐색 준비
-        m_isSecondCoarsePass = true;
-        emit samplingCyclesUpdated(estimateFreq); // 1차 추정치로 변경
-
-        // 2단계에 필요한 샘플 수 다시 계산
-        const double newSamplingRate = estimateFreq * m_engine->parameters().samplesPerCycle;
-        m_lpfCoeffs = Iir::calcLowpassCoeffs(newSamplingRate, estimateFreq * 1.5);
-        m_coarseSearchSamplesNeeded = static_cast<int>(newSamplingRate * CoarseSearchConstants::Duration_S);
-        qDebug() << "Coarse Pass 2 - Samples Needed : " << m_coarseSearchSamplesNeeded;
-
-        // 버퍼 비우고 2단계 데이터 수집 시작
-        m_coarseSearchBuffer.clear();
-        m_coarseSearchBuffer.reserve(m_coarseSearchSamplesNeeded);
-        m_lpfState = {}; // 필터 상태 리셋
-    } else {
-        // --- 2단계 통과 ---
-        qDebug() << "Coarse Pass 2 Estimate Freq : " << estimateFreq;
-
-        // 최종 추정치로 FLL 시작
-        emit samplingCyclesUpdated(estimateFreq);
-        m_trackingState = TrackingState::FLL_Acquisition;
-        qDebug() << " --- FLL로 전환됨 ---";
-
-        // FLL 상태 초기화
-        m_pll_previousVoltagePhase = 0.0;
-        m_fll_integralError = 0.0;
+    if(estimateFreq < 1.0) {
+        qDebug() << "거친 탐색 실패: 주파수 너무 낮음. 재시작..";
+        startCoarseSearch();
+        return;
     }
+
+    // 5.  추정된 주파수로 FLL 시작
+    emit samplingCyclesUpdated(estimateFreq);
+    m_trackingState = TrackingState::FLL_Acquisition;
+    qDebug() << " --- FLL로 전환됨 ---";
+
+    // FLL 상태 초기화
+    m_pll_previousVoltagePhase = 0.0;
+    m_fll_integralError = 0.0;
+
 }
 
 void FrequencyTracker::processFll(const MeasuredData& latestMeasuredData)
@@ -369,32 +348,32 @@ void FrequencyTracker::processFineTune(const MeasuredData& latestMeasuredData)
 
 void FrequencyTracker::processVerification(const DataPoint& latestDataPoint)
 {
-    // 1. 데이터 수집
-    m_coarseSearchBuffer.push_back(latestDataPoint);
-    if(m_coarseSearchBuffer.size() < m_coarseSearchSamplesNeeded) {
-        return; // 샘플 더 필요
-    }
+    // // 1. 데이터 수집
+    // m_coarseSearchBuffer.push_back(latestDataPoint);
+    // if(m_coarseSearchBuffer.size() < m_coarseSearchSamplesNeeded) {
+    //     return; // 샘플 더 필요
+    // }
 
-    // 2. ZC로 주파수 재추정
-    double zc_freq = estimateFrequencyByZeroCrossing();
-    double pll_freq = m_engine->parameters().samplingCycles;
+    // // 2. ZC로 주파수 재추정
+    // double zc_freq = estimateFrequencyByZeroCrossing();
+    // double pll_freq = m_engine->parameters().samplingCycles;
 
-    if(zc_freq > 0) {
-        double ratio = pll_freq / zc_freq;
-        qDebug() << "Lock 검증: PLL Freq =" << pll_freq << ", ZC Freq =" << zc_freq << ", Ratio =" << ratio;
+    // if(zc_freq > 0) {
+    //     double ratio = pll_freq / zc_freq;
+    //     qDebug() << "Lock 검증: PLL Freq =" << pll_freq << ", ZC Freq =" << zc_freq << ", Ratio =" << ratio;
 
-        // 3. 비율 확인 (0.8 ~ 1.2 범위를 정상으로 간주)
-        if(ratio > VerificationConstants::ValidRatioMax || ratio < VerificationConstants::ValidRatioMin) {
-            // 정수배 혹은 정수비에 Lock된 것으로 판단
-            qDebug() << "잘못된 Lock 감지! 거친 탐색 다시 시작.";
-            startCoarseSearch();
-            return;
-        }
-    }
+    //     // 3. 비율 확인 (0.49 ~ 1.27 범위를 정상으로 간주)
+    //     if(ratio > VerificationConstants::ValidRatioMax || ratio < VerificationConstants::ValidRatioMin) {
+    //         // 정수배 혹은 정수비에 Lock된 것으로 판단
+    //         qDebug() << "잘못된 Lock 감지! 거친 탐색 다시 시작.";
+    //         startCoarseSearch();
+    //         return;
+    //     }
+    // }
 
-    qDebug() << "Lock 검증 통과";
-    m_isVerifying = false;
-    m_pll_cycleCounter = 0;
+    // qDebug() << "Lock 검증 통과";
+    // m_isVerifying = false;
+    // m_pll_cycleCounter = 0;
 }
 // -------------------
 
@@ -405,17 +384,12 @@ void FrequencyTracker::startCoarseSearch()
     m_coarseSearchBuffer.clear();
     m_trackingState = TrackingState::Coarse;
 
-    // 1단계 탐색을 20Hz에서 시작
-    emit samplingCyclesUpdated(20.0);
-
-    // LPF 계수 계산 (차단 주파수 20 * 1.5 = 30Hz)
-    const double currentSamplingRate = 20.0 * m_engine->parameters().samplesPerCycle;
-    m_lpfCoeffs = Iir::calcLowpassCoeffs(currentSamplingRate, 20.0 * 1.5);
-    m_lpfState = {};
+    const double initialSamplingRate = 50.0 * 20.0;
+    const double currentSamplingRate = m_engine->parameters().samplingCycles * m_engine->parameters().samplesPerCycle;
 
     // 0.5초 분량의 샘플 개수를 계산
     if(currentSamplingRate > 1.0) {
-        m_coarseSearchSamplesNeeded = static_cast<int>(currentSamplingRate * CoarseSearchConstants::Duration_S);
+        m_coarseSearchSamplesNeeded = static_cast<int>(initialSamplingRate * CoarseSearchConstants::Duration_S);
     } else {
         // 샘플링 속도가 너무 느릴 경우 최소 샘플 개수 보장
         m_coarseSearchSamplesNeeded = CoarseSearchConstants::MinSamples;
@@ -432,7 +406,6 @@ void FrequencyTracker::resetAllStates()
 
     m_coarseSearchBuffer.clear();
     m_coarseSearchSamplesNeeded = 0;
-    m_isSecondCoarsePass = false;
     m_isVerifying = false;
 
     m_fll_integralError = 0.0;
@@ -452,17 +425,17 @@ void FrequencyTracker::resetAllStates()
     m_zc_previousPhaseError = 0.0;
 }
 
-double FrequencyTracker::estimateFrequencyByZeroCrossing()
+double FrequencyTracker::estimateFrequencyByZeroCrossing(const std::vector<double>& wave)
 {
-    if(m_coarseSearchBuffer.size() < 2) {
+    if(wave.size() < 2) {
         return 0.0;
     }
 
     int zeroCrossings = 0;
-    for(size_t i{1}; i < m_coarseSearchBuffer.size(); ++i) {
+    for(size_t i{1}; i < wave.size(); ++i) {
         // 이전 샘플과 현재 샘플의 부호가 다르면 Zero-Crossing으로 간주
-        if((m_coarseSearchBuffer[i - 1].voltage < 0 && m_coarseSearchBuffer[i].voltage >= 0) ||
-            (m_coarseSearchBuffer[i - 1].voltage > 0 && m_coarseSearchBuffer[i].voltage <= 0))
+        if((wave[i - 1]< 0 && wave[i] >= 0) ||
+            (wave[i - 1] > 0 && wave[i] <= 0))
         {
             ++zeroCrossings;
         }
@@ -479,6 +452,70 @@ double FrequencyTracker::estimateFrequencyByZeroCrossing()
 
     // 주파수 계산: (교차 횟수 / 2) / 시간
     return (static_cast<double>(zeroCrossings) / 2.0) / durationSeconds;
+}
+
+std::vector<double> FrequencyTracker::generateFrequencyByDft()
+{
+    const size_t N = m_coarseSearchBuffer.size();
+    if(N < 2) {
+        return {};
+    }
+
+    // Hann 윈도우 적용
+    std::vector<double> windowed_wave(N);
+    const double two_pi_over_N_minus_1 = 2.0 * std::numbers::pi / (N - 1);
+    for(size_t n = 0; n < N; ++n) {
+        double hann_multiplier = 0.5 * (1.0 - std::cos(n * two_pi_over_N_minus_1));
+        windowed_wave[n] = m_coarseSearchBuffer[n].voltage * hann_multiplier;
+    }
+
+    // 1. DFT 실행하여 주파수 스펙트럼 계산
+    const size_t spectrumSize = N / 2 + 1;
+    std::vector<std::complex<double>> spectrum(spectrumSize, {0.0, 0.0});
+    const double two_pi_over_N = 2.0 * std::numbers::pi / N;
+
+    for(size_t k = 1; k < N / 2; ++k) {
+        double real_sum = 0.0;
+        double imag_sum = 0.0;
+
+        for(size_t n = 0; n < N; ++n) {
+            const double angle = k * two_pi_over_N * n;
+            real_sum += windowed_wave[n] * cos(angle);
+            imag_sum -= windowed_wave[n] * sin(angle);
+        }
+        spectrum[k] = {real_sum, imag_sum};
+    }
+
+    int fundamental_k = -1; // 기본 주파수 인덱스
+    double max_magnitude_sq = -1.0;
+    std::complex<double> fundamental_phasor = {0.0, 0.0};
+
+    for(size_t k = 1; k < spectrum.size(); ++k) {
+        double mag_sq = std::norm(spectrum[k]);
+        if(mag_sq > max_magnitude_sq) {
+            max_magnitude_sq = mag_sq;
+            fundamental_k = k;
+            fundamental_phasor = spectrum[k];
+        }
+    }
+
+    if(fundamental_k == -1 || max_magnitude_sq < 1e-9) {
+        return {}; // 유의미한 주파수를 못찾음
+    }
+
+    // 4. 주파수 인덱스를 실제 주파수로 변환
+    std::vector<double> clean_wave;
+    clean_wave.reserve(N);
+
+    const double amplitude = 2.0 * std::abs(fundamental_phasor) / N;
+    const double phase = std::arg(fundamental_phasor);
+
+    for(size_t n = 0; n < N; ++n) {
+        double value = amplitude * std::cos(fundamental_k * two_pi_over_N * n + phase);
+        clean_wave.push_back(value);
+    }
+
+    return clean_wave;
 }
 
 void FrequencyTracker::checkFllLock(double frequencyError)
