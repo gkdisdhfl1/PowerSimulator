@@ -149,7 +149,7 @@ void FrequencyTracker::processCoarseSearch(const DataPoint& latestDataPoint)
     }
 
     // 3. DFT로 기본파 파형을 재구성
-    std::vector<double> clean_wave = generateFrequencyByDft();
+    std::vector<double> clean_wave = AnalysisUtils::generateFundamentalWave(m_coarseSearchBuffer);
 
     if(clean_wave.empty()) {
         qDebug() << "거친 탐색 실패: 기본파 못찾음. 재시작..";
@@ -452,70 +452,6 @@ double FrequencyTracker::estimateFrequencyByZeroCrossing(const std::vector<doubl
 
     // 주파수 계산: (교차 횟수 / 2) / 시간
     return (static_cast<double>(zeroCrossings) / 2.0) / durationSeconds;
-}
-
-std::vector<double> FrequencyTracker::generateFrequencyByDft()
-{
-    const size_t N = m_coarseSearchBuffer.size();
-    if(N < 2) {
-        return {};
-    }
-
-    // Hann 윈도우 적용
-    std::vector<double> windowed_wave(N);
-    const double two_pi_over_N_minus_1 = 2.0 * std::numbers::pi / (N - 1);
-    for(size_t n = 0; n < N; ++n) {
-        double hann_multiplier = 0.5 * (1.0 - std::cos(n * two_pi_over_N_minus_1));
-        windowed_wave[n] = m_coarseSearchBuffer[n].voltage * hann_multiplier;
-    }
-
-    // 1. DFT 실행하여 주파수 스펙트럼 계산
-    const size_t spectrumSize = N / 2 + 1;
-    std::vector<std::complex<double>> spectrum(spectrumSize, {0.0, 0.0});
-    const double two_pi_over_N = 2.0 * std::numbers::pi / N;
-
-    for(size_t k = 1; k < N / 2; ++k) {
-        double real_sum = 0.0;
-        double imag_sum = 0.0;
-
-        for(size_t n = 0; n < N; ++n) {
-            const double angle = k * two_pi_over_N * n;
-            real_sum += windowed_wave[n] * cos(angle);
-            imag_sum -= windowed_wave[n] * sin(angle);
-        }
-        spectrum[k] = {real_sum, imag_sum};
-    }
-
-    int fundamental_k = -1; // 기본 주파수 인덱스
-    double max_magnitude_sq = -1.0;
-    std::complex<double> fundamental_phasor = {0.0, 0.0};
-
-    for(size_t k = 1; k < spectrum.size(); ++k) {
-        double mag_sq = std::norm(spectrum[k]);
-        if(mag_sq > max_magnitude_sq) {
-            max_magnitude_sq = mag_sq;
-            fundamental_k = k;
-            fundamental_phasor = spectrum[k];
-        }
-    }
-
-    if(fundamental_k == -1 || max_magnitude_sq < 1e-9) {
-        return {}; // 유의미한 주파수를 못찾음
-    }
-
-    // 4. 주파수 인덱스를 실제 주파수로 변환
-    std::vector<double> clean_wave;
-    clean_wave.reserve(N);
-
-    const double amplitude = 2.0 * std::abs(fundamental_phasor) / N;
-    const double phase = std::arg(fundamental_phasor);
-
-    for(size_t n = 0; n < N; ++n) {
-        double value = amplitude * std::cos(fundamental_k * two_pi_over_N * n + phase);
-        clean_wave.push_back(value);
-    }
-
-    return clean_wave;
 }
 
 void FrequencyTracker::checkFllLock(double frequencyError)

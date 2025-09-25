@@ -1,4 +1,5 @@
 #include "simulation_engine.h"
+#include "AnalysisUtils.h"
 #include "frequency_tracker.h"
 #include <QDebug>
 
@@ -370,59 +371,17 @@ void SimulationEngine::processUpdateByMode(bool resetCounter)
 
 std::vector<std::complex<double>> SimulationEngine::analyzeSpectrum(SimulationEngine::DataType type) const
 {
-    // // -- 디버그 코드 ---
-    // if(type == DataType::Voltage) { // 전압 계산 시 한 번만 출력
-    //     qDebug() << "--- Cycle Buffer (Voltage) ---";
-    //     for(size_t i = 0; i < m_cycleSampleBuffer.size(); ++i) {
-    //         qDebug() << i << ":" << m_cycleSampleBuffer[i].voltage;
-    //     }
-    //     qDebug() << "------------------------------";
-    // }
-    // // ----------------
+    // 전압 전류에 따라 AnalysisUtils에 넘길 데이터 복사
+    std::vector<DataPoint> samplesForAnalysis;
+    samplesForAnalysis.reserve(m_cycleSampleBuffer.size());
 
-    const size_t N = m_cycleSampleBuffer.size();
-    if(N < 2) return {};
-
-    const size_t spectrumSize = N / 2 + 1; // Nyquist 주파수까지 분석
-    std::vector<std::complex<double>> spectrum(spectrumSize, {0.0, 0.0});
-    const double two_pi_over_N = 2.0 * std::numbers::pi / N;
-
-    for(size_t k = 1; k < N / 2; ++k) { // k = 1(기본파) 부터 시작
-        double phasorX_sum = 0.0;
-        double phasorY_sum = 0.0;
-
-        for(size_t n = 0; n < N; ++n) {
-            const auto& sample = m_cycleSampleBuffer[n];
-            const double value = (type == DataType::Voltage) ? sample.voltage : sample.current;
-
-            const double angle = k * two_pi_over_N * n;
-            phasorX_sum += value * cos(angle);
-            phasorY_sum -= value * sin(angle); // 허수부는 -sin을 곱함
-        }
-
-        // DFT 정규화
-        // 최대 진폭(2/N)을 sqrt(2)로 나누어 실효값(RMS)을 구한는 계수를 구함
-        const double normFactor = std::sqrt(2.0) / N;
-        spectrum[k] = {normFactor * phasorX_sum, normFactor * phasorY_sum};
+    for(const auto& sample : m_cycleSampleBuffer) {
+        samplesForAnalysis.push_back({
+            sample.timestamp,
+            (type == DataType::Voltage) ? sample.voltage : sample.current,
+            0
+        });
     }
 
-    // k = N / 2(나이퀴스트 주파수) 특별 처리
-    if(N % 2 == 0) { // 샘플 수가 짝수일 때만 나이퀴스트 주파수가 의미 있음
-        const size_t k_nyquist = N / 2;
-        double phasorX_sum = 0.0;
-
-        for(size_t n = 0; n < N; ++n) {
-            const auto& sample = m_cycleSampleBuffer[n];
-            const double value = (type == DataType::Voltage) ? sample.voltage : sample.current;
-            // cos(k * 2*pi/N  n) = cos(N/2  2*pi/N * n) = cos(pi * n)
-            // cos(pi * n)은 n이 짝수면 1, 홀수면 -1
-            phasorX_sum += value * ((n % 2 == 0) ? 1.0 : -1.0);
-        }
-
-        // 나이퀴스트 주파수 정규화
-        const double normFactor = 1.0 / N;
-        spectrum[k_nyquist] = {normFactor * phasorX_sum, 0.0}; // sin은 항상 0
-    }
-
-    return spectrum;
+    return AnalysisUtils::calculateSpectrum(samplesForAnalysis, false);
 }

@@ -53,7 +53,6 @@ private:
     void startCoarseSearch(); // 거친 탐색을 시작하는 헬퍼 함수
     void resetAllStates();
     double estimateFrequencyByZeroCrossing(const std::vector<double>& wave); // zero-crossing 주파수 계산 함수
-    std::vector<double> generateFrequencyByDft();
     void checkFllLock(double frequencyError);
     void startVerification();
 
