@@ -1,6 +1,24 @@
 #include "AnalysisUtils.h"
-#include <numbers>
+#include "config.h"
 #include <complex>
+
+namespace {
+HarmonicAnalysisResult createHarmonicResult(const std::vector<std::complex<double>>& spectrum, int order)
+{
+    if(order <= 0 || order >= spectrum.size()) return {};
+
+    const auto& phasorRms = spectrum[order];
+    const double rms = std::abs(phasorRms);
+
+    return {
+        .order = order,
+        .rms = rms,
+        .phase = std::arg(phasorRms),
+        .phasorX = phasorRms.real(),
+        .phasorY = phasorRms.imag()
+    };
+}
+}
 
 namespace AnalysisUtils {
 
@@ -46,7 +64,7 @@ namespace AnalysisUtils {
 
         if(useWindow) {
             // Hann 윈도우 적용
-            const double two_pi_over_N_minus_1 = 2.0 * std::numbers::pi / (N - 1);
+            const double two_pi_over_N_minus_1 = config::Math::TwoPi / (N - 1);
             for(size_t n = 0; n < N; ++n) {
                 double hann_multiplier = 0.5 * (1.0 - std::cos(n * two_pi_over_N_minus_1));
                 processed_wave[n] = samples[n].voltage * hann_multiplier;
@@ -60,7 +78,7 @@ namespace AnalysisUtils {
         // DFT 실행
         const size_t spectrumSize = N / 2 + 1;
         std::vector<std::complex<double>> spectrum(spectrumSize, {0.0, 0.0});
-        const double two_pi_over_N = 2.0 * std::numbers::pi / N;
+        const double two_pi_over_N = config::Math::TwoPi / N;
 
         for(size_t k = 1; k < N / 2; ++k) {
             double real_sum = 0.0;
@@ -116,7 +134,7 @@ namespace AnalysisUtils {
 
         const double amplitude = std::abs(fundamental_phasor) * sqrt(2.0);
         const double phase = std::arg(fundamental_phasor);
-        const double two_pi_over_N = 2.0 * std::numbers::pi / N;
+        const double two_pi_over_N = config::Math::TwoPi / N;
 
         for(size_t n = 0; n < N; ++n) {
             double value = amplitude * std::cos(fundamental_k * two_pi_over_N * n + phase);
@@ -125,6 +143,42 @@ namespace AnalysisUtils {
 
         return clean_wave;
     }
+
+    std::vector<HarmonicAnalysisResult> findSignificantHarmonics(const std::vector<std::complex<double>>& spectrum) {
+        {
+            std::vector<HarmonicAnalysisResult> results;
+            if(spectrum.size() < 2) return results;
+
+            // 기본파는 항상 결과에 추가
+            results.push_back(createHarmonicResult(spectrum, 1));
+
+            // 나머지 중에서 가장 큰 고조파를 찾음
+            int harmonicOrder = -1;
+            double maxHarmonicMagSq = -1.0;
+
+            for(size_t k = 2; k < spectrum.size(); ++k) {
+                double magSq = std::norm(spectrum[k]); // 크기의 제곱으로 비교
+                if(magSq > maxHarmonicMagSq) {
+                    // 기존의 Fundamental을 harmonic으로 내림
+                    maxHarmonicMagSq= magSq;
+                    harmonicOrder = k;
+                }
+            }
+
+            // 노이즈와 구분하기 위한 최소 임계값
+            // 기본파 RMS의 1%보다 커야 함
+            const double fundamentalRmsSq = std::norm(spectrum.size() > 1 ? spectrum[1] : 0);
+            const double noiseThresholdSq = fundamentalRmsSq * 0.0001;
+
+            // 유의미한 고조파 결과 추가
+            if(harmonicOrder != -1 && maxHarmonicMagSq > noiseThresholdSq) {
+                results.push_back(createHarmonicResult(spectrum, harmonicOrder));
+            }
+
+            return results;
+        }
+    }
+
 
 }
 

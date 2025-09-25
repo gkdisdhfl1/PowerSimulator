@@ -164,8 +164,8 @@ void SimulationEngine::captureData()
 
     // 다음 스텝을 위해 현재 진행 위상 업데이트
     const FpSeconds timeDelta = m_captureIntervalsNs;
-    const double phaseDelta = 2.0 * std::numbers::pi * m_params.frequency * timeDelta.count();
-    m_currentPhaseRadians = std::fmod(m_currentPhaseRadians + phaseDelta, 2.0 * std::numbers::pi);
+    const double phaseDelta = config::Math::TwoPi * m_params.frequency * timeDelta.count();
+    m_currentPhaseRadians = std::fmod(m_currentPhaseRadians + phaseDelta, config::Math::TwoPi);
 
     // UI 갱신 및 사이클 계산을 위한 누적 위상 업데이트
     ++m_sampleCounterForUpdate;
@@ -245,56 +245,8 @@ void SimulationEngine::calculateCycleData()
     auto currentSpectrum = analyzeSpectrum(DataType::Current);
 
     // 2. (해석) 스펙트럼에서 가장 큰 두 개의 성분(기본파, 고조파)를 찾음
-    auto findSignificantHarmoics = [&](const std::vector<std::complex<double>>& spectrum) {
-        std::vector<HarmonicAnalysisResult> results;
-        if(spectrum.size() < 2) return results;
-
-        auto createResult = [&](int order) -> HarmonicAnalysisResult {
-            if(order <= 0 || order >= spectrum.size()) return {};
-
-            const auto& phasorRms = spectrum[order];
-            const double rms = std::abs(phasorRms);
-
-            return {
-                .order = order,
-                .rms = rms,
-                .phase = std::arg(phasorRms),
-                .phasorX = phasorRms.real(),
-                .phasorY = phasorRms.imag()
-            };
-        };
-
-        // 기본파는 항상 결과에 추가
-        results.push_back(createResult(1));
-
-        // 나머지 중에서 가장 큰 고조파를 찾음
-        int harmonicOrder = -1;
-        double maxHarmonicMagSq = -1.0;
-
-        for(size_t k = 2; k < spectrum.size(); ++k) {
-            double magSq = std::norm(spectrum[k]); // 크기의 제곱으로 비교
-            if(magSq > maxHarmonicMagSq) {
-                // 기존의 Fundamental을 harmonic으로 내림
-                maxHarmonicMagSq= magSq;
-                harmonicOrder = k;
-            }
-        }
-
-        // 노이즈와 구분하기 위한 최소 임계값
-        // 기본파 RMS의 1%보다 커야 함
-        const double fundamentalRmsSq = std::norm(spectrum.size() > 1 ? spectrum[1] : 0);
-        const double noiseThresholdSq = fundamentalRmsSq * 0.0001;
-
-        // 유의미한 고조파 결과 추가
-        if(harmonicOrder != -1 && maxHarmonicMagSq > noiseThresholdSq) {
-            results.push_back(createResult(harmonicOrder));
-        }
-
-        return results;
-    };
-
-    auto voltageHarmonics = findSignificantHarmoics(voltageSpectrum);
-    auto currentHarmonics = findSignificantHarmoics(currentSpectrum);
+    auto voltageHarmonics = AnalysisUtils::findSignificantHarmonics(voltageSpectrum);
+    auto currentHarmonics = AnalysisUtils::findSignificantHarmonics(currentSpectrum);
 
     // 3. 전체 RMS 및 유효 전력 계산
     double voltageSquareSum = 0.0;

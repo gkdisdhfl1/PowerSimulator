@@ -199,12 +199,12 @@ void FrequencyTracker::processFll(const MeasuredData& latestMeasuredData)
     }
 
     double phaseError = currentPhasorAngle - m_pll_previousVoltagePhase;
-    while(phaseError <= -std::numbers::pi) phaseError += 2.0 * std::numbers::pi;
-    while(phaseError > std::numbers::pi) phaseError -= 2.0 * std::numbers::pi;
+    while(phaseError <= -std::numbers::pi) phaseError += config::Math::TwoPi;
+    while(phaseError > std::numbers::pi) phaseError -= config::Math::TwoPi;
 
     // FLL에서 주파수 에러를 직접 제어
     const double cycleDuration = m_engine->parameters().samplesPerCycle * m_engine->m_captureIntervalsNs.count();
-    const double frequencyError = phaseError / (2.0 * std::numbers::pi * cycleDuration);
+    const double frequencyError = phaseError / (config::Math::TwoPi * cycleDuration);
 
     // FLL 실패 감지
     if(std::abs(frequencyError) > FllConstants::FailureThresholdHz) {
@@ -286,8 +286,8 @@ void FrequencyTracker::processFineTune(const MeasuredData& latestMeasuredData)
 
     // 위상차 계산 및 정규화 (-pi ~ pi)
     double phaseError = currentPhasorAngle - m_pll_previousVoltagePhase;
-    while(phaseError <= -std::numbers::pi) phaseError += 2.0 * std::numbers::pi;
-    while(phaseError > std::numbers::pi) phaseError -= 2.0 * std::numbers::pi;
+    while(phaseError <= -std::numbers::pi) phaseError += config::Math::TwoPi;
+    while(phaseError > std::numbers::pi) phaseError -= config::Math::TwoPi;
 
     // 실패 감지 및 재탐색
     if(std::abs(phaseError) > PllConstants::FailureThresholdRad) {
@@ -314,12 +314,12 @@ void FrequencyTracker::processFineTune(const MeasuredData& latestMeasuredData)
 
     // 현재 각도에서 두 목표까지의 거리 계산
     double errorMinus90 = currentPhasorAngle - targetPhaseMinus90;
-    while(errorMinus90 <= -std::numbers::pi) errorMinus90 += 2.0 * std::numbers::pi;
-    while(errorMinus90 > std::numbers::pi)  errorMinus90 -= 2.0 * std::numbers::pi;
+    while(errorMinus90 <= -std::numbers::pi) errorMinus90 += config::Math::TwoPi;
+    while(errorMinus90 > std::numbers::pi)  errorMinus90 -= config::Math::TwoPi;
 
     double errorPlus90 = currentPhasorAngle - targetPhasePlus90;
-    while(errorPlus90 <= -std::numbers::pi) errorPlus90 += 2.0 * std::numbers::pi;
-    while(errorPlus90 > std::numbers::pi) errorPlus90 -= 2.0 * std::numbers::pi;
+    while(errorPlus90 <= -std::numbers::pi) errorPlus90 += config::Math::TwoPi;
+    while(errorPlus90 > std::numbers::pi) errorPlus90 -= config::Math::TwoPi;
 
     // 더 작은 에러를 최종 위상 에러로 선택
     double zcPhaseError = (std::abs(errorMinus90) < std::abs(errorPlus90)) ? errorMinus90 : errorPlus90;

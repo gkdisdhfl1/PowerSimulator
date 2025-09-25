@@ -102,6 +102,11 @@ namespace config {
         static constexpr double DefaultMagnitude = 0.0;
         static constexpr double DefaultPhase = 0.0;
     };
+
+    // 수학 관련 상수
+    struct Math {
+        static constexpr double TwoPi = 2.0 * std::numbers::pi;
+    };
 }
 
 namespace utils {

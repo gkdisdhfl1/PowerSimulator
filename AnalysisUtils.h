@@ -21,6 +21,7 @@ namespace AnalysisUtils {
 
     std::vector<double> generateFundamentalWave(const std::vector<DataPoint>& samples);
 
-    std::vector<HarmonicAnalysisResult> findSignificationHarmonics(const std::vector<std::complex<double>>& spectrum);
+    std::vector<HarmonicAnalysisResult> findSignificantHarmonics(const std::vector<std::complex<double>>& spectrum);
+
 }
 #endif // ANALYSISUTILS_H
