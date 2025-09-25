@@ -93,18 +93,18 @@ void PhasorView::updateData(const std::deque<MeasuredData>& data)
     for(const auto& h : latestData.currentHarmonics) { totalIx += h.phasorX; totalIy += h.phasorY; }
 
     m_totalVoltage.components = QPointF(totalVx, totalVy);
-    m_totalVoltage.magnitude = std::hypot(totalVx, totalVy);
+    m_totalVoltage.magnitude = latestData.voltageRms;
     m_totalVoltage.phaseDegrees = utils::radiansToDegrees(std::atan2(totalVy, totalVx));
 
     m_totalCurrent.components = QPointF(totalIx, totalIy);
-    m_totalCurrent.magnitude = std::hypot(totalIx, totalIy);
+    m_totalCurrent.magnitude = latestData.currentRms;
     m_totalCurrent.phaseDegrees = utils::radiansToDegrees(std::atan2(totalIy, totalIx));
 
     // --- 라벨 업데이트 ---
     m_voltageInfoLabel->setText(QString("전압 전체: %1 V, %2°\n기본파: %3 V, %4°")
-                                    .arg(m_totalVoltage.magnitude, 0, 'f', 1)
+                                    .arg(m_totalVoltage.magnitude, 0, 'f', 2)
                                     .arg(m_totalVoltage.phaseDegrees, 0, 'f', 1)
-                                    .arg(m_fundamentalVoltage.magnitude, 0, 'f', 1)
+                                    .arg(m_fundamentalVoltage.magnitude, 0, 'f', 2)
                                     .arg(m_fundamentalVoltage.phaseDegrees, 0, 'f', 1));
 
     m_currentInfoLabel->setText(QString("전류 전체: %1 A, %2°\n기본파: %3 A, %4°")
@@ -212,5 +212,5 @@ double PhasorView::getCurrentLength(double magnitude, double maxRadius)
     // 크기를 로그 스케일 비율로 계산 (log(0)을 피하기 위해 1을 더함
     double ratio = log10(1 + magnitude)/ log10(1 + config::Source::Current::MaxAmplitude);
     ratio = std::clamp(ratio, 0.0, 1.0);
-    return innerRadius + (annulusHeight * ratio);
+    return innerRadius * ratio;
 }

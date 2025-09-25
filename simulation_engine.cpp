@@ -205,7 +205,7 @@ double SimulationEngine::calculateCurrentAmperage() const
 {
     // 1. 기본파 계산
     const double fundamentalPhase = m_currentPhaseRadians + m_params.phaseRadians + m_params.currentPhaseOffsetRadians;
-    double current = m_params.amplitude * sin(fundamentalPhase);
+    double current = m_params.currentAmplitude * sin(fundamentalPhase);
 
     // 2. 고조파 계산 (크기가 0보다 클 때만)
     const auto& harmonic = m_params.currentHarmonic;
@@ -306,6 +306,7 @@ void SimulationEngine::calculateCycleData()
         currentSquareSum += sample.current * sample.current;
         powerSum += sample.voltage * sample.current;
     }
+
     const double totalVoltageRms = std::sqrt(voltageSquareSum / N);
     const double totalCurrentRms = std::sqrt(currentSquareSum / N);
     const double activePower = powerSum / N;

@@ -241,11 +241,11 @@ void ControlPanel::initializeUiValues()
     updateCurrentPhaseLabel(m_currentPhaseDial->value());
 
     // 전압 고조파 초기화
-    m_voltageHarmonicOrder->setRange(2, 100);
+    m_voltageHarmonicOrder->setRange(1, 100);
     m_voltageHarmonicOrder->setValue(config::Harmonics::DefaultOrder);
     m_voltageHarmonicOrder->setDataType(ValueControlWidget::DataType::Integer);
 
-    m_voltageHarmonicMagnitude->setRange(0, 1000);
+    m_voltageHarmonicMagnitude->setRange(-config::Harmonics::MaxMangnitude, config::Harmonics::MaxMangnitude);
     m_voltageHarmonicMagnitude->setValue(config::Harmonics::DefaultMagnitude);
     m_voltageHarmonicMagnitude->setSuffix(" V");
 
@@ -256,11 +256,11 @@ void ControlPanel::initializeUiValues()
     updateVoltageHarmonicPhaseLabel(m_voltageHarmonicPhaseDial->value());
 
     // 전류 고조파 초기화
-    m_currentHarmonicOrder->setRange(2, 100);
+    m_currentHarmonicOrder->setRange(1, 100);
     m_currentHarmonicOrder->setValue(config::Harmonics::DefaultOrder);
     m_currentHarmonicOrder->setDataType(ValueControlWidget::DataType::Integer);
 
-    m_currentHarmonicMagnitude->setRange(0, 1000);
+    m_currentHarmonicMagnitude->setRange(-config::Harmonics::MaxMangnitude, config::Harmonics::MaxMangnitude);
     m_currentHarmonicMagnitude->setValue(config::Harmonics::DefaultMagnitude);
     m_currentHarmonicMagnitude->setSuffix(" A");
 
