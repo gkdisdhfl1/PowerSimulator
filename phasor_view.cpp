@@ -13,6 +13,19 @@ namespace {
     constexpr int AXIS_PADDING = 10;
     constexpr double ARROW_HEAD_LENGTH = 5.0;
     constexpr double ARROW_HEAD_ANGLE = std::numbers::pi / 6.0; // 30도
+    constexpr double VOLTAGE_MAX_SCALE = 0.95;
+    constexpr double CURRENT_BASE_SCALE = 0.60;
+}
+
+DrawingContext::DrawingContext(const QRect& widgetRect, int topMargin)
+{
+    const QRect drawingRect = widgetRect.adjusted(0, 0, 0, -topMargin);
+    origin = drawingRect.center();
+    maxRadius = std::min(drawingRect.width(), drawingRect.height()) / 2.0 - AXIS_PADDING;
+
+    voltageRadius = maxRadius * VOLTAGE_MAX_SCALE;
+    currentBaseRadius = maxRadius * CURRENT_BASE_SCALE;
+    voltageAnnulusHeight = voltageRadius - currentBaseRadius;
 }
 
 PhasorView::PhasorView(QWidget *parent)
@@ -123,47 +136,60 @@ void PhasorView::paintEvent(QPaintEvent *event)
     QPainter painter(this);
     painter.setRenderHint(QPainter::Antialiasing);
 
-    // --- 그리기 영역 및 두 원의 반지름 정의 ---
-    const int controlHeight = m_controlContainer->height();
-    // 컨트롤 영역을 제외한 위쪽 영역을 그리기 영역으로 설정
-    const QRect drawingRect = rect().adjusted(0, 0, 0, -controlHeight);
-    const QPointF origin = drawingRect.center();
-    const double maxRadius = std::min(drawingRect.width(), drawingRect.height()) / 2.0 - AXIS_PADDING;
+    // 컨트롤 영역의 높이를 제외하고 컨텍스트 생성
+    const int topMargin = m_controlContainer->height();
+    DrawingContext ctx(rect(), topMargin);
 
-    painter.translate(origin);
+    painter.translate(ctx.origin);
 
-    const double outerRadius = maxRadius * 0.95; // 큰 원 (전압 페이저 최대 길이)
-    const double innerRadius = maxRadius * 0.60; // 작은 원 (전류 페이저 최대 길이
-    const double annulusHeight = outerRadius - innerRadius; // 두 원 사이의 높이
+    // 가이드 라인 그리기
+    drawGuideLines(painter, ctx);
 
+    // 페이저 그리기
 
-    // 좌표 축 그리기
-    painter.setPen(Qt::gray);
-    painter.drawLine(-maxRadius, 0, maxRadius, 0);
-    painter.drawLine(0, -maxRadius, 0, maxRadius);
-
-    // 가이드라인 원과 페이저 그리기
-    painter.setPen(QPen(Qt::lightGray, 1, Qt::DashLine));
-    painter.drawEllipse(QPointF(0, 0), outerRadius, outerRadius);
-    painter.drawEllipse(QPointF(0, 0), innerRadius, innerRadius);
-
-
-    // --- 로그 스케일을 이용한 각 페이저의 표시 길이 계산 ---
     // 전체 페이저
     if(m_totalVoltageCheck->isChecked()) {
-        drawPhasor(painter, m_totalVoltage, Qt::cyan, getVoltageLength(m_totalVoltage.magnitude, maxRadius));
+        drawPhasor(painter, m_totalVoltage, Qt::cyan, getPhasorDisplayLength(m_totalVoltage.magnitude, config::Source::Amplitude::Max, ctx, true));
     }
     if(m_totalCurrentCheck->isChecked()) {
         // qDebug() << "currentDisplayLength: " << currentDisplayLength;
-        drawPhasor(painter, m_totalCurrent, Qt::magenta, getCurrentLength(m_totalCurrent.magnitude, maxRadius));
+        drawPhasor(painter, m_totalCurrent, Qt::magenta, getPhasorDisplayLength(m_totalCurrent.magnitude, config::Source::Current::MaxAmplitude, ctx, false));
     }
     // 기본파 페이저
     if(m_fundVoltageCheck->isChecked()) {
-        drawPhasor(painter, m_fundamentalVoltage, Qt::blue, getVoltageLength(m_fundamentalVoltage.magnitude, maxRadius));
+        drawPhasor(painter, m_fundamentalVoltage, Qt::blue, getPhasorDisplayLength(m_fundamentalVoltage.magnitude, config::Source::Amplitude::Max, ctx, true));
     }
     if(m_fundCurrentCheck->isChecked()) {
         // qDebug() << "currentDisplayLength: " << currentDisplayLength;
-        drawPhasor(painter, m_fundamentalCurrent, Qt::red, getCurrentLength(m_fundamentalCurrent.magnitude, maxRadius));
+        drawPhasor(painter, m_fundamentalCurrent, Qt::red, getPhasorDisplayLength(m_fundamentalCurrent.magnitude, config::Source::Current::MaxAmplitude, ctx, false));
+    }
+}
+
+void PhasorView::drawGuideLines(QPainter& painter, const DrawingContext& ctx) const
+{
+    // 좌표축
+    painter.setPen(Qt::gray);
+    painter.drawLine(-ctx.maxRadius, 0, ctx.maxRadius, 0);
+    painter.drawLine(0, -ctx.maxRadius, 0, ctx.maxRadius);
+
+    // 가이드라인 원
+    painter.setPen(QPen(Qt::lightGray, 1, Qt::DashLine));
+    painter.drawEllipse(QPointF(0, 0), ctx.voltageRadius, ctx.voltageRadius);
+    painter.drawEllipse(QPointF(0, 0), ctx.currentBaseRadius, ctx.currentBaseRadius);
+}
+
+double PhasorView::getPhasorDisplayLength(double magnitude, double maxMagnitude, const DrawingContext& ctx, bool isVoltage) const
+{
+    if(maxMagnitude < 1e-6)
+        return 0.0;
+
+    double ratio = log10(1 + magnitude) / log10(1 + maxMagnitude);
+    ratio = std::clamp(ratio, 0.0, 1.0);
+
+    if(isVoltage) {
+        return ctx.currentBaseRadius + (ctx.voltageAnnulusHeight * ratio);
+    } else {
+        return ctx.currentBaseRadius * ratio;
     }
 }
 
@@ -189,28 +215,4 @@ void PhasorView::drawPhasor(QPainter& painter, const PhasorInfo& phasor, const Q
 
     painter.drawLine(endPoint, arrowP1);
     painter.drawLine(endPoint, arrowP2);
-}
-
-double PhasorView::getVoltageLength(double magnitude, double maxRadius)
-{
-    const double outerRadius = maxRadius * 0.95; // 큰 원 (전압 페이저 최대 길이)
-    const double innerRadius = maxRadius * 0.60; // 작은 원 (전류 페이저 최대 길이
-    const double annulusHeight = outerRadius - innerRadius; // 두 원 사이의 높이
-
-    // 크기를 로그 스케일 비율로 계산 (log(0)을 피하기 위해 1을 더함
-    double ratio = log10(1 + magnitude)/ log10(1 + config::Source::Amplitude::Max);
-    ratio = std::clamp(ratio, 0.0, 1.0);
-    return innerRadius + (annulusHeight * ratio);
-}
-
-double PhasorView::getCurrentLength(double magnitude, double maxRadius)
-{
-    const double outerRadius = maxRadius * 0.95; // 큰 원 (전압 페이저 최대 길이)
-    const double innerRadius = maxRadius * 0.60; // 작은 원 (전류 페이저 최대 길이
-    const double annulusHeight = outerRadius - innerRadius; // 두 원 사이의 높이
-
-    // 크기를 로그 스케일 비율로 계산 (log(0)을 피하기 위해 1을 더함
-    double ratio = log10(1 + magnitude)/ log10(1 + config::Source::Current::MaxAmplitude);
-    ratio = std::clamp(ratio, 0.0, 1.0);
-    return innerRadius * ratio;
 }

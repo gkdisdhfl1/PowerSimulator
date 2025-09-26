@@ -8,6 +8,17 @@
 class QCheckBox;
 class QLabel;
 
+struct DrawingContext {
+        QPointF origin;
+        double maxRadius;
+        double voltageRadius; //
+        double currentBaseRadius;
+        double voltageAnnulusHeight;
+
+        // 생성자에서 모든 계산을 한번에 수행
+        DrawingContext(const QRect& widgetRect, int topMargin);
+};
+
 class PhasorView : public QWidget
 {
     Q_OBJECT
@@ -28,9 +39,10 @@ private:
         double phaseDegrees = 0.0;
     };
 
-    double getVoltageLength(double magnitude, double maxRadius);
-    double getCurrentLength(double magnitude, double maxRadius);
+    void drawGuideLines(QPainter& painter, const DrawingContext& ctx) const;
+    double getPhasorDisplayLength(double magnitude, double maxMagnitude, const DrawingContext& ctx, bool isVoltage) const;
     void drawPhasor(QPainter& painter, const PhasorInfo& phasor, const QColor& color, double radius);
+
 
     // UI 요소
     QWidget* m_controlContainer;
