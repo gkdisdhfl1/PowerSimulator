@@ -83,6 +83,7 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
         AnalysisUtils.h
         harmonic_analysis_graph_window.h harmonic_analysis_graph_window.cpp
         AnalysisUtils.cpp
+        pid_controller.h pid_controller.cpp
 
     )
 # Define target properties for Android with Qt 6 as:

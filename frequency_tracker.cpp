@@ -25,8 +25,8 @@ namespace {
         static constexpr double FailureThresholdRad = 0.3;
         static constexpr double SevereFailureThresholdRad = 0.6;
         static constexpr int MaxFailCount = 5;
-        static constexpr double Kp = 0.03 ;
-        static constexpr double Ki = 0.000004;
+        static constexpr double Kp = 0.015;
+        static constexpr double Ki = 0.000002;
         static constexpr double Kd = 0.48;
         static constexpr double IntegralActivationThresholdRad = 0.01;
         static constexpr double Integral_Limit = 10;
@@ -45,25 +45,23 @@ FrequencyTracker::FrequencyTracker(SimulationEngine* engine, QObject *parent)
     , m_trackingState(TrackingState::Idle)
     , m_coarseSearchSamplesNeeded(0)
     , m_isVerifying(false)
-    , m_fll_integralError(0.0)
-    , m_fll_previousFrequencyError(0.0)
     , m_fll_failCounter(0)
     , m_fll_lockCounter(0)
     , m_fll_previousLfOutput(0.0)
     , m_fll_oscillationCounter(0)
     , m_pll_previousVoltagePhase(0.0)
     , m_pll_failCounter(0)
-    , m_isFrequencyLocked(false)
-    , m_pll_lockCounter(0)
     , m_pll_cycleCounter(0)
-    , m_zc_integralError(0.0)
-    , m_zc_previousPhaseError(0.0)
 {
-    // FLL 기본값 설정
-    m_fllCoeffs = { .Kp = FllConstants::Kp, .Ki = FllConstants::Ki, .Kd = FllConstants::Kd};
+    // FLL 컨트롤러 설정
+    m_fllController.setCoefficients({ .Kp = FllConstants::Kp, .Ki = FllConstants::Ki, .Kd = FllConstants::Kd});
+    m_fllController.setLimits(FllConstants::IntegralLimit, FllConstants::OutputLimit);
 
     // ZC 기본값 설정
-    m_zcCoeffs = { .Kp = PllConstants::Kp, .Ki = PllConstants::Ki, .Kd = PllConstants::Kd};
+    m_zcController.setCoefficients({ .Kp = PllConstants::Kp, .Ki = PllConstants::Ki, .Kd = PllConstants::Kd});
+    m_zcController.setLimits(PllConstants::Integral_Limit, 1.0);
+
+    m_zcController.setIntegralActivationThreshold(PllConstants::IntegralActivationThresholdRad);
 }
 
 // ==== public 함수 ==================
@@ -119,19 +117,19 @@ void FrequencyTracker::process(const DataPoint& latestDataPoint, const MeasuredD
 
 void FrequencyTracker::setFllCoefficients(const PidCoefficients& coeffs)
 {
-    m_fllCoeffs = coeffs;
+    m_fllController.setCoefficients(coeffs);
 }
 void FrequencyTracker::setZcCoefficients(const PidCoefficients& coeffs)
 {
-    m_zcCoeffs = coeffs;
+    m_zcController.setCoefficients(coeffs);
 }
-FrequencyTracker::PidCoefficients FrequencyTracker::getFllCoefficients() const
+FrequencyTracker::PidCoefficients FrequencyTracker::getFllCoefficients()
 {
-    return m_fllCoeffs;
+    return m_fllController.getCoefficients();
 }
-FrequencyTracker::PidCoefficients FrequencyTracker::getZcCoefficients() const
+FrequencyTracker::PidCoefficients FrequencyTracker::getZcCoefficients()
 {
-    return m_zcCoeffs;
+    return m_zcController.getCoefficients();
 }
 // ==================================
 
@@ -174,35 +172,27 @@ void FrequencyTracker::processCoarseSearch(const DataPoint& latestDataPoint)
 
     // FLL 상태 초기화
     m_pll_previousVoltagePhase = 0.0;
-    m_fll_integralError = 0.0;
-
 }
 
 void FrequencyTracker::processFll(const MeasuredData& latestMeasuredData)
 {
-    const auto* v_fund = AnalysisUtils::getHarmonicComponent(latestMeasuredData.voltageHarmonics, 1);
+    auto phaseErrorResult = calculatePhaseError(latestMeasuredData);
 
-    // 데이터가 없으면 넘어감
-    if(!v_fund) {
-        // 기본파 정보가 없으면 실패로 간주
-        if(++m_fll_failCounter >= PllConstants::MaxFailCount) {
-            qDebug() << "FLL 실패 (기본파 없음). 거친 탐색 다시 시작";
+    if(!phaseErrorResult) { // 실패한 경우
+        // 기본파를 못찾은 경우에만 실패 카운터 증가
+        if(phaseErrorResult.error() == PhaseErrorType::NoFundamentalComponent) {
+            if(++m_fll_failCounter >= PllConstants::MaxFailCount) {
+                qDebug() << "FLL 실패 (기본파 없음). 거친 탐색 다시 시작";
+                startCoarseSearch();
+            }
         }
+
+        // FirstRun의 경우, 아무것도 하지 않고 다음 샘플을 기다림
         return;
     }
+    m_fll_failCounter = 0; // 성공 시 카운터 리셋
 
-    const double currentPhasorAngle = v_fund->phase;
-
-    if(m_pll_previousVoltagePhase == 0.0) {
-        m_pll_previousVoltagePhase = currentPhasorAngle;
-        return;
-    }
-
-    double phaseError = currentPhasorAngle - m_pll_previousVoltagePhase;
-    while(phaseError <= -std::numbers::pi) phaseError += config::Math::TwoPi;
-    while(phaseError > std::numbers::pi) phaseError -= config::Math::TwoPi;
-
-    // FLL에서 주파수 에러를 직접 제어
+    const double phaseError = phaseErrorResult->error; // 성공값 추출
     const double cycleDuration = m_engine->parameters().samplesPerCycle * m_engine->m_captureIntervalsNs.count();
     const double frequencyError = phaseError / (config::Math::TwoPi * cycleDuration);
 
@@ -217,15 +207,8 @@ void FrequencyTracker::processFll(const MeasuredData& latestMeasuredData)
         m_fll_failCounter = 0;
     }
 
-    // I항 누적
-    m_fll_integralError += frequencyError;
-    m_fll_integralError = std::clamp(m_fll_integralError, -FllConstants::IntegralLimit, FllConstants::IntegralLimit);
-
-    // D항 누적
-    double derivative = frequencyError - m_fll_previousFrequencyError;
-
     // PID 출력 계산
-    double lf_output = (m_fllCoeffs.Kp * frequencyError) + (m_fllCoeffs.Ki * m_fll_integralError) + (m_fllCoeffs.Kd * derivative);
+    double lf_output = m_fllController.process(frequencyError);
 
     // 진동 감지
     if(std::signbit(lf_output) != std::signbit(m_fll_previousLfOutput) && m_fll_previousLfOutput!= 0.0) {
@@ -239,9 +222,6 @@ void FrequencyTracker::processFll(const MeasuredData& latestMeasuredData)
     }
     m_fll_previousLfOutput = lf_output;
 
-    m_fll_previousFrequencyError = frequencyError;
-    lf_output = std::clamp(lf_output, -FllConstants::OutputLimit, FllConstants::OutputLimit);
-
     double newSamplingcycles = m_engine->parameters().samplingCycles + lf_output;
     newSamplingcycles = std::clamp(newSamplingcycles, static_cast<double>(config::Sampling::MinValue), static_cast<double>(config::Sampling::maxValue));
 
@@ -250,7 +230,6 @@ void FrequencyTracker::processFll(const MeasuredData& latestMeasuredData)
     }
 
     checkFllLock(frequencyError);
-    m_pll_previousVoltagePhase = currentPhasorAngle;
 }
 
 void FrequencyTracker::processFineTune(const MeasuredData& latestMeasuredData)
@@ -261,33 +240,21 @@ void FrequencyTracker::processFineTune(const MeasuredData& latestMeasuredData)
         return;
     }
 
-    // 1. 기본파 전압의 위상 정보를 가져옴
-    const auto* v_fund = AnalysisUtils::getHarmonicComponent(latestMeasuredData.voltageHarmonics, 1);
+    auto phaseErrorResult = calculatePhaseError(latestMeasuredData);
 
-    // 데이터가 없으면 넘어감
-    if(!v_fund) {
-        // 기본파 정보가 없으면 실패로 간주
-        if(++m_pll_failCounter >= PllConstants::MaxFailCount) {
-            qDebug() << "PLL 실패 (기본파 없음). FLL 복귀";
-            m_trackingState = TrackingState::FLL_Acquisition;
-            m_fll_integralError = 0.0;
+    if(!phaseErrorResult) { // 실패한 경우
+        if(phaseErrorResult.error() == PhaseErrorType::NoFundamentalComponent) {
+            if(++m_pll_failCounter >= PllConstants::MaxFailCount) {
+                qDebug() << "PLL 실패 (기본파 없음). FLL 복귀";
+                m_trackingState = TrackingState::FLL_Acquisition;
+                m_fllController.reset();
+            }
         }
         return;
     }
 
-    // 2. (PD) ZC 추적 목표 위상 설정
-    const double currentPhasorAngle = v_fund->phase;
-
-    // 첫 번째 실행인지 확인
-    if(m_pll_previousVoltagePhase == 0.0) {
-        m_pll_previousVoltagePhase = currentPhasorAngle;
-        return;
-    }
-
-    // 위상차 계산 및 정규화 (-pi ~ pi)
-    double phaseError = currentPhasorAngle - m_pll_previousVoltagePhase;
-    while(phaseError <= -std::numbers::pi) phaseError += config::Math::TwoPi;
-    while(phaseError > std::numbers::pi) phaseError -= config::Math::TwoPi;
+    const double currentPhasorAngle = phaseErrorResult->currentAngle;
+    const double phaseError = phaseErrorResult->error;
 
     // 실패 감지 및 재탐색
     if(std::abs(phaseError) > PllConstants::FailureThresholdRad) {
@@ -298,14 +265,12 @@ void FrequencyTracker::processFineTune(const MeasuredData& latestMeasuredData)
             } else {
                 qDebug() << "PLL 실패 (중간). FLL 복귀";
                 m_trackingState = TrackingState::FLL_Acquisition;
-                m_fll_integralError = 0.0;
             }
             return;
         }
     } else {
         m_pll_failCounter = 0;
     }
-    m_pll_previousVoltagePhase = currentPhasorAngle;
 
     // ZC Tracking (PID)
     // 목표 위상을 동적으로 결정
@@ -324,19 +289,8 @@ void FrequencyTracker::processFineTune(const MeasuredData& latestMeasuredData)
     // 더 작은 에러를 최종 위상 에러로 선택
     double zcPhaseError = (std::abs(errorMinus90) < std::abs(errorPlus90)) ? errorMinus90 : errorPlus90;
 
-    double derivative = zcPhaseError - m_zc_previousPhaseError;
-
-    if(std::abs(zcPhaseError) < PllConstants::IntegralActivationThresholdRad)     {
-        m_zc_integralError += zcPhaseError;
-    } else {
-        m_zc_integralError = 0.0;
-    }
-    m_zc_integralError = std::clamp(m_zc_integralError, -PllConstants::Integral_Limit, PllConstants::Integral_Limit);
-
-    double phase_lf_output = (m_zcCoeffs.Kp * zcPhaseError) + (m_zcCoeffs.Ki * m_zc_integralError) + (m_zcCoeffs.Kd * derivative);
-    // qDebug() << "(" << m_zcCoeffs.Kp << " * " << zcPhaseError << ") + (" << m_zcCoeffs.Ki << " * " << m_zc_integralError << ") + (" << m_zcCoeffs.Kd << " * " << derivative << ") : ";
-    // qDebug() << "phaselfoutput : " << phase_lf_output;
-    m_zc_previousPhaseError = zcPhaseError;
+    // PID 출력 계산
+    double phase_lf_output = m_zcController.process(zcPhaseError);
 
     double newSamplingCycles = m_engine->parameters().samplingCycles + phase_lf_output;
     newSamplingCycles = std::clamp(newSamplingCycles, static_cast<double>(config::Sampling::MinValue), static_cast<double>(config::Sampling::maxValue));
@@ -344,36 +298,43 @@ void FrequencyTracker::processFineTune(const MeasuredData& latestMeasuredData)
     if(std::abs(m_engine->parameters().samplingCycles - newSamplingCycles) > 1e-9) {
         emit samplingCyclesUpdated(newSamplingCycles);
     }
+    m_pll_previousVoltagePhase = phaseErrorResult->currentAngle;
 }
 
 void FrequencyTracker::processVerification(const DataPoint& latestDataPoint)
 {
-    // // 1. 데이터 수집
-    // m_coarseSearchBuffer.push_back(latestDataPoint);
-    // if(m_coarseSearchBuffer.size() < m_coarseSearchSamplesNeeded) {
-    //     return; // 샘플 더 필요
-    // }
+    // 1. 데이터 수집
+    m_coarseSearchBuffer.push_back(latestDataPoint);
+    if(m_coarseSearchBuffer.size() < m_coarseSearchSamplesNeeded) {
+        return; // 샘플 더 필요
+    }
 
-    // // 2. ZC로 주파수 재추정
-    // double zc_freq = estimateFrequencyByZeroCrossing();
-    // double pll_freq = m_engine->parameters().samplingCycles;
+    // 2. DFT + ZC로 주파수 재추정
+    std::vector<double> clean_wave = AnalysisUtils::generateFundamentalWave(m_coarseSearchBuffer);
+    if(clean_wave.empty()) {
+        qDebug() << "Lock 검증 실패: DFT 분석 불가. 재시도...";
+        startVerification(); // 버퍼 비우고 다시 시도
+        return;
+    }
+    double zc_freq = estimateFrequencyByZeroCrossing(clean_wave);
+    double pll_freq = m_engine->parameters().samplingCycles;
 
-    // if(zc_freq > 0) {
-    //     double ratio = pll_freq / zc_freq;
-    //     qDebug() << "Lock 검증: PLL Freq =" << pll_freq << ", ZC Freq =" << zc_freq << ", Ratio =" << ratio;
+    if(zc_freq > 0) {
+        double ratio = pll_freq / zc_freq;
+        qDebug() << "Lock 검증: PLL Freq =" << pll_freq << ", ZC Freq =" << zc_freq << ", Ratio =" << ratio;
 
-    //     // 3. 비율 확인 (0.49 ~ 1.27 범위를 정상으로 간주)
-    //     if(ratio > VerificationConstants::ValidRatioMax || ratio < VerificationConstants::ValidRatioMin) {
-    //         // 정수배 혹은 정수비에 Lock된 것으로 판단
-    //         qDebug() << "잘못된 Lock 감지! 거친 탐색 다시 시작.";
-    //         startCoarseSearch();
-    //         return;
-    //     }
-    // }
+        // 3. 비율 확인 (0.49 ~ 1.27 범위를 정상으로 간주)
+        if(ratio > VerificationConstants::ValidRatioMax || ratio < VerificationConstants::ValidRatioMin) {
+            // 정수배 혹은 정수비에 Lock된 것으로 판단
+            qDebug() << "잘못된 Lock 감지! 거친 탐색 다시 시작.";
+            startCoarseSearch();
+            return;
+        }
+    }
 
-    // qDebug() << "Lock 검증 통과";
-    // m_isVerifying = false;
-    // m_pll_cycleCounter = 0;
+    qDebug() << "Lock 검증 통과";
+    m_isVerifying = false;
+    m_pll_cycleCounter = 0;
 }
 // -------------------
 
@@ -408,8 +369,6 @@ void FrequencyTracker::resetAllStates()
     m_coarseSearchSamplesNeeded = 0;
     m_isVerifying = false;
 
-    m_fll_integralError = 0.0;
-    m_fll_previousFrequencyError = 0.0;
     m_fll_failCounter = 0;
     m_fll_lockCounter = 0;
     m_fll_previousLfOutput = 0.0;
@@ -417,12 +376,10 @@ void FrequencyTracker::resetAllStates()
 
     m_pll_previousVoltagePhase = 0.0;
     m_pll_failCounter = 0;
-    m_pll_lockCounter = 0;
     m_pll_cycleCounter = 0;
-    m_isFrequencyLocked = false;
 
-    m_zc_integralError = 0.0;
-    m_zc_previousPhaseError = 0.0;
+    m_fllController.reset();
+    m_zcController.reset();
 }
 
 double FrequencyTracker::estimateFrequencyByZeroCrossing(const std::vector<double>& wave)
@@ -468,10 +425,9 @@ void FrequencyTracker::checkFllLock(double frequencyError)
 
         // PLL을 위한 상태 초기화
         m_pll_failCounter = 0;
-        m_zc_integralError = 0.0;
-        m_zc_previousPhaseError = 0.0;
         m_pll_cycleCounter = 0.0;
         m_pll_previousVoltagePhase = 0.0;
+        m_zcController.reset();
     }
 }
 
@@ -485,10 +441,35 @@ void FrequencyTracker::startVerification()
     const double currentSamplingRate = m_engine->parameters().samplingCycles * m_engine->parameters().samplesPerCycle;
     if(currentSamplingRate > 1.0) {
         m_coarseSearchSamplesNeeded = static_cast<int>(currentSamplingRate * VerificationConstants::Durationi_S);
-    } else {
-        m_coarseSearchSamplesNeeded = CoarseSearchConstants::MinSamples;
+
     }
     m_coarseSearchBuffer.reserve(m_coarseSearchSamplesNeeded);
 }
 
 // ---------------------
+
+std::expected<FrequencyTracker::PhaseInfo, FrequencyTracker::PhaseErrorType> FrequencyTracker::calculatePhaseError(const MeasuredData& latestMeasuredData)
+{
+    // 기본파 전압의 위상 정보를 가져옴
+    const auto* v_fund = AnalysisUtils::getHarmonicComponent(latestMeasuredData.voltageHarmonics, 1);
+
+    // 데이터가 없으면 넘어감
+    if(!v_fund) {
+        return std::unexpected(PhaseErrorType::NoFundamentalComponent);
+    }
+
+    const double currentPhasorAngle = v_fund->phase;
+
+    // 첫 실행 시 비교할 이전 값이 없으므로 에러 처리
+    if(m_pll_previousVoltagePhase == 0.0) {
+        m_pll_previousVoltagePhase = currentPhasorAngle;
+        return std::unexpected(PhaseErrorType::FirstRun);
+    }
+
+    // 위상차 계산 및 정규화 (-pi ~ pi)
+    double phaseError = currentPhasorAngle - m_pll_previousVoltagePhase;
+    while(phaseError <= -std::numbers::pi) phaseError += config::Math::TwoPi;
+    while(phaseError > std::numbers::pi) phaseError -= config::Math::TwoPi;
+
+    return PhaseInfo{currentPhasorAngle, m_pll_previousVoltagePhase, phaseError}; // 성공
+}
