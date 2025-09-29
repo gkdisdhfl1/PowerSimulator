@@ -37,6 +37,8 @@ public:
     PidCoefficients getFllCoefficients();
     PidCoefficients getZcCoefficients();
 
+    std::vector<int> getRequiredValues();
+
 signals:
     void samplingCyclesUpdated(double newFrequency);// 자동 추적에 의해 변경될 주파수를 UI에 알리는 시그널
 

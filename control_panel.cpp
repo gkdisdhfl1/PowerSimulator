@@ -4,6 +4,7 @@
 #include "config.h"
 #include "collapsible_groupbox.h"
 #include "shared_data_types.h"
+#include "AnalysisUtils.h"
 
 #include <QPushButton>
 #include <QRadioButton>

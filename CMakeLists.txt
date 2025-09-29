@@ -84,7 +84,7 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
         harmonic_analysis_graph_window.h harmonic_analysis_graph_window.cpp
         AnalysisUtils.cpp
         pid_controller.h pid_controller.cpp
-
+        trigonometric_table.h trigonometric_table.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET PowerSimulator APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

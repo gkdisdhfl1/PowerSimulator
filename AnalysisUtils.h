@@ -5,23 +5,32 @@
 #include "measured_data.h"
 #include <cmath>
 #include <complex>
+#include <map>
 
+class TrigonometricTable;
 
-namespace AnalysisUtils {
+class AnalysisUtils {
+public:
     // 지정된 차수의 고조파 성분 결과를 반환 (없으면 nullptr)
-    const HarmonicAnalysisResult* getHarmonicComponent(const std::vector<HarmonicAnalysisResult>& harmonics, int order);
+    static const HarmonicAnalysisResult* getHarmonicComponent(const std::vector<HarmonicAnalysisResult>& harmonics, int order);
 
     // 두 고조파 성분으로부터 유효 전력을 계산
-    double calculateActivePower(const HarmonicAnalysisResult* v_comp, const HarmonicAnalysisResult* i_comp);
+    static double calculateActivePower(const HarmonicAnalysisResult* v_comp, const HarmonicAnalysisResult* i_comp);
 
     // 가장 지배적인 고조파 성분을 찾고 반환 (없으면 nullptr)
-    const HarmonicAnalysisResult* getDominantHarmonic(const std::vector<HarmonicAnalysisResult>& harmonics);
+    static const HarmonicAnalysisResult* getDominantHarmonic(const std::vector<HarmonicAnalysisResult>& harmonics);
 
-    std::vector<std::complex<double>> calculateSpectrum(const std::vector<DataPoint>& samples, bool useWindow);
+    static std::vector<std::complex<double>> calculateSpectrum(const std::vector<DataPoint>& samples, bool useWindow);
 
-    std::vector<double> generateFundamentalWave(const std::vector<DataPoint>& samples);
+    static std::vector<double> generateFundamentalWave(const std::vector<DataPoint>& samples);
 
-    std::vector<HarmonicAnalysisResult> findSignificantHarmonics(const std::vector<std::complex<double>>& spectrum);
+    static std::vector<HarmonicAnalysisResult> findSignificantHarmonics(const std::vector<std::complex<double>>& spectrum);
 
-}
+    static void precomputeTables(const std::vector<int>& N_values);
+
+    static const TrigonometricTable* getTrigonometricTable(int N);
+private:
+    static std::map<int, std::unique_ptr<TrigonometricTable>> m_trigTableCache;
+};
+
 #endif // ANALYSISUTILS_H
