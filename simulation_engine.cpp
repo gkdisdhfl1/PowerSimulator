@@ -9,6 +9,7 @@ SimulationEngine::SimulationEngine()
     , m_captureIntervalsNs(0)
     , m_simulationTimeNs(0)
     , m_sampleCounterForUpdate(0)
+    , m_totalEngeryWh(0.0)
 {
     using namespace std::chrono_literals;
 
@@ -285,7 +286,10 @@ void SimulationEngine::calculateCycleData()
     // 5. UI에 업데이트 알림
     emit measuredDataUpdated(m_measuredData);
 
-    // 6. 버퍼 비우기
+    // 6. 1초 데이터 처리 로직 호출
+    processOneSecondData(m_measuredData.back());
+
+    // 7. 버퍼 비우기
     m_cycleSampleBuffer.clear();
 }
 
@@ -340,4 +344,101 @@ std::vector<std::complex<double>> SimulationEngine::analyzeSpectrum(SimulationEn
     }
 
     return AnalysisUtils::calculateSpectrum(samplesForAnalysis, false);
+}
+
+void SimulationEngine::processOneSecondData(const MeasuredData& latestCycleDta)
+{
+    // 버퍼가 비어있으면, 현재 시작 시간으로 기록
+    if(m_oneSecondCycleBuffer.empty())
+        m_oneSecondBlockStartTime = std::chrono::steady_clock::now();
+
+    // 현재 사이클에 버퍼 추가
+    m_oneSecondCycleBuffer.push_back(latestCycleDta);
+
+    // 시간 경과 확인
+    auto now = std::chrono::steady_clock::now();
+    auto elapsedNs = std::chrono::duration_cast<Nanoseconds>(now - m_oneSecondBlockStartTime).count();
+
+    // 995ms (995,000,000 ns)가 되지 않았으면 함수 종료
+    if(elapsedNs < 995'000'000LL)
+        return;
+
+    // 1초 데이터 가공 시작
+    const size_t N = m_oneSecondCycleBuffer.size();
+    if(N == 0) return;
+
+    // 1. 마지막 사이클에서 지배적 고조파의 차수와 위상을 결정
+    const auto& lastCycledata = m_oneSecondCycleBuffer.back();
+    const auto* lastVoltageDominant = AnalysisUtils::getDominantHarmonic(lastCycledata.voltageHarmonics);
+    const auto* lastCurrentDominant = AnalysisUtils::getDominantHarmonic(lastCycledata.currentHarmonics);
+
+    const int voltageDominantOrder = lastVoltageDominant ? lastVoltageDominant->order : 0;
+    const int currentDominantOrder = lastCurrentDominant ? lastCurrentDominant->order : 0;
+
+    OneSecondSummaryData summary;
+    summary.dominantHarmonicVoltageOrder = voltageDominantOrder;
+    summary.dominantHarmonicVoltagePhase = lastVoltageDominant ? utils::radiansToDegrees(lastVoltageDominant->phase): 0.0;
+
+    summary.dominantHarmonicCurrentOrder = currentDominantOrder;
+    summary.dominantHarmonicCurrentPhase = lastCurrentDominant ? utils::radiansToDegrees(lastCurrentDominant->phase): 0.0;
+
+    const auto* lastVoltageFund = AnalysisUtils::getHarmonicComponent(lastCycledata.voltageHarmonics, 1);
+    summary.fundamentalVoltagePhase = lastVoltageFund ? utils::radiansToDegrees(lastVoltageFund->phase) : 0.0;
+
+    const auto* lastCurrentFund = AnalysisUtils::getHarmonicComponent(lastCycledata.currentHarmonics, 1);
+    summary.fundamentalCurrentPhase = lastCurrentFund ? utils::radiansToDegrees(lastCurrentFund->phase) : 0.0;
+
+    // 2. 전체 버퍼를 순회하며 RMS 값들의 제곱의 합과 유효전력의 합을 구함
+    double totalVoltageRmsSumSq = 0.0;
+    double totalCurrentRmsSumSq = 0.0;
+    double fundVoltageRmsSumSq = 0.0;
+    double fundCurrentRmsSumSq = 0.0;
+    double dominantVoltageRmsSumSq = 0.0;
+    double dominantCurrentRmsSumSq = 0.0;
+    double activePowerSum = 0.0;
+
+    for(const auto& data : m_oneSecondCycleBuffer) {
+        totalVoltageRmsSumSq += data.voltageRms * data.voltageRms;
+        totalCurrentRmsSumSq += data.currentRms * data.currentRms;
+        activePowerSum += data.activePower;
+
+        if(const auto* v_fund = AnalysisUtils::getHarmonicComponent(data.voltageHarmonics, 1)) {
+            fundVoltageRmsSumSq += v_fund->rms * v_fund->rms;
+        }
+        if(const auto* i_fund = AnalysisUtils::getHarmonicComponent(data.currentHarmonics, 1)) {
+            fundCurrentRmsSumSq += i_fund->rms * i_fund->rms;
+        }
+        if(voltageDominantOrder > 1) {
+            if(const auto* v_dom = AnalysisUtils::getHarmonicComponent(data.voltageHarmonics, voltageDominantOrder)) {
+                dominantVoltageRmsSumSq += v_dom->rms * v_dom->rms;
+            }
+        }
+        if(currentDominantOrder > 1) {
+            if(const auto* i_dom = AnalysisUtils::getHarmonicComponent(data.currentHarmonics, currentDominantOrder)) {
+                dominantCurrentRmsSumSq += i_dom->rms * i_dom->rms;
+            }
+        }
+    }
+
+    // 3. 최종 값 계산
+    summary.totalVoltageRms = std::sqrt(totalVoltageRmsSumSq / N);
+    summary.totalCurrentRms = std::sqrt(totalCurrentRmsSumSq / N);
+    summary.activePower = activePowerSum / N;
+
+    summary.fundamentalVoltageRms = std::sqrt(fundVoltageRmsSumSq / N);
+    summary.fundamentalCurrentRms = std::sqrt(fundCurrentRmsSumSq / N);
+
+    summary.dominantHarmonicVoltageRms = (voltageDominantOrder > 1) ? std::sqrt(dominantVoltageRmsSumSq / N) : 0.0;
+    summary.dominantHarmonicCurrentRms = (currentDominantOrder > 1) ? std::sqrt(dominantCurrentRmsSumSq / N) : 0.0;
+
+    // 4. 누적 전력량 계산
+    const double elapsedSeconds = elapsedNs / 1'000'000'0000.0;
+    m_totalEngeryWh += (summary.activePower * elapsedSeconds) / 3600.0;
+    summary.totalEnergyWh = m_totalEngeryWh;
+
+    // 5. 시그널 발생
+    emit oneSecondDataUpdated(summary);
+
+    // 6. 다음 1초를 위해 버퍼와 시작 시간 초기화
+    m_oneSecondCycleBuffer.clear();
 }

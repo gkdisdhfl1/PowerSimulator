@@ -1,6 +1,7 @@
 #include "main_window.h"
 #include "fundamental_analysis_graph_window.h"
 #include "harmonic_analysis_graph_window.h"
+#include "one_second_summary_window.h"
 #include "pid_tuning_dialog.h"
 #include "settings_dialog.h"
 #include "simulation_engine.h"
@@ -47,7 +48,7 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     statusBar()->showMessage("Ready");
     statusBar()->addPermanentWidget(m_fpsLabel);
     m_fpsTimer->start(1000);
-    resize(1200,720);
+    resize(1500,870);
 }
 
 MainWindow::~MainWindow()
@@ -129,6 +130,12 @@ void MainWindow::setupUiComponents()
     QDockWidget *harmonicRmsDock = new QDockWidget("Harmonic Analysis", this);
     harmonicRmsDock->setWidget(m_harmonicAnalysisGraphWindow);
 
+    // 1초 데이터 창 추가
+    m_oneSecondSummaryWindow = new OneSecondSummaryWindow(this);
+    QDockWidget *oneSecondSummaryDock = new QDockWidget("1초 데이터", this);
+    oneSecondSummaryDock->setWidget(m_oneSecondSummaryWindow);
+    addDockWidget(Qt::RightDockWidgetArea, oneSecondSummaryDock);
+
     // 상하로 분할
     splitDockWidget(graphDock, analysisGraphDock, Qt::Vertical);
 
@@ -149,6 +156,11 @@ void MainWindow::setupUiComponents()
     QList<int> mainSizes;
     mainSizes << 500 << 250;
     resizeDocks({graphDock, analysisGraphDock}, mainSizes, Qt::Vertical);
+
+    splitDockWidget(graphDock, oneSecondSummaryDock, Qt::Horizontal);
+    QList<int> rightSizes;
+    rightSizes << 600 << 200;
+    resizeDocks({graphDock, oneSecondSummaryDock}, rightSizes, Qt::Horizontal);
 }
 
 void MainWindow::createSignalSlotConnections()
@@ -195,6 +207,7 @@ void MainWindow::createSignalSlotConnections()
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_phasorView, &PhasorView::updateData);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_fundamentalAnalysisGraphWindow, &FundamentalAnalysisGraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_harmonicAnalysisGraphWindow, &HarmonicAnalysisGraphWindow::updateGraph);
+    connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_oneSecondSummaryWindow, &OneSecondSummaryWindow::updateData);
 
     // ---- GraphWindow 시그널 -> UI 슬롯 ----
     connect(m_graphWindow, &GraphWindow::pointHovered, this, [this](const DataPoint& point) {

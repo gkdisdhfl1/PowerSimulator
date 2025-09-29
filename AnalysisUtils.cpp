@@ -132,7 +132,7 @@ std::vector<double> AnalysisUtils::generateFundamentalWave(const std::vector<Dat
     if(fundamental_k == -1 || max_magnitude_sq < 1e-9) {
         return {}; // 유의미한 주파수를 못찾음
     }
-
+    qDebug() << "finded fundamental_k = " << fundamental_k;
     // 3. 기본파 재구성
     std::vector<double> clean_wave;
     clean_wave.reserve(N);

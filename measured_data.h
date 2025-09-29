@@ -27,4 +27,28 @@ struct MeasuredData {
 
 };
 
+// 1초 단위로 가공된 분석 데이터를 담는 구조체
+struct OneSecondSummaryData {
+    double totalVoltageRms;
+    double totalCurrentRms;
+    double activePower;
+
+    double fundamentalVoltageRms;
+    double fundamentalCurrentRms;
+
+    int dominantHarmonicVoltageOrder;
+    double dominantHarmonicVoltageRms;
+
+    int dominantHarmonicCurrentOrder;
+    double dominantHarmonicCurrentRms;
+
+    double totalEnergyWh; // 누적 전력량
+
+    // 1초 구간의 마지막 사이클에서 가져온 값들
+    double fundamentalVoltagePhase;
+    double fundamentalCurrentPhase;
+    double dominantHarmonicVoltagePhase;
+    double dominantHarmonicCurrentPhase;
+};
+
 #endif // MEASURED_DATA_H

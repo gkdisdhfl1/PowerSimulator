@@ -60,6 +60,7 @@ signals:
     void runningStateChanged(bool isRunning);
     void measuredDataUpdated(const std::deque<MeasuredData>& data);
     void samplingCyclesUpdated(double newFrequency);
+    void oneSecondDataUpdated(const OneSecondSummaryData& data);
 
 private slots:
     void captureData();
@@ -79,7 +80,7 @@ private:
     void addNewDataPoint(double voltage, double current);
     void calculateCycleData(); // RMS, 전력 계산 함수
     void processUpdateByMode(bool resetCounter);
-
+    void processOneSecondData(const MeasuredData& latestCycleData);
 
     QChronoTimer m_captureTimer;
     std::deque<DataPoint> m_data;
@@ -96,6 +97,10 @@ private:
 
     std::unique_ptr<FrequencyTracker> m_frequencyTracker;
 
+    // 1초 데이터 관련 변수
+    std::vector<MeasuredData> m_oneSecondCycleBuffer;
+    std::chrono::steady_clock::time_point m_oneSecondBlockStartTime;
+    double m_totalEngeryWh;
 };
 
 #endif // SIMULATION_ENGINE_H

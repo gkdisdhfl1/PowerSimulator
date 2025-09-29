@@ -54,6 +54,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
     qt_add_executable(PowerSimulator
         MANUAL_FINALIZATION
@@ -85,6 +86,7 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
         AnalysisUtils.cpp
         pid_controller.h pid_controller.cpp
         trigonometric_table.h trigonometric_table.cpp
+        one_second_summary_window.h one_second_summary_window.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET PowerSimulator APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -118,6 +120,7 @@ target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Core)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Core)
+target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 

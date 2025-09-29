@@ -75,7 +75,7 @@ namespace config {
 
         // 그래프 폭 관련 설정
         struct GraphWidth {
-            static constexpr double Default = 10.0;
+            static constexpr double Default = 1.0;
             static constexpr double Min = 0.01;
             static constexpr double Max = 300.0;
         };

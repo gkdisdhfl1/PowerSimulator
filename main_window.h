@@ -16,6 +16,7 @@ class HarmonicAnalysisGraphWindow;
 class PhasorView;
 class QLabel;
 class QTimer;
+class OneSecondSummaryWindow;
 
 class MainWindow : public QMainWindow
 {
@@ -48,6 +49,7 @@ private:
     QLabel* m_fpsLabel;
     QTimer* m_fpsTimer;
     int m_frameCount;
+    OneSecondSummaryWindow* m_oneSecondSummaryWindow;
 
     void createSignalSlotConnections(); // 조립 역할
     void setupUiComponents();
