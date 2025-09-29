@@ -20,6 +20,14 @@ constexpr const char* SamplesPerCycle   = "cycle당 sample";
 constexpr const char* MaxDataSize       = "데이터 최대 개수";
 constexpr const char* GraphWidth        = "그래프 시간 폭";
 constexpr const char* UpdateMode        = "갱신 모드";
+
+// 고조파 설정 키
+constexpr const char* VoltageHarmonicOrder      = "전압 고조파 차수";
+constexpr const char* VoltageHarmonicMagnitude  = "전압 고조파 크기";
+constexpr const char* VoltageHarmonicPhase      = "전압 고조파 위상";
+constexpr const char* CurrentHarmonicOrder      = "전류 고조파 차수";
+constexpr const char* CurrentHarmonicMagnitude  = "전류 고조파 크기";
+constexpr const char* CurrentHarmonicPhase      = "전류 고조파 위상";
 }
 
 namespace {
@@ -293,6 +301,63 @@ void SettingsUiController::initializeSettingsMap()
         },
         0
     };
+
+    // 고조파 관련 설정
+    m_settingsMap["voltHarmonicOrder"] = {
+        [](const ControlPanelState& s) {
+            return s.voltageHarmonic.order;
+        },
+        [](ControlPanelState& s, const SettingValue& val) {
+            s.voltageHarmonic.order = std::get<int>(val);
+        },
+        config::Harmonics::DefaultOrder
+    };
+    m_settingsMap["voltHarmonicMagnitude"] = {
+        [](const ControlPanelState& s) {
+            return s.voltageHarmonic.magnitude;
+        },
+        [](ControlPanelState& s, const SettingValue& val) {
+            s.voltageHarmonic.magnitude = std::get<double>(val);
+        },
+        config::Harmonics::DefaultMagnitude
+    };
+    m_settingsMap["voltHarmonicPhase"] = {
+        [](const ControlPanelState& s) {
+            return s.voltageHarmonic.phase;
+        },
+        [](ControlPanelState& s, const SettingValue& val) {
+            s.voltageHarmonic.phase = std::get<double>(val);
+        },
+        config::Harmonics::DefaultPhase
+    };
+    m_settingsMap["currHarmonicOrder"] = {
+        [](const ControlPanelState& s) {
+            return s.currentHarmonic.order;
+        },
+        [](ControlPanelState& s, const SettingValue& val) {
+            s.currentHarmonic.order = std::get<int>(val);
+        },
+        config::Harmonics::DefaultOrder
+    };
+    m_settingsMap["currHarmonicMagnitude"] = {
+        [](const ControlPanelState& s) {
+            return s.currentHarmonic.magnitude;
+        },
+        [](ControlPanelState& s, const SettingValue& val) {
+            s.currentHarmonic.magnitude = std::get<double>(val);
+        },
+        config::Harmonics::DefaultMagnitude
+    };
+    m_settingsMap["currHarmonicPhase"] = {
+        [](const ControlPanelState& s) {
+            return s.currentHarmonic.phase;
+        },
+        [](ControlPanelState& s, const SettingValue& val) {
+            s.currentHarmonic.phase = std::get<double>(val);
+        },
+        config::Harmonics::DefaultPhase
+    };
+
 }
 
 void SettingsUiController::initializeKeyNameMap()
@@ -307,6 +372,15 @@ void SettingsUiController::initializeKeyNameMap()
     m_keyNameMap["maxDataSize"] = PresetKeys::MaxDataSize;
     m_keyNameMap["graphWidthSec"] = PresetKeys::GraphWidth;
     m_keyNameMap["updateMode"] = PresetKeys::UpdateMode;
+
+    // 고조파 관련 설정
+    m_keyNameMap["voltHarmonicOrder"] = PresetKeys::VoltageHarmonicOrder;
+    m_keyNameMap["voltHarmonicMagnitude"] = PresetKeys::VoltageHarmonicMagnitude;
+    m_keyNameMap["voltHarmonicPhase"] = PresetKeys::VoltageHarmonicPhase;
+    m_keyNameMap["currHarmonicOrder"] = PresetKeys::CurrentHarmonicOrder;
+    m_keyNameMap["currHarmonicMagnitude"] = PresetKeys::CurrentHarmonicMagnitude;
+    m_keyNameMap["currHarmonicPhase"] = PresetKeys::CurrentHarmonicPhase;
+
 }
 
 void SettingsUiController::requestMaxSizeChange(int newSize)

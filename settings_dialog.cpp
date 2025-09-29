@@ -170,7 +170,7 @@ void SettingsDialog::onControllerTaskFinished(const std::expected<void, std::str
         // 작업 성공했을 경우
         qDebug() << "Controller task success:" <<  successMessage;
         // 성공 메시지 상태바 표시
-        // 작업 성공했으므로, 최산 상태 반영
+        // 작업 성공했으므로, 최신 상태 반영
         refreshPresetList();
     } else {
         // 작업 실패했을 경우
