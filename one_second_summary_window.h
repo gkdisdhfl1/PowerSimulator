@@ -5,8 +5,7 @@
 
 #include <QWidget>
 
-class QLabel;
-class QGridLayout;
+class QTableWidget;
 
 class OneSecondSummaryWindow : public QWidget
 {
@@ -21,26 +20,7 @@ public slots:
 private:
     void setupUi();
 
-    QLabel* m_voltageRmsLabel;
-    QLabel* m_currentRmsLabel;
-    QLabel* m_activePowerLabel;
-    QLabel* m_totalEnergyLabel;
-
-    // 기본파 정보 표시용 라벨
-    QLabel* m_voltageFundRmsLabel;
-    QLabel* m_voltageFundPhaseLabel;
-    QLabel* m_currentFundRmsLabel;
-    QLabel* m_currentFundPhaseLabel;
-
-    // 고조파 정보 표시용 라벨
-    QLabel* m_voltageHarmonicOrderLabel;
-    QLabel* m_voltageHarmonicRmsLabel;
-    QLabel* m_voltageHarmonicPhaseLabel;
-    QLabel* m_currentHarmonicOrderLabel;
-    QLabel* m_currentHarmonicRmsLabel;
-    QLabel* m_currentHarmonicPhaseLabel;
-
-signals:
+    QTableWidget* m_tableWidget;
 };
 
 #endif // ONE_SECOND_SUMMARY_WINDOW_H

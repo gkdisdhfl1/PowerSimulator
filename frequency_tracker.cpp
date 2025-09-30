@@ -34,7 +34,7 @@ namespace {
     struct VerificationConstants {
         static constexpr int IntervalCycles = 200;
         static constexpr double Durationi_S = 0.2; // 샘플을 수집할 기간(초)
-        static constexpr double ValidRatioMin = 0.49;
+        static constexpr double ValidRatioMin = 0.45;
         static constexpr double ValidRatioMax = 1.27;
     };
 }
