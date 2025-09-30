@@ -54,10 +54,10 @@ private:
     QLabel* m_currentInfoLabel;
 
     // 표시할 데이터
-    PhasorInfo m_totalVoltage;
-    PhasorInfo m_totalCurrent;
     PhasorInfo m_fundamentalVoltage;
     PhasorInfo m_fundamentalCurrent;
+    PhasorInfo m_harmonicVoltage;
+    PhasorInfo m_harmonicCurrent;
 
 };
 

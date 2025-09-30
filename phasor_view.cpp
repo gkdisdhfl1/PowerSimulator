@@ -31,8 +31,8 @@ DrawingContext::DrawingContext(const QRect& widgetRect, int topMargin)
 PhasorView::PhasorView(QWidget *parent)
     : QWidget{parent}
     , m_controlContainer(new QWidget(this))
-    , m_totalVoltageCheck(new QCheckBox("전체 V", this))
-    , m_totalCurrentCheck(new QCheckBox("전체 I", this))
+    , m_totalVoltageCheck(new QCheckBox("고조파 V", this))
+    , m_totalCurrentCheck(new QCheckBox("고조파 I", this))
     , m_fundVoltageCheck(new QCheckBox("기본파 V", this))
     , m_fundCurrentCheck(new QCheckBox("기본파 I", this))
     , m_voltageInfoLabel(new QLabel(this))
@@ -74,8 +74,8 @@ PhasorView::PhasorView(QWidget *parent)
 void PhasorView::updateData(const std::deque<MeasuredData>& data)
 {
     if(data.empty()) {
-        m_totalVoltage = PhasorInfo();
-        m_totalCurrent= PhasorInfo();
+        m_harmonicVoltage = PhasorInfo();
+        m_harmonicCurrent = PhasorInfo();
         m_fundamentalVoltage = PhasorInfo();
         m_fundamentalCurrent = PhasorInfo();
         m_voltageInfoLabel->clear();
@@ -100,29 +100,36 @@ void PhasorView::updateData(const std::deque<MeasuredData>& data)
         m_fundamentalCurrent.phaseDegrees = utils::radiansToDegrees(i_fund->phase);
     } else { m_fundamentalCurrent = PhasorInfo(); }
 
-    // --- 전체 정보 계산 ---
-    double totalVx = 0, totalVy = 0, totalIx = 0, totalIy = 0;
-    for(const auto& h : latestData.voltageHarmonics) { totalVx += h.phasorX; totalVy += h.phasorY; }
-    for(const auto& h : latestData.currentHarmonics) { totalIx += h.phasorX; totalIy += h.phasorY; }
+    // --- 고조파 정보 계산 ---
+    const auto* v_harm = AnalysisUtils::getDominantHarmonic(latestData.voltageHarmonics);
+    const auto* i_harm = AnalysisUtils::getDominantHarmonic(latestData.currentHarmonics);
 
-    m_totalVoltage.components = QPointF(totalVx, totalVy);
-    m_totalVoltage.magnitude = latestData.voltageRms;
-    m_totalVoltage.phaseDegrees = utils::radiansToDegrees(std::atan2(totalVy, totalVx));
+    if(v_harm) {
+        m_harmonicVoltage.components = QPointF(v_harm->phasorX, v_harm->phasorY);
+        m_harmonicVoltage.magnitude = v_harm->rms;
+        m_harmonicVoltage.phaseDegrees = utils::radiansToDegrees(v_harm->phase);
+    } else {
+        m_harmonicVoltage = PhasorInfo();
+    }
 
-    m_totalCurrent.components = QPointF(totalIx, totalIy);
-    m_totalCurrent.magnitude = latestData.currentRms;
-    m_totalCurrent.phaseDegrees = utils::radiansToDegrees(std::atan2(totalIy, totalIx));
+    if(i_harm) {
+        m_harmonicCurrent.components = QPointF(i_harm->phasorX, i_harm->phasorY);
+        m_harmonicCurrent.magnitude = i_harm->rms;
+        m_harmonicCurrent.phaseDegrees = utils::radiansToDegrees(i_harm->phase);
+    } else {
+        m_harmonicCurrent = PhasorInfo();
+    }
 
     // --- 라벨 업데이트 ---
-    m_voltageInfoLabel->setText(QString("전압 전체: %1 V, %2°\n기본파: %3 V, %4°")
-                                    .arg(m_totalVoltage.magnitude, 0, 'f', 2)
-                                    .arg(m_totalVoltage.phaseDegrees, 0, 'f', 1)
+    m_voltageInfoLabel->setText(QString("고조파: %1 V, %2°\n기본파: %3 V, %4°")
+                                    .arg(m_harmonicVoltage.magnitude, 0, 'f', 2)
+                                    .arg(m_harmonicVoltage.phaseDegrees, 0, 'f', 1)
                                     .arg(m_fundamentalVoltage.magnitude, 0, 'f', 2)
                                     .arg(m_fundamentalVoltage.phaseDegrees, 0, 'f', 1));
 
-    m_currentInfoLabel->setText(QString("전류 전체: %1 A, %2°\n기본파: %3 A, %4°")
-                                    .arg(m_totalCurrent.magnitude, 0, 'f', 2)
-                                    .arg(m_totalCurrent.phaseDegrees, 0, 'f', 1)
+    m_currentInfoLabel->setText(QString("고조파: %1 A, %2°\n기본파: %3 A, %4°")
+                                    .arg(m_harmonicCurrent.magnitude, 0, 'f', 2)
+                                    .arg(m_harmonicCurrent.phaseDegrees, 0, 'f', 1)
                                     .arg(m_fundamentalCurrent.magnitude, 0, 'f', 2)
                                     .arg(m_fundamentalCurrent.phaseDegrees, 0, 'f', 1));
 
@@ -147,13 +154,13 @@ void PhasorView::paintEvent(QPaintEvent *event)
 
     // 페이저 그리기
 
-    // 전체 페이저
+    // 고조파 페이저
     if(m_totalVoltageCheck->isChecked()) {
-        drawPhasor(painter, m_totalVoltage, Qt::cyan, getPhasorDisplayLength(m_totalVoltage.magnitude, config::Source::Amplitude::Max, ctx, true));
+        drawPhasor(painter, m_harmonicVoltage, Qt::cyan, getPhasorDisplayLength(m_harmonicVoltage.magnitude, config::Source::Amplitude::Max, ctx, true));
     }
     if(m_totalCurrentCheck->isChecked()) {
         // qDebug() << "currentDisplayLength: " << currentDisplayLength;
-        drawPhasor(painter, m_totalCurrent, Qt::magenta, getPhasorDisplayLength(m_totalCurrent.magnitude, config::Source::Current::MaxAmplitude, ctx, false));
+        drawPhasor(painter, m_harmonicCurrent, Qt::magenta, getPhasorDisplayLength(m_harmonicCurrent.magnitude, config::Source::Current::MaxAmplitude, ctx, false));
     }
     // 기본파 페이저
     if(m_fundVoltageCheck->isChecked()) {
