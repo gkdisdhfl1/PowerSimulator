@@ -85,19 +85,20 @@ void PhasorView::updateData(const std::deque<MeasuredData>& data)
     const auto& latestData = data.back();
 
     // --- 기본파 정보 계산 ---
-    const auto* v_fund = AnalysisUtils::getHarmonicComponent(latestData.voltageHarmonics, 1);
-    const auto* i_fund = AnalysisUtils::getHarmonicComponent(latestData.currentHarmonics, 1);
+    const auto& v_fund = latestData.fundamentalVoltage;
+    const auto& i_fund = latestData.fundamentalVoltage;
 
-    if (v_fund) {
-        m_fundamentalVoltage.components = QPointF(v_fund->phasorX, v_fund->phasorY);
-        m_fundamentalVoltage.magnitude = v_fund->rms;
-        m_fundamentalVoltage.phaseDegrees = utils::radiansToDegrees(v_fund->phase);
+
+    if (v_fund.order > 0) {
+        m_fundamentalVoltage.components = QPointF(v_fund.phasorX, v_fund.phasorY);
+        m_fundamentalVoltage.magnitude = v_fund.rms;
+        m_fundamentalVoltage.phaseDegrees = utils::radiansToDegrees(v_fund.phase);
     } else { m_fundamentalVoltage = PhasorInfo(); }
 
-    if (i_fund) {
-        m_fundamentalCurrent.components = QPointF(i_fund->phasorX, i_fund->phasorY);
-        m_fundamentalCurrent.magnitude = i_fund->rms;
-        m_fundamentalCurrent.phaseDegrees = utils::radiansToDegrees(i_fund->phase);
+    if (i_fund.order > 0) {
+        m_fundamentalCurrent.components = QPointF(i_fund.phasorX, i_fund.phasorY);
+        m_fundamentalCurrent.magnitude = i_fund.rms;
+        m_fundamentalCurrent.phaseDegrees = utils::radiansToDegrees(i_fund.phase);
     } else { m_fundamentalCurrent = PhasorInfo(); }
 
     // --- 고조파 정보 계산 ---

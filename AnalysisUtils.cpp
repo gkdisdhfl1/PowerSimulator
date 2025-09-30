@@ -217,3 +217,35 @@ const TrigonometricTable* AnalysisUtils::getTrigonometricTable(int N)
 
     return table_ptr;
 }
+
+double AnalysisUtils::calculateActivePower(const std::vector<DataPoint>& samples)
+{
+    if(samples.empty())
+        return 0.0;
+
+    double powerSum = 0.0;
+    for(const auto& sample : samples) {
+        powerSum += sample.voltage * sample.current;
+    }
+
+    return powerSum / samples.size();
+}
+
+double AnalysisUtils::calculateTotalRms(const std::vector<DataPoint>& samples, DataType type)
+{
+    if(samples.empty())
+        return 0.0;
+
+    double sumSq = 0.0;
+    if(type == DataType::Voltage) {
+        for(const auto& sample : samples) {
+            sumSq += sample.voltage * sample.voltage;
+        }
+    } else {
+        for(const auto& sample : samples) {
+            sumSq += sample.current * sample.current;
+        }
+    }
+
+    return std::sqrt(sumSq / samples.size());
+}

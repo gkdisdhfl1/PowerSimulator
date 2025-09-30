@@ -100,6 +100,8 @@ void OneSecondSummaryWindow::setupUi()
     // m_tableWidget->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
 
     auto mainLayout = new QVBoxLayout(this);
+
+
     mainLayout->addWidget(m_tableWidget);
     setLayout(mainLayout);
 }

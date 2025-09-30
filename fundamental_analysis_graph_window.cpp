@@ -116,17 +116,17 @@ void FundamentalAnalysisGraphWindow::updateVisiblePoints(const std::deque<Measur
     // LTTB 다운샘플링을 위한 데이터 추출기 정의
     std::vector<std::function<double(const MeasuredData&)>> extractors {
         [](const MeasuredData& d) {
-            const auto* v = AnalysisUtils::getHarmonicComponent(d.voltageHarmonics, 1);
-            return v ? v->rms : 0.0;
+            const auto& v = d.fundamentalVoltage;
+            return (v.order > 0) ? v.rms : 0.0;
         },
         [](const MeasuredData& d) {
-            const auto* i = AnalysisUtils::getHarmonicComponent(d.currentHarmonics, 1);
-            return i ? i->rms : 0.0;
+            const auto& i = d.fundamentalCurrent;
+            return (i.order > 0) ? i.rms : 0.0;
         },
         [](const MeasuredData& d) {
-            const auto* v = AnalysisUtils::getHarmonicComponent(d.voltageHarmonics, 1);
-            const auto* i = AnalysisUtils::getHarmonicComponent(d.currentHarmonics, 1);
-            return AnalysisUtils::calculateActivePower(v, i);
+            const auto& v = d.fundamentalVoltage;
+            const auto& i = d.fundamentalCurrent;
+            return AnalysisUtils::calculateActivePower(&v, &i);
         }
 
     };
@@ -142,23 +142,23 @@ void FundamentalAnalysisGraphWindow::updateVisiblePoints(const std::deque<Measur
         auto sample_data = downsampleLTTB(first, last, threshold, extractors);
         for(const auto& d : sample_data) {
             const double timeSec = FpSeconds(d.timestamp).count();
-            const auto* v_fund = AnalysisUtils::getHarmonicComponent(d.voltageHarmonics, 1);
-            const auto* i_fund = AnalysisUtils::getHarmonicComponent(d.currentHarmonics, 1);
+            const auto& v_fund = d.fundamentalVoltage;
+            const auto& i_fund = d.fundamentalCurrent;
 
-            m_voltagePoints.append(QPointF(timeSec, v_fund ? v_fund->rms : 0.0));
-            m_currentPoints.append(QPointF(timeSec, i_fund ? i_fund->rms : 0.0));
-            m_powerPoints.append(QPointF(timeSec, AnalysisUtils::calculateActivePower(v_fund, i_fund)));
+            m_voltagePoints.append(QPointF(timeSec, v_fund.order > 0 ? v_fund.rms : 0.0));
+            m_currentPoints.append(QPointF(timeSec, i_fund.order > 0 ? i_fund.rms : 0.0));
+            m_powerPoints.append(QPointF(timeSec, AnalysisUtils::calculateActivePower(&v_fund, &i_fund)));
         }
     } else {
         // 다운샘플링 안할 때도 동일한 로직으로 데이터 추출
         for(auto it = first; it != last; ++it) {
             const double timeSec = FpSeconds(it->timestamp).count();
-            const auto* v_fund = AnalysisUtils::getHarmonicComponent(it->voltageHarmonics, 1);
-            const auto* i_fund = AnalysisUtils::getHarmonicComponent(it->currentHarmonics, 1);
+            const auto& v_fund = it->fundamentalVoltage;
+            const auto& i_fund = it->fundamentalCurrent;
 
-            m_voltagePoints.append(QPointF(timeSec, v_fund ? v_fund->rms : 0.0));
-            m_currentPoints.append(QPointF(timeSec, i_fund ? i_fund->rms : 0.0));
-            m_powerPoints.append(QPointF(timeSec, AnalysisUtils::calculateActivePower(v_fund, i_fund)));
+            m_voltagePoints.append(QPointF(timeSec, v_fund.order > 0 ? v_fund.rms : 0.0));
+            m_currentPoints.append(QPointF(timeSec, i_fund.order > 0 ? i_fund.rms : 0.0));
+            m_powerPoints.append(QPointF(timeSec, AnalysisUtils::calculateActivePower(&v_fund, &i_fund)));
         }
     }
 }

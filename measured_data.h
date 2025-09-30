@@ -19,6 +19,12 @@ struct MeasuredData {
     double currentRms; // 전류 RMS
     double activePower; // 유효 전력
 
+    // 자주 사용하는 성분들
+    HarmonicAnalysisResult fundamentalVoltage;
+    HarmonicAnalysisResult fundamentalCurrent;
+    HarmonicAnalysisResult dominantVoltage;
+    HarmonicAnalysisResult dominantCurrent;
+
     // 전압의 주파수 성분 분석 결과 (harmonics[0]: 기본파)
     std::vector<HarmonicAnalysisResult> voltageHarmonics;
 

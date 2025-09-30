@@ -469,14 +469,14 @@ void FrequencyTracker::startVerification()
 std::expected<FrequencyTracker::PhaseInfo, FrequencyTracker::PhaseErrorType> FrequencyTracker::calculatePhaseError(const MeasuredData& latestMeasuredData)
 {
     // 기본파 전압의 위상 정보를 가져옴
-    const auto* v_fund = AnalysisUtils::getHarmonicComponent(latestMeasuredData.voltageHarmonics, 1);
+    const auto& v_fund = latestMeasuredData.fundamentalVoltage;
 
     // 데이터가 없으면 넘어감
-    if(!v_fund) {
+    if(v_fund.order < 1 || v_fund.rms < 1e-9) {
         return std::unexpected(PhaseErrorType::NoFundamentalComponent);
     }
 
-    const double currentPhasorAngle = v_fund->phase;
+    const double currentPhasorAngle = v_fund.phase;
 
     // 첫 실행 시 비교할 이전 값이 없으므로 에러 처리
     if(m_pll_previousVoltagePhase == 0.0) {

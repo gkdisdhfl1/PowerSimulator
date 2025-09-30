@@ -254,30 +254,30 @@ void SimulationEngine::calculateCycleData()
     auto currentHarmonics = AnalysisUtils::findSignificantHarmonics(currentSpectrum);
 
     // 3. 전체 RMS 및 유효 전력 계산
-    double voltageSquareSum = 0.0;
-    double currentSquareSum = 0.0;
-    double powerSum = 0.0;
-    const size_t N = m_cycleSampleBuffer.size();
-
-    for(const auto& sample : m_cycleSampleBuffer) {
-        voltageSquareSum += sample.voltage * sample.voltage;
-        currentSquareSum += sample.current * sample.current;
-        powerSum += sample.voltage * sample.current;
-    }
-
-    const double totalVoltageRms = std::sqrt(voltageSquareSum / N);
-    const double totalCurrentRms = std::sqrt(currentSquareSum / N);
-    const double activePower = powerSum / N;
+    const double totalVoltageRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Voltage);
+    const double totalCurrentRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Current);
+    const double activePower = AnalysisUtils::calculateActivePower(m_cycleSampleBuffer);
 
     // 4. 계산된 데이터 구조체를 담아 컨테이너 추가
-    m_measuredData.push_back({
-        m_simulationTimeNs, // 현재 시간 (사이클 종료 시점)
-        totalVoltageRms,
-        totalCurrentRms,
-        activePower,
-        voltageHarmonics,
-        currentHarmonics,
-    });
+    MeasuredData newData;
+    newData.timestamp = m_simulationTimeNs;
+    newData.voltageRms = totalVoltageRms;
+    newData.currentRms = totalCurrentRms;
+    newData.activePower = activePower;
+
+    const auto* v_fund = AnalysisUtils::getHarmonicComponent(voltageHarmonics, 1);
+    if(v_fund) newData.fundamentalVoltage = *v_fund;
+    const auto* i_fund = AnalysisUtils::getHarmonicComponent(currentHarmonics, 1);
+    if(i_fund) newData.fundamentalCurrent = *i_fund;
+    const auto* v_dom = AnalysisUtils::getDominantHarmonic(voltageHarmonics);
+    if(v_dom) newData.dominantVoltage = *v_dom;
+    const auto* i_dom = AnalysisUtils::getDominantHarmonic(currentHarmonics);
+    if(i_dom) newData.dominantCurrent = *i_dom;
+
+    newData.voltageHarmonics = voltageHarmonics;
+    newData.currentHarmonics = currentHarmonics;
+
+    m_measuredData.push_back(newData);
 
     if(m_measuredData.size() > static_cast<size_t>(m_params.maxDataSize)) {
         m_measuredData.pop_front();
@@ -369,24 +369,19 @@ void SimulationEngine::processOneSecondData(const MeasuredData& latestCycleDta)
 
     // 1. 마지막 사이클에서 지배적 고조파의 차수와 위상을 결정
     const auto& lastCycledata = m_oneSecondCycleBuffer.back();
-    const auto* lastVoltageDominant = AnalysisUtils::getDominantHarmonic(lastCycledata.voltageHarmonics);
-    const auto* lastCurrentDominant = AnalysisUtils::getDominantHarmonic(lastCycledata.currentHarmonics);
-
-    const int voltageDominantOrder = lastVoltageDominant ? lastVoltageDominant->order : 0;
-    const int currentDominantOrder = lastCurrentDominant ? lastCurrentDominant->order : 0;
+    const int voltageDominantOrder = lastCycledata.dominantVoltage.order;
+    const int currentDominantOrder = lastCycledata.dominantCurrent.order;
 
     OneSecondSummaryData summary;
     summary.dominantHarmonicVoltageOrder = voltageDominantOrder;
-    summary.dominantHarmonicVoltagePhase = lastVoltageDominant ? utils::radiansToDegrees(lastVoltageDominant->phase): 0.0;
+    summary.dominantHarmonicVoltagePhase = utils::radiansToDegrees(lastCycledata.dominantVoltage.phase);
 
     summary.dominantHarmonicCurrentOrder = currentDominantOrder;
-    summary.dominantHarmonicCurrentPhase = lastCurrentDominant ? utils::radiansToDegrees(lastCurrentDominant->phase): 0.0;
+    summary.dominantHarmonicCurrentPhase = utils::radiansToDegrees(lastCycledata.dominantCurrent.phase);
 
-    const auto* lastVoltageFund = AnalysisUtils::getHarmonicComponent(lastCycledata.voltageHarmonics, 1);
-    summary.fundamentalVoltagePhase = lastVoltageFund ? utils::radiansToDegrees(lastVoltageFund->phase) : 0.0;
+    summary.fundamentalVoltagePhase = utils::radiansToDegrees(lastCycledata.fundamentalVoltage.phase);
 
-    const auto* lastCurrentFund = AnalysisUtils::getHarmonicComponent(lastCycledata.currentHarmonics, 1);
-    summary.fundamentalCurrentPhase = lastCurrentFund ? utils::radiansToDegrees(lastCurrentFund->phase) : 0.0;
+    summary.fundamentalCurrentPhase = utils::radiansToDegrees(lastCycledata.fundamentalCurrent.phase);
 
     // 2. 전체 버퍼를 순회하며 RMS 값들의 제곱의 합과 유효전력의 합을 구함
     double totalVoltageRmsSumSq = 0.0;
@@ -402,21 +397,14 @@ void SimulationEngine::processOneSecondData(const MeasuredData& latestCycleDta)
         totalCurrentRmsSumSq += data.currentRms * data.currentRms;
         activePowerSum += data.activePower;
 
-        if(const auto* v_fund = AnalysisUtils::getHarmonicComponent(data.voltageHarmonics, 1)) {
-            fundVoltageRmsSumSq += v_fund->rms * v_fund->rms;
-        }
-        if(const auto* i_fund = AnalysisUtils::getHarmonicComponent(data.currentHarmonics, 1)) {
-            fundCurrentRmsSumSq += i_fund->rms * i_fund->rms;
-        }
+        fundVoltageRmsSumSq += data.fundamentalVoltage.rms * data.fundamentalVoltage.rms;
+        fundCurrentRmsSumSq += data.fundamentalCurrent.rms * data.fundamentalCurrent.rms;
+
         if(voltageDominantOrder > 1) {
-            if(const auto* v_dom = AnalysisUtils::getHarmonicComponent(data.voltageHarmonics, voltageDominantOrder)) {
-                dominantVoltageRmsSumSq += v_dom->rms * v_dom->rms;
-            }
+            dominantVoltageRmsSumSq += data.dominantVoltage.rms * data.dominantVoltage.rms;
         }
         if(currentDominantOrder > 1) {
-            if(const auto* i_dom = AnalysisUtils::getHarmonicComponent(data.currentHarmonics, currentDominantOrder)) {
-                dominantCurrentRmsSumSq += i_dom->rms * i_dom->rms;
-            }
+            dominantCurrentRmsSumSq += data.dominantCurrent.rms * data.dominantCurrent.rms;
         }
     }
 

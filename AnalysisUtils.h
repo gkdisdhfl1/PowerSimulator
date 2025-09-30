@@ -11,6 +11,8 @@ class TrigonometricTable;
 
 class AnalysisUtils {
 public:
+    enum class DataType { Voltage, Current };
+
     // 지정된 차수의 고조파 성분 결과를 반환 (없으면 nullptr)
     static const HarmonicAnalysisResult* getHarmonicComponent(const std::vector<HarmonicAnalysisResult>& harmonics, int order);
 
@@ -29,6 +31,10 @@ public:
     static void precomputeTables(const std::vector<int>& N_values);
 
     static const TrigonometricTable* getTrigonometricTable(int N);
+
+    static double calculateActivePower(const std::vector<DataPoint>& samples);
+
+    static double calculateTotalRms(const std::vector<DataPoint>&samples, DataType type);
 private:
     static std::map<int, std::unique_ptr<TrigonometricTable>> m_trigTableCache;
 };
