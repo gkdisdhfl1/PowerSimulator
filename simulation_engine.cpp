@@ -242,8 +242,18 @@ void SimulationEngine::calculateCycleData()
         return;
 
     // 1. (측정) 파형의 전체 주파수 스펙트럼 분석
-    auto voltageSpectrum = analyzeSpectrum(DataType::Voltage);
-    auto currentSpectrum = analyzeSpectrum(DataType::Current);
+    auto voltageSpectrumResult = analyzeSpectrum(DataType::Voltage);
+    auto currentSpectrumResult = analyzeSpectrum(DataType::Current);
+    if(!voltageSpectrumResult) {
+        qWarning() << "Voltage spectrum analysis failed: " << AnalysisUtils::toQString(voltageSpectrumResult.error());
+        return;
+    }
+    if(!currentSpectrumResult) {
+        qWarning() << "Current spectrum analysis failed: " << AnalysisUtils::toQString(currentSpectrumResult.error());
+        return;
+    }
+    const auto& voltageSpectrum = *voltageSpectrumResult;
+    const auto& currentSpectrum = *currentSpectrumResult;
 
     // 2. (해석) 스펙트럼에서 가장 큰 두 개의 성분(기본파, 고조파)를 찾음
     auto voltageHarmonics = AnalysisUtils::findSignificantHarmonics(voltageSpectrum);
@@ -325,7 +335,7 @@ void SimulationEngine::processUpdateByMode(bool resetCounter)
     }
 }
 
-std::vector<std::complex<double>> SimulationEngine::analyzeSpectrum(SimulationEngine::DataType type) const
+std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> SimulationEngine::analyzeSpectrum(SimulationEngine::DataType type) const
 {
     // 전압 전류에 따라 AnalysisUtils에 넘길 데이터 복사
     std::vector<DataPoint> samplesForAnalysis;

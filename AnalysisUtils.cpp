@@ -53,11 +53,11 @@ const HarmonicAnalysisResult* AnalysisUtils::getDominantHarmonic(const std::vect
     return dominant;
 }
 
-std::vector<std::complex<double>> AnalysisUtils::calculateSpectrum(const std::vector<DataPoint>& samples, bool useWindow)
+std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> AnalysisUtils::calculateSpectrum(const std::vector<DataPoint>& samples, bool useWindow)
 {
     const size_t N = samples.size();
-    if(N == 0) {
-        return {};
+    if(N == 0 || N % 2 != 0) {
+        return std::unexpected(SpectrumError::InvalidInput);
     }
 
     // 1. FFT 설정 가져오기 (없으면 생성해서 캐시에 저장)
@@ -67,7 +67,7 @@ std::vector<std::complex<double>> AnalysisUtils::calculateSpectrum(const std::ve
     kiss_fftr_cfg fft_cfg = m_fftConfigCache[N];
     if(!fft_cfg) {
         qWarning() << "kiss_fftr_alloc failed for N = " << N;
-        return {};
+        return std::unexpected(SpectrumError::AllocationFailed);
     }
 
     // 2. 입력 데이터 준비 (Hann 윈도우 적용 포함)
@@ -103,19 +103,19 @@ std::vector<std::complex<double>> AnalysisUtils::calculateSpectrum(const std::ve
 
 }
 
-std::vector<double> AnalysisUtils::generateFundamentalWave(const std::vector<DataPoint>& samples)
+std::expected<std::vector<double>, AnalysisUtils::WaveGenerateError> AnalysisUtils::generateFundamentalWave(const std::vector<DataPoint>& samples)
 {
     const size_t N = samples.size();
     if(N < 2) {
-        return {};
+        return std::unexpected(WaveGenerateError::NoSignificantFound);
     }
 
     // 1. 스펙트럼 계산
-    auto spectrum = calculateSpectrum(samples, true);
-    if(spectrum.empty()) {
-        qDebug() << "스펙트럼 비어있음.";
-        return {};
+    auto spectrumResult = calculateSpectrum(samples, true);
+    if(!spectrumResult) {
+        return std::unexpected(WaveGenerateError::SpectrumCalculationFailed);
     }
+    const auto& spectrum = *spectrumResult;
 
     // 2. 가장 강한 피크 찾기
     int fundamental_k = -1; // 기본 주파수 인덱스
@@ -132,7 +132,7 @@ std::vector<double> AnalysisUtils::generateFundamentalWave(const std::vector<Dat
     }
 
     if(fundamental_k == -1 || max_magnitude_sq < 1e-9) {
-        return {}; // 유의미한 주파수를 못찾음
+        return std::unexpected(WaveGenerateError::NoSignificantFound);
     }
     qDebug() << "finded fundamental_k = " << fundamental_k;
     // 3. 기본파 재구성

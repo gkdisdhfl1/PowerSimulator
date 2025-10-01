@@ -147,13 +147,14 @@ void FrequencyTracker::processCoarseSearch(const DataPoint& latestDataPoint)
     }
 
     // 3. DFT로 기본파 파형을 재구성
-    std::vector<double> clean_wave = AnalysisUtils::generateFundamentalWave(m_coarseSearchBuffer);
+    auto cleanWaveResult = AnalysisUtils::generateFundamentalWave(m_coarseSearchBuffer);
 
-    if(clean_wave.empty()) {
-        qDebug() << "거친 탐색 실패: 기본파 못찾음. 재시작..";
+    if(!cleanWaveResult) {
+        qWarning() << "거친 탐색 실패:" << AnalysisUtils::toQstring(cleanWaveResult.error()) << ". 재시작..";
         startCoarseSearch();
         return;
     }
+    const auto& clean_wave = *cleanWaveResult;
 
     // 4. 재구성한 그래프로 ZC 실행
     double estimateFreq = estimateFrequencyByZeroCrossing(clean_wave);
@@ -310,12 +311,15 @@ void FrequencyTracker::processVerification(const DataPoint& latestDataPoint)
     }
 
     // 2. DFT + ZC로 주파수 재추정
-    std::vector<double> clean_wave = AnalysisUtils::generateFundamentalWave(m_coarseSearchBuffer);
-    if(clean_wave.empty()) {
+    auto cleanWaveResult = AnalysisUtils::generateFundamentalWave(m_coarseSearchBuffer);
+    if(!cleanWaveResult) {
+        qWarning() << AnalysisUtils::toQstring(cleanWaveResult.error());
         qDebug() << "Lock 검증 실패: DFT 분석 불가. 재시도...";
         startVerification(); // 버퍼 비우고 다시 시도
         return;
     }
+    const auto& clean_wave = *cleanWaveResult;
+
     double zc_freq = estimateFrequencyByZeroCrossing(clean_wave);
     double pll_freq = m_engine->parameters().samplingCycles;
 

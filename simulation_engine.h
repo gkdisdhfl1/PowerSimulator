@@ -5,6 +5,7 @@
 #include <QChronoTimer>
 #include <deque>
 #include <complex>
+#include "AnalysisUtils.h"
 #include "data_point.h"
 #include "config.h"
 #include "measured_data.h"
@@ -72,7 +73,7 @@ private:
     using Nanoseconds = utils::Nanoseconds;
     using FpSeconds = utils::FpSeconds;
 
-   std::vector<std::complex<double>> analyzeSpectrum(DataType type) const;
+    std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> analyzeSpectrum(DataType type) const;
 
     void advanceSimulationTime();
     double calculateCurrentVoltage() const;
