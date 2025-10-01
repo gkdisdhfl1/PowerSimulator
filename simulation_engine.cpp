@@ -40,10 +40,6 @@ FrequencyTracker* SimulationEngine::getFrequencyTracker() const { return m_frequ
 // ---- public slots ----
 void SimulationEngine::start()
 {
-    // 필요한 N값 목록을 가져옴
-    std::vector<int> required_N_values = m_frequencyTracker->getRequiredValues();
-    AnalysisUtils::precomputeTables(required_N_values);
-
     if (isRunning()) return;
     qDebug() << "시작";
     qDebug() << "m_amplitude = " << m_params.amplitude << " " << "m_frequency = " << m_params.frequency;

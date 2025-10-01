@@ -131,24 +131,6 @@ FrequencyTracker::PidCoefficients FrequencyTracker::getZcCoefficients()
 {
     return m_zcController.getCoefficients();
 }
-
-std::vector<int> FrequencyTracker::getRequiredValues()
-{
-    std::vector<int> n_values;
-
-    // 1. Coarse Search 에 필요한 N값
-    const double initialSamplingRate = 50.0 * 20.0;
-    n_values.push_back(static_cast<int>(initialSamplingRate * CoarseSearchConstants::Duration_S));
-
-    // 2. 현재 엔진의 samplePerCycle 값 추가
-    n_values.push_back(m_engine->parameters().samplesPerCycle);
-
-    // 3. 중복된 값 제거
-    std::sort(n_values.begin(), n_values.end());
-    n_values.erase(std::unique(n_values.begin(), n_values.end()), n_values.end());
-
-    return n_values;
-}
 // ==================================
 
 // ==== private 함수 ====
@@ -458,8 +440,8 @@ void FrequencyTracker::startVerification()
     // 0.2초 분량의 샘플을 수집하여 검증
     const double currentSamplingRate = m_engine->parameters().samplingCycles * m_engine->parameters().samplesPerCycle;
     if(currentSamplingRate > 1.0) {
-        m_coarseSearchSamplesNeeded = static_cast<int>(currentSamplingRate * VerificationConstants::Durationi_S);
-
+        int calculatedSamples = static_cast<int>(currentSamplingRate * VerificationConstants::Durationi_S);
+        m_coarseSearchSamplesNeeded = (calculatedSamples % 2 == 0) ? calculatedSamples : calculatedSamples - 1;
     }
     m_coarseSearchBuffer.reserve(m_coarseSearchSamplesNeeded);
 }

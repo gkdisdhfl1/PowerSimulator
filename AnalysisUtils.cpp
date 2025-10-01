@@ -1,6 +1,5 @@
 #include "AnalysisUtils.h"
 #include "config.h"
-#include "trigonometric_table.h"
 #include <complex>
 #include <QDebug>
 
@@ -22,7 +21,7 @@ HarmonicAnalysisResult createHarmonicResult(const std::vector<std::complex<doubl
 }
 }
 
-std::map<int, std::unique_ptr<TrigonometricTable>> AnalysisUtils::m_trigTableCache;
+std::map<int, kiss_fftr_cfg> AnalysisUtils::m_fftConfigCache;
 
 const HarmonicAnalysisResult* AnalysisUtils::getHarmonicComponent(const std::vector<HarmonicAnalysisResult>& harmonics, int order)
 {
@@ -61,45 +60,47 @@ std::vector<std::complex<double>> AnalysisUtils::calculateSpectrum(const std::ve
         return {};
     }
 
-    // 캐시에서 테이블을 가져옴
-    const auto* trigTable = getTrigonometricTable(N);
-    if(!trigTable) {
-        qWarning() << "스펙트럼 계산 중단. " << N << "이 없음";
+    // 1. FFT 설정 가져오기 (없으면 생성해서 캐시에 저장)
+    if(m_fftConfigCache.find(N) == m_fftConfigCache.end()) {
+        m_fftConfigCache[N] = kiss_fftr_alloc(N, 0, nullptr, nullptr);
+    }
+    kiss_fftr_cfg fft_cfg = m_fftConfigCache[N];
+    if(!fft_cfg) {
+        qWarning() << "kiss_fftr_alloc failed for N = " << N;
         return {};
     }
 
-    const int max_k = N / 2;
-
-    // 임시 데이터 벡터 생성
-    std::vector<double> processed_wave(N);
-
-    for(int i = 0; i < N; ++i)
-        processed_wave[i] = samples[i].voltage;
-
+    // 2. 입력 데이터 준비 (Hann 윈도우 적용 포함)
+    std::vector<kiss_fft_scalar> fft_in(N);
     if(useWindow) {
-        // Hann 윈도우 적용
         const double two_pi_over_N_minus_1 = config::Math::TwoPi / (N - 1);
-        for(size_t i = 0; i < N; ++i)
-            processed_wave[i] *= 0.5 * (1.0 - std::cos(i * two_pi_over_N_minus_1));
-    }
-
-    // DFT 실행
-    std::vector<std::complex<double>> spectrum(max_k + 1);
-
-    for(size_t k = 0; k <= max_k; ++k) {
-        double real_sum = 0.0;
-        double imag_sum = 0.0;
-
-        for(size_t n = 0; n < N; ++n) {
-            real_sum += processed_wave[n] * trigTable->getCos(k, n);
-            imag_sum -= processed_wave[n] * trigTable->getSin(k, n);
+        for(int i = 0; i < N; ++i) {
+            fft_in[i] = samples[i].voltage * 0.5 * (1.0 - std::cos(i * two_pi_over_N_minus_1));
         }
-
-        // DFT 정규화
-        const double normFactor = std::sqrt(2.0) / N;
-        spectrum[k] = {normFactor * real_sum, normFactor * imag_sum};
+    } else {
+        for(int i = 0; i < N; ++i) {
+            fft_in[i] = samples[i].voltage;
+        }
     }
+
+    // 3. FFT 실행
+    const int num_freq_bins = N / 2 + 1;
+    std::vector<kiss_fft_cpx> fft_out(num_freq_bins);
+    kiss_fftr(fft_cfg, fft_in.data(), fft_out.data());
+
+    // 4. 결과 변환 및 정규화
+    std::vector<std::complex<double>> spectrum(num_freq_bins);
+    const double normFactor = std::sqrt(2.0) / N;
+
+    // DC 성분(k = 0)
+    spectrum[0] = {fft_out[0].r / static_cast<double>(N), 0.0}; // DC는 sqrt(2)로 나누지 않음
+
+    for(int k = 1; k < num_freq_bins; ++k) {
+        spectrum[k] = {normFactor * fft_out[k].r, normFactor * fft_out[k].i};
+    }
+
     return spectrum;
+
 }
 
 std::vector<double> AnalysisUtils::generateFundamentalWave(const std::vector<DataPoint>& samples)
@@ -112,6 +113,7 @@ std::vector<double> AnalysisUtils::generateFundamentalWave(const std::vector<Dat
     // 1. 스펙트럼 계산
     auto spectrum = calculateSpectrum(samples, true);
     if(spectrum.empty()) {
+        qDebug() << "스펙트럼 비어있음.";
         return {};
     }
 
@@ -182,40 +184,6 @@ std::vector<HarmonicAnalysisResult> AnalysisUtils::findSignificantHarmonics(cons
 
         return results;
     }
-}
-
-void AnalysisUtils::precomputeTables(const std::vector<int>& N_values)
-{
-    m_trigTableCache.clear();
-    qDebug() << "테이블 미리 계산";
-    for(int N : N_values) {
-        if(N > 0 && m_trigTableCache.find(N) == m_trigTableCache.end()) {
-            const int max_k = N / 2;
-            m_trigTableCache[N] = std::make_unique<TrigonometricTable>(N, max_k);
-        }
-    }
-}
-
-const TrigonometricTable* AnalysisUtils::getTrigonometricTable(int N)
-{
-    if(N <= 0) {
-        qWarning() << "잘못된 "<< N << "에 대한 테이블 요청됨";
-        return nullptr;
-    }
-
-    auto it = m_trigTableCache.find(N);
-    if(it != m_trigTableCache.end()) {
-        return it->second.get();
-    }
-
-    // 테이블이 캐시에 없으면 , 동적으로 생성하고 추가
-    qDebug() << N << "에 대한 테이블 동적 생성";
-    const int max_k = N / 2;
-    auto new_table = std::make_unique<TrigonometricTable>(N, max_k);
-    const TrigonometricTable* table_ptr = new_table.get();
-    m_trigTableCache[N] = std::move(new_table);
-
-    return table_ptr;
 }
 
 double AnalysisUtils::calculateActivePower(const std::vector<DataPoint>& samples)

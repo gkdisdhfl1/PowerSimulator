@@ -3,11 +3,10 @@
 
 #include "data_point.h"
 #include "measured_data.h"
+#include "kiss_fftr.h"
 #include <cmath>
 #include <complex>
 #include <map>
-
-class TrigonometricTable;
 
 class AnalysisUtils {
 public:
@@ -28,15 +27,11 @@ public:
 
     static std::vector<HarmonicAnalysisResult> findSignificantHarmonics(const std::vector<std::complex<double>>& spectrum);
 
-    static void precomputeTables(const std::vector<int>& N_values);
-
-    static const TrigonometricTable* getTrigonometricTable(int N);
-
     static double calculateActivePower(const std::vector<DataPoint>& samples);
 
     static double calculateTotalRms(const std::vector<DataPoint>&samples, DataType type);
 private:
-    static std::map<int, std::unique_ptr<TrigonometricTable>> m_trigTableCache;
+    static std::map<int, kiss_fftr_cfg> m_fftConfigCache;
 };
 
 #endif // ANALYSISUTILS_H

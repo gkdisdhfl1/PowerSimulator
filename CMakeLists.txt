@@ -85,8 +85,8 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
         harmonic_analysis_graph_window.h harmonic_analysis_graph_window.cpp
         AnalysisUtils.cpp
         pid_controller.h pid_controller.cpp
-        trigonometric_table.h trigonometric_table.cpp
         one_second_summary_window.h one_second_summary_window.cpp
+        kiss_fft/kiss_fft.c kiss_fft/kiss_fftr.c
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET PowerSimulator APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -108,7 +108,10 @@ endif()
 
 
 
-target_include_directories(PowerSimulator PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(PowerSimulator PRIVATE
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/kiss_fft
+)
 
 target_link_libraries(PowerSimulator PRIVATE
     Qt${QT_VERSION_MAJOR}::Widgets
