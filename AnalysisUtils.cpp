@@ -152,38 +152,50 @@ std::expected<std::vector<double>, AnalysisUtils::WaveGenerateError> AnalysisUti
 }
 
 std::vector<HarmonicAnalysisResult> AnalysisUtils::findSignificantHarmonics(const std::vector<std::complex<double>>& spectrum) {
-    {
-        std::vector<HarmonicAnalysisResult> results;
-        if(spectrum.size() < 2) return results;
+    std::vector<HarmonicAnalysisResult> results;
+    if(spectrum.size() < 2) return results;
 
-        // 기본파는 항상 결과에 추가
-        results.push_back(createHarmonicResult(spectrum, 1));
+    // 1. 기본파는 항상 결과에 추가
+    results.push_back(createHarmonicResult(spectrum, 1));
+    const double px = results.back().phasorX;
+    const double py = results.back().phasorY;
+    const double fundamentalMagSq = px * px + py + py;
 
-        // 나머지 중에서 가장 큰 고조파를 찾음
-        int harmonicOrder = -1;
-        double maxHarmonicMagSq = -1.0;
-
-        for(size_t k = 2; k < spectrum.size(); ++k) {
-            double magSq = std::norm(spectrum[k]); // 크기의 제곱으로 비교
-            if(magSq > maxHarmonicMagSq) {
-                // 기존의 Fundamental을 harmonic으로 내림
-                maxHarmonicMagSq= magSq;
-                harmonicOrder = k;
-            }
-        }
-
-        // 노이즈와 구분하기 위한 최소 임계값
-        // 기본파 RMS의 1%보다 커야 함
-        const double fundamentalRmsSq = std::norm(spectrum.size() > 1 ? spectrum[1] : 0);
-        const double noiseThresholdSq = fundamentalRmsSq * 0.0001;
-
-        // 유의미한 고조파 결과 추가
-        if(harmonicOrder != -1 && maxHarmonicMagSq > noiseThresholdSq) {
-            results.push_back(createHarmonicResult(spectrum, harmonicOrder));
-        }
-
-        return results;
+    // 2. 평균 노이즈 레벨 계산
+    double noiseSumSq = 0.0;
+    int noiseSampleCount = 0;
+    for(size_t k = 2; k < spectrum.size(); ++k) {
+        noiseSumSq += std::norm(spectrum[k]);
+        ++noiseSampleCount;
     }
+    const double averageNoiseMagSq = (noiseSampleCount > 0) ? (noiseSumSq / noiseSampleCount) : 0.0;
+
+    // 3. 나머지 중에서 가장 큰 고조파를 찾음
+    int harmonicOrder = -1;
+    double maxHarmonicMagSq = -1.0;
+
+    for(size_t k = 2; k < spectrum.size(); ++k) {
+        double magSq = std::norm(spectrum[k]); // 크기의 제곱으로 비교
+        if(magSq > maxHarmonicMagSq) {
+            // 기존의 Fundamental을 harmonic으로 내림
+            maxHarmonicMagSq= magSq;
+            harmonicOrder = k;
+        }
+    }
+
+    // 4. 동적 임계값 설정
+    // - 최소한 평균 노이즈 레벨의 5배는 되어야 함
+    // - 최소한 기본파 크기 제곱의 0.1배는 되어야함
+    const double thresholdFromNoise = averageNoiseMagSq * 5.0;
+    const double thresholdFromFundamental = fundamentalMagSq * 0.001;
+    const double dynamicThresholdSq = std::max(thresholdFromNoise, thresholdFromFundamental);
+
+    // 5. 찾은 피크가 동적 임계값을 넘는지 확인
+    if(harmonicOrder != -1 && maxHarmonicMagSq > dynamicThresholdSq) {
+        results.push_back(createHarmonicResult(spectrum, harmonicOrder));
+    }
+
+    return results;
 }
 
 double AnalysisUtils::calculateActivePower(const std::vector<DataPoint>& samples)

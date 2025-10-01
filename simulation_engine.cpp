@@ -258,6 +258,10 @@ void SimulationEngine::calculateCycleData()
     // 2. (해석) 스펙트럼에서 가장 큰 두 개의 성분(기본파, 고조파)를 찾음
     auto voltageHarmonics = AnalysisUtils::findSignificantHarmonics(voltageSpectrum);
     auto currentHarmonics = AnalysisUtils::findSignificantHarmonics(currentSpectrum);
+    // if(m_params.voltageHarmonic.magnitude < 1e-6)
+    //     std::erase_if(voltageHarmonics, [](const auto& h){ return h.order > 1;});
+    // if(m_params.currentHarmonic.magnitude < 1e-6)
+    //     std::erase_if(currentHarmonics, [](const auto& h){ return h.order > 1;});
 
     // 3. 전체 RMS 및 유효 전력 계산
     const double totalVoltageRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Voltage);
@@ -386,7 +390,6 @@ void SimulationEngine::processOneSecondData(const MeasuredData& latestCycleDta)
     summary.dominantHarmonicCurrentPhase = utils::radiansToDegrees(lastCycledata.dominantCurrent.phase);
 
     summary.fundamentalVoltagePhase = utils::radiansToDegrees(lastCycledata.fundamentalVoltage.phase);
-
     summary.fundamentalCurrentPhase = utils::radiansToDegrees(lastCycledata.fundamentalCurrent.phase);
 
     // 2. 전체 버퍼를 순회하며 RMS 값들의 제곱의 합과 유효전력의 합을 구함
