@@ -100,7 +100,7 @@ private:
 
     // 1초 데이터 관련 변수
     std::vector<MeasuredData> m_oneSecondCycleBuffer;
-    std::chrono::steady_clock::time_point m_oneSecondBlockStartTime;
+    Nanoseconds m_oneSecondBlockStartTime;
     double m_totalEngeryWh;
 };
 

@@ -9,6 +9,7 @@ SimulationEngine::SimulationEngine()
     , m_captureIntervalsNs(0)
     , m_simulationTimeNs(0)
     , m_sampleCounterForUpdate(0)
+    , m_oneSecondBlockStartTime(0)
     , m_totalEngeryWh(0.0)
 {
     using namespace std::chrono_literals;
@@ -349,29 +350,23 @@ std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> S
 
 void SimulationEngine::processOneSecondData(const MeasuredData& latestCycleDta)
 {
-    // 버퍼가 비어있으면, 현재 시작 시간으로 기록
-    if(m_oneSecondCycleBuffer.empty())
-        m_oneSecondBlockStartTime = std::chrono::steady_clock::now();
-
-    // 현재 사이클에 버퍼 추가
     m_oneSecondCycleBuffer.push_back(latestCycleDta);
 
     // 시간 경과 확인
-    auto now = std::chrono::steady_clock::now();
-    auto elapsedNs = std::chrono::duration_cast<Nanoseconds>(now - m_oneSecondBlockStartTime).count();
+    auto elapsedNs = m_simulationTimeNs - m_oneSecondBlockStartTime;
+    qDebug() << m_simulationTimeNs << " - " << m_oneSecondBlockStartTime << " = " << elapsedNs;
 
     // 995ms (995,000,000 ns)가 되지 않았으면 함수 종료
-    if(elapsedNs < 995'000'000LL)
+    if(elapsedNs.count() < 995'000'000LL)
         return;
 
-    const size_t N = m_oneSecondCycleBuffer.size();
-    if(N == 0) return;
+    qDebug() << "1초 경과";
 
     // 1초 데이터 가공 시작
     OneSecondSummaryData summary = AnalysisUtils::buildOneSecondSummary(m_oneSecondCycleBuffer);
 
     // 누적 전력량 계산
-    const double elapsedSeconds = elapsedNs / 1'000'000'0000.0;
+    const double elapsedSeconds = std::chrono::duration_cast<FpSeconds>(elapsedNs).count();
     m_totalEngeryWh += (summary.activePower * elapsedSeconds) / 3600.0;
     summary.totalEnergyWh = m_totalEngeryWh;
 
@@ -380,4 +375,6 @@ void SimulationEngine::processOneSecondData(const MeasuredData& latestCycleDta)
 
     // 다음 1초를 위해 버퍼와 시작 시간 초기화
     m_oneSecondCycleBuffer.clear();
+
+    m_oneSecondBlockStartTime += elapsedNs;
 }
