@@ -108,9 +108,6 @@ void FrequencyTracker::process(const DataPoint& latestDataPoint, const MeasuredD
         }
         break;
     case TrackingState::Idle:
-        if(cycleBuffer.size() >= static_cast<size_t>(m_engine->parameters().samplesPerCycle)) {
-            break;
-        }
         break;
     }
 }

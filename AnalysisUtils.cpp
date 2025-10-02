@@ -57,6 +57,7 @@ std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> A
 {
     const size_t N = samples.size();
     if(N == 0 || N % 2 != 0) {
+        qWarning() << "Invalid Input failed for N = " << N;
         return std::unexpected(SpectrumError::InvalidInput);
     }
 

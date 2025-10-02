@@ -156,6 +156,7 @@ void SimulationEngine::captureData()
         m_cycleSampleBuffer.erase(m_cycleSampleBuffer.begin());
     }
 
+    // 주파수, 위상 자동 추적
     m_frequencyTracker->process(m_data.back(), m_measuredData.empty() ? MeasuredData{} : m_measuredData.back(), m_cycleSampleBuffer);
 
     // 사이클이 꽉 찼으면 사이클 단위 연산 수행
@@ -258,10 +259,6 @@ void SimulationEngine::calculateCycleData()
     // 2. (해석) 스펙트럼에서 가장 큰 두 개의 성분(기본파, 고조파)를 찾음
     auto voltageHarmonics = AnalysisUtils::findSignificantHarmonics(voltageSpectrum);
     auto currentHarmonics = AnalysisUtils::findSignificantHarmonics(currentSpectrum);
-    // if(m_params.voltageHarmonic.magnitude < 1e-6)
-    //     std::erase_if(voltageHarmonics, [](const auto& h){ return h.order > 1;});
-    // if(m_params.currentHarmonic.magnitude < 1e-6)
-    //     std::erase_if(currentHarmonics, [](const auto& h){ return h.order > 1;});
 
     // 3. 전체 RMS 및 유효 전력 계산
     const double totalVoltageRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Voltage);
@@ -351,6 +348,9 @@ std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> S
             (type == DataType::Voltage) ? sample.voltage : sample.current,
             0
         });
+    }
+    if(samplesForAnalysis.size() % 2 != 0) {
+        samplesForAnalysis.push_back({});
     }
 
     return AnalysisUtils::calculateSpectrum(samplesForAnalysis, false);
