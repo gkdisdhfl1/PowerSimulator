@@ -30,7 +30,6 @@ struct MeasuredData {
 
     // 전압의 주파수 성분 분석 결과 (harmonics[0]: 기본파)
     std::vector<HarmonicAnalysisResult> currentHarmonics;
-
 };
 
 // 1초 단위로 가공된 분석 데이터를 담는 구조체

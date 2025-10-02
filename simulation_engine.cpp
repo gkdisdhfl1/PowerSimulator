@@ -266,23 +266,14 @@ void SimulationEngine::calculateCycleData()
     const double activePower = AnalysisUtils::calculateActivePower(m_cycleSampleBuffer);
 
     // 4. 계산된 데이터 구조체를 담아 컨테이너 추가
-    MeasuredData newData;
+    MeasuredData newData = AnalysisUtils::buildMeasuredData(
+        totalVoltageRms,
+        totalCurrentRms,
+        activePower,
+        voltageHarmonics,
+        currentHarmonics
+    );
     newData.timestamp = m_simulationTimeNs;
-    newData.voltageRms = totalVoltageRms;
-    newData.currentRms = totalCurrentRms;
-    newData.activePower = activePower;
-
-    const auto* v_fund = AnalysisUtils::getHarmonicComponent(voltageHarmonics, 1);
-    if(v_fund) newData.fundamentalVoltage = *v_fund;
-    const auto* i_fund = AnalysisUtils::getHarmonicComponent(currentHarmonics, 1);
-    if(i_fund) newData.fundamentalCurrent = *i_fund;
-    const auto* v_dom = AnalysisUtils::getDominantHarmonic(voltageHarmonics);
-    if(v_dom) newData.dominantVoltage = *v_dom;
-    const auto* i_dom = AnalysisUtils::getDominantHarmonic(currentHarmonics);
-    if(i_dom) newData.dominantCurrent = *i_dom;
-
-    newData.voltageHarmonics = voltageHarmonics;
-    newData.currentHarmonics = currentHarmonics;
 
     m_measuredData.push_back(newData);
 
@@ -373,69 +364,20 @@ void SimulationEngine::processOneSecondData(const MeasuredData& latestCycleDta)
     if(elapsedNs < 995'000'000LL)
         return;
 
-    // 1초 데이터 가공 시작
     const size_t N = m_oneSecondCycleBuffer.size();
     if(N == 0) return;
 
-    // 1. 마지막 사이클에서 지배적 고조파의 차수와 위상을 결정
-    const auto& lastCycledata = m_oneSecondCycleBuffer.back();
-    const int voltageDominantOrder = lastCycledata.dominantVoltage.order;
-    const int currentDominantOrder = lastCycledata.dominantCurrent.order;
+    // 1초 데이터 가공 시작
+    OneSecondSummaryData summary = AnalysisUtils::buildOneSecondSummary(m_oneSecondCycleBuffer);
 
-    OneSecondSummaryData summary;
-    summary.dominantHarmonicVoltageOrder = voltageDominantOrder;
-    summary.dominantHarmonicVoltagePhase = utils::radiansToDegrees(lastCycledata.dominantVoltage.phase);
-
-    summary.dominantHarmonicCurrentOrder = currentDominantOrder;
-    summary.dominantHarmonicCurrentPhase = utils::radiansToDegrees(lastCycledata.dominantCurrent.phase);
-
-    summary.fundamentalVoltagePhase = utils::radiansToDegrees(lastCycledata.fundamentalVoltage.phase);
-    summary.fundamentalCurrentPhase = utils::radiansToDegrees(lastCycledata.fundamentalCurrent.phase);
-
-    // 2. 전체 버퍼를 순회하며 RMS 값들의 제곱의 합과 유효전력의 합을 구함
-    double totalVoltageRmsSumSq = 0.0;
-    double totalCurrentRmsSumSq = 0.0;
-    double fundVoltageRmsSumSq = 0.0;
-    double fundCurrentRmsSumSq = 0.0;
-    double dominantVoltageRmsSumSq = 0.0;
-    double dominantCurrentRmsSumSq = 0.0;
-    double activePowerSum = 0.0;
-
-    for(const auto& data : m_oneSecondCycleBuffer) {
-        totalVoltageRmsSumSq += data.voltageRms * data.voltageRms;
-        totalCurrentRmsSumSq += data.currentRms * data.currentRms;
-        activePowerSum += data.activePower;
-
-        fundVoltageRmsSumSq += data.fundamentalVoltage.rms * data.fundamentalVoltage.rms;
-        fundCurrentRmsSumSq += data.fundamentalCurrent.rms * data.fundamentalCurrent.rms;
-
-        if(voltageDominantOrder > 1) {
-            dominantVoltageRmsSumSq += data.dominantVoltage.rms * data.dominantVoltage.rms;
-        }
-        if(currentDominantOrder > 1) {
-            dominantCurrentRmsSumSq += data.dominantCurrent.rms * data.dominantCurrent.rms;
-        }
-    }
-
-    // 3. 최종 값 계산
-    summary.totalVoltageRms = std::sqrt(totalVoltageRmsSumSq / N);
-    summary.totalCurrentRms = std::sqrt(totalCurrentRmsSumSq / N);
-    summary.activePower = activePowerSum / N;
-
-    summary.fundamentalVoltageRms = std::sqrt(fundVoltageRmsSumSq / N);
-    summary.fundamentalCurrentRms = std::sqrt(fundCurrentRmsSumSq / N);
-
-    summary.dominantHarmonicVoltageRms = (voltageDominantOrder > 1) ? std::sqrt(dominantVoltageRmsSumSq / N) : 0.0;
-    summary.dominantHarmonicCurrentRms = (currentDominantOrder > 1) ? std::sqrt(dominantCurrentRmsSumSq / N) : 0.0;
-
-    // 4. 누적 전력량 계산
+    // 누적 전력량 계산
     const double elapsedSeconds = elapsedNs / 1'000'000'0000.0;
     m_totalEngeryWh += (summary.activePower * elapsedSeconds) / 3600.0;
     summary.totalEnergyWh = m_totalEngeryWh;
 
-    // 5. 시그널 발생
+    // 시그널 발생
     emit oneSecondDataUpdated(summary);
 
-    // 6. 다음 1초를 위해 버퍼와 시작 시간 초기화
+    // 다음 1초를 위해 버퍼와 시작 시간 초기화
     m_oneSecondCycleBuffer.clear();
 }

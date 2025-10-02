@@ -63,6 +63,17 @@ public:
     static double calculateActivePower(const std::vector<DataPoint>& samples);
 
     static double calculateTotalRms(const std::vector<DataPoint>&samples, DataType type);
+
+    static MeasuredData buildMeasuredData(
+        double totalVoltageRms,
+        double totalCurrentRms,
+        double activePower,
+        const std::vector<HarmonicAnalysisResult>& voltageHarmonics,
+        const std::vector<HarmonicAnalysisResult>& currentHarmonics
+    );
+
+    static OneSecondSummaryData buildOneSecondSummary(const std::vector<MeasuredData>& cycleBuffer);
+
 private:
     static std::map<int, kiss_fftr_cfg> m_fftConfigCache;
 };
