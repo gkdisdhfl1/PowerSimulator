@@ -5,7 +5,7 @@
 #include <QPalette>
 #include <QHeaderView>
 
-// 테이블의 행 인덱스를 상소로 정의
+// 테이블의 행 인덱스를 상수로 정의
 namespace Row {
 enum
 {

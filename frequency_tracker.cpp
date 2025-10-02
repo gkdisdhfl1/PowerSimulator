@@ -25,8 +25,8 @@ namespace {
         static constexpr double FailureThresholdRad = 0.3;
         static constexpr double SevereFailureThresholdRad = 0.6;
         static constexpr int MaxFailCount = 5;
-        static constexpr double Kp = 0.015;
-        static constexpr double Ki = 0.000002;
+        static constexpr double Kp = 0.025;
+        static constexpr double Ki = 0.000001;
         static constexpr double Kd = 0.48;
         static constexpr double IntegralActivationThresholdRad = 0.01;
         static constexpr double Integral_Limit = 10;

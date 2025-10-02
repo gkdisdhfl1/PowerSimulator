@@ -86,7 +86,7 @@ void PhasorView::updateData(const std::deque<MeasuredData>& data)
 
     // --- 기본파 정보 계산 ---
     const auto& v_fund = latestData.fundamentalVoltage;
-    const auto& i_fund = latestData.fundamentalVoltage;
+    const auto& i_fund = latestData.fundamentalCurrent;
 
 
     if (v_fund.order > 0) {
