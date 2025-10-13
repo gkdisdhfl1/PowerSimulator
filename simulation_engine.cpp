@@ -354,13 +354,13 @@ void SimulationEngine::processOneSecondData(const MeasuredData& latestCycleDta)
 
     // 시간 경과 확인
     auto elapsedNs = m_simulationTimeNs - m_oneSecondBlockStartTime;
-    qDebug() << m_simulationTimeNs << " - " << m_oneSecondBlockStartTime << " = " << elapsedNs;
+    // qDebug() << m_simulationTimeNs << " - " << m_oneSecondBlockStartTime << " = " << elapsedNs;
 
     // 995ms (995,000,000 ns)가 되지 않았으면 함수 종료
     if(elapsedNs.count() < 995'000'000LL)
         return;
 
-    qDebug() << "1초 경과";
+    // qDebug() << "1초 경과";
 
     // 1초 데이터 가공 시작
     OneSecondSummaryData summary = AnalysisUtils::buildOneSecondSummary(m_oneSecondCycleBuffer);
