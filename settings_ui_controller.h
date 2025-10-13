@@ -5,12 +5,13 @@
 #include <expected>
 #include "control_panel_state.h"
 #include "frequency_tracker.h"
+#include "simulation_engine.h"
 
 class SettingsDialog;
 class PidTuningDialog;
 class ControlPanel;
 class SettingsManager;
-class SimulationEngine;
+class QDoubleSpinBox;
 
 class SettingsUiController : public QObject
 {
@@ -23,7 +24,7 @@ signals:
     void taskFinished(const std::expected<void, std::string>& result, const QString& successMessage);
     void presetListChanged(const std::vector<std::string>& presetList);;
     void presetValuesFetched(const QVariantMap& data);
-    void currentSettingsFetched(int maxDataSize, double graphWidth);
+    void currentSettingsFetched(SimulationEngine::Parameters& params);
     void maxDataSizeChangeRequested(int maxSize);
 
 public slots:
@@ -37,7 +38,7 @@ public slots:
     void onRequestPresetList();
     void onRequestPresetValues(const QString& presetName);
     void onRequestCurrentSettings();
-    void onApplyDialogSettings(int maxDataSize, double graphWidth);
+    void onApplyDialogSettings(const SimulationEngine::Parameters& params);
     void showSettingsDialog();
 
     // ControlPanel의 실시간 변경에 반응하는 슬롯들
@@ -60,6 +61,7 @@ private:
     using SettingValue = std::variant<int, double>;
     using StateGetter = std::function<SettingValue(const ControlPanelState&)>;
     using StateSetter = std::function<void(ControlPanelState&, const SettingValue&)>;
+    using ParamDoublePtr = double SimulationEngine::Parameters::*;
 
     struct SettingInfo {
         StateGetter getter;

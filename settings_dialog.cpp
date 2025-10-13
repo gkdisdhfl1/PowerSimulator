@@ -28,6 +28,25 @@ SettingsDialog::SettingsDialog(SettingsUiController* controller ,QWidget *parent
     m_graphWidthSpinBox->setRange(config::View::GraphWidth::Min, config::View::GraphWidth::Max);
     m_graphWidthSpinBox->setValue(config::View::GraphWidth::Default);
 
+    m_voltage_B_AmplitudeSpinBox->setRange(config::Source::Amplitude::Min, config::Source::Amplitude::Max);
+    m_voltage_B_AmplitudeSpinBox->setValue(config::Source::ThreePhase::DefaultAmplitudeB);
+    m_voltage_C_AmplitudeSpinBox->setRange(config::Source::Current::MinAmplitude, config::Source::Current::MaxAmplitude);
+    m_voltage_C_AmplitudeSpinBox->setValue(config::Source::ThreePhase::DefaultAmplitudeC);
+    m_voltage_B_PhaseSpinBox->setRange(-359, 359);
+    m_voltage_B_PhaseSpinBox->setValue(config::Source::ThreePhase::DefaultPhaseB_deg);
+    m_voltage_C_PhaseSpinBox->setRange(-359, 359);
+    m_voltage_C_PhaseSpinBox->setValue(config::Source::ThreePhase::DefaultPhaseC_deg);
+
+
+    m_current_B_AmplitudeSpinBox->setRange(config::Source::Amplitude::Min, config::Source::Amplitude::Max);
+    m_current_B_AmplitudeSpinBox->setValue(config::Source::ThreePhase::DefaultAmplitudeB);
+    m_current_C_AmplitudeSpinBox->setRange(config::Source::Current::MinAmplitude, config::Source::Current::MaxAmplitude);
+    m_current_C_AmplitudeSpinBox->setValue(config::Source::ThreePhase::DefaultAmplitudeC);
+    m_current_B_PhaseSpinBox->setRange(-359, 359);
+    m_current_B_PhaseSpinBox->setValue(config::Source::ThreePhase::DefaultCurrentPhaseB_deg);
+    m_current_C_PhaseSpinBox->setRange(-359, 359);
+    m_current_C_PhaseSpinBox->setValue(config::Source::ThreePhase::DefaultCurrentPhaseC_deg);
+
     // dialog -> controller
     connect(this, &SettingsDialog::saveAsPresetRequested, m_controller, &SettingsUiController::onSaveAsPresetRequested);
     connect(this, &SettingsDialog::loadPresetRequested, m_controller, &SettingsUiController::onLoadPresetRequested);
@@ -98,7 +117,7 @@ void SettingsDialog::setupUi()
     m_previewGroupBox = new QGroupBox("프리셋 미리보기");
     m_previewGroupBox->setLayout(previewLayout);
 
-    // 3. 오른쪽 패널 (상세 설정 및 확인/취소)
+    // --- 3. 오른쪽 패널 (상세 설정 및 확인/취소) ---
     auto detailsLabel = new QLabel("저장 크기");
     m_maxDataSizeSpinBox = new QSpinBox();
     m_maxDataSizeSpinBox->setRange(config::Simulation::MinDataSize, config::Simulation::MaxDataSize);
@@ -109,6 +128,42 @@ void SettingsDialog::setupUi()
     m_graphWidthSpinBox->setRange(config::View::GraphWidth::Min, config::View::GraphWidth::Max);
     m_graphWidthSpinBox->setSingleStep(0.1);
     m_graphWidthSpinBox->setDecimals(2);
+
+    // 3상 설정을 위한 그룹 박스
+    auto* threePhaseGroup = new QGroupBox("3상 설정 (3-Phase Settigns)");
+    auto* threePhaseLayout = new QVBoxLayout();
+
+    // 전압 설정 그룹
+    auto* voltageGroup = new QGroupBox("전압 (Voltage)");
+    auto* voltageLayout = new QFormLayout();
+    m_voltage_B_AmplitudeSpinBox = new QDoubleSpinBox();
+    m_voltage_B_PhaseSpinBox = new QDoubleSpinBox();
+    m_voltage_C_AmplitudeSpinBox = new QDoubleSpinBox();
+    m_voltage_C_PhaseSpinBox = new QDoubleSpinBox();
+
+    voltageLayout->addRow("B상 크기 (V)", m_voltage_B_AmplitudeSpinBox);
+    voltageLayout->addRow("B상 위상 (°)", m_voltage_B_PhaseSpinBox);
+    voltageLayout->addRow("C상 크기 (V)", m_voltage_C_AmplitudeSpinBox);
+    voltageLayout->addRow("C상 위상 (°)", m_voltage_C_PhaseSpinBox);
+    voltageGroup->setLayout(voltageLayout);
+
+    // 전류 설정 그룹
+    auto* currentGroup = new QGroupBox("전류 (Current)");
+    auto* currentLayout = new QFormLayout();
+    m_current_B_AmplitudeSpinBox = new QDoubleSpinBox();
+    m_current_B_PhaseSpinBox = new QDoubleSpinBox();
+    m_current_C_AmplitudeSpinBox = new QDoubleSpinBox();
+    m_current_C_PhaseSpinBox = new QDoubleSpinBox();
+
+    currentLayout->addRow("B상 크기 (V)", m_current_B_AmplitudeSpinBox);
+    currentLayout->addRow("B상 위상 (°)", m_current_B_PhaseSpinBox);
+    currentLayout->addRow("C상 크기 (V)", m_current_C_AmplitudeSpinBox);
+    currentLayout->addRow("C상 위상 (°)", m_current_C_PhaseSpinBox);
+    currentGroup->setLayout(currentLayout);
+
+    threePhaseLayout->addWidget(voltageGroup);
+    threePhaseLayout->addWidget(currentGroup);
+    threePhaseGroup->setLayout(threePhaseLayout);
 
     auto formLayout = new QFormLayout();
     formLayout->addRow(detailsLabel, m_maxDataSizeSpinBox);
@@ -128,6 +183,7 @@ void SettingsDialog::setupUi()
 
     auto rightLayout = new QVBoxLayout();
     rightLayout->addWidget(detailsGroupBox);
+    rightLayout->addWidget(threePhaseGroup);
     rightLayout->stretch(1);
     rightLayout->addLayout(dialogButtonsLayout);
 
@@ -138,10 +194,18 @@ void SettingsDialog::setupUi()
     mainLayout->addLayout(rightLayout, 2);
 }
 
-int SettingsDialog::openWithValues(int currentMaxSize, double currentGraphWidth)
+int SettingsDialog::openWithValues(const SimulationEngine::Parameters &params)
 {
-    m_maxDataSizeSpinBox->setValue(currentMaxSize);
-    m_graphWidthSpinBox->setValue(currentGraphWidth);
+    m_maxDataSizeSpinBox->setValue(params.maxDataSize);
+    m_graphWidthSpinBox->setValue(params.graphWidthSec);
+    m_voltage_B_AmplitudeSpinBox->setValue(params.voltage_B_amplitude);
+    m_voltage_B_PhaseSpinBox->setValue(params.voltage_B_phase_deg);
+    m_voltage_C_AmplitudeSpinBox->setValue(params.voltage_C_amplitude);
+    m_voltage_C_PhaseSpinBox->setValue(params.voltage_C_phase_deg);
+    m_current_B_AmplitudeSpinBox->setValue(params.current_B_amplitude);
+    m_current_B_PhaseSpinBox->setValue(params.current_B_phase_deg);
+    m_current_C_AmplitudeSpinBox->setValue(params.current_C_amplitude);
+    m_current_C_PhaseSpinBox->setValue(params.current_C_phase_deg);
     refreshPresetList();
     updateUiStates();
 
@@ -220,10 +284,18 @@ void SettingsDialog::onPresetValuesFetched(const QVariantMap& data)
     }
 }
 
-void SettingsDialog::onCurrentSettingsFetched(int maxDataSize, double graphWidth)
+void SettingsDialog::onCurrentSettingsFetched(SimulationEngine::Parameters& params)
 {
-    m_maxDataSizeSpinBox->setValue(maxDataSize);
-    m_graphWidthSpinBox->setValue(graphWidth);
+    m_maxDataSizeSpinBox->setValue(params.maxDataSize);
+    m_graphWidthSpinBox->setValue(params.graphWidthSec);
+    m_voltage_B_AmplitudeSpinBox->setValue(params.voltage_B_amplitude);
+    m_voltage_B_PhaseSpinBox->setValue(params.voltage_B_phase_deg);
+    m_voltage_C_AmplitudeSpinBox->setValue(params.voltage_B_amplitude);
+    m_voltage_C_PhaseSpinBox->setValue(params.voltage_B_phase_deg);
+    m_current_B_AmplitudeSpinBox->setValue(params.current_B_amplitude);
+    m_current_B_PhaseSpinBox->setValue(params.current_B_phase_deg);
+    m_current_C_AmplitudeSpinBox->setValue(params.current_B_amplitude);
+    m_current_C_PhaseSpinBox->setValue(params.current_B_phase_deg);
 }
 // ---------------------
 
@@ -338,7 +410,18 @@ void SettingsDialog::updateUiStates()
 void SettingsDialog::accept()
 {
     if(m_controller) {
-        emit settingsApplied(m_maxDataSizeSpinBox->value(), m_graphWidthSpinBox->value());
+        SimulationEngine::Parameters params;
+        params.maxDataSize = m_maxDataSizeSpinBox->value();
+        params.graphWidthSec = m_graphWidthSpinBox->value();
+        params.voltage_B_amplitude = m_voltage_B_AmplitudeSpinBox->value();
+        params.voltage_B_phase_deg = m_voltage_B_PhaseSpinBox->value();
+        params.voltage_C_amplitude = m_voltage_C_AmplitudeSpinBox->value();
+        params.voltage_C_phase_deg = m_voltage_C_PhaseSpinBox->value();
+        params.current_B_amplitude = m_current_B_AmplitudeSpinBox->value();
+        params.current_B_phase_deg = m_current_B_PhaseSpinBox->value();
+        params.current_C_amplitude = m_current_C_AmplitudeSpinBox->value();
+        params.current_C_phase_deg = m_current_C_PhaseSpinBox->value();
+        emit settingsApplied(params);
     }
     m_resultState = DialogResult::Accepted; // 상태를 ok 눌림으로 설정
     QDialog::accept();

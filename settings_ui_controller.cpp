@@ -18,8 +18,8 @@ constexpr const char* TimeScale         = "시간 배율";
 constexpr const char* SamplingCycles    = "초당 cycle";
 constexpr const char* SamplesPerCycle   = "cycle당 sample";
 constexpr const char* MaxDataSize       = "데이터 최대 개수";
-constexpr const char* GraphWidth        = "그래프 시간 폭";
-constexpr const char* UpdateMode        = "갱신 모드";
+// constexpr const char* GraphWidth        = "그래프 시간 폭";
+// constexpr const char* UpdateMode        = "갱신 모드";
 
 // 고조파 설정 키
 constexpr const char* VoltageHarmonicOrder      = "전압 고조파 차수";
@@ -28,6 +28,16 @@ constexpr const char* VoltageHarmonicPhase      = "전압 고조파 위상";
 constexpr const char* CurrentHarmonicOrder      = "전류 고조파 차수";
 constexpr const char* CurrentHarmonicMagnitude  = "전류 고조파 크기";
 constexpr const char* CurrentHarmonicPhase      = "전류 고조파 위상";
+
+// 3상 설정 키
+constexpr const char* VoltageBAmplitude     = "B상 전압 크기";
+constexpr const char* VoltageBPhase         = "B상 전압 위상";
+constexpr const char* VoltageCAmplitude     = "C상 전압 크기";
+constexpr const char* VoltageCPhase         = "C상 전압 위상";
+constexpr const char* CurrentBAmplitude     = "B상 전류 크기";
+constexpr const char* CurrentBPhase         = "B상 전류 위상";
+constexpr const char* CurrentCAmplitude     = "C상 전류 크기";
+constexpr const char* CurrentCPhase         = "C상 전류 위상";
 }
 
 namespace {
@@ -128,15 +138,23 @@ void SettingsUiController::onRequestPresetValues(const QString& presetName)
 
 void SettingsUiController::onRequestCurrentSettings()
 {
-    int currentMaxSize = m_engine->parameters().maxDataSize;
-    double currentGrapWidth = m_engine->parameters().graphWidthSec;
-    emit currentSettingsFetched(currentMaxSize, currentGrapWidth);
+    emit currentSettingsFetched(m_engine->parameters());
 }
 
-void SettingsUiController::onApplyDialogSettings(int maxDataSize, double graphWidth)
+void SettingsUiController::onApplyDialogSettings(const SimulationEngine::Parameters& params)
 {
-    m_engine->parameters().maxDataSize = maxDataSize;
-    m_engine->parameters().graphWidthSec = graphWidth;
+    if(!m_engine) return;
+
+    m_engine->parameters().maxDataSize = params.maxDataSize;
+    m_engine->parameters().graphWidthSec = params.graphWidthSec;
+    m_engine->parameters().voltage_B_amplitude = params.voltage_B_amplitude;
+    m_engine->parameters().voltage_B_phase_deg = params.voltage_B_phase_deg;
+    m_engine->parameters().voltage_C_amplitude = params.voltage_C_amplitude;
+    m_engine->parameters().voltage_C_phase_deg = params.voltage_C_phase_deg;
+    m_engine->parameters().current_B_amplitude = params.current_B_amplitude;
+    m_engine->parameters().current_B_phase_deg = params.current_B_phase_deg;
+    m_engine->parameters().current_C_amplitude = params.current_C_amplitude;
+    m_engine->parameters().current_C_phase_deg = params.current_C_phase_deg;
 }
 
 void SettingsUiController::onAmplitudeChanged(double value)
@@ -185,14 +203,13 @@ void SettingsUiController::onUpdateModeChanged()
 
 void SettingsUiController::showSettingsDialog()
 {
-    int currentMaxSize = m_engine->parameters().maxDataSize;
-    double currentGraphWidth = m_engine->parameters().graphWidthSec;
+    SimulationEngine::Parameters& params = m_engine->parameters();
 
-    if (m_settingsDialog->openWithValues(currentMaxSize, currentGraphWidth) == QDialog::Accepted) {
+    if (m_settingsDialog->openWithValues(params) == QDialog::Accepted) {
         // Dialog가 닫혔을 때, 이유를 확인
         if(m_settingsDialog->getResultState() == SettingsDialog::DialogResult::Accepted) {
-            int newMaxSize = m_settingsDialog->getMaxSize(); // Dialog에 getter 필요
-            double newGraphWidth = m_settingsDialog->getGraphWidth(); // Dialog에 getter 필요
+            int newMaxSize = m_settingsDialog->getMaxSize();
+            double newGraphWidth = m_settingsDialog->getGraphWidth();
 
             requestMaxSizeChange(newMaxSize);
             m_engine->parameters().graphWidthSec = newGraphWidth;
@@ -358,6 +375,79 @@ void SettingsUiController::initializeSettingsMap()
         config::Harmonics::DefaultPhase
     };
 
+    // 3상 관련 설정
+    m_settingsMap["voltageBAmplitude"] = {
+        [this](const auto&) {
+            return m_engine->parameters().voltage_B_amplitude;
+        },
+        [this](auto&, const SettingValue& val) {
+            m_engine->parameters().voltage_B_amplitude = std::get<double>(val);
+        },
+        config::Source::ThreePhase::DefaultAmplitudeB
+    };
+    m_settingsMap["voltageBPhase"] = {
+        [this](const auto&) {
+            return m_engine->parameters().voltage_B_phase_deg;
+        },
+        [this](auto&, const SettingValue& val) {
+            m_engine->parameters().voltage_B_phase_deg= std::get<double>(val);
+        },
+        config::Source::ThreePhase::DefaultPhaseB_deg
+    };
+    m_settingsMap["voltageCAmplitude"] = {
+        [this](const auto&) {
+            return m_engine->parameters().voltage_C_amplitude;
+        },
+        [this](auto&, const SettingValue& val) {
+            m_engine->parameters().voltage_C_amplitude = std::get<double>(val);
+        },
+        config::Source::ThreePhase::DefaultAmplitudeC
+    };
+    m_settingsMap["voltageCPhase"] = {
+        [this](const auto&) {
+            return m_engine->parameters().voltage_C_phase_deg;
+        },
+        [this](auto&, const SettingValue& val) {
+            m_engine->parameters().voltage_C_phase_deg= std::get<double>(val);
+        },
+        config::Source::ThreePhase::DefaultPhaseC_deg
+    };
+    m_settingsMap["currentBAmplitude"] = {
+        [this](const auto&) {
+            return m_engine->parameters().current_B_amplitude;
+        },
+        [this](auto&, const SettingValue& val) {
+            m_engine->parameters().current_B_amplitude = std::get<double>(val);
+        },
+        config::Source::ThreePhase::DefaultCurrentAmplitudeB
+    };
+    m_settingsMap["currentBPhase"] = {
+        [this](const auto&) {
+            return m_engine->parameters().current_B_phase_deg;
+        },
+        [this](auto&, const SettingValue& val) {
+            m_engine->parameters().current_B_phase_deg= std::get<double>(val);
+        },
+        config::Source::ThreePhase::DefaultCurrentPhaseB_deg
+    };
+    m_settingsMap["currentCAmplitude"] = {
+        [this](const auto&) {
+            return m_engine->parameters().current_C_amplitude;
+        },
+        [this](auto&, const SettingValue& val) {
+            m_engine->parameters().current_C_amplitude = std::get<double>(val);
+        },
+        config::Source::ThreePhase::DefaultCurrentAmplitudeC
+    };
+    m_settingsMap["currentCPhase"] = {
+        [this](const auto&) {
+            return m_engine->parameters().current_C_phase_deg;
+        },
+        [this](auto&, const SettingValue& val) {
+            m_engine->parameters().current_C_phase_deg= std::get<double>(val);
+        },
+        config::Source::ThreePhase::DefaultCurrentPhaseC_deg
+    };
 }
 
 void SettingsUiController::initializeKeyNameMap()
@@ -370,8 +460,8 @@ void SettingsUiController::initializeKeyNameMap()
     m_keyNameMap["samplingCycles"] = PresetKeys::SamplingCycles;
     m_keyNameMap["samplesPerCycle"] = PresetKeys::SamplesPerCycle;
     m_keyNameMap["maxDataSize"] = PresetKeys::MaxDataSize;
-    m_keyNameMap["graphWidthSec"] = PresetKeys::GraphWidth;
-    m_keyNameMap["updateMode"] = PresetKeys::UpdateMode;
+    // m_keyNameMap["graphWidthSec"] = PresetKeys::GraphWidth;
+    // m_keyNameMap["updateMode"] = PresetKeys::UpdateMode;
 
     // 고조파 관련 설정
     m_keyNameMap["voltHarmonicOrder"] = PresetKeys::VoltageHarmonicOrder;
@@ -381,6 +471,15 @@ void SettingsUiController::initializeKeyNameMap()
     m_keyNameMap["currHarmonicMagnitude"] = PresetKeys::CurrentHarmonicMagnitude;
     m_keyNameMap["currHarmonicPhase"] = PresetKeys::CurrentHarmonicPhase;
 
+    // 3상 관련 설정
+    m_keyNameMap["voltageBAmplitude"] = PresetKeys::VoltageBAmplitude;
+    m_keyNameMap["voltageBPhase"] = PresetKeys::VoltageBPhase;
+    m_keyNameMap["voltageCAmplitude"] = PresetKeys::VoltageCAmplitude;
+    m_keyNameMap["voltageCPhase"] = PresetKeys::VoltageCPhase;
+    m_keyNameMap["currentBAmplitude"] = PresetKeys::CurrentBAmplitude;
+    m_keyNameMap["currentBPhase"] = PresetKeys::CurrentBPhase;
+    m_keyNameMap["currentCAmplitude"] = PresetKeys::CurrentCAmplitude;
+    m_keyNameMap["currentCPhase"] = PresetKeys::CurrentCPhase;
 }
 
 void SettingsUiController::requestMaxSizeChange(int newSize)

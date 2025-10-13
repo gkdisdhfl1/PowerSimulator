@@ -31,7 +31,7 @@ namespace config {
             static constexpr double Default = 1.0;
         };
 
-        // 진폭 관련 설정
+        // 전압 관련 설정
         struct Amplitude {
             static constexpr double Min = -500.0;
             static constexpr double Max = 500.0;
@@ -39,6 +39,7 @@ namespace config {
 
         };
 
+        // 전류 관련 설정
         struct Current {
             static constexpr double MinAmplitude = -500.0;
             static constexpr double MaxAmplitude = 500.0;
@@ -46,17 +47,18 @@ namespace config {
             static constexpr int DefaultPhaseOffset = 0;
         };
 
+        // 3상 관련 설정
         struct ThreePhase {
             // Voltage
             static constexpr double DefaultAmplitudeB = Source::Amplitude::Default;
             static constexpr double DefaultAmplitudeC = Source::Amplitude::Default;
-            static constexpr double DefaultPhaseB_deg = 0.0;
-            static constexpr double DefaultPhaseC_deg = 0.0;
+            static constexpr double DefaultPhaseB_deg = -120.0;
+            static constexpr double DefaultPhaseC_deg = 120.0;
             // Current
             static constexpr double DefaultCurrentAmplitudeB = Source::Current::DefaultAmplitude;
             static constexpr double DefaultCurrentAmplitudeC = Source::Current::DefaultAmplitude;
-            static constexpr double DefaultCurrentPhaseB_deg = 0.0;
-            static constexpr double DefaultCurrentPhaseC_deg = 0.0;
+            static constexpr double DefaultCurrentPhaseB_deg = -120.0;
+            static constexpr double DefaultCurrentPhaseC_deg = 120.0;
         };
     };
 

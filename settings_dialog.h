@@ -1,6 +1,8 @@
 #ifndef SETTINGS_DIALOG_H
 #define SETTINGS_DIALOG_H
 
+#include "simulation_engine.h"
+
 #include <QDialog>
 #include <expected>
 #include <QVariantMap>
@@ -25,7 +27,7 @@ public:
 
     enum class DialogResult { Accepted, PresetLoaded, Cancled };
 
-    int openWithValues(int currentMaxSize, double currentGraphWidth); // 다이얼 열고 초기화하는 함수
+    int openWithValues(const SimulationEngine::Parameters& params); // 다이얼 열고 초기화하는 함수
     DialogResult getResultState() const;
 
     int getMaxSize() const;
@@ -37,7 +39,7 @@ signals:
     void loadPresetRequested(const QString& presetName);
     void deletePresetRequested(const QString& presetName);
     void renamePresetRequested(const QString& oldName, const QString& newName);
-    void settingsApplied(int maxDataSize, double graphWidth);
+    void settingsApplied(const SimulationEngine::Parameters& params);
 
 public slots:
     // Controller로부터 작업 결과를 받는 슬롯
@@ -45,7 +47,7 @@ public slots:
     // Controller로부터 프리셋 목록을 받는 슬롯
     void onPresetListChanged(const std::vector<std::string>& presetList);
     void onPresetValuesFetched(const QVariantMap& data);
-    void onCurrentSettingsFetched(int maxDataSize, double graphWidth);
+    void onCurrentSettingsFetched(SimulationEngine::Parameters& params);
 
 private slots:
     void onNewPresetClicked();
@@ -55,8 +57,7 @@ private slots:
     void onPresetSelectionChanged();
 
 private:
-
-    // UI 요소들의 멤버 변수
+    // --- UI 요소들의 멤버 변수 ---
     QListWidget* m_presetListWidget;
     QPushButton* m_newPresetButton;
     QPushButton* m_loadPresetButton;
@@ -68,6 +69,16 @@ private:
     QPushButton* m_okButton;
     QPushButton* m_cancelButton;
     QGroupBox* m_previewGroupBox;
+
+    // 3상 설정 위젯 포인터
+    QDoubleSpinBox *m_voltage_B_AmplitudeSpinBox;
+    QDoubleSpinBox *m_voltage_B_PhaseSpinBox;
+    QDoubleSpinBox *m_voltage_C_AmplitudeSpinBox;
+    QDoubleSpinBox *m_voltage_C_PhaseSpinBox;
+    QDoubleSpinBox *m_current_B_AmplitudeSpinBox;
+    QDoubleSpinBox *m_current_B_PhaseSpinBox;
+    QDoubleSpinBox *m_current_C_AmplitudeSpinBox;
+    QDoubleSpinBox *m_current_C_PhaseSpinBox;
 
     SettingsUiController* m_controller = nullptr; // Controller 포인터 소유x
     DialogResult m_resultState;

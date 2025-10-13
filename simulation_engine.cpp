@@ -243,11 +243,11 @@ PhaseData SimulationEngine::calculateCurrentAmperage() const
 
     // B상
     const double phase_B_offset = utils::degreesToRadians(-120.0 + m_params.current_B_phase_deg);
-    const double fundamentalPhase_B = baseCurrentPhase + phase_B_offset;
+    const double currentSettignsFetched = baseCurrentPhase + phase_B_offset;
 
-    result.b = m_params.current_B_amplitude * sin(fundamentalPhase_B);
+    result.b = m_params.current_B_amplitude * sin(currentSettignsFetched);
     if(harmonic.magnitude > 0.0) {
-        const double harmonicPhase = harmonic.order * fundamentalPhase_B + harmonicPhaseOffset;
+        const double harmonicPhase = harmonic.order * currentSettignsFetched + harmonicPhaseOffset;
         result.b += harmonic.magnitude * sin(harmonicPhase);
     }
 
