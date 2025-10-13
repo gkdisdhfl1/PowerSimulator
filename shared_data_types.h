@@ -18,5 +18,11 @@ enum class UpdateMode {
     PerCycle        // 한 주기마다 갱신
 };
 
+// 3상 데이터를 담는 구조체
+struct PhaseData {
+    double a = 0.0;
+    double b = 0.0;
+    double c = 0.0;
+};
 
 #endif // SHARED_DATA_TYPES_H

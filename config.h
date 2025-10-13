@@ -46,6 +46,18 @@ namespace config {
             static constexpr int DefaultPhaseOffset = 0;
         };
 
+        struct ThreePhase {
+            // Voltage
+            static constexpr double DefaultAmplitudeB = Source::Amplitude::Default;
+            static constexpr double DefaultAmplitudeC = Source::Amplitude::Default;
+            static constexpr double DefaultPhaseB_deg = 0.0;
+            static constexpr double DefaultPhaseC_deg = 0.0;
+            // Current
+            static constexpr double DefaultCurrentAmplitudeB = Source::Current::DefaultAmplitude;
+            static constexpr double DefaultCurrentAmplitudeC = Source::Current::DefaultAmplitude;
+            static constexpr double DefaultCurrentPhaseB_deg = 0.0;
+            static constexpr double DefaultCurrentPhaseC_deg = 0.0;
+        };
     };
 
     // 샘플링 설정
@@ -107,7 +119,14 @@ namespace config {
     struct Math {
         static constexpr double TwoPi = 2.0 * std::numbers::pi;
     };
+
+
 }
+
+enum class ChartDataType {
+    VoltageA, VoltageB, VoltageC,
+    CurrentA, CurrentB, CurrentC
+};
 
 namespace utils {
 using FpSeconds = std::chrono::duration<double>;
@@ -122,9 +141,20 @@ using Nanoseconds = std::chrono::nanoseconds;
         return radians * (180.0 / std::numbers::pi);
     }
 
-    constexpr QPointF to_qpointf(const DataPoint& p) {
+    constexpr QPointF to_qpointf(const DataPoint& p, ChartDataType type) {
         const auto x = std::chrono::duration_cast<FpSeconds>(p.timestamp).count();
-        return QPointF(x, p.voltage);
+        double y = 0.0;
+
+        switch(type) {
+            case ChartDataType::VoltageA: y = p.voltage.a; break;
+            case ChartDataType::VoltageB: y = p.voltage.b; break;
+            case ChartDataType::VoltageC: y = p.voltage.c; break;
+            case ChartDataType::CurrentA: y = p.current.a; break;
+            case ChartDataType::CurrentB: y = p.current.b; break;
+            case ChartDataType::CurrentC: y = p.current.c; break;
+        }
+
+        return QPointF(x, y);
     };
 }
 

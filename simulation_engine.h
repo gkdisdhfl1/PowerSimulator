@@ -32,6 +32,19 @@ public:
         UpdateMode updateMode = UpdateMode::PerSample;
         HarmonicComponent voltageHarmonic = {config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase};
         HarmonicComponent currentHarmonic = {config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase};
+
+        // -- 3상 설정을 위한 매개변수 ---
+        // 전압
+        double voltage_B_amplitude = config::Source::ThreePhase::DefaultAmplitudeB;
+        double voltage_B_phase_deg = config::Source::ThreePhase::DefaultPhaseB_deg;
+        double voltage_C_amplitude = config::Source::ThreePhase::DefaultAmplitudeC;
+        double voltage_C_phase_deg = config::Source::ThreePhase::DefaultPhaseC_deg;
+
+        // 전류
+        double current_B_amplitude = config::Source::ThreePhase::DefaultCurrentAmplitudeB;
+        double current_B_phase_deg = config::Source::ThreePhase::DefaultCurrentPhaseB_deg;
+        double current_C_amplitude = config::Source::ThreePhase::DefaultCurrentAmplitudeC;
+        double current_C_phase_deg = config::Source::ThreePhase::DefaultCurrentPhaseC_deg;
     };
 
     explicit SimulationEngine();
@@ -76,9 +89,9 @@ private:
     std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> analyzeSpectrum(DataType type) const;
 
     void advanceSimulationTime();
-    double calculateCurrentVoltage() const;
-    double calculateCurrentAmperage() const;
-    void addNewDataPoint(double voltage, double current);
+    PhaseData calculateCurrentVoltage() const;
+    PhaseData calculateCurrentAmperage() const;
+    void addNewDataPoint(PhaseData voltage, PhaseData current);
     void calculateCycleData(); // RMS, 전력 계산 함수
     void processUpdateByMode(bool resetCounter);
     void processOneSecondData(const MeasuredData& latestCycleData);

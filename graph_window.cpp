@@ -128,8 +128,8 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
 
     for(const DataPoint* p : candidates) {
         const double timeSec = FpSeconds(p->timestamp).count();
-        QPointF screenPosV = m_chart->mapToPosition(QPointF(timeSec, p->voltage), m_voltageSeries);
-        QPointF screenPosC = m_chart->mapToPosition(QPointF(timeSec, p->current), m_currentSeries);
+        QPointF screenPosV = m_chart->mapToPosition(QPointF(timeSec, p->voltage.a), m_voltageSeries);
+        QPointF screenPosC = m_chart->mapToPosition(QPointF(timeSec, p->current.a), m_currentSeries);
 
         // 마우스 커서와 두 포인트 사이의 거리를 각각 계산
         double distV = QLineF(mouseScreenPos, screenPosV).length();
@@ -168,8 +168,8 @@ void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
     if(pointCount > threshold) {
         // 전압과 전류 값을 추출하는 람다의 벡터를 전달
         std::vector<std::function<double(const DataPoint&)>> extractors = {
-            [](const DataPoint& p) { return p.voltage; },
-            [](const DataPoint& p) { return p.current; }
+            [](const DataPoint& p) { return p.voltage.a; },
+            [](const DataPoint& p) { return p.current.a; }
         };
         m_visibleDataPoints = downsampleLTTB(first, last, threshold, extractors);
     } else {
@@ -188,8 +188,8 @@ void GraphWindow::updateSeriesData()
     // 멤버 변수들을 채움
     for(const auto& p : std::as_const(m_visibleDataPoints)) {
         const double timeSec = FpSeconds(p.timestamp).count();
-        m_voltagePoints.emplace_back(timeSec, p.voltage);
-        m_currentPoints.emplace_back(timeSec, p.current);
+        m_voltagePoints.emplace_back(timeSec, p.voltage.a);
+        m_currentPoints.emplace_back(timeSec, p.current.a);
     }
 
     // 멤버 변수들로 시리즈 업데이트
@@ -208,10 +208,10 @@ void GraphWindow::updateAxes(const std::deque<DataPoint> &data)
 
         // 보이는 점들을 한 번만 순회하여 전체 Y축 범위를 찾음
         for(const auto& p : std::as_const(m_visibleDataPoints)) {
-            minY = std::min(minY, p.voltage);
-            maxY = std::max(maxY, p.voltage);
-            minY = std::min(minY, p.current);
-            maxY = std::max(maxY, p.current);
+            minY = std::min(minY, p.voltage.a);
+            maxY = std::max(maxY, p.voltage.a);
+            minY = std::min(minY, p.current.a);
+            maxY = std::max(maxY, p.current.a);
         }
 
         // Y축 범위 설정

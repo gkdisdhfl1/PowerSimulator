@@ -2,7 +2,6 @@
 #include "custom_chart_view.h"
 #include "simulation_engine.h"
 #include "data_point.h"
-#include "measured_data.h"
 #include <QChart>
 #include <QValueAxis>
 #include <QGridLayout>

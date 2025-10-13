@@ -76,11 +76,11 @@ std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> A
     if(useWindow) {
         const double two_pi_over_N_minus_1 = config::Math::TwoPi / (N - 1);
         for(int i = 0; i < N; ++i) {
-            fft_in[i] = samples[i].voltage * 0.5 * (1.0 - std::cos(i * two_pi_over_N_minus_1));
+            fft_in[i] = samples[i].voltage.a * 0.5 * (1.0 - std::cos(i * two_pi_over_N_minus_1));
         }
     } else {
         for(int i = 0; i < N; ++i) {
-            fft_in[i] = samples[i].voltage;
+            fft_in[i] = samples[i].voltage.a;
         }
     }
 
@@ -206,7 +206,7 @@ double AnalysisUtils::calculateActivePower(const std::vector<DataPoint>& samples
 
     double powerSum = 0.0;
     for(const auto& sample : samples) {
-        powerSum += sample.voltage * sample.current;
+        powerSum += sample.voltage.a * sample.current.a;
     }
 
     return powerSum / samples.size();
@@ -220,11 +220,11 @@ double AnalysisUtils::calculateTotalRms(const std::vector<DataPoint>& samples, D
     double sumSq = 0.0;
     if(type == DataType::Voltage) {
         for(const auto& sample : samples) {
-            sumSq += sample.voltage * sample.voltage;
+            sumSq += sample.voltage.a * sample.voltage.a;
         }
     } else {
         for(const auto& sample : samples) {
-            sumSq += sample.current * sample.current;
+            sumSq += sample.current.a * sample.current.a;
         }
     }
 
