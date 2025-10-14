@@ -41,6 +41,11 @@ void GraphWindow::setupSeries()
 {
     m_chart->setTitle(tr("실시간 전력 계측 시뮬레이션"));
 
+    // Y축 설정
+    m_axisY->setLabelFormat(tr("%.2f")); // 소수점 둘째 자리까지 V 단위로 표시
+    m_axisY->setTitleText(tr("전압 (V/A)"));
+    m_chart->addAxis(m_axisY, Qt::AlignLeft);
+
     // --- m_seriesInfoList 초기화---
     // A상
     m_seriesInfoList.emplace_back(SeriesInfo{
@@ -104,10 +109,6 @@ void GraphWindow::setupSeries()
         info.series->setPointsVisible(true);
     }
 
-    // Y축 설정
-    m_axisY->setLabelFormat(tr("%.2f")); // 소수점 둘째 자리까지 V 단위로 표시
-    m_axisY->setTitleText(tr("전압 (V/A)"));
-    m_chart->addAxis(m_axisY, Qt::AlignLeft);
 }
 
 // --- public slot ----
@@ -212,8 +213,6 @@ void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
 
     if(pointCount > threshold) {
         std::vector<std::function<double(const DataPoint&)>> extractors(6);
-
-
         m_visibleDataPoints = downsampleLTTB(first, last, threshold, extractors);
     } else {
         m_visibleDataPoints.assign(first, last);
@@ -264,6 +263,7 @@ void GraphWindow::updateAxes(const std::deque<DataPoint> &data)
 
         // 유효한 경우에만 Y축 범위 설정
         if(minY <= maxY)
+        // qDebug() << "minY: " << minY << " , maxY: " << maxY;
             updateYAxisRange(minY, maxY);
 
         // X축의 범위를 업데이트
@@ -281,5 +281,6 @@ void GraphWindow::updateYAxisRange(double minY, double maxY)
     }
 
     m_axisY->setRange(minY - padding, maxY + padding);
+    // qDebug() << "Range: (" << minY- padding << ", " << maxY + padding << ")";
 }
 // -------------------------------
