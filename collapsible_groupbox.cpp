@@ -19,7 +19,7 @@ CollapsibleGroupBox::CollapsibleGroupBox(const QString& title, QWidget *parent)
     toggleButton->setToolButtonStyle(Qt::ToolButtonIconOnly);
     toggleButton->setArrowType(Qt::DownArrow);
     toggleButton->setCheckable(true);
-    toggleButton->setChecked(true);
+    toggleButton->setChecked(false);
 
     QLabel *titleLabel = new QLabel(title);
 
@@ -29,6 +29,7 @@ CollapsibleGroupBox::CollapsibleGroupBox(const QString& title, QWidget *parent)
 
     contentArea = new QWidget;
     contentArea->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    contentArea->setVisible(false);
     contentLayout = new QVBoxLayout(contentArea);
     contentLayout->setContentsMargins(20, 5, 5, 5);
 

@@ -197,6 +197,7 @@ void MainWindow::createSignalSlotConnections()
     connect(m_controlPanel, &ControlPanel::autoScrollToggled, m_fundamentalAnalysisGraphWindow, &FundamentalAnalysisGraphWindow::toggleAutoScroll);
     connect(m_controlPanel, &ControlPanel::autoScrollToggled, m_harmonicAnalysisGraphWindow, &HarmonicAnalysisGraphWindow::toggleAutoScroll);
     connect(m_controlPanel, &ControlPanel::trackingToggled, m_settingsUiController.get(), &SettingsUiController::onTrackingToggled);
+    connect(m_controlPanel, &ControlPanel::waveformVisibilityChanged, m_graphWindow, &GraphWindow::onWaveformVisibilityChanged);
     // ----------------------
 
     // Model(engine) 시그널 -> UI 슬롯

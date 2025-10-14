@@ -4,7 +4,6 @@
 #include "config.h"
 #include "collapsible_groupbox.h"
 #include "shared_data_types.h"
-#include "AnalysisUtils.h"
 
 #include <QPushButton>
 #include <QRadioButton>
@@ -120,6 +119,14 @@ void ControlPanel::setupUi()
     m_autoScrollCheckBox = new QCheckBox("자동 스크롤");
     m_trackingButton = new QPushButton("자동 추적 시작", this);
 
+    m_waveformSelectionGroup = new CollapsibleGroupBox("그래프 표시 선택");
+    m_voltageACheckBox = new QCheckBox();
+    m_currentACheckBox = new QCheckBox();
+    m_voltageBCheckBox = new QCheckBox();
+    m_currentBCheckBox = new QCheckBox();
+    m_voltageCCheckBox = new QCheckBox();
+    m_currentCCheckBox = new QCheckBox();
+
     // 스크롤 영역 생성
     auto scrollArea = new QScrollArea(this);
     scrollArea->setWidgetResizable(true);
@@ -202,12 +209,37 @@ void ControlPanel::setupUi()
     auto updateModeGroupBox = new QGroupBox("화면 갱신");
     updateModeGroupBox->setLayout(updateModeLayout);
 
+    // 그래프 표시 그룹박스 레이아웃
+    QVBoxLayout* selectionLayout = m_waveformSelectionGroup->contentLayoutPtr();
+
+    auto *hLayout1 = new QHBoxLayout();
+    m_voltageACheckBox = new QCheckBox("V(A)");
+    m_voltageBCheckBox = new QCheckBox("V(B)");
+    m_voltageCCheckBox = new QCheckBox("V(C)");
+    hLayout1->addWidget(m_voltageACheckBox);
+    hLayout1->addWidget(m_voltageBCheckBox);
+    hLayout1->addWidget(m_voltageCCheckBox);
+    hLayout1->addStretch();
+
+    auto *hLayout2 = new QHBoxLayout();
+    m_currentACheckBox = new QCheckBox("I(A)");
+    m_currentBCheckBox = new QCheckBox("I(B)");
+    m_currentCCheckBox = new QCheckBox("I(C)");
+    hLayout2->addWidget(m_currentACheckBox);
+    hLayout2->addWidget(m_currentBCheckBox);
+    hLayout2->addWidget(m_currentCCheckBox);
+    hLayout2->addStretch();
+
+    selectionLayout->addLayout(hLayout1);
+    selectionLayout->addLayout(hLayout2);
+
     // 메인 레이아웃에 추가
     mainLayout->addLayout(buttonLayout);
     mainLayout->addWidget(parameterGroupBox);
     mainLayout->addWidget(phaseGroupBox);
     mainLayout->addWidget(m_harmonicsTabWidget);
     mainLayout->addWidget(updateModeGroupBox);
+    mainLayout->addWidget(m_waveformSelectionGroup);
     mainLayout->addSpacerItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::MinimumExpanding));
 }
 
@@ -280,6 +312,14 @@ void ControlPanel::initializeUiValues()
 
     m_perSampleRadioButton->setChecked(true);
     m_autoScrollCheckBox->setChecked(true);
+
+    // 그래프 표시 체크박스 초기화
+    m_voltageACheckBox->setChecked(true);
+    m_currentACheckBox->setChecked(true);
+    m_voltageBCheckBox->setChecked(false);
+    m_currentBCheckBox->setChecked(false);
+    m_voltageCCheckBox->setChecked(false);
+    m_currentCCheckBox->setChecked(false);
 }
 
 void ControlPanel::createConnections()
@@ -328,6 +368,24 @@ void ControlPanel::createConnections()
 
     // 체크박스 시그널 연결
     connect(m_autoScrollCheckBox, &QCheckBox::toggled, this, &ControlPanel::autoScrollToggled);
+    connect(m_voltageACheckBox, &QCheckBox::toggled, this, [this](bool checked) {
+        emit waveformVisibilityChanged(0, checked);
+    });
+    connect(m_currentACheckBox, &QCheckBox::toggled, this, [this](bool checked) {
+        emit waveformVisibilityChanged(1, checked);
+    });
+    connect(m_voltageBCheckBox, &QCheckBox::toggled, this, [this](bool checked) {
+        emit waveformVisibilityChanged(2, checked);
+    });
+    connect(m_currentBCheckBox, &QCheckBox::toggled, this, [this](bool checked) {
+        emit waveformVisibilityChanged(3, checked);
+    });
+    connect(m_voltageCCheckBox, &QCheckBox::toggled, this, [this](bool checked) {
+        emit waveformVisibilityChanged(4, checked);
+    });
+    connect(m_currentCCheckBox, &QCheckBox::toggled, this, [this](bool checked) {
+        emit waveformVisibilityChanged(5, checked);
+    });
 }
 
 // --- public slots ---

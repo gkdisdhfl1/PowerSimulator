@@ -3,6 +3,7 @@
 
 #include <QWidget>
 #include <control_panel_state.h>
+#include "collapsible_groupbox.h"
 
 // 클래스 전방 선언
 class QPushButton;
@@ -45,6 +46,7 @@ signals:
     void settingsClicked();
     void autoScrollToggled(bool enabled);
     void trackingToggled(bool enabled); // 자동 추적 토글 시그널
+    void waveformVisibilityChanged(int type, bool isVisible);
 
     // 파라미터 변경 시그널
     void amplitudeChanged(double value);
@@ -94,6 +96,14 @@ private:
 
     QCheckBox* m_autoScrollCheckBox;
     QPushButton* m_trackingButton;
+
+    CollapsibleGroupBox* m_waveformSelectionGroup;
+    QCheckBox* m_voltageACheckBox;
+    QCheckBox* m_currentACheckBox;
+    QCheckBox* m_voltageBCheckBox;
+    QCheckBox* m_currentBCheckBox;
+    QCheckBox* m_voltageCCheckBox;
+    QCheckBox* m_currentCCheckBox;
 };
 
 #endif // CONTROL_PANEL_H

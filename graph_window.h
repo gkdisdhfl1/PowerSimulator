@@ -27,7 +27,7 @@ public slots:
     void updateGraph(const std::deque<DataPoint>& data);
     void stretchGraph(double factor);
     void findNearestPoint(const QPointF& chartPos);
-
+    void onWaveformVisibilityChanged(int type, bool isVisible);
 
 private:
     struct SeriesInfo {

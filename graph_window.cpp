@@ -67,7 +67,7 @@ void GraphWindow::setupSeries()
     m_seriesInfoList.emplace_back(SeriesInfo{
         new QLineSeries(this),
         [](const DataPoint& p) { return p.voltage.b;},
-        true, {}
+        false, {}
     });
     m_seriesInfoList.back().series->setName("Voltage B");
     m_seriesInfoList.back().series->setColor(QColor(QColorConstants::Svg::yellow));
@@ -191,6 +191,17 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
     // 임계값 이내면 선택
     if(nearestPoint && minDistance <= config::View::Interaction::Proximity::Threshold) {
         emit pointHovered(*nearestPoint);
+    }
+}
+
+void GraphWindow::onWaveformVisibilityChanged(int type, bool isVisible)
+{
+    // type 인덱스가 유효한 범위 내에 있는지 확인
+    if(type >= 0 && type < m_seriesInfoList.size()) {
+        m_seriesInfoList[type].isVisible = isVisible;
+        m_seriesInfoList[type].series->setVisible(isVisible);
+
+        emit redrawNeeded();
     }
 }
 // -----------------------
