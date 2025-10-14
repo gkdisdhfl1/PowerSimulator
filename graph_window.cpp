@@ -14,8 +14,6 @@ using utils::Nanoseconds;
 
 GraphWindow::GraphWindow(SimulationEngine* engine, QWidget *parent)
     : BaseGraphWindow(engine, parent)
-    , m_voltageSeries(new QLineSeries(this)) // 부모를 지정하여 메모리 관리 위임
-    , m_currentSeries(new QLineSeries(this))
     , m_axisY(new QValueAxis(this))
 {
     // CustomChartView가 보내는 신호를 받아서 자동 스크롤을 끔
@@ -32,10 +30,6 @@ GraphWindow::GraphWindow(SimulationEngine* engine, QWidget *parent)
     connect(m_chartView, &CustomChartView::mouseMoved, this, &GraphWindow::findNearestPoint);
     connect(m_chartView, &CustomChartView::framePainted, this, &GraphWindow::framePainted);
 
-    // 그래프에 점 표시
-    m_voltageSeries->setPointsVisible(true);
-    m_currentSeries->setPointsVisible(true);
-
     setupSeries();
 }
 
@@ -47,28 +41,73 @@ void GraphWindow::setupSeries()
 {
     m_chart->setTitle(tr("실시간 전력 계측 시뮬레이션"));
 
-    // 전압 시리즈 설정
-    m_voltageSeries->setName("Voltage");
-    m_chart->addSeries(m_voltageSeries);
-    m_voltageSeries->setPointsVisible(true);
+    // --- m_seriesInfoList 초기화---
+    // A상
+    m_seriesInfoList.emplace_back(SeriesInfo{
+        new QLineSeries(this),
+        [](const DataPoint& p) { return p.voltage.a;},
+        true, {}
+    });
+    m_seriesInfoList.back().series->setName("Voltage");
 
-    // 전류 시리즈를 설정
-    m_currentSeries->setName("Current");
-    m_currentSeries->setColor(QColor("red"));
-    m_chart->addSeries(m_currentSeries);
-    m_currentSeries->setPointsVisible(true);
+    m_seriesInfoList.emplace_back(SeriesInfo{
+        new QLineSeries(this),
+        [](const DataPoint& p) { return p.current.a;},
+        true, {}
+    });
+    m_seriesInfoList.back().series->setName("Current");
+    m_seriesInfoList.back().series->setColor(QColor(QColorConstants::Svg::red));
+
+    // B상
+    m_seriesInfoList.emplace_back(SeriesInfo{
+        new QLineSeries(this),
+        [](const DataPoint& p) { return p.voltage.b;},
+        true, {}
+    });
+    m_seriesInfoList.back().series->setName("Voltage B");
+    m_seriesInfoList.back().series->setColor(QColor(QColorConstants::Svg::yellow));
+
+    m_seriesInfoList.emplace_back(SeriesInfo{
+        new QLineSeries(this),
+        [](const DataPoint& p) { return p.current.b;},
+        false, {}
+    });
+    m_seriesInfoList.back().series->setName("Current B");
+    m_seriesInfoList.back().series->setColor(QColor(QColorConstants::Svg::orange));
+
+    // C상
+    m_seriesInfoList.emplace_back(SeriesInfo{
+        new QLineSeries(this),
+        [](const DataPoint& p) { return p.voltage.c;},
+        false, {}
+    });
+    m_seriesInfoList.back().series->setName("Voltage C");
+    m_seriesInfoList.back().series->setColor(QColor(QColorConstants::Svg::black));
+
+    m_seriesInfoList.emplace_back(SeriesInfo{
+        new QLineSeries(this),
+        [](const DataPoint& p) { return p.current.c;},
+        false, {}
+    });
+    m_seriesInfoList.back().series->setName("Current C");
+    m_seriesInfoList.back().series->setColor(QColor(QColorConstants::Svg::gray));
+
+    // ----------------------------
 
     // X축 설정
     m_axisX->setRange(0, m_engine->parameters().graphWidthSec ); // 초기 범위를 설정값으로
-    m_voltageSeries->attachAxis(m_axisX);
-    m_currentSeries->attachAxis(m_axisX);
+    for(const auto& info : m_seriesInfoList) {
+        m_chart->addSeries(info.series);
+        info.series->attachAxis(m_axisX);
+        info.series->attachAxis(m_axisY);
+        info.series->setVisible(info.isVisible);
+        info.series->setPointsVisible(true);
+    }
 
     // Y축 설정
     m_axisY->setLabelFormat(tr("%.2f")); // 소수점 둘째 자리까지 V 단위로 표시
     m_axisY->setTitleText(tr("전압 (V/A)"));
     m_chart->addAxis(m_axisY, Qt::AlignLeft);
-    m_voltageSeries->attachAxis(m_axisY);
-    m_currentSeries->attachAxis(m_axisY);
 }
 
 // --- public slot ----
@@ -90,8 +129,9 @@ void GraphWindow::stretchGraph(double factor)
 void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
 {
     if (data.empty()) {
-        m_voltageSeries->clear();
-        m_currentSeries->clear();
+        for(const auto& info : m_seriesInfoList) {
+            info.series->clear();
+        }
         return;
     }
 
@@ -128,18 +168,23 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
 
     for(const DataPoint* p : candidates) {
         const double timeSec = FpSeconds(p->timestamp).count();
-        QPointF screenPosV = m_chart->mapToPosition(QPointF(timeSec, p->voltage.a), m_voltageSeries);
-        QPointF screenPosC = m_chart->mapToPosition(QPointF(timeSec, p->current.a), m_currentSeries);
 
-        // 마우스 커서와 두 포인트 사이의 거리를 각각 계산
-        double distV = QLineF(mouseScreenPos, screenPosV).length();
-        double distC = QLineF(mouseScreenPos, screenPosC).length();
-        if(distV < distC) {
-            minDistance = distV;
-        } else {
-            minDistance = distC;
+        // 화면에 보이는 모든 시리즈에 대해 거리 계산
+        for(const auto& info : m_seriesInfoList) {
+            if(info.isVisible) {
+                const double yValue = info.extractor(*p);
+                // 현재 시리즈의 스크린 좌표를 계산
+                QPointF screenPos = m_chart->mapToPosition(QPointF(timeSec, yValue), info.series);
+
+
+                // 마우스 커서와 두 포인트 사이의 거리를 각각 계산
+                double distance = QLineF(mouseScreenPos, screenPos).length();
+                if(distance < minDistance) {
+                    minDistance = distance;
+                    nearestPoint = p;
+                }
+            }
         }
-        nearestPoint = p;
     }
 
     // 임계값 이내면 선택
@@ -166,11 +211,9 @@ void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
     const int threshold = m_chartView->width(); // 픽셀 너비만큼 점을 뽑음
 
     if(pointCount > threshold) {
-        // 전압과 전류 값을 추출하는 람다의 벡터를 전달
-        std::vector<std::function<double(const DataPoint&)>> extractors = {
-            [](const DataPoint& p) { return p.voltage.a; },
-            [](const DataPoint& p) { return p.current.a; }
-        };
+        std::vector<std::function<double(const DataPoint&)>> extractors(6);
+
+
         m_visibleDataPoints = downsampleLTTB(first, last, threshold, extractors);
     } else {
         m_visibleDataPoints.assign(first, last);
@@ -179,22 +222,23 @@ void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
 
 void GraphWindow::updateSeriesData()
 {
-    m_voltagePoints.clear();
-    m_currentPoints.clear();
-
-    m_voltagePoints.reserve(m_visibleDataPoints.size());
-    m_currentPoints.reserve(m_visibleDataPoints.size());
+    for(auto& info : m_seriesInfoList) {
+        info.points.clear();
+        info.points.reserve(m_visibleDataPoints.size());
+    }
 
     // 멤버 변수들을 채움
     for(const auto& p : std::as_const(m_visibleDataPoints)) {
         const double timeSec = FpSeconds(p.timestamp).count();
-        m_voltagePoints.emplace_back(timeSec, p.voltage.a);
-        m_currentPoints.emplace_back(timeSec, p.current.a);
+        for(auto& info : m_seriesInfoList) {
+            info.points.emplace_back(timeSec, info.extractor(p));
+        }
     }
 
     // 멤버 변수들로 시리즈 업데이트
-    m_voltageSeries->replace(m_voltagePoints);
-    m_currentSeries->replace(m_currentPoints);
+    for(const auto& info : m_seriesInfoList) {
+        info.series->replace(info.points);
+    }
 }
 
 void GraphWindow::updateAxes(const std::deque<DataPoint> &data)
@@ -206,16 +250,21 @@ void GraphWindow::updateAxes(const std::deque<DataPoint> &data)
         double minY = std::numeric_limits<double>::max();
         double maxY = std::numeric_limits<double>::lowest();
 
-        // 보이는 점들을 한 번만 순회하여 전체 Y축 범위를 찾음
-        for(const auto& p : std::as_const(m_visibleDataPoints)) {
-            minY = std::min(minY, p.voltage.a);
-            maxY = std::max(maxY, p.voltage.a);
-            minY = std::min(minY, p.current.a);
-            maxY = std::max(maxY, p.current.a);
+        // m_seriesInfoList 순회
+        for(const auto& info : m_seriesInfoList) {
+            // 현재 화면에 보이는 시리즈에 대해서만 min/max 계산
+            if(info.isVisible) {
+                // 해당 시리즈의 데이터를 순회
+                for(const auto& point : info.points) {
+                    minY = std::min(minY, point.y());
+                    maxY = std::max(maxY, point.y());
+                }
+            }
         }
 
-        // Y축 범위 설정
-        updateYAxisRange(minY, maxY);
+        // 유효한 경우에만 Y축 범위 설정
+        if(minY <= maxY)
+            updateYAxisRange(minY, maxY);
 
         // X축의 범위를 업데이트
         const auto [minX, maxX] = getVisibleXRange(data);

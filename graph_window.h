@@ -29,7 +29,15 @@ public slots:
     void findNearestPoint(const QPointF& chartPos);
 
 
-private:    
+private:
+    struct SeriesInfo {
+        QLineSeries* series = nullptr;
+        std::function<double(const DataPoint&)> extractor;
+        bool isVisible = false;
+        QList<QPointF> points;
+    };
+    std::vector<SeriesInfo> m_seriesInfoList;
+
     // BaseGraphWindow에서 상속받음
     void setupSeries() override;
 
@@ -41,15 +49,10 @@ private:
     void updateSeriesData();
     void updateAxes(const std::deque<DataPoint>& data);
 
-
     // 차트 관련 객체 소유
-    QLineSeries *m_voltageSeries;
-    QLineSeries *m_currentSeries;
     QValueAxis *m_axisY;
 
     std::vector<DataPoint> m_visibleDataPoints;
-    QList<QPointF> m_voltagePoints;
-    QList<QPointF> m_currentPoints;
 };
 
 #endif // GRAPH_WINDOW_H
