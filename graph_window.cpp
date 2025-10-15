@@ -50,14 +50,16 @@ void GraphWindow::setupSeries()
     // A상
     m_seriesInfoList.emplace_back(SeriesInfo{
         new QLineSeries(this),
-        [](const DataPoint& p) { return p.voltage.a;},
+        [](const QVariant& v) { return v.value<DataPoint>().voltage.a;},
+        m_axisY,
         true, {}
     });
     m_seriesInfoList.back().series->setName("Voltage");
 
     m_seriesInfoList.emplace_back(SeriesInfo{
         new QLineSeries(this),
-        [](const DataPoint& p) { return p.current.a;},
+        [](const QVariant& v) { return v.value<DataPoint>().current.a;},
+        m_axisY,
         true, {}
     });
     m_seriesInfoList.back().series->setName("Current");
@@ -66,7 +68,8 @@ void GraphWindow::setupSeries()
     // B상
     m_seriesInfoList.emplace_back(SeriesInfo{
         new QLineSeries(this),
-        [](const DataPoint& p) { return p.voltage.b;},
+        [](const QVariant& v) { return v.value<DataPoint>().voltage.b;},
+        m_axisY,
         false, {}
     });
     m_seriesInfoList.back().series->setName("Voltage B");
@@ -74,7 +77,8 @@ void GraphWindow::setupSeries()
 
     m_seriesInfoList.emplace_back(SeriesInfo{
         new QLineSeries(this),
-        [](const DataPoint& p) { return p.current.b;},
+        [](const QVariant& v) { return v.value<DataPoint>().current.b;},
+        m_axisY,
         false, {}
     });
     m_seriesInfoList.back().series->setName("Current B");
@@ -83,7 +87,8 @@ void GraphWindow::setupSeries()
     // C상
     m_seriesInfoList.emplace_back(SeriesInfo{
         new QLineSeries(this),
-        [](const DataPoint& p) { return p.voltage.c;},
+        [](const QVariant& v) { return v.value<DataPoint>().voltage.c;},
+        m_axisY,
         false, {}
     });
     m_seriesInfoList.back().series->setName("Voltage C");
@@ -91,7 +96,8 @@ void GraphWindow::setupSeries()
 
     m_seriesInfoList.emplace_back(SeriesInfo{
         new QLineSeries(this),
-        [](const DataPoint& p) { return p.current.c;},
+        [](const QVariant& v) { return v.value<DataPoint>().current.c;},
+        m_axisY,
         false, {}
     });
     m_seriesInfoList.back().series->setName("Current C");
@@ -104,7 +110,7 @@ void GraphWindow::setupSeries()
     for(const auto& info : m_seriesInfoList) {
         m_chart->addSeries(info.series);
         info.series->attachAxis(m_axisX);
-        info.series->attachAxis(m_axisY);
+        info.series->attachAxis(info.yAxis);
         info.series->setVisible(info.isVisible);
         info.series->setPointsVisible(true);
     }
@@ -173,7 +179,7 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
         // 화면에 보이는 모든 시리즈에 대해 거리 계산
         for(const auto& info : m_seriesInfoList) {
             if(info.isVisible) {
-                const double yValue = info.extractor(*p);
+                const double yValue = info.extractor(QVariant::fromValue(p));
                 // 현재 시리즈의 스크린 좌표를 계산
                 QPointF screenPos = m_chart->mapToPosition(QPointF(timeSec, yValue), info.series);
 
@@ -241,7 +247,7 @@ void GraphWindow::updateSeriesData()
     for(const auto& p : std::as_const(m_visibleDataPoints)) {
         const double timeSec = FpSeconds(p.timestamp).count();
         for(auto& info : m_seriesInfoList) {
-            info.points.emplace_back(timeSec, info.extractor(p));
+            info.points.emplace_back(timeSec, info.extractor(QVariant::fromValue(p)));
         }
     }
 

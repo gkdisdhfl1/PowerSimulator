@@ -30,14 +30,6 @@ public slots:
     void onWaveformVisibilityChanged(int type, bool isVisible);
 
 private:
-    struct SeriesInfo {
-        QLineSeries* series = nullptr;
-        std::function<double(const DataPoint&)> extractor;
-        bool isVisible = false;
-        QList<QPointF> points;
-    };
-    std::vector<SeriesInfo> m_seriesInfoList;
-
     // BaseGraphWindow에서 상속받음
     void setupSeries() override;
 
@@ -51,7 +43,6 @@ private:
 
     // 차트 관련 객체 소유
     QValueAxis *m_axisY;
-
     std::vector<DataPoint> m_visibleDataPoints;
 };
 

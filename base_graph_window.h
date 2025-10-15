@@ -10,6 +10,7 @@ class QChart;
 class QValueAxis;
 class CustomChartView;
 class SimulationEngine;
+class QLineSeries;
 
 using utils::FpSeconds;
 
@@ -24,9 +25,18 @@ public slots:
     void toggleAutoScroll(bool enabled);
 
 protected:
+    struct SeriesInfo {
+        QLineSeries* series = nullptr;
+        std::function<double(const QVariant&)> extractor;
+        QValueAxis* yAxis = nullptr;
+        bool isVisible = false;
+        QList<QPointF> points;
+    };
+    std::vector<SeriesInfo> m_seriesInfoList;
+
     using Nanoseconds = std::chrono::nanoseconds;
 
-    void setupBaseChart();
+
     virtual void setupSeries() = 0; // 순수 가상 함수
 
     // 멤버 변수들을 protected로 이동하여 자식 클래스에서 접근 가능하도록 함
@@ -150,6 +160,9 @@ protected:
 
         return sampled_data;
     }
+
+private:
+    void setupBaseChart();
 };
 
 #endif // BASE_GRAPH_WINDOW_H

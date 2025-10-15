@@ -1,7 +1,7 @@
 #include "one_second_summary_window.h"
 #include <QVBoxLayout>
 #include <QTableWidget>
-#include <AnalysisUtils.h>
+#include <analysis_utils.h>
 #include <QPalette>
 #include <QHeaderView>
 
@@ -10,8 +10,13 @@ namespace Row {
 enum
 {
     HeaderTotal,
-    TotalRms,
-    ActivePower,
+    TotalRmsA,
+    TotalRmsB,
+    TotalRmsC,
+    ActivePowerA,
+    ActivePowerB,
+    ActivePowerC,
+    TotalActivePower,
     TotalEnergy,
     HeaderFundamental,
     FundamentalRms,
@@ -55,8 +60,13 @@ void OneSecondSummaryWindow::setupUi()
     setupHeaderRow(Row::HeaderDominant, "▼ 고조파 분석");
 
     // 각 행의 제목 아이템 설정
-    m_tableWidget->setItem(Row::TotalRms, Col::Title, new QTableWidgetItem("RMS (V/A)"));
-    m_tableWidget->setItem(Row::ActivePower, Col::Title, new QTableWidgetItem("유효전력 (W)"));
+    m_tableWidget->setItem(Row::TotalRmsA, Col::Title, new QTableWidgetItem("RMS (A) (V/A)"));
+    m_tableWidget->setItem(Row::TotalRmsB, Col::Title, new QTableWidgetItem("RMS (B) (V/A)"));
+    m_tableWidget->setItem(Row::TotalRmsC, Col::Title, new QTableWidgetItem("RMS (C) (V/A)"));
+    m_tableWidget->setItem(Row::ActivePowerA, Col::Title, new QTableWidgetItem("유효전력 (A) (W)"));
+    m_tableWidget->setItem(Row::ActivePowerB, Col::Title, new QTableWidgetItem("유효전력 (B) (W)"));
+    m_tableWidget->setItem(Row::ActivePowerC, Col::Title, new QTableWidgetItem("유효전력 (C) (W)"));
+    m_tableWidget->setItem(Row::TotalActivePower, Col::Title, new QTableWidgetItem("총 유효전력 (W)"));
     m_tableWidget->setItem(Row::TotalEnergy, Col::Title, new QTableWidgetItem("누적전력량 (Wh)"));
     m_tableWidget->setItem(Row::FundamentalRms, Col::Title, new QTableWidgetItem("RMS (V/A)"));
     m_tableWidget->setItem(Row::FundamentalPhase, Col::Title, new QTableWidgetItem("위상 (°)"));
@@ -82,7 +92,10 @@ void OneSecondSummaryWindow::setupUi()
     }
 
     // 유효전력, 누적전력량의 전류 셀은 비워둠
-    m_tableWidget->item(Row::ActivePower, Col::Current)->setText("");
+    m_tableWidget->item(Row::ActivePowerA, Col::Current)->setText("");
+    m_tableWidget->item(Row::ActivePowerB, Col::Current)->setText("");
+    m_tableWidget->item(Row::ActivePowerC, Col::Current)->setText("");
+    m_tableWidget->item(Row::TotalActivePower, Col::Current)->setText("");
     m_tableWidget->item(Row::TotalEnergy, Col::Current)->setText("");
 
     // 테이블 외형 설정
@@ -108,10 +121,19 @@ void OneSecondSummaryWindow::setupUi()
 
 void OneSecondSummaryWindow::updateData(const OneSecondSummaryData& data)
 {
+    double totalActivePower = data.activePower.a + data.activePower.b + data.activePower.c;
+
     // 숫자 포맷 지정: 소숫점 3자리까지
-    m_tableWidget->item(Row::TotalRms, Col::Voltage)->setText(QString::number(data.totalVoltageRms, 'f', 3));
-    m_tableWidget->item(Row::TotalRms, Col::Current)->setText(QString::number(data.totalCurrentRms, 'f', 3));
-    m_tableWidget->item(Row::ActivePower, Col::Voltage)->setText(QString::number(data.activePower, 'f', 3));
+    m_tableWidget->item(Row::TotalRmsA, Col::Voltage)->setText(QString::number(data.totalVoltageRms.a, 'f', 3));
+    m_tableWidget->item(Row::TotalRmsA, Col::Current)->setText(QString::number(data.totalCurrentRms.a, 'f', 3));
+    m_tableWidget->item(Row::TotalRmsB, Col::Voltage)->setText(QString::number(data.totalVoltageRms.b, 'f', 3));
+    m_tableWidget->item(Row::TotalRmsB, Col::Current)->setText(QString::number(data.totalCurrentRms.b, 'f', 3));
+    m_tableWidget->item(Row::TotalRmsC, Col::Voltage)->setText(QString::number(data.totalVoltageRms.c, 'f', 3));
+    m_tableWidget->item(Row::TotalRmsC, Col::Current)->setText(QString::number(data.totalCurrentRms.c, 'f', 3));
+    m_tableWidget->item(Row::ActivePowerA, Col::Voltage)->setText(QString::number(data.activePower.a, 'f', 3));
+    m_tableWidget->item(Row::ActivePowerB, Col::Voltage)->setText(QString::number(data.activePower.b, 'f', 3));
+    m_tableWidget->item(Row::ActivePowerC, Col::Voltage)->setText(QString::number(data.activePower.c, 'f', 3));
+    m_tableWidget->item(Row::TotalActivePower, Col::Voltage)->setText(QString::number(totalActivePower, 'f', 3));
     m_tableWidget->item(Row::TotalEnergy, Col::Voltage)->setText(QString::number(data.totalEnergyWh, 'f', 6));
 
     // 기본파 정보 표시
@@ -127,5 +149,4 @@ void OneSecondSummaryWindow::updateData(const OneSecondSummaryData& data)
     m_tableWidget->item(Row::DominantRms, Col::Current)->setText(QString::number(data.dominantHarmonicCurrentRms, 'f', 3));
     m_tableWidget->item(Row::DominantPhase, Col::Voltage)->setText(QString::number(data.dominantHarmonicVoltagePhase, 'f', 2));
     m_tableWidget->item(Row::DominantPhase, Col::Current)->setText(QString::number(data.dominantHarmonicCurrentPhase, 'f', 2));
-
 }

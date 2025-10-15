@@ -1,6 +1,8 @@
 #ifndef MEASURED_DATA_H
 #define MEASURED_DATA_H
 
+#include "shared_data_types.h"
+#include <QMetaType>
 #include <chrono>
 
 // 단일 고조파 성분의 분석 결과를 담는 구조체
@@ -15,9 +17,9 @@ struct HarmonicAnalysisResult {
 // 한 사이클 동안 연산 결과를 담는 구조체
 struct MeasuredData {
     std::chrono::nanoseconds timestamp; // 사이클이 끝나는 시점의 타임스탬프
-    double voltageRms; // 전압 RMS
-    double currentRms; // 전류 RMS
-    double activePower; // 유효 전력
+    PhaseData voltageRms; // 전압 RMS
+    PhaseData currentRms; // 전류 RMS
+    PhaseData activePower; // 유효 전력
 
     // 자주 사용하는 성분들
     HarmonicAnalysisResult fundamentalVoltage;
@@ -34,9 +36,9 @@ struct MeasuredData {
 
 // 1초 단위로 가공된 분석 데이터를 담는 구조체
 struct OneSecondSummaryData {
-    double totalVoltageRms;
-    double totalCurrentRms;
-    double activePower;
+    PhaseData totalVoltageRms;
+    PhaseData totalCurrentRms;
+    PhaseData activePower;
 
     double fundamentalVoltageRms;
     double fundamentalCurrentRms;
@@ -55,5 +57,5 @@ struct OneSecondSummaryData {
     double dominantHarmonicVoltagePhase;
     double dominantHarmonicCurrentPhase;
 };
-
+Q_DECLARE_METATYPE(MeasuredData)
 #endif // MEASURED_DATA_H

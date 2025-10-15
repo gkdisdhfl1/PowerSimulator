@@ -1,5 +1,5 @@
-#ifndef ANALYSISUTILS_H
-#define ANALYSISUTILS_H
+#ifndef ANALYSIS_UTILS_H
+#define ANALYSIS_UTILS_H
 
 #include "data_point.h"
 #include "measured_data.h"
@@ -60,14 +60,14 @@ public:
 
     static std::vector<HarmonicAnalysisResult> findSignificantHarmonics(const std::vector<std::complex<double>>& spectrum);
 
-    static double calculateActivePower(const std::vector<DataPoint>& samples);
+    static PhaseData calculateActivePower(const std::vector<DataPoint>& samples);
 
-    static double calculateTotalRms(const std::vector<DataPoint>&samples, DataType type);
+    static PhaseData calculateTotalRms(const std::vector<DataPoint>&samples, DataType type);
 
     static MeasuredData buildMeasuredData(
-        double totalVoltageRms,
-        double totalCurrentRms,
-        double activePower,
+        const PhaseData& totalVoltageRms,
+        const PhaseData& totalCurrentRms,
+        const PhaseData& activePower,
         const std::vector<HarmonicAnalysisResult>& voltageHarmonics,
         const std::vector<HarmonicAnalysisResult>& currentHarmonics
     );
@@ -78,4 +78,4 @@ private:
     static std::map<int, kiss_fftr_cfg> m_fftConfigCache;
 };
 
-#endif // ANALYSISUTILS_H
+#endif // ANALYSIS_UTILS_H

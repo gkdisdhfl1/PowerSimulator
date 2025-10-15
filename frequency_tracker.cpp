@@ -1,6 +1,6 @@
 #include "frequency_tracker.h"
 #include "simulation_engine.h"
-#include "AnalysisUtils.h"
+#include "analysis_utils.h"
 #include <QDebug>
 
 namespace {

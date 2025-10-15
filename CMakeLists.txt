@@ -81,9 +81,9 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
         collapsible_groupbox.h collapsible_groupbox.cpp
         shared_data_types.h
         fundamental_analysis_graph_window.h fundamental_analysis_graph_window.cpp
-        AnalysisUtils.h
+        analysis_utils.h
         harmonic_analysis_graph_window.h harmonic_analysis_graph_window.cpp
-        AnalysisUtils.cpp
+        analysis_utils.cpp
         pid_controller.h pid_controller.cpp
         one_second_summary_window.h one_second_summary_window.cpp
         kiss_fft/kiss_fft.c kiss_fft/kiss_fftr.c

@@ -1,6 +1,6 @@
 #include "harmonic_analysis_graph_window.h"
 
-#include "AnalysisUtils.h"
+#include "analysis_utils.h"
 #include "custom_chart_view.h"
 #include "simulation_engine.h"
 

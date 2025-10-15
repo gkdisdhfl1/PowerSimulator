@@ -1,7 +1,7 @@
 #include "custom_chart_view.h"
 #include "simulation_engine.h"
 #include "fundamental_analysis_graph_window.h"
-#include "AnalysisUtils.h"
+#include "analysis_utils.h"
 #include <QChart>
 #include <QLineSeries>
 #include <QValueAxis>

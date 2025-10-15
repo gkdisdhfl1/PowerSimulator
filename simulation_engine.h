@@ -5,7 +5,7 @@
 #include <QChronoTimer>
 #include <deque>
 #include <complex>
-#include "AnalysisUtils.h"
+#include "analysis_utils.h"
 #include "data_point.h"
 #include "config.h"
 #include "measured_data.h"

@@ -1,5 +1,5 @@
 #include "phasor_view.h"
-#include "AnalysisUtils.h"
+#include "analysis_utils.h"
 #include "config.h"
 
 #include <QCheckBox>

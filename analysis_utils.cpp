@@ -1,4 +1,4 @@
-#include "AnalysisUtils.h"
+#include "analysis_utils.h"
 #include "config.h"
 #include <complex>
 #include <QDebug>
@@ -199,42 +199,63 @@ std::vector<HarmonicAnalysisResult> AnalysisUtils::findSignificantHarmonics(cons
     return results;
 }
 
-double AnalysisUtils::calculateActivePower(const std::vector<DataPoint>& samples)
+PhaseData AnalysisUtils::calculateActivePower(const std::vector<DataPoint>& samples)
 {
     if(samples.empty())
-        return 0.0;
+        return {};
 
     double powerSum = 0.0;
+    double powerSumB = 0.0;
+    double powerSumC = 0.0;
     for(const auto& sample : samples) {
         powerSum += sample.voltage.a * sample.current.a;
+        powerSumB += sample.voltage.b * sample.current.b;
+        powerSumC += sample.voltage.c * sample.current.c;
     }
 
-    return powerSum / samples.size();
+    const double n  = static_cast<double>(samples.size());
+    return {
+        powerSum / n,
+        powerSumB / n,
+        powerSumC / n
+    };
 }
 
-double AnalysisUtils::calculateTotalRms(const std::vector<DataPoint>& samples, DataType type)
+PhaseData AnalysisUtils::calculateTotalRms(const std::vector<DataPoint>& samples, DataType type)
 {
     if(samples.empty())
-        return 0.0;
+        return {};
 
     double sumSq = 0.0;
+    double sumSqB = 0.0;
+    double sumSqC = 0.0;
     if(type == DataType::Voltage) {
         for(const auto& sample : samples) {
             sumSq += sample.voltage.a * sample.voltage.a;
+            sumSqB += sample.voltage.b * sample.voltage.b;
+            sumSqC += sample.voltage.c * sample.voltage.c;
         }
     } else {
         for(const auto& sample : samples) {
             sumSq += sample.current.a * sample.current.a;
+            sumSqB += sample.current.b * sample.current.b;
+            sumSqC += sample.current.c * sample.current.c;
         }
     }
 
-    return std::sqrt(sumSq / samples.size());
+    const double n  = static_cast<double>(samples.size());
+    return {
+        std::sqrt(sumSq / n),
+        std::sqrt(sumSqB / n),
+        std::sqrt(sumSqC / n)
+    };
+
 }
 
 MeasuredData AnalysisUtils::buildMeasuredData(
-    double totalVoltageRms,
-    double totalCurrentRms,
-    double activePower,
+    const PhaseData& totalVoltageRms,
+    const PhaseData& totalCurrentRms,
+    const PhaseData& activePower,
     const std::vector<HarmonicAnalysisResult>& voltageHarmonics,
     const std::vector<HarmonicAnalysisResult>& currentHarmonics)
 {
@@ -268,6 +289,7 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     }
 
     OneSecondSummaryData summary{};
+    double sum_v_a = 0;
     const auto& lastCycleData = cycleBuffer.back();
     const size_t N = cycleBuffer.size();
 
@@ -283,13 +305,23 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
 
     // 2. 전체 버퍼를 순회하며 RMS 값들의 제곱의 합과 유효 전력을 구함
     double totalVoltageRmsSumSq = 0.0; double totalCurrentRmsSumSq = 0.0; double activePowerSum = 0.0;
+    double totalVoltageRmsSumSqB = 0.0; double totalCurrentRmsSumSqB = 0.0; double activePowerSumB = 0.0;
+    double totalVoltageRmsSumSqC = 0.0; double totalCurrentRmsSumSqC = 0.0; double activePowerSumC = 0.0;
+
+    // A상 기준
     double fundVoltageRmsSumSq = 0.0; double fundCurrentRmsSumSq = 0.0;
     double dominantVoltageRmsSumSq = 0.0; double dominantCurrentRmsSumSq = 0.0;
 
     for(const auto& data : cycleBuffer) {
-        totalVoltageRmsSumSq += data.voltageRms * data.voltageRms;
-        totalCurrentRmsSumSq += data.currentRms * data.currentRms;
-        activePowerSum += data.activePower;
+        totalVoltageRmsSumSq += data.voltageRms.a * data.voltageRms.a;
+        totalCurrentRmsSumSq += data.currentRms.a * data.currentRms.a;
+        totalVoltageRmsSumSqB += data.voltageRms.b * data.voltageRms.b;
+        totalCurrentRmsSumSqB += data.currentRms.b * data.currentRms.b;
+        totalVoltageRmsSumSqC += data.voltageRms.c * data.voltageRms.c;
+        totalCurrentRmsSumSqC += data.currentRms.c * data.currentRms.c;
+        activePowerSum += data.activePower.a;
+        activePowerSumB += data.activePower.b;
+        activePowerSumC += data.activePower.c;
         fundVoltageRmsSumSq += data.fundamentalVoltage.rms * data.fundamentalVoltage.rms;
         fundCurrentRmsSumSq += data.fundamentalCurrent.rms * data.fundamentalCurrent.rms;
         if(summary.dominantHarmonicVoltageOrder > 1 && data.dominantVoltage.order == summary.dominantHarmonicVoltageOrder)
@@ -299,9 +331,15 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     }
 
     // 3. 최종 계산
-    summary.totalVoltageRms = std::sqrt(totalVoltageRmsSumSq / N);
-    summary.totalCurrentRms = std::sqrt(totalCurrentRmsSumSq / N);
-    summary.activePower = activePowerSum / N;
+    summary.totalVoltageRms.a = std::sqrt(totalVoltageRmsSumSq / N);
+    summary.totalCurrentRms.a = std::sqrt(totalCurrentRmsSumSq / N);
+    summary.totalVoltageRms.b = std::sqrt(totalVoltageRmsSumSqB / N);
+    summary.totalCurrentRms.b = std::sqrt(totalCurrentRmsSumSqB / N);
+    summary.totalVoltageRms.c = std::sqrt(totalVoltageRmsSumSqC / N);
+    summary.totalCurrentRms.c = std::sqrt(totalCurrentRmsSumSqC / N);
+    summary.activePower.a = activePowerSum / N;
+    summary.activePower.b = activePowerSumB / N;
+    summary.activePower.c = activePowerSumC / N;
 
     summary.fundamentalVoltageRms = std::sqrt(fundVoltageRmsSumSq / N);
     summary.fundamentalCurrentRms = std::sqrt(fundCurrentRmsSumSq / N);

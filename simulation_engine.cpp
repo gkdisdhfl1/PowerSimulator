@@ -1,5 +1,5 @@
 #include "simulation_engine.h"
-#include "AnalysisUtils.h"
+#include "analysis_utils.h"
 #include "frequency_tracker.h"
 #include <QDebug>
 
@@ -204,7 +204,7 @@ PhaseData SimulationEngine::calculateCurrentVoltage() const
     }
 
     // B상
-    const double phase_B_offset = utils::degreesToRadians(-120.0 + m_params.voltage_B_phase_deg);
+    const double phase_B_offset = utils::degreesToRadians(m_params.voltage_B_phase_deg);
     const double fundamentalPhase_B = fundamentalPhase + phase_B_offset;
 
     result.b = m_params.voltage_B_amplitude * sin(fundamentalPhase_B);
@@ -214,7 +214,7 @@ PhaseData SimulationEngine::calculateCurrentVoltage() const
     }
 
     // C상
-    const double phase_C_offset = utils::degreesToRadians(120.0 + m_params.voltage_C_phase_deg);
+    const double phase_C_offset = utils::degreesToRadians(m_params.voltage_C_phase_deg);
     const double fundamentalPhase_C = fundamentalPhase + phase_C_offset;
 
     result.c = m_params.voltage_C_amplitude * sin(fundamentalPhase_C);
@@ -242,7 +242,7 @@ PhaseData SimulationEngine::calculateCurrentAmperage() const
     }
 
     // B상
-    const double phase_B_offset = utils::degreesToRadians(-120.0 + m_params.current_B_phase_deg);
+    const double phase_B_offset = utils::degreesToRadians(m_params.current_B_phase_deg);
     const double currentSettignsFetched = baseCurrentPhase + phase_B_offset;
 
     result.b = m_params.current_B_amplitude * sin(currentSettignsFetched);
@@ -252,7 +252,7 @@ PhaseData SimulationEngine::calculateCurrentAmperage() const
     }
 
     // C상
-    const double phase_C_offset = utils::degreesToRadians(120.0 + m_params.current_C_phase_deg);
+    const double phase_C_offset = utils::degreesToRadians(m_params.current_C_phase_deg);
     const double fundamentalPhase_C = baseCurrentPhase + phase_C_offset;
 
     result.c = m_params.current_C_amplitude * sin(fundamentalPhase_C);
@@ -304,9 +304,9 @@ void SimulationEngine::calculateCycleData()
     auto currentHarmonics = AnalysisUtils::findSignificantHarmonics(currentSpectrum);
 
     // 3. 전체 RMS 및 유효 전력 계산
-    const double totalVoltageRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Voltage);
-    const double totalCurrentRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Current);
-    const double activePower = AnalysisUtils::calculateActivePower(m_cycleSampleBuffer);
+    const PhaseData totalVoltageRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Voltage);
+    const PhaseData totalCurrentRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Current);
+    const PhaseData activePower = AnalysisUtils::calculateActivePower(m_cycleSampleBuffer);
 
     // 4. 계산된 데이터 구조체를 담아 컨테이너 추가
     MeasuredData newData = AnalysisUtils::buildMeasuredData(
@@ -409,7 +409,8 @@ void SimulationEngine::processOneSecondData(const MeasuredData& latestCycleDta)
 
     // 누적 전력량 계산
     const double elapsedSeconds = std::chrono::duration_cast<FpSeconds>(elapsedNs).count();
-    m_totalEngeryWh += (summary.activePower * elapsedSeconds) / 3600.0;
+    double totalActivePower = summary.activePower.a + summary.activePower.b + summary.activePower.c;
+    m_totalEngeryWh += (totalActivePower * elapsedSeconds) / 3600.0;
     summary.totalEnergyWh = m_totalEngeryWh;
 
     // 시그널 발생
