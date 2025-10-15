@@ -80,7 +80,10 @@ void PhasorView::updateData(const std::deque<MeasuredData>& data)
         m_fundamentalCurrent = PhasorInfo();
         m_voltageInfoLabel->clear();
         m_currentInfoLabel->clear();
+        return;
     }
+
+    // AnalysisGraphWindow가 비어있을 때 ControlPanel에서 Cycle 데이터 체크박스가 변경되었을 경우
 
     const auto& latestData = data.back();
 

@@ -19,6 +19,7 @@ signals:
 
 public slots:
     void updateGraph(const std::deque<MeasuredData>& data);
+    void onWaveformVisibilityChanged(int type, bool isVisible);
 
 private:
     void setupSeries() override;

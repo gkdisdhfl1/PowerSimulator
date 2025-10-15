@@ -127,6 +127,7 @@ void ControlPanel::setupUi()
     m_voltageCCheckBox = new QCheckBox();
     m_currentCCheckBox = new QCheckBox();
 
+
     // 스크롤 영역 생성
     auto scrollArea = new QScrollArea(this);
     scrollArea->setWidgetResizable(true);
@@ -233,6 +234,29 @@ void ControlPanel::setupUi()
     selectionLayout->addLayout(hLayout1);
     selectionLayout->addLayout(hLayout2);
 
+    // 분석 그래프 표시 그룹박스
+    m_analysisSelectionGroup = new CollapsibleGroupBox("Cycle 분석 그래프 선택");
+    auto* analysisLayout = m_analysisSelectionGroup->contentLayoutPtr();
+    auto* gridLayout = new QGridLayout();
+
+    gridLayout->addWidget(new QLabel("V RMS"), 0, 1, Qt::AlignCenter);
+    gridLayout->addWidget(new QLabel("I RMS"), 0, 2, Qt::AlignCenter);
+    gridLayout->addWidget(new QLabel("Power"), 0, 3, Qt::AlignCenter);
+    gridLayout->addWidget(new QLabel("A상"), 1, 0, Qt::AlignCenter);
+    gridLayout->addWidget(new QLabel("B상"), 2, 0, Qt::AlignCenter);
+    gridLayout->addWidget(new QLabel("C상"), 3, 0, Qt::AlignCenter);
+
+    // 3x3 체크박스 생성 및 배치
+    for(int phase{0}; phase < 3; ++phase) {
+        m_rmsVoltageCheckBox[phase] = new QCheckBox();
+        m_rmsCurrentCheckBox[phase] = new QCheckBox();
+        m_activePowerCheckBox[phase] = new QCheckBox();
+        gridLayout->addWidget(m_rmsVoltageCheckBox[phase], phase + 1, 1, Qt::AlignCenter);
+        gridLayout->addWidget(m_rmsCurrentCheckBox[phase], phase + 1, 2, Qt::AlignCenter);
+        gridLayout->addWidget(m_activePowerCheckBox[phase], phase + 1, 3, Qt::AlignCenter);
+    }
+    analysisLayout->addLayout(gridLayout);
+
     // 메인 레이아웃에 추가
     mainLayout->addLayout(buttonLayout);
     mainLayout->addWidget(parameterGroupBox);
@@ -240,6 +264,7 @@ void ControlPanel::setupUi()
     mainLayout->addWidget(m_harmonicsTabWidget);
     mainLayout->addWidget(updateModeGroupBox);
     mainLayout->addWidget(m_waveformSelectionGroup);
+    mainLayout->addWidget(m_analysisSelectionGroup);
     mainLayout->addSpacerItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::MinimumExpanding));
 }
 
@@ -320,6 +345,11 @@ void ControlPanel::initializeUiValues()
     m_currentBCheckBox->setChecked(false);
     m_voltageCCheckBox->setChecked(false);
     m_currentCCheckBox->setChecked(false);
+
+    // 분석 그래프 표시 체크박스 초기화
+    m_rmsVoltageCheckBox[0]->setChecked(true);
+    m_rmsCurrentCheckBox[0]->setChecked(true);
+    m_activePowerCheckBox[0]->setChecked(true);
 }
 
 void ControlPanel::createConnections()
@@ -386,6 +416,22 @@ void ControlPanel::createConnections()
     connect(m_currentCCheckBox, &QCheckBox::toggled, this, [this](bool checked) {
         emit waveformVisibilityChanged(5, checked);
     });
+
+    // 분석 그래프 체크박스 연결
+    for(int phase{0}; phase < 3; ++phase) {
+        // V RMS 0, 3, 6
+        connect(m_rmsVoltageCheckBox[phase], &QCheckBox::toggled, this, [this, phase](bool checked) {
+            emit analysisWaveformVisibilityChanged(phase * 3 + 0, checked);
+        });
+        // I RMS 1, 4, 7
+        connect(m_rmsCurrentCheckBox[phase], &QCheckBox::toggled, this, [this, phase](bool checked) {
+            emit analysisWaveformVisibilityChanged(phase * 3 + 1, checked);
+        });
+        // activePower 2, 5, 8
+        connect(m_activePowerCheckBox[phase], &QCheckBox::toggled, this, [this, phase](bool checked) {
+            emit analysisWaveformVisibilityChanged(phase * 3 + 2, checked);
+        });
+    }
 }
 
 // --- public slots ---

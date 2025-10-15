@@ -167,6 +167,18 @@ void AnalysisGraphWindow::updateGraph(const std::deque<MeasuredData>& data)
     updateAxes(data);
 }
 
+void AnalysisGraphWindow::onWaveformVisibilityChanged(int type, bool isVisible)
+{
+    // type 인덱스가 유효한 범위 내에 있는지 확인
+    if(type >= 0 && type < m_seriesInfoList.size()) {
+        // qDebug() << "onWaveformVisibilityChanged: type = " << type << ", isVisible = " << isVisible;
+        m_seriesInfoList[type].isVisible = isVisible;
+        m_seriesInfoList[type].series->setVisible(isVisible);
+
+        emit redrawNeeded();
+    }
+}
+
 void AnalysisGraphWindow::updateVisiblePoints(const std::deque<MeasuredData>& data)
 {
     // 축에서 초단위 시간 범위를 가져옴

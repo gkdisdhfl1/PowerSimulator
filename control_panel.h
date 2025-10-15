@@ -47,6 +47,7 @@ signals:
     void autoScrollToggled(bool enabled);
     void trackingToggled(bool enabled); // 자동 추적 토글 시그널
     void waveformVisibilityChanged(int type, bool isVisible);
+    void analysisWaveformVisibilityChanged(int type, bool isVisible);
 
     // 파라미터 변경 시그널
     void amplitudeChanged(double value);
@@ -104,6 +105,11 @@ private:
     QCheckBox* m_currentBCheckBox;
     QCheckBox* m_voltageCCheckBox;
     QCheckBox* m_currentCCheckBox;
+
+    CollapsibleGroupBox* m_analysisSelectionGroup;
+    QCheckBox* m_rmsVoltageCheckBox[3]; // A, B, C
+    QCheckBox* m_rmsCurrentCheckBox[3]; // A, B, C
+    QCheckBox* m_activePowerCheckBox[3]; // A, B, C
 };
 
 #endif // CONTROL_PANEL_H
