@@ -202,6 +202,7 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
 
 void GraphWindow::onWaveformVisibilityChanged(int type, bool isVisible)
 {
+    qDebug() << "onWaveformVisibilityChanged(" << type << ", " << isVisible << ")";
     // type 인덱스가 유효한 범위 내에 있는지 확인
     if(type >= 0 && type < m_seriesInfoList.size()) {
         m_seriesInfoList[type].isVisible = isVisible;

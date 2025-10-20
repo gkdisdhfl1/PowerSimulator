@@ -154,7 +154,7 @@ void MainWindow::setupUiComponents()
 
     // 상단과 하단 영역의 높이 비율 설정
     QList<int> mainSizes;
-    mainSizes << 500 << 250;
+    mainSizes << 500 << 270;
     resizeDocks({graphDock, analysisGraphDock}, mainSizes, Qt::Vertical);
 
     splitDockWidget(graphDock, oneSecondSummaryDock, Qt::Horizontal);

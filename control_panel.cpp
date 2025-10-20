@@ -119,14 +119,6 @@ void ControlPanel::setupUi()
     m_autoScrollCheckBox = new QCheckBox("자동 스크롤");
     m_trackingButton = new QPushButton("자동 추적 시작", this);
 
-    m_waveformSelectionGroup = new CollapsibleGroupBox("그래프 표시 선택");
-    m_voltageACheckBox = new QCheckBox();
-    m_currentACheckBox = new QCheckBox();
-    m_voltageBCheckBox = new QCheckBox();
-    m_currentBCheckBox = new QCheckBox();
-    m_voltageCCheckBox = new QCheckBox();
-    m_currentCCheckBox = new QCheckBox();
-
 
     // 스크롤 영역 생성
     auto scrollArea = new QScrollArea(this);
@@ -211,74 +203,71 @@ void ControlPanel::setupUi()
     updateModeGroupBox->setLayout(updateModeLayout);
 
     // 그래프 표시 그룹박스 레이아웃
+    m_waveformSelectionGroup = new CollapsibleGroupBox("waveform 그래프 표시 선택");
     QVBoxLayout* selectionLayout = m_waveformSelectionGroup->contentLayoutPtr();
+    auto* waveformGridLayout = new QGridLayout();
 
-    auto *hLayout1 = new QHBoxLayout();
-    m_voltageACheckBox = new QCheckBox("V(A)");
-    m_voltageBCheckBox = new QCheckBox("V(B)");
-    m_voltageCCheckBox = new QCheckBox("V(C)");
-    hLayout1->addWidget(m_voltageACheckBox);
-    hLayout1->addWidget(m_voltageBCheckBox);
-    hLayout1->addWidget(m_voltageCCheckBox);
-    hLayout1->addStretch();
+    waveformGridLayout->addWidget(new QLabel("V"), 0, 1, Qt::AlignCenter);
+    waveformGridLayout->addWidget(new QLabel("I"), 0, 2, Qt::AlignCenter);
+    waveformGridLayout->addWidget(new QLabel("A상"), 1, 0, Qt::AlignCenter);
+    waveformGridLayout->addWidget(new QLabel("B상"), 2, 0, Qt::AlignCenter);
+    waveformGridLayout->addWidget(new QLabel("C상"), 3, 0, Qt::AlignCenter);
 
-    auto *hLayout2 = new QHBoxLayout();
-    m_currentACheckBox = new QCheckBox("I(A)");
-    m_currentBCheckBox = new QCheckBox("I(B)");
-    m_currentCCheckBox = new QCheckBox("I(C)");
-    hLayout2->addWidget(m_currentACheckBox);
-    hLayout2->addWidget(m_currentBCheckBox);
-    hLayout2->addWidget(m_currentCCheckBox);
-    hLayout2->addStretch();
-
-    selectionLayout->addLayout(hLayout1);
-    selectionLayout->addLayout(hLayout2);
+    // 체크 박스 생성 및 배치
+    for(int phase{0}; phase < 3; ++phase) {
+        m_voltageCheckBox[phase] = new QCheckBox();
+        m_currentCheckBox[phase] = new QCheckBox();
+        waveformGridLayout->addWidget(m_voltageCheckBox[phase], phase + 1, 1, Qt::AlignCenter);
+        waveformGridLayout->addWidget(m_currentCheckBox[phase], phase + 1, 2, Qt::AlignCenter);
+    }
+    selectionLayout->addLayout(waveformGridLayout);
 
     // --- 분석 그래프 표시 그룹박스 ---
     m_analysisSelectionGroup = new CollapsibleGroupBox("Cycle 분석 그래프 선택");
     auto* analysisLayout = m_analysisSelectionGroup->contentLayoutPtr();
-    auto* gridLayout = new QGridLayout();
+    auto* analysisGridLayout = new QGridLayout();
 
-    gridLayout->addWidget(new QLabel("V RMS"), 0, 1, Qt::AlignCenter);
-    gridLayout->addWidget(new QLabel("I RMS"), 0, 2, Qt::AlignCenter);
-    gridLayout->addWidget(new QLabel("Power"), 0, 3, Qt::AlignCenter);
-    gridLayout->addWidget(new QLabel("A상"), 1, 0, Qt::AlignCenter);
-    gridLayout->addWidget(new QLabel("B상"), 2, 0, Qt::AlignCenter);
-    gridLayout->addWidget(new QLabel("C상"), 3, 0, Qt::AlignCenter);
+    analysisGridLayout->addWidget(new QLabel("V RMS"), 0, 1, Qt::AlignCenter);
+    analysisGridLayout->addWidget(new QLabel("I RMS"), 0, 2, Qt::AlignCenter);
+    analysisGridLayout->addWidget(new QLabel("Power"), 0, 3, Qt::AlignCenter);
+    analysisGridLayout->addWidget(new QLabel("A상"), 1, 0, Qt::AlignCenter);
+    analysisGridLayout->addWidget(new QLabel("B상"), 2, 0, Qt::AlignCenter);
+    analysisGridLayout->addWidget(new QLabel("C상"), 3, 0, Qt::AlignCenter);
 
     // 3x3 체크박스 생성 및 배치
     for(int phase{0}; phase < 3; ++phase) {
         m_rmsVoltageCheckBox[phase] = new QCheckBox();
         m_rmsCurrentCheckBox[phase] = new QCheckBox();
         m_activePowerCheckBox[phase] = new QCheckBox();
-        gridLayout->addWidget(m_rmsVoltageCheckBox[phase], phase + 1, 1, Qt::AlignCenter);
-        gridLayout->addWidget(m_rmsCurrentCheckBox[phase], phase + 1, 2, Qt::AlignCenter);
-        gridLayout->addWidget(m_activePowerCheckBox[phase], phase + 1, 3, Qt::AlignCenter);
+        analysisGridLayout->addWidget(m_rmsVoltageCheckBox[phase], phase + 1, 1, Qt::AlignCenter);
+        analysisGridLayout->addWidget(m_rmsCurrentCheckBox[phase], phase + 1, 2, Qt::AlignCenter);
+        analysisGridLayout->addWidget(m_activePowerCheckBox[phase], phase + 1, 3, Qt::AlignCenter);
     }
-    analysisLayout->addLayout(gridLayout);
+    analysisLayout->addLayout(analysisGridLayout);
 
     //  --- Phasor 그래프 선택 그롭박스 ---
     m_phasorSelectionGroup = new CollapsibleGroupBox("Phasor 그래프 선택");
     auto* phasorLayout = m_phasorSelectionGroup->contentLayoutPtr();
-    auto* grid = new QGridLayout();
+    auto* phasorGridLayout = new QGridLayout();
 
-    // 위젯 이름과 체크 박스 배열을 묶어서 처리
-    const QStringList v_labels = {"V(A)", "V(B)", "V(C)"};
-    const QStringList i_labels = {"I(A)", "I(B)", "I(C)"};
+    phasorGridLayout->addWidget(new QLabel("V"), 0, 1, Qt::AlignCenter);
+    phasorGridLayout->addWidget(new QLabel("I"), 0, 2, Qt::AlignCenter);
+    phasorGridLayout->addWidget(new QLabel("A상"), 1, 0, Qt::AlignCenter);
+    phasorGridLayout->addWidget(new QLabel("B상"), 2, 0, Qt::AlignCenter);
+    phasorGridLayout->addWidget(new QLabel("C상"), 3, 0, Qt::AlignCenter);
+    phasorGridLayout->addWidget(new QLabel("고조파"), 4, 0, Qt::AlignCenter);
 
-    for(int i{0}; i < 3; ++i) {
-        grid->addWidget(new QLabel(v_labels[i]), i, 0);
-        grid->addWidget(m_phasorFundVoltageCheck[i] = new QCheckBox(), i, 1);
-        grid->addWidget(new QLabel(i_labels[i]), i, 2);
-        grid->addWidget(m_phasorFundCurrentCheck[i] = new QCheckBox(), i, 3);
+    for(int phase{0}; phase < 3; ++phase) {
+        m_phasorFundVoltageCheckBox[phase] = new QCheckBox();
+        m_phasorFundCurrentCheckBox[phase] = new QCheckBox();
+        phasorGridLayout->addWidget(m_phasorFundVoltageCheckBox[phase], phase + 1, 1, Qt::AlignCenter);
+        phasorGridLayout->addWidget(m_phasorFundCurrentCheckBox[phase], phase + 1, 2, Qt::AlignCenter);
     }
-
-    grid->addWidget(new QLabel("고조파 V"), 0, 4);
-    grid->addWidget(m_phasorHarmVoltageCheck = new QCheckBox(), 0, 5);
-    grid->addWidget(new QLabel("고조파 I"), 1, 4);
-    grid->addWidget(m_phasorHarmCurrentCheck = new QCheckBox(), 1, 5);
-
-    phasorLayout->addLayout(grid);
+    m_phasorHarmVoltageCheckBox = new QCheckBox();
+    m_phasorHarmCurrentCheckBox = new QCheckBox();
+    phasorGridLayout->addWidget(m_phasorHarmVoltageCheckBox, 4, 1, Qt::AlignHCenter);
+    phasorGridLayout->addWidget(m_phasorHarmCurrentCheckBox, 4, 2, Qt::AlignHCenter);
+    phasorLayout->addLayout(phasorGridLayout);
 
     // 메인 레이아웃에 추가
     mainLayout->addLayout(buttonLayout);
@@ -363,12 +352,8 @@ void ControlPanel::initializeUiValues()
     m_autoScrollCheckBox->setChecked(true);
 
     // 그래프 표시 체크박스 초기화
-    m_voltageACheckBox->setChecked(true);
-    m_currentACheckBox->setChecked(true);
-    m_voltageBCheckBox->setChecked(false);
-    m_currentBCheckBox->setChecked(false);
-    m_voltageCCheckBox->setChecked(false);
-    m_currentCCheckBox->setChecked(false);
+    m_voltageCheckBox[0]->setChecked(true);
+    m_currentCheckBox[0]->setChecked(true);
 
     // 분석 그래프 표시 체크박스 초기화
     m_rmsVoltageCheckBox[0]->setChecked(true);
@@ -376,15 +361,8 @@ void ControlPanel::initializeUiValues()
     m_activePowerCheckBox[0]->setChecked(true);
 
     // Phasor 그래프 표시 체크박스 초기화
-    m_phasorFundVoltageCheck[0]->setChecked(true);
-    m_phasorFundVoltageCheck[1]->setChecked(false);
-    m_phasorFundVoltageCheck[2]->setChecked(false);
-    m_phasorFundCurrentCheck[0]->setChecked(true);
-    m_phasorFundCurrentCheck[1]->setChecked(false);
-    m_phasorFundCurrentCheck[2]->setChecked(false);
-
-    m_phasorHarmVoltageCheck->setChecked(false);
-    m_phasorHarmCurrentCheck->setChecked(false);
+    m_phasorFundVoltageCheckBox[0]->setChecked(true);
+    m_phasorFundCurrentCheckBox[0]->setChecked(true);
 }
 
 void ControlPanel::createConnections()
@@ -433,27 +411,18 @@ void ControlPanel::createConnections()
 
     // 체크박스 시그널 연결
     connect(m_autoScrollCheckBox, &QCheckBox::toggled, this, &ControlPanel::autoScrollToggled);
-    connect(m_voltageACheckBox, &QCheckBox::toggled, this, [this](bool checked) {
-        emit waveformVisibilityChanged(0, checked);
-    });
-    connect(m_currentACheckBox, &QCheckBox::toggled, this, [this](bool checked) {
-        emit waveformVisibilityChanged(1, checked);
-    });
-    connect(m_voltageBCheckBox, &QCheckBox::toggled, this, [this](bool checked) {
-        emit waveformVisibilityChanged(2, checked);
-    });
-    connect(m_currentBCheckBox, &QCheckBox::toggled, this, [this](bool checked) {
-        emit waveformVisibilityChanged(3, checked);
-    });
-    connect(m_voltageCCheckBox, &QCheckBox::toggled, this, [this](bool checked) {
-        emit waveformVisibilityChanged(4, checked);
-    });
-    connect(m_currentCCheckBox, &QCheckBox::toggled, this, [this](bool checked) {
-        emit waveformVisibilityChanged(5, checked);
-    });
 
-    // 분석 그래프 체크박스 연결
+    // waveform, 분석, Phasor 그래프 체크박스 연결
     for(int phase{0}; phase < 3; ++phase) {
+        // V 0, 2, 4
+        connect(m_voltageCheckBox[phase], &QCheckBox::toggled, this, [this, phase](bool checked) {
+            emit waveformVisibilityChanged(phase * 2 + 0, checked);
+        });
+        // I 1, 3, 5
+        connect(m_currentCheckBox[phase], &QCheckBox::toggled, this, [this, phase](bool checked) {
+            emit waveformVisibilityChanged(phase * 2 + 1, checked);
+        });
+
         // V RMS 0, 3, 6
         connect(m_rmsVoltageCheckBox[phase], &QCheckBox::toggled, this, [this, phase](bool checked) {
             emit analysisWaveformVisibilityChanged(phase * 3 + 0, checked);
@@ -466,28 +435,25 @@ void ControlPanel::createConnections()
         connect(m_activePowerCheckBox[phase], &QCheckBox::toggled, this, [this, phase](bool checked) {
             emit analysisWaveformVisibilityChanged(phase * 3 + 2, checked);
         });
-    }
 
-    // Phasor 체크박스 시그널 연결
-    for(int i{0}; i < 3; ++i) {
         // 기본파 전압 0, 1, 2
-        connect(m_phasorFundVoltageCheck[i], &QCheckBox::toggled, this, [this, i](bool c) {
-            emit phasorVisibilityChanged(i, c);
+        connect(m_phasorFundVoltageCheckBox[phase], &QCheckBox::toggled, this, [this, phase](bool c) {
+            emit phasorVisibilityChanged(phase, c);
         });
         // 기본파 전류 3, 4, 5
-        connect(m_phasorFundCurrentCheck[i], &QCheckBox::toggled, this, [this, i](bool c) {
-            emit phasorVisibilityChanged(i + 3, c);
-        });
-
-        // 고조파 전압 6
-        connect(m_phasorHarmVoltageCheck, &QCheckBox::toggled, this, [this](bool c) {
-            emit phasorVisibilityChanged(6, c);
-        });
-        // 고조파 전압 7
-        connect(m_phasorHarmCurrentCheck, &QCheckBox::toggled, this, [this](bool c) {
-            emit phasorVisibilityChanged(7, c);
+        connect(m_phasorFundCurrentCheckBox[phase], &QCheckBox::toggled, this, [this, phase](bool c) {
+            emit phasorVisibilityChanged(phase + 3, c);
         });
     }
+
+    // 고조파 전압 6
+    connect(m_phasorHarmVoltageCheckBox, &QCheckBox::toggled, this, [this](bool c) {
+        emit phasorVisibilityChanged(6, c);
+    });
+    // 고조파 전압 7
+    connect(m_phasorHarmCurrentCheckBox, &QCheckBox::toggled, this, [this](bool c) {
+        emit phasorVisibilityChanged(7, c);
+    });
 }
 
 // --- public slots ---

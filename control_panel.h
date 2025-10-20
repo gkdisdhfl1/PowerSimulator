@@ -100,24 +100,20 @@ private:
     QPushButton* m_trackingButton;
 
     CollapsibleGroupBox* m_waveformSelectionGroup;
-    QCheckBox* m_voltageACheckBox;
-    QCheckBox* m_currentACheckBox;
-    QCheckBox* m_voltageBCheckBox;
-    QCheckBox* m_currentBCheckBox;
-    QCheckBox* m_voltageCCheckBox;
-    QCheckBox* m_currentCCheckBox;
+    std::array<QCheckBox*, 3> m_voltageCheckBox;
+    std::array<QCheckBox*, 3> m_currentCheckBox;
 
     CollapsibleGroupBox* m_analysisSelectionGroup;
-    QCheckBox* m_rmsVoltageCheckBox[3]; // A, B, C
-    QCheckBox* m_rmsCurrentCheckBox[3]; // A, B, C
-    QCheckBox* m_activePowerCheckBox[3]; // A, B, C
+    std::array<QCheckBox*, 3> m_rmsVoltageCheckBox;
+    std::array<QCheckBox*, 3> m_rmsCurrentCheckBox;
+    std::array<QCheckBox*, 3> m_activePowerCheckBox;
 
     // Phasor 그래프 체크박스
     CollapsibleGroupBox* m_phasorSelectionGroup;
-    std::array<QCheckBox*, 3> m_phasorFundVoltageCheck;
-    std::array<QCheckBox*, 3> m_phasorFundCurrentCheck;
-    QCheckBox* m_phasorHarmVoltageCheck;
-    QCheckBox* m_phasorHarmCurrentCheck;
+    std::array<QCheckBox*, 3> m_phasorFundVoltageCheckBox;
+    std::array<QCheckBox*, 3> m_phasorFundCurrentCheckBox;
+    QCheckBox* m_phasorHarmVoltageCheckBox;
+    QCheckBox* m_phasorHarmCurrentCheckBox;
 
 };
 
