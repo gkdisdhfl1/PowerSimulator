@@ -33,29 +33,36 @@ PhasorView::PhasorView(QWidget *parent)
     , m_controlContainer(new QWidget(this))
     , m_totalVoltageCheck(new QCheckBox("고조파 V", this))
     , m_totalCurrentCheck(new QCheckBox("고조파 I", this))
-    , m_fundVoltageCheck(new QCheckBox("기본파 V", this))
-    , m_fundCurrentCheck(new QCheckBox("기본파 I", this))
     , m_voltageInfoLabel(new QLabel(this))
     , m_currentInfoLabel(new QLabel(this))
 {
     // 체크 박스 기본값 설정
     m_totalVoltageCheck->setChecked(false);
     m_totalCurrentCheck->setChecked(false);
-    m_fundVoltageCheck->setChecked(true);
-    m_fundCurrentCheck->setChecked(true);
 
     // 체크박스가 변경되면 위젯을 다시 그리도록 함
     connect(m_totalVoltageCheck, &QCheckBox::checkStateChanged, this, QOverload<>::of(&PhasorView::update));
     connect(m_totalCurrentCheck, &QCheckBox::checkStateChanged, this, QOverload<>::of(&PhasorView::update));
-    connect(m_fundVoltageCheck, &QCheckBox::checkStateChanged, this, QOverload<>::of(&PhasorView::update));
-    connect(m_fundCurrentCheck, &QCheckBox::checkStateChanged, this, QOverload<>::of(&PhasorView::update));
 
     // 레이아웃 설정
     auto controlLayout = new QGridLayout(m_controlContainer);
     controlLayout->addWidget(m_totalVoltageCheck, 0, 0);
     controlLayout->addWidget(m_totalCurrentCheck, 0, 1);
-    controlLayout->addWidget(m_fundVoltageCheck, 1, 0);
-    controlLayout->addWidget(m_fundCurrentCheck, 1, 1);
+
+    QStringList phases = {"(A)", "(B)", "(C)"};
+    for(int i{0}; i < 3; ++i) {
+        // 전압 체크박스
+        m_fundVoltageCheck[i] = new QCheckBox("V " + phases[i], this);
+        m_fundVoltageCheck[i]->setChecked(i == 0); // A상만 기본으로 켜기
+        connect(m_fundVoltageCheck[i], &QCheckBox::checkStateChanged, this, QOverload<>::of(&PhasorView::update));
+        controlLayout->addWidget(m_fundVoltageCheck[i], 1, i);
+
+        // 전류 체크박스
+        m_fundCurrentCheck[i] = new QCheckBox("A " + phases[i], this);
+        m_fundCurrentCheck[i]->setChecked(i == 0);
+        connect(m_fundCurrentCheck[i], &QCheckBox::checkStateChanged, this, QOverload<>::of(&PhasorView::update));
+        controlLayout->addWidget(m_fundCurrentCheck[i], 2, i);
+    }
 
     controlLayout->addWidget(m_voltageInfoLabel, 0, 2);
     controlLayout->addWidget(m_currentInfoLabel, 1, 2);
@@ -76,8 +83,9 @@ void PhasorView::updateData(const std::deque<MeasuredData>& data)
     if(data.empty()) {
         m_harmonicVoltage = PhasorInfo();
         m_harmonicCurrent = PhasorInfo();
-        m_fundamentalVoltage = PhasorInfo();
-        m_fundamentalCurrent = PhasorInfo();
+        const PhasorInfo emptyPhasor;
+        m_fundVoltage.fill(emptyPhasor);
+        m_fundCurrent.fill(emptyPhasor);
         m_voltageInfoLabel->clear();
         m_currentInfoLabel->clear();
         return;
@@ -88,21 +96,24 @@ void PhasorView::updateData(const std::deque<MeasuredData>& data)
     const auto& latestData = data.back();
 
     // --- 기본파 정보 계산 ---
-    const auto& v_fund = latestData.fundamentalVoltage;
-    const auto& i_fund = latestData.fundamentalCurrent;
 
+    for(int i{0}; i < 3; ++i) {
+        // 전압
+        const auto& v_fund = latestData.fundamentalVoltage[i];
+        if (v_fund.order > 0) {
+            m_fundVoltage[i].components = QPointF(v_fund.phasorX, v_fund.phasorY);
+            m_fundVoltage[i].magnitude = v_fund.rms;
+            m_fundVoltage[i].phaseDegrees = utils::radiansToDegrees(v_fund.phase);
+        } else { m_fundVoltage[i] = PhasorInfo(); }
 
-    if (v_fund.order > 0) {
-        m_fundamentalVoltage.components = QPointF(v_fund.phasorX, v_fund.phasorY);
-        m_fundamentalVoltage.magnitude = v_fund.rms;
-        m_fundamentalVoltage.phaseDegrees = utils::radiansToDegrees(v_fund.phase);
-    } else { m_fundamentalVoltage = PhasorInfo(); }
-
-    if (i_fund.order > 0) {
-        m_fundamentalCurrent.components = QPointF(i_fund.phasorX, i_fund.phasorY);
-        m_fundamentalCurrent.magnitude = i_fund.rms;
-        m_fundamentalCurrent.phaseDegrees = utils::radiansToDegrees(i_fund.phase);
-    } else { m_fundamentalCurrent = PhasorInfo(); }
+        // 전류
+        const auto& i_fund = latestData.fundamentalCurrent[i];
+        if (i_fund.order > 0) {
+            m_fundCurrent[i].components = QPointF(i_fund.phasorX, i_fund.phasorY);
+            m_fundCurrent[i].magnitude = i_fund.rms;
+            m_fundCurrent[i].phaseDegrees = utils::radiansToDegrees(i_fund.phase);
+        } else { m_fundCurrent[i] = PhasorInfo(); }
+    }
 
     // --- 고조파 정보 계산 ---
     const auto* v_harm = AnalysisUtils::getDominantHarmonic(latestData.voltageHarmonics);
@@ -128,14 +139,14 @@ void PhasorView::updateData(const std::deque<MeasuredData>& data)
     m_voltageInfoLabel->setText(QString("고조파: %1 V, %2°\n기본파: %3 V, %4°")
                                     .arg(m_harmonicVoltage.magnitude, 0, 'f', 2)
                                     .arg(m_harmonicVoltage.phaseDegrees, 0, 'f', 1)
-                                    .arg(m_fundamentalVoltage.magnitude, 0, 'f', 2)
-                                    .arg(m_fundamentalVoltage.phaseDegrees, 0, 'f', 1));
+                                    .arg(m_fundVoltage[0].magnitude, 0, 'f', 2)
+                                    .arg(m_fundVoltage[0].phaseDegrees, 0, 'f', 1));
 
     m_currentInfoLabel->setText(QString("고조파: %1 A, %2°\n기본파: %3 A, %4°")
                                     .arg(m_harmonicCurrent.magnitude, 0, 'f', 2)
                                     .arg(m_harmonicCurrent.phaseDegrees, 0, 'f', 1)
-                                    .arg(m_fundamentalCurrent.magnitude, 0, 'f', 2)
-                                    .arg(m_fundamentalCurrent.phaseDegrees, 0, 'f', 1));
+                                    .arg(m_fundCurrent[0].magnitude, 0, 'f', 2)
+                                    .arg(m_fundCurrent[0].phaseDegrees, 0, 'f', 1));
 
     update();
 }
@@ -156,7 +167,7 @@ void PhasorView::paintEvent(QPaintEvent *event)
     // 가이드 라인 그리기
     drawGuideLines(painter, ctx);
 
-    // 페이저 그리기
+    // --- 페이저 그리기 ---
 
     // 고조파 페이저
     if(m_totalVoltageCheck->isChecked()) {
@@ -166,14 +177,20 @@ void PhasorView::paintEvent(QPaintEvent *event)
         // qDebug() << "currentDisplayLength: " << currentDisplayLength;
         drawPhasor(painter, m_harmonicCurrent, Qt::magenta, getPhasorDisplayLength(m_harmonicCurrent.magnitude, config::Source::Current::MaxAmplitude, ctx, false));
     }
-    // 기본파 페이저
-    if(m_fundVoltageCheck->isChecked()) {
-        drawPhasor(painter, m_fundamentalVoltage, Qt::blue, getPhasorDisplayLength(m_fundamentalVoltage.magnitude, config::Source::Amplitude::Max, ctx, true));
+
+    // 3상 기본파 페이저 그리기
+    const std::array<QColor, 3> voltageColors = {Qt::blue, Qt::darkYellow, Qt::darkGreen};
+    const std::array<QColor, 3> currentColors = {Qt::red, Qt::darkCyan, Qt::darkMagenta};
+
+    for(int i{0}; i < 3; ++i) {
+        if(m_fundVoltageCheck[i]->isChecked()) {
+            drawPhasor(painter, m_fundVoltage[i], voltageColors[i], getPhasorDisplayLength(m_fundVoltage[i].magnitude, config::Source::Amplitude::Max, ctx, true));
+        }
+        if(m_fundCurrentCheck[i]->isChecked()) {
+            drawPhasor(painter, m_fundCurrent[i], currentColors[i], getPhasorDisplayLength(m_fundCurrent[i].magnitude, config::Source::Current::MaxAmplitude, ctx, false));
+        }
     }
-    if(m_fundCurrentCheck->isChecked()) {
-        // qDebug() << "currentDisplayLength: " << currentDisplayLength;
-        drawPhasor(painter, m_fundamentalCurrent, Qt::red, getPhasorDisplayLength(m_fundamentalCurrent.magnitude, config::Source::Current::MaxAmplitude, ctx, false));
-    }
+
 }
 
 void PhasorView::drawGuideLines(QPainter& painter, const DrawingContext& ctx) const

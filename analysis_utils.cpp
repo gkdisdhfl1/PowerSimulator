@@ -53,7 +53,7 @@ const HarmonicAnalysisResult* AnalysisUtils::getDominantHarmonic(const std::vect
     return dominant;
 }
 
-std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> AnalysisUtils::calculateSpectrum(const std::vector<DataPoint>& samples, bool useWindow)
+std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> AnalysisUtils::calculateSpectrum(const std::vector<DataPoint>& samples, DataType type, int phase, bool useWindow)
 {
     const size_t N = samples.size();
     if(N == 0 || N % 2 != 0) {
@@ -73,14 +73,26 @@ std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> A
 
     // 2. 입력 데이터 준비 (Hann 윈도우 적용 포함)
     std::vector<kiss_fft_scalar> fft_in(N);
+    auto get_value = [&](const DataPoint& p) {
+        if(type == DataType::Voltage) {
+            if(phase == 0) return p.voltage.a;
+            if(phase == 1) return p.voltage.b;
+            return p.voltage.c;
+        } else { // Current
+            if(phase == 0) return p.current.a;
+            if(phase == 1) return p.current.b;
+            return p.current.c;
+        }
+    };
+
     if(useWindow) {
         const double two_pi_over_N_minus_1 = config::Math::TwoPi / (N - 1);
         for(int i = 0; i < N; ++i) {
-            fft_in[i] = samples[i].voltage.a * 0.5 * (1.0 - std::cos(i * two_pi_over_N_minus_1));
+            fft_in[i] = get_value(samples[i]) * 0.5 * (1.0 - std::cos(i * two_pi_over_N_minus_1));
         }
     } else {
         for(int i = 0; i < N; ++i) {
-            fft_in[i] = samples[i].voltage.a;
+            fft_in[i] = get_value(samples[i]);
         }
     }
 
@@ -112,7 +124,7 @@ std::expected<std::vector<double>, AnalysisUtils::WaveGenerateError> AnalysisUti
     }
 
     // 1. 스펙트럼 계산
-    auto spectrumResult = calculateSpectrum(samples, true);
+    auto spectrumResult = calculateSpectrum(samples, DataType::Voltage, 0, true);
     if(!spectrumResult) {
         return std::unexpected(WaveGenerateError::SpectrumCalculationFailed);
     }
@@ -252,36 +264,6 @@ PhaseData AnalysisUtils::calculateTotalRms(const std::vector<DataPoint>& samples
 
 }
 
-MeasuredData AnalysisUtils::buildMeasuredData(
-    const PhaseData& totalVoltageRms,
-    const PhaseData& totalCurrentRms,
-    const PhaseData& activePower,
-    const std::vector<HarmonicAnalysisResult>& voltageHarmonics,
-    const std::vector<HarmonicAnalysisResult>& currentHarmonics)
-{
-    MeasuredData data;
-    data.voltageRms = totalVoltageRms;
-    data.currentRms = totalCurrentRms;
-    data.activePower = activePower;
-
-    if(const auto* v_fund = getHarmonicComponent(voltageHarmonics, 1)) {
-        data.fundamentalVoltage = *v_fund;
-    }
-    if(const auto* i_fund = getHarmonicComponent(currentHarmonics, 1)) {
-        data.fundamentalCurrent = *i_fund;
-    }
-    if(const auto* v_dom = getDominantHarmonic(voltageHarmonics)) {
-        data.dominantVoltage = *v_dom;
-    }
-    if(const auto* i_dom = getDominantHarmonic(currentHarmonics)) {
-        data.dominantCurrent = *i_dom;
-    }
-    data.voltageHarmonics = voltageHarmonics;
-    data.currentHarmonics = currentHarmonics;
-
-    return data;
-}
-
 OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<MeasuredData>& cycleBuffer)
 {
     if(cycleBuffer.empty()) {
@@ -293,15 +275,15 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     const auto& lastCycleData = cycleBuffer.back();
     const size_t N = cycleBuffer.size();
 
-    // 1. 마지막 사이클에서 지배적 고조파의 차수와 위상을 결정
-    summary.dominantHarmonicVoltageOrder = lastCycleData.dominantVoltage.order;
-    summary.dominantHarmonicVoltagePhase = utils::radiansToDegrees(lastCycleData.dominantVoltage.phase);
+    // 1. 마지막 사이클에서 A상 지배적 고조파의 차수와 위상을 결정
+    summary.dominantHarmonicVoltageOrder = lastCycleData.dominantVoltage[0].order;
+    summary.dominantHarmonicVoltagePhase = utils::radiansToDegrees(lastCycleData.dominantVoltage[0].phase);
 
-    summary.dominantHarmonicCurrentOrder = lastCycleData.dominantCurrent.order;
-    summary.dominantHarmonicCurrentPhase = utils::radiansToDegrees(lastCycleData.dominantCurrent.order);
+    summary.dominantHarmonicCurrentOrder = lastCycleData.dominantCurrent[0].order;
+    summary.dominantHarmonicCurrentPhase = utils::radiansToDegrees(lastCycleData.dominantCurrent[0].order);
 
-    summary.fundamentalVoltagePhase = utils::radiansToDegrees(lastCycleData.fundamentalVoltage.phase);
-    summary.fundamentalCurrentPhase = utils::radiansToDegrees(lastCycleData.fundamentalCurrent.phase);
+    summary.fundamentalVoltagePhase = utils::radiansToDegrees(lastCycleData.fundamentalVoltage[0].phase);
+    summary.fundamentalCurrentPhase = utils::radiansToDegrees(lastCycleData.fundamentalCurrent[0].phase);
 
     // 2. 전체 버퍼를 순회하며 RMS 값들의 제곱의 합과 유효 전력을 구함
     double totalVoltageRmsSumSq = 0.0; double totalCurrentRmsSumSq = 0.0; double activePowerSum = 0.0;
@@ -322,12 +304,12 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
         activePowerSum += data.activePower.a;
         activePowerSumB += data.activePower.b;
         activePowerSumC += data.activePower.c;
-        fundVoltageRmsSumSq += data.fundamentalVoltage.rms * data.fundamentalVoltage.rms;
-        fundCurrentRmsSumSq += data.fundamentalCurrent.rms * data.fundamentalCurrent.rms;
-        if(summary.dominantHarmonicVoltageOrder > 1 && data.dominantVoltage.order == summary.dominantHarmonicVoltageOrder)
-            dominantVoltageRmsSumSq += data.dominantVoltage.rms * data.dominantVoltage.rms;
-        if(summary.dominantHarmonicCurrentOrder > 1 && data.dominantCurrent.order == summary.dominantHarmonicCurrentOrder)
-            dominantCurrentRmsSumSq += data.dominantCurrent.rms * data.dominantCurrent.rms;
+        fundVoltageRmsSumSq += data.fundamentalVoltage[0].rms * data.fundamentalVoltage[0].rms;
+        fundCurrentRmsSumSq += data.fundamentalCurrent[0].rms * data.fundamentalCurrent[0].rms;
+        if(summary.dominantHarmonicVoltageOrder > 1 && data.dominantVoltage[0].order == summary.dominantHarmonicVoltageOrder)
+            dominantVoltageRmsSumSq += data.dominantVoltage[0].rms * data.dominantVoltage[0].rms;
+        if(summary.dominantHarmonicCurrentOrder > 1 && data.dominantCurrent[0].order == summary.dominantHarmonicCurrentOrder)
+            dominantCurrentRmsSumSq += data.dominantCurrent[0].rms * data.dominantCurrent[0].rms;
     }
 
     // 3. 최종 계산

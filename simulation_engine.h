@@ -57,7 +57,6 @@ public:
     const Parameters& parameters() const;
 
     FrequencyTracker* getFrequencyTracker() const;
-    enum class DataType { Voltage, Current};
 
 public slots:
     void start();
@@ -86,7 +85,7 @@ private:
     using Nanoseconds = utils::Nanoseconds;
     using FpSeconds = utils::FpSeconds;
 
-    std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> analyzeSpectrum(DataType type) const;
+    std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> analyzeSpectrum(AnalysisUtils::DataType type, int phase) const;
 
     void advanceSimulationTime();
     PhaseData calculateCurrentVoltage() const;

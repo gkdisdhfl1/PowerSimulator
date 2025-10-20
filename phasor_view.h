@@ -48,14 +48,14 @@ private:
     QWidget* m_controlContainer;
     QCheckBox* m_totalVoltageCheck;
     QCheckBox* m_totalCurrentCheck;
-    QCheckBox* m_fundVoltageCheck;
-    QCheckBox* m_fundCurrentCheck;
+    std::array<QCheckBox*, 3> m_fundVoltageCheck;
+    std::array<QCheckBox*, 3> m_fundCurrentCheck;
     QLabel* m_voltageInfoLabel;
     QLabel* m_currentInfoLabel;
 
     // 표시할 데이터
-    PhasorInfo m_fundamentalVoltage;
-    PhasorInfo m_fundamentalCurrent;
+    std::array<PhasorInfo, 3> m_fundVoltage;
+    std::array<PhasorInfo, 3> m_fundCurrent;
     PhasorInfo m_harmonicVoltage;
     PhasorInfo m_harmonicCurrent;
 

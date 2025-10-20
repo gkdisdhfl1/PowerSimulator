@@ -285,52 +285,59 @@ void SimulationEngine::calculateCycleData()
     if(m_cycleSampleBuffer.empty())
         return;
 
-    // 1. (측정) 파형의 전체 주파수 스펙트럼 분석
-    auto voltageSpectrumResult = analyzeSpectrum(DataType::Voltage);
-    auto currentSpectrumResult = analyzeSpectrum(DataType::Current);
-    if(!voltageSpectrumResult) {
-        qWarning() << "Voltage spectrum analysis failed: " << AnalysisUtils::toQString(voltageSpectrumResult.error());
-        return;
-    }
-    if(!currentSpectrumResult) {
-        qWarning() << "Current spectrum analysis failed: " << AnalysisUtils::toQString(currentSpectrumResult.error());
-        return;
-    }
-    const auto& voltageSpectrum = *voltageSpectrumResult;
-    const auto& currentSpectrum = *currentSpectrumResult;
-
-    // 2. (해석) 스펙트럼에서 가장 큰 두 개의 성분(기본파, 고조파)를 찾음
-    auto voltageHarmonics = AnalysisUtils::findSignificantHarmonics(voltageSpectrum);
-    auto currentHarmonics = AnalysisUtils::findSignificantHarmonics(currentSpectrum);
-
-    // 3. 전체 RMS 및 유효 전력 계산
-    const PhaseData totalVoltageRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Voltage);
-    const PhaseData totalCurrentRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Current);
-    const PhaseData activePower = AnalysisUtils::calculateActivePower(m_cycleSampleBuffer);
-
-    // 4. 계산된 데이터 구조체를 담아 컨테이너 추가
-    MeasuredData newData = AnalysisUtils::buildMeasuredData(
-        totalVoltageRms,
-        totalCurrentRms,
-        activePower,
-        voltageHarmonics,
-        currentHarmonics
-    );
+    MeasuredData newData;
     newData.timestamp = m_simulationTimeNs;
 
+    // 1. for 루프를 사용하여 3상에 대한 스펙트럼과 고조파 분석 수행
+    for(int i{0}; i < 3; ++i) {
+        // --- 전압 분석 ---
+        auto voltageSpectrumResult = analyzeSpectrum(AnalysisUtils::DataType::Voltage, i);
+        if(voltageSpectrumResult) {
+            auto harmonics = AnalysisUtils::findSignificantHarmonics(*voltageSpectrumResult);
+            if(i == 0) newData.voltageHarmonics = harmonics;
+            else if(i == 1) newData.voltageHarmonicsB = harmonics;
+            else newData.voltageHarmonicsC = harmonics;
+
+            if(const auto* fund = AnalysisUtils::getHarmonicComponent(harmonics, 1)) {
+                newData.fundamentalVoltage[i] = *fund;
+            }
+            if(const auto* dom = AnalysisUtils::getDominantHarmonic(harmonics)) {
+                newData.dominantVoltage[i] = *dom;
+            }
+        }
+
+        // --- 전류 분석 ---
+        auto currentSpectrumResult = analyzeSpectrum(AnalysisUtils::DataType::Current, i);
+        if(currentSpectrumResult) {
+            auto harmonics = AnalysisUtils::findSignificantHarmonics(*currentSpectrumResult);
+            if(i == 0) newData.currentHarmonics = harmonics;
+            else if(i == 1) newData.currentHarmonicsB = harmonics;
+            else newData.currentHarmonicsC = harmonics;
+
+            if(const auto* fund = AnalysisUtils::getHarmonicComponent(harmonics, 1)) {
+                newData.fundamentalCurrent[i] = *fund;
+            }
+            if(const auto* dom = AnalysisUtils::getDominantHarmonic(harmonics)) {
+                newData.dominantCurrent[i] = *dom;
+            }
+        }
+    }
+
+    // 2. 전체 RMS 및 유효 전력 계산
+    newData.voltageRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Voltage);
+    newData.currentRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Current);
+    newData.activePower = AnalysisUtils::calculateActivePower(m_cycleSampleBuffer);
+
+    // 3. 완성된 데이터를 컨테이너에 추가
     m_measuredData.push_back(newData);
 
-    if(m_measuredData.size() > static_cast<size_t>(m_params.maxDataSize)) {
-        m_measuredData.pop_front();
-    }
+    // 4. 1초 데이터 처리 로직 호출
+    processOneSecondData(m_measuredData.back());
 
     // 5. UI에 업데이트 알림
     emit measuredDataUpdated(m_measuredData);
 
-    // 6. 1초 데이터 처리 로직 호출
-    processOneSecondData(m_measuredData.back());
-
-    // 7. 버퍼 비우기
+    // 6. 버퍼 비우기
     m_cycleSampleBuffer.clear();
 }
 
@@ -370,24 +377,24 @@ void SimulationEngine::processUpdateByMode(bool resetCounter)
     }
 }
 
-std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> SimulationEngine::analyzeSpectrum(SimulationEngine::DataType type) const
+std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> SimulationEngine::analyzeSpectrum(AnalysisUtils::DataType type, int phase) const
 {
-    // 전압 전류에 따라 AnalysisUtils에 넘길 데이터 복사
-    std::vector<DataPoint> samplesForAnalysis;
-    samplesForAnalysis.reserve(m_cycleSampleBuffer.size());
+    // // 전압 전류에 따라 AnalysisUtils에 넘길 데이터 복사
+    // std::vector<DataPoint> samplesForAnalysis;
+    // samplesForAnalysis.reserve(m_cycleSampleBuffer.size());
 
-    for(const auto& sample : m_cycleSampleBuffer) {
-        samplesForAnalysis.push_back({
-            sample.timestamp,
-            (type == DataType::Voltage) ? sample.voltage : sample.current,
-            0
-        });
-    }
-    if(samplesForAnalysis.size() % 2 != 0) {
-        samplesForAnalysis.push_back({});
-    }
+    // for(const auto& sample : m_cycleSampleBuffer) {
+    //     samplesForAnalysis.push_back({
+    //         sample.timestamp,
+    //         (type == DataType::Voltage) ? sample.voltage : sample.current,
+    //         0
+    //     });
+    // }
+    // if(samplesForAnalysis.size() % 2 != 0) {
+    //     samplesForAnalysis.push_back({});
+    // }
 
-    return AnalysisUtils::calculateSpectrum(samplesForAnalysis, false);
+    return AnalysisUtils::calculateSpectrum(m_cycleSampleBuffer, type, phase, false);
 }
 
 void SimulationEngine::processOneSecondData(const MeasuredData& latestCycleDta)

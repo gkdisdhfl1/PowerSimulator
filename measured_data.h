@@ -21,17 +21,21 @@ struct MeasuredData {
     PhaseData currentRms; // 전류 RMS
     PhaseData activePower; // 유효 전력
 
-    // 자주 사용하는 성분들
-    HarmonicAnalysisResult fundamentalVoltage;
-    HarmonicAnalysisResult fundamentalCurrent;
-    HarmonicAnalysisResult dominantVoltage;
-    HarmonicAnalysisResult dominantCurrent;
+    // 3상 분석 결과
+    std::array<HarmonicAnalysisResult, 3> fundamentalVoltage; // [0]:A [1]:B [2]:C
+    std::array<HarmonicAnalysisResult, 3> fundamentalCurrent;
+    std::array<HarmonicAnalysisResult, 3> dominantVoltage;
+    std::array<HarmonicAnalysisResult, 3> dominantCurrent;
 
     // 전압의 주파수 성분 분석 결과 (harmonics[0]: 기본파)
     std::vector<HarmonicAnalysisResult> voltageHarmonics;
+    std::vector<HarmonicAnalysisResult> voltageHarmonicsB;
+    std::vector<HarmonicAnalysisResult> voltageHarmonicsC;
 
     // 전압의 주파수 성분 분석 결과 (harmonics[0]: 기본파)
     std::vector<HarmonicAnalysisResult> currentHarmonics;
+    std::vector<HarmonicAnalysisResult> currentHarmonicsB;
+    std::vector<HarmonicAnalysisResult> currentHarmonicsC;
 };
 
 // 1초 단위로 가공된 분석 데이터를 담는 구조체

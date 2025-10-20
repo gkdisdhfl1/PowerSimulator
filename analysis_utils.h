@@ -54,7 +54,7 @@ public:
     // 가장 지배적인 고조파 성분을 찾고 반환 (없으면 nullptr)
     static const HarmonicAnalysisResult* getDominantHarmonic(const std::vector<HarmonicAnalysisResult>& harmonics);
 
-    static std::expected<std::vector<std::complex<double>>, SpectrumError> calculateSpectrum(const std::vector<DataPoint>& samples, bool useWindow);
+    static std::expected<std::vector<std::complex<double>>, SpectrumError> calculateSpectrum(const std::vector<DataPoint>& samples, DataType type, int phase, bool useWindow);
 
     static std::expected<std::vector<double>, WaveGenerateError> generateFundamentalWave(const std::vector<DataPoint>& samples);
 
@@ -63,14 +63,6 @@ public:
     static PhaseData calculateActivePower(const std::vector<DataPoint>& samples);
 
     static PhaseData calculateTotalRms(const std::vector<DataPoint>&samples, DataType type);
-
-    static MeasuredData buildMeasuredData(
-        const PhaseData& totalVoltageRms,
-        const PhaseData& totalCurrentRms,
-        const PhaseData& activePower,
-        const std::vector<HarmonicAnalysisResult>& voltageHarmonics,
-        const std::vector<HarmonicAnalysisResult>& currentHarmonics
-    );
 
     static OneSecondSummaryData buildOneSecondSummary(const std::vector<MeasuredData>& cycleBuffer);
 
