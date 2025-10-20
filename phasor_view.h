@@ -7,6 +7,7 @@
 
 class QCheckBox;
 class QLabel;
+class QGridLayout;
 
 struct DrawingContext {
         QPointF origin;
@@ -27,6 +28,7 @@ public:
 
 public slots:
     void updateData(const std::deque<MeasuredData>& data);
+    void onVisibilityChanged(int type, bool isVisible);
 
 protected:
     // 위젯을 다시 그릴 때 호출되는 이벤트 핸들러
@@ -45,13 +47,11 @@ private:
 
 
     // UI 요소
-    QWidget* m_controlContainer;
-    QCheckBox* m_totalVoltageCheck;
-    QCheckBox* m_totalCurrentCheck;
-    std::array<QCheckBox*, 3> m_fundVoltageCheck;
-    std::array<QCheckBox*, 3> m_fundCurrentCheck;
     QLabel* m_voltageInfoLabel;
     QLabel* m_currentInfoLabel;
+
+    std::array<bool, 8> m_phasorIsVisible;
+    QGridLayout* m_infoLayout;
 
     // 표시할 데이터
     std::array<PhasorInfo, 3> m_fundVoltage;

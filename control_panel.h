@@ -48,6 +48,7 @@ signals:
     void trackingToggled(bool enabled); // 자동 추적 토글 시그널
     void waveformVisibilityChanged(int type, bool isVisible);
     void analysisWaveformVisibilityChanged(int type, bool isVisible);
+    void phasorVisibilityChanged(int type, bool isVisible);
 
     // 파라미터 변경 시그널
     void amplitudeChanged(double value);
@@ -110,6 +111,14 @@ private:
     QCheckBox* m_rmsVoltageCheckBox[3]; // A, B, C
     QCheckBox* m_rmsCurrentCheckBox[3]; // A, B, C
     QCheckBox* m_activePowerCheckBox[3]; // A, B, C
+
+    // Phasor 그래프 체크박스
+    CollapsibleGroupBox* m_phasorSelectionGroup;
+    std::array<QCheckBox*, 3> m_phasorFundVoltageCheck;
+    std::array<QCheckBox*, 3> m_phasorFundCurrentCheck;
+    QCheckBox* m_phasorHarmVoltageCheck;
+    QCheckBox* m_phasorHarmCurrentCheck;
+
 };
 
 #endif // CONTROL_PANEL_H
