@@ -273,19 +273,11 @@ void FrequencyTracker::processFineTune(const MeasuredData& latestMeasuredData)
     // ZC Tracking (PID)
     // 목표 위상을 동적으로 결정
     const double targetPhaseMinus90 = -std::numbers::pi / 2.0;
-    const double targetPhasePlus90 = std::numbers::pi / 2.0;
 
-    // 현재 각도에서 두 목표까지의 거리 계산
-    double errorMinus90 = currentPhasorAngle - targetPhaseMinus90;
-    while(errorMinus90 <= -std::numbers::pi) errorMinus90 += config::Math::TwoPi;
-    while(errorMinus90 > std::numbers::pi)  errorMinus90 -= config::Math::TwoPi;
-
-    double errorPlus90 = currentPhasorAngle - targetPhasePlus90;
-    while(errorPlus90 <= -std::numbers::pi) errorPlus90 += config::Math::TwoPi;
-    while(errorPlus90 > std::numbers::pi) errorPlus90 -= config::Math::TwoPi;
-
-    // 더 작은 에러를 최종 위상 에러로 선택
-    double zcPhaseError = (std::abs(errorMinus90) < std::abs(errorPlus90)) ? errorMinus90 : errorPlus90;
+    // 현재 각도에서 목표까지의 각도 계산
+    double zcPhaseError = currentPhasorAngle - targetPhaseMinus90;
+    while(zcPhaseError <= -std::numbers::pi) zcPhaseError += config::Math::TwoPi;
+    while(zcPhaseError > std::numbers::pi)  zcPhaseError -= config::Math::TwoPi;
 
     // PID 출력 계산
     double phase_lf_output = m_zcController.process(zcPhaseError);
