@@ -70,16 +70,6 @@ private:
     QPushButton* m_cancelButton;
     QGroupBox* m_previewGroupBox;
 
-    // 3상 설정 위젯 포인터
-    QDoubleSpinBox *m_voltage_B_AmplitudeSpinBox;
-    QDoubleSpinBox *m_voltage_B_PhaseSpinBox;
-    QDoubleSpinBox *m_voltage_C_AmplitudeSpinBox;
-    QDoubleSpinBox *m_voltage_C_PhaseSpinBox;
-    QDoubleSpinBox *m_current_B_AmplitudeSpinBox;
-    QDoubleSpinBox *m_current_B_PhaseSpinBox;
-    QDoubleSpinBox *m_current_C_AmplitudeSpinBox;
-    QDoubleSpinBox *m_current_C_PhaseSpinBox;
-
     SettingsUiController* m_controller = nullptr; // Controller 포인터 소유x
     DialogResult m_resultState;
 

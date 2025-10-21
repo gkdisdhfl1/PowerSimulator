@@ -55,6 +55,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Core)
 
     qt_add_executable(PowerSimulator
         MANUAL_FINALIZATION
@@ -87,6 +88,7 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
         pid_controller.h pid_controller.cpp
         one_second_summary_window.h one_second_summary_window.cpp
         kiss_fft/kiss_fft.c kiss_fft/kiss_fftr.c
+        three_phase_dialog.h three_phase_dialog.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET PowerSimulator APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -126,6 +128,7 @@ target_link_libraries(PowerSimulator PRIVATE Qt6::Core)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
+target_link_libraries(PowerSimulator PRIVATE Qt6::Core)
 
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

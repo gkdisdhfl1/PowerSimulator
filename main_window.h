@@ -33,6 +33,7 @@ private slots:
 private:
     QAction* m_actionSettings;
     QAction* m_actionPidTuning;
+    QAction* m_actionThreePhaseSettings;
     SimulationEngine *m_engine;
 
     // View와 Controller들을 소유

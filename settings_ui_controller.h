@@ -12,6 +12,7 @@ class PidTuningDialog;
 class ControlPanel;
 class SettingsManager;
 class QDoubleSpinBox;
+class ThreePhaseDialog;
 
 class SettingsUiController : public QObject
 {
@@ -57,6 +58,10 @@ public slots:
     void onCoefficientsChanged(const FrequencyTracker::PidCoefficients& fllCoeffs, const FrequencyTracker::PidCoefficients& zcCoeffs);
 
     void onHarmonicsChanged();
+
+    // 3상 변경 관련 슬롯
+    void showThreePhaseDialog();
+    void onThreePhaseValueChanged(int type, double value);
 private:
     using SettingValue = std::variant<int, double>;
     using StateGetter = std::function<SettingValue(const ControlPanelState&)>;
@@ -75,6 +80,7 @@ private:
     QWidget* m_parent;        
     std::unique_ptr<SettingsDialog> m_settingsDialog; // SettingsDialog 소유권 이전
     std::unique_ptr<PidTuningDialog> m_pidTuningDialog;
+    std::unique_ptr<ThreePhaseDialog> m_threePhaseDialog;
 
     std::unordered_map<std::string, SettingInfo> m_settingsMap;
     QMap<QString, QString> m_keyNameMap;

@@ -5,6 +5,7 @@
 #include "settings_dialog.h"
 #include "settings_manager.h"
 #include "simulation_engine.h"
+#include "three_phase_dialog.h"
 #include <QInputDialog>
 #include <QMessageBox>
 #include <QStatusBar>
@@ -56,8 +57,10 @@ SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsM
 
     m_settingsDialog = std::make_unique<SettingsDialog>(this, m_parent);
     m_pidTuningDialog = std::make_unique<PidTuningDialog>(m_parent);
+    m_threePhaseDialog = std::make_unique<ThreePhaseDialog>(m_parent);
 
     connect(m_pidTuningDialog.get(), &PidTuningDialog::settingsApplied, this, &SettingsUiController::onCoefficientsChanged);
+    connect(m_threePhaseDialog.get(), &ThreePhaseDialog::valueChanged, this, &SettingsUiController::onThreePhaseValueChanged);
 }
 
 // --- public slot 구현 ---
@@ -253,6 +256,51 @@ void SettingsUiController::onHarmonicsChanged()
 
     params.voltageHarmonic = state.voltageHarmonic;
     params.currentHarmonic = state.currentHarmonic;
+}
+
+void SettingsUiController::onThreePhaseValueChanged(int type, double value)
+{
+    auto& params = m_engine->parameters();
+
+    switch(static_cast<ThreePhaseDialog::ParamType>(type))
+    {
+    case ThreePhaseDialog::VoltageBAmplitude:
+        if(params.voltage_B_amplitude != value) params.voltage_B_amplitude = value;
+        break;
+    case ThreePhaseDialog::VoltageBPhase:
+        if(params.voltage_B_phase_deg != value) params.voltage_B_phase_deg = value;
+        break;
+    case ThreePhaseDialog::VoltageCAmplitude:
+        if(params.voltage_C_amplitude != value) params.voltage_C_amplitude = value;
+        break;
+    case ThreePhaseDialog::VoltageCPhase:
+        if(params.voltage_C_phase_deg != value) params.voltage_C_phase_deg = value;
+        break;
+    case ThreePhaseDialog::CurrentBAmplitude:
+        if(params.current_B_amplitude != value) params.current_B_amplitude = value;
+        break;
+    case ThreePhaseDialog::CurrentBPhase:
+        if(params.current_B_phase_deg!= value) params.current_B_phase_deg = value;
+        break;
+    case ThreePhaseDialog::CurrentCAmplitude:
+        if(params.current_C_amplitude != value) params.current_C_amplitude = value;
+        break;
+    case ThreePhaseDialog::CurrentCPhase:
+        if(params.current_C_phase_deg!= value) params.current_C_phase_deg = value;
+        break;
+    default:
+        break;
+    }
+}
+
+void SettingsUiController::showThreePhaseDialog()
+{
+    const auto& currentParams = m_engine->parameters();
+    m_threePhaseDialog->setInitialValues(currentParams);
+
+    m_threePhaseDialog->show();
+    m_threePhaseDialog->raise();
+    m_threePhaseDialog->activateWindow();
 }
 // -------------------------
 

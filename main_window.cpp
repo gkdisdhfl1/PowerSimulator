@@ -11,6 +11,7 @@
 #include "graph_window.h"
 #include "analysis_graph_window.h"
 #include "phasor_view.h"
+#include "three_phase_dialog.h"
 
 #include <QDockWidget>
 #include <QStatusBar>
@@ -70,6 +71,10 @@ void MainWindow::createMenus()
     // 'PID 튜닝' 액션 생성 및 메뉴에 추가
     m_actionPidTuning = new QAction("PID 튜닝", this);
     toolsMenu->addAction(m_actionPidTuning);
+
+    // 3상 설정 액션 추가
+    m_actionThreePhaseSettings = new QAction("3상 상세 설정..", this);
+    toolsMenu->addAction(m_actionThreePhaseSettings);
 }
 
 void MainWindow::setupUiComponents()
@@ -168,6 +173,7 @@ void MainWindow::createSignalSlotConnections()
     // 메뉴바 액션 연결
     connect(m_actionSettings, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showSettingsDialog);
     connect(m_actionPidTuning, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showPidTuningDialog);
+    connect(m_actionThreePhaseSettings, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showThreePhaseDialog);
     connect(m_fpsTimer, &QTimer::timeout, this, &MainWindow::updateFpsLabel);
 
     connect(m_settingsUiController.get(), &SettingsUiController::maxDataSizeChangeRequested, m_engine, &SimulationEngine::onMaxDataSizeChanged);
