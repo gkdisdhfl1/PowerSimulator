@@ -230,8 +230,24 @@ void GraphWindow::updateVisiblePoints(const std::deque<DataPoint>& data)
     const int threshold = m_chartView->width(); // 픽셀 너비만큼 점을 뽑음
 
     if(pointCount > threshold) {
-        std::vector<std::function<double(const DataPoint&)>> extractors(6);
-        m_visibleDataPoints = downsampleLTTB(first, last, threshold, extractors);
+        std::vector<std::function<double(const DataPoint&)>> extractors;
+        extractors.reserve(m_seriesInfoList.size());
+        \
+            for(const auto& info : m_seriesInfoList) {
+            if(info.isVisible) {
+                // QVariant를 받는 info.extractor를 DataPoint를 받는 람다로 감싸서 추가
+                extractors.push_back([&info](const DataPoint& p) {
+                    return info.extractor(QVariant::fromValue(p));
+                });
+            }
+        }
+
+        // 보이는 시리즈가 없으면 다운샘플링 없이 그냥 복사
+        if(extractors.empty()) {
+            m_visibleDataPoints.assign(first, last);
+        } else {
+            m_visibleDataPoints = downsampleLTTB(first, last, threshold, extractors);
+        }
     } else {
         m_visibleDataPoints.assign(first, last);
     }
