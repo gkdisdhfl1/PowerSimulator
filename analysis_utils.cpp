@@ -55,11 +55,20 @@ const HarmonicAnalysisResult* AnalysisUtils::getDominantHarmonic(const std::vect
 
 std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> AnalysisUtils::calculateSpectrum(const std::vector<DataPoint>& samples, DataType type, int phase, bool useWindow)
 {
-    const size_t N = samples.size();
-    if(N == 0 || N % 2 != 0) {
-        qWarning() << "Invalid Input failed for N = " << N;
+    if(samples.size() == 0) {
+        qWarning() << "Input Data is empty!!!";
         return std::unexpected(SpectrumError::InvalidInput);
     }
+
+    size_t N = samples.size();
+    bool isOdd = (N % 2 != 0);
+    if(isOdd)
+        N += 1; // 짝수로 만듬
+
+    // if(N % 2 != 0) {
+    //     // qWarning() << "Invalid Input failed for N = " << N;
+    //     return std::unexpected(SpectrumError::InvalidInput);
+    // }
 
     // 1. FFT 설정 가져오기 (없으면 생성해서 캐시에 저장)
     if(m_fftConfigCache.find(N) == m_fftConfigCache.end()) {
@@ -96,6 +105,11 @@ std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> A
         }
     }
 
+    // 홀수였다면 마지막에 추가된 요소를 0으로 채움
+    if(isOdd) {
+        fft_in[N - 1] = 0.0;
+    }
+
     // 3. FFT 실행
     const int num_freq_bins = N / 2 + 1;
     std::vector<kiss_fft_cpx> fft_out(num_freq_bins);
@@ -126,6 +140,7 @@ std::expected<std::vector<double>, AnalysisUtils::WaveGenerateError> AnalysisUti
     // 1. 스펙트럼 계산
     auto spectrumResult = calculateSpectrum(samples, DataType::Voltage, 0, true);
     if(!spectrumResult) {
+        qWarning() << "Spectrum Calculation Failed generating Fundamental Wave!!!";
         return std::unexpected(WaveGenerateError::SpectrumCalculationFailed);
     }
     const auto& spectrum = *spectrumResult;

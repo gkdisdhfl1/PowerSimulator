@@ -305,6 +305,8 @@ void SimulationEngine::calculateCycleData()
             if(const auto* dom = AnalysisUtils::getDominantHarmonic(harmonics)) {
                 newData.dominantVoltage[i] = *dom;
             }
+        } else {
+            qWarning() << "Voltage Spectrum Analyze Failed !!!";
         }
 
         // --- 전류 분석 ---
@@ -321,6 +323,8 @@ void SimulationEngine::calculateCycleData()
             if(const auto* dom = AnalysisUtils::getDominantHarmonic(harmonics)) {
                 newData.dominantCurrent[i] = *dom;
             }
+        } else {
+            qWarning() << "Current Spectrum Analyze Failed !!!";
         }
     }
 
