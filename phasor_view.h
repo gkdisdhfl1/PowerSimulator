@@ -42,7 +42,7 @@ private:
     };
 
     void drawGuideLines(QPainter& painter, const DrawingContext& ctx) const;
-    double getPhasorDisplayLength(double magnitude, double maxMagnitude, const DrawingContext& ctx, bool isVoltage) const;
+    double getPhasorDisplayLength(double ratio, const DrawingContext& ctx, bool isVoltage) const;
     void drawPhasor(QPainter& painter, const PhasorInfo& phasor, const QColor& color, double radius);
 
 

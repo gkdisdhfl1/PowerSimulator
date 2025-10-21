@@ -73,7 +73,7 @@ void GraphWindow::setupSeries()
         false, {}
     });
     m_seriesInfoList.back().series->setName("Voltage B");
-    m_seriesInfoList.back().series->setColor(QColor(QColorConstants::Svg::yellow));
+    m_seriesInfoList.back().series->setColor(QColor(Qt::darkYellow));
 
     m_seriesInfoList.emplace_back(SeriesInfo{
         new QLineSeries(this),

@@ -144,29 +144,56 @@ void PhasorView::paintEvent(QPaintEvent *event)
     drawGuideLines(painter, ctx);
 
     // --- 페이저 그리기 ---
-
-    // 고조파 페이저
-    if(m_phasorIsVisible[6]) {
-        drawPhasor(painter, m_harmonicVoltage, Qt::cyan, getPhasorDisplayLength(m_harmonicVoltage.magnitude, config::Source::Amplitude::Max, ctx, true));
-    }
-    if(m_phasorIsVisible[7]) {
-        // qDebug() << "currentDisplayLength: " << currentDisplayLength;
-        drawPhasor(painter, m_harmonicCurrent, Qt::magenta, getPhasorDisplayLength(m_harmonicCurrent.magnitude, config::Source::Current::MaxAmplitude, ctx, false));
-    }
-
     // 3상 기본파 페이저 그리기
     const std::array<QColor, 3> voltageColors = {Qt::blue, Qt::darkYellow, Qt::darkGreen};
     const std::array<QColor, 3> currentColors = {Qt::red, Qt::darkCyan, Qt::darkMagenta};
 
+    // 최대값 찾기
+    double maxVoltageMagnitude = 0.0;
+    double maxCurrentMagnitude = 0.0;
     for(int i{0}; i < 3; ++i) {
-        if(m_phasorIsVisible[i]) {
-            drawPhasor(painter, m_fundVoltage[i], voltageColors[i], getPhasorDisplayLength(m_fundVoltage[i].magnitude, config::Source::Amplitude::Max, ctx, true));
+        if(m_phasorIsVisible[i])
+            maxVoltageMagnitude = std::max(maxVoltageMagnitude, m_fundVoltage[i].magnitude);
+        if(m_phasorIsVisible[i + 3])
+            maxCurrentMagnitude = std::max(maxCurrentMagnitude, m_fundCurrent[i].magnitude);
+    }
+    if(m_phasorIsVisible[6]) {
+        maxVoltageMagnitude = std::max(maxVoltageMagnitude, m_harmonicVoltage.magnitude);
+    }
+    if(m_phasorIsVisible[7]) {
+        maxCurrentMagnitude = std::max(maxCurrentMagnitude, m_harmonicCurrent.magnitude);
+    }
+
+
+    // 전압 페이저 그리기
+    if(maxVoltageMagnitude > 1e-6) {
+        for(int i{0}; i < 3; ++i) {
+            if(m_phasorIsVisible[i]) {
+                double ratio = m_fundVoltage[i].magnitude / maxVoltageMagnitude;
+                drawPhasor(painter, m_fundVoltage[i], voltageColors[i], getPhasorDisplayLength(ratio, ctx, true));
+            }
         }
-        if(m_phasorIsVisible[i + 3]) {
-            drawPhasor(painter, m_fundCurrent[i], currentColors[i], getPhasorDisplayLength(m_fundCurrent[i].magnitude, config::Source::Current::MaxAmplitude, ctx, false));
+        // 고조파 전압
+        if(m_phasorIsVisible[6]) {
+            double ratio = m_harmonicVoltage.magnitude / maxVoltageMagnitude;
+            drawPhasor(painter, m_harmonicVoltage, Qt::cyan, getPhasorDisplayLength(ratio, ctx, true));
         }
     }
 
+    // 전류 페이저 그리기
+    if(maxCurrentMagnitude > 1e-6) {
+        for(int i{0}; i < 3; ++i) {
+            if(m_phasorIsVisible[i + 3]) {
+                double ratio  = m_fundCurrent[i].magnitude / maxCurrentMagnitude;
+                drawPhasor(painter, m_fundCurrent[i], currentColors[i], getPhasorDisplayLength(ratio, ctx, false));
+            }
+        }
+        // 고조파 전류
+        if(m_phasorIsVisible[7]) {
+            double ratio = m_harmonicCurrent.magnitude / maxCurrentMagnitude;
+            drawPhasor(painter, m_harmonicCurrent, Qt::magenta, getPhasorDisplayLength(ratio, ctx, false));
+        }
+    }
 }
 
 void PhasorView::drawGuideLines(QPainter& painter, const DrawingContext& ctx) const
@@ -182,12 +209,8 @@ void PhasorView::drawGuideLines(QPainter& painter, const DrawingContext& ctx) co
     painter.drawEllipse(QPointF(0, 0), ctx.currentBaseRadius, ctx.currentBaseRadius);
 }
 
-double PhasorView::getPhasorDisplayLength(double magnitude, double maxMagnitude, const DrawingContext& ctx, bool isVoltage) const
+double PhasorView::getPhasorDisplayLength(double ratio, const DrawingContext& ctx, bool isVoltage) const
 {
-    if(maxMagnitude < 1e-6)
-        return 0.0;
-
-    double ratio = log10(1 + magnitude) / log10(1 + maxMagnitude);
     ratio = std::clamp(ratio, 0.0, 1.0);
 
     if(isVoltage) {
