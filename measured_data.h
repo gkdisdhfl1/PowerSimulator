@@ -36,6 +36,10 @@ struct MeasuredData {
     std::vector<HarmonicAnalysisResult> currentHarmonics;
     std::vector<HarmonicAnalysisResult> currentHarmonicsB;
     std::vector<HarmonicAnalysisResult> currentHarmonicsC;
+
+    // Residual 분석 결과
+    double residualVoltageRms = 0.0;
+    double residualCurrentRms = 0.0;
 };
 
 // 1초 단위로 가공된 분석 데이터를 담는 구조체

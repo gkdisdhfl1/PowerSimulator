@@ -66,6 +66,7 @@ public:
 
     static OneSecondSummaryData buildOneSecondSummary(const std::vector<MeasuredData>& cycleBuffer);
 
+    static double calculateResidualRms(const std::vector<DataPoint>& samples, DataType type);
 private:
     static std::map<int, kiss_fftr_cfg> m_fftConfigCache;
 };

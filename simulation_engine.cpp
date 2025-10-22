@@ -328,10 +328,14 @@ void SimulationEngine::calculateCycleData()
         }
     }
 
-    // 2. 전체 RMS 및 유효 전력 계산
+    // 2. --- 전체 cycle data 계산 ---
     newData.voltageRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Voltage);
     newData.currentRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Current);
     newData.activePower = AnalysisUtils::calculateActivePower(m_cycleSampleBuffer);
+
+    // Residual RMS 계산
+    newData.residualVoltageRms = AnalysisUtils::calculateResidualRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Voltage);
+    newData.residualCurrentRms = AnalysisUtils::calculateResidualRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Current);
 
     // 3. 완성된 데이터를 컨테이너에 추가
     m_measuredData.push_back(newData);

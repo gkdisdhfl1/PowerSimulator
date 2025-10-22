@@ -346,3 +346,28 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
 
     return summary;
 }
+
+double calculateResidualRms(const std::vector<DataPoint>& samples, AnalysisUtils::DataType type)
+{
+    if(samples.empty()) {
+        return 0.0;
+    }
+
+    double sum_sq = 0.0;
+
+    if(type == AnalysisUtils::DataType::Voltage) {
+        for(const auto& p : samples) {
+            const double residualValue = p.voltage.a + p.voltage.b + p.voltage.c;
+            sum_sq += residualValue * residualValue;
+        }
+
+
+    } else { // current
+        for(const auto& p : samples) {
+            const double residualValue = p.current.a + p.current.b + p.current.c;
+            sum_sq += residualValue + residualValue;
+        }
+    }
+
+    return std::sqrt(sum_sq / samples.size());
+}
