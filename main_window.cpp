@@ -12,6 +12,7 @@
 #include "analysis_graph_window.h"
 #include "phasor_view.h"
 #include "three_phase_dialog.h"
+#include "additional_metrics_window.h"
 
 #include <QDockWidget>
 #include <QStatusBar>
@@ -141,6 +142,11 @@ void MainWindow::setupUiComponents()
     oneSecondSummaryDock->setWidget(m_oneSecondSummaryWindow);
     addDockWidget(Qt::RightDockWidgetArea, oneSecondSummaryDock);
 
+    // 추가 계측항목 창 추가
+    m_additionalMetricsWindow = new AdditionalMetricsWindow(this);
+    QDockWidget *additionalMetricsDock = new QDockWidget("추가 계측항목", this);
+    additionalMetricsDock->setWidget(m_additionalMetricsWindow);
+
     // 상하로 분할
     splitDockWidget(graphDock, analysisGraphDock, Qt::Vertical);
 
@@ -151,6 +157,9 @@ void MainWindow::setupUiComponents()
     tabifyDockWidget(analysisGraphDock, fundamentalRmsDock);
     tabifyDockWidget(analysisGraphDock, harmonicRmsDock);
     analysisGraphDock->raise(); // 전체 RMS를 기본으로 선택
+
+    tabifyDockWidget(oneSecondSummaryDock, additionalMetricsDock);
+    oneSecondSummaryDock->raise(); // 1초 데이터를 기본으로 선택
 
     // 하단 두 위젯 너비 비율 설정
     QList<int> bottomSizes;
@@ -217,6 +226,7 @@ void MainWindow::createSignalSlotConnections()
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_fundamentalAnalysisGraphWindow, &FundamentalAnalysisGraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_harmonicAnalysisGraphWindow, &HarmonicAnalysisGraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_oneSecondSummaryWindow, &OneSecondSummaryWindow::updateData);
+    connect(m_engine, &SimulationEngine::additionalMetricsUpdated, m_additionalMetricsWindow, &AdditionalMetricsWindow::updateData);
 
     // ---- GraphWindow 시그널 -> UI 슬롯 ----
     connect(m_graphWindow, &GraphWindow::pointHovered, this, [this](const DataPoint& point) {

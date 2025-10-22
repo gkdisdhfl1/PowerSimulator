@@ -89,6 +89,7 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
         one_second_summary_window.h one_second_summary_window.cpp
         kiss_fft/kiss_fft.c kiss_fft/kiss_fftr.c
         three_phase_dialog.h three_phase_dialog.cpp
+        additional_metrics_window.h additional_metrics_window.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET PowerSimulator APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

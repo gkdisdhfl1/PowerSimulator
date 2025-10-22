@@ -17,6 +17,7 @@ class PhasorView;
 class QLabel;
 class QTimer;
 class OneSecondSummaryWindow;
+class AdditionalMetricsWindow;
 
 class MainWindow : public QMainWindow
 {
@@ -51,6 +52,7 @@ private:
     QTimer* m_fpsTimer;
     int m_frameCount;
     OneSecondSummaryWindow* m_oneSecondSummaryWindow;
+    AdditionalMetricsWindow* m_additionalMetricsWindow;
 
     void createSignalSlotConnections(); // 조립 역할
     void setupUiComponents();

@@ -36,10 +36,6 @@ struct MeasuredData {
     std::vector<HarmonicAnalysisResult> currentHarmonics;
     std::vector<HarmonicAnalysisResult> currentHarmonicsB;
     std::vector<HarmonicAnalysisResult> currentHarmonicsC;
-
-    // Residual 분석 결과
-    double residualVoltageRms = 0.0;
-    double residualCurrentRms = 0.0;
 };
 
 // 1초 단위로 가공된 분석 데이터를 담는 구조체
@@ -65,5 +61,27 @@ struct OneSecondSummaryData {
     double dominantHarmonicVoltagePhase;
     double dominantHarmonicCurrentPhase;
 };
+
+// 추가 계측 항목 분석 데이터를 담는 구조체
+struct AdditionalMetricsData
+{
+    // Residual
+    double residualVoltageRms = 0.0;
+    double residualCurrentRms = 0.0;
+
+    // THD
+    PhaseData voltageThd;
+    PhaseData currentThd;
+
+    // 피상전력
+    PhaseData apparentPower;
+
+    // 무효 전력
+    PhaseData reactivePower;
+
+    // 역률
+    PhaseData powerFactor;
+};
+
 Q_DECLARE_METATYPE(MeasuredData)
 #endif // MEASURED_DATA_H

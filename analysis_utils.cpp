@@ -347,7 +347,7 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     return summary;
 }
 
-double calculateResidualRms(const std::vector<DataPoint>& samples, AnalysisUtils::DataType type)
+double AnalysisUtils::calculateResidualRms(const std::vector<DataPoint>& samples, AnalysisUtils::DataType type)
 {
     if(samples.empty()) {
         return 0.0;
@@ -365,9 +365,23 @@ double calculateResidualRms(const std::vector<DataPoint>& samples, AnalysisUtils
     } else { // current
         for(const auto& p : samples) {
             const double residualValue = p.current.a + p.current.b + p.current.c;
-            sum_sq += residualValue + residualValue;
+            sum_sq += residualValue * residualValue;
         }
     }
 
     return std::sqrt(sum_sq / samples.size());
+}
+
+AdditionalMetricsData AnalysisUtils::calculateAdditionalMetrics(const MeasuredData& measuredData, const std::vector<DataPoint>& cycleBuffer)
+{
+    AdditionalMetricsData result;
+    result.residualVoltageRms = calculateResidualRms(cycleBuffer, DataType::Voltage);
+    result.residualCurrentRms = calculateResidualRms(cycleBuffer, DataType::Current);
+    result.voltageThd = PhaseData();
+    result.currentThd = PhaseData();
+    result.apparentPower = PhaseData();
+    result.reactivePower = PhaseData();
+    result.powerFactor = PhaseData();
+
+    return result;
 }

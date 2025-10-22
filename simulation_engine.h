@@ -74,6 +74,7 @@ signals:
     void measuredDataUpdated(const std::deque<MeasuredData>& data);
     void samplingCyclesUpdated(double newFrequency);
     void oneSecondDataUpdated(const OneSecondSummaryData& data);
+    void additionalMetricsUpdated(const AdditionalMetricsData& data);
 
 private slots:
     void captureData();
