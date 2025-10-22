@@ -82,19 +82,18 @@ void MainWindow::setupUiComponents()
 {
     // 중앙 위젯을 사용하지 않도록 설정 (도킹 공간으로만 사용)
     setCentralWidget(nullptr);
-
     setDockNestingEnabled(true);
 
-    // 컨트롤 패널 도킹 위젯 생성
+    // 1. 모든 위젯과 인스턴스 생성
+    // 컨트롤 패널
     m_controlPanel = new ControlPanel(this);
     QDockWidget *controlDock = new QDockWidget("Control Panel", this);
     m_controlDock = controlDock;
     controlDock->setWidget(m_controlPanel);
     controlDock->setMinimumWidth(200);
     controlDock->setMaximumWidth(375);
-    addDockWidget(Qt::LeftDockWidgetArea, controlDock);
 
-    // 왼쪽 도킹 영역 유지를 위한 플레이스홀더 생성
+    // 왼쪽 도킹 영역 유지를 위한 플레이스홀더
     m_placeholderDock = new QDockWidget(this);
     m_placeholderDock->setWidget(new QWidget());
     m_placeholderDock->setTitleBarWidget(new QWidget());
@@ -102,36 +101,28 @@ void MainWindow::setupUiComponents()
     m_placeholderDock->setMaximumSize(QWIDGETSIZE_MAX, QWIDGETSIZE_MAX); // 최대 크기 제한 해제
     m_placeholderDock->setSizePolicy(QSizePolicy::Ignored, QSizePolicy::Ignored); // 크기 정책 변경
     m_placeholderDock->setMaximumWidth(0); // 너비를 0으로 고정
-    addDockWidget(Qt::LeftDockWidgetArea, m_placeholderDock);
-    m_placeholderDock->hide();
 
-    // 컨트롤 패널의 상태 변경 시 시그널과 슬롯 연결
-    connect(m_controlDock, &QDockWidget::dockLocationChanged, this, &MainWindow::updatePlaceholderVisibility);
-    connect(m_controlDock, &QDockWidget::topLevelChanged, this, &MainWindow::updatePlaceholderVisibility);
-
-
-    // 그래프 창 도킹 위젯 생성
+    // 그래프 창
     m_graphWindow = new GraphWindow(m_engine, this);
     QDockWidget *graphDock = new QDockWidget("Real-time Waveform", this);
     graphDock->setWidget(m_graphWindow);
-    addDockWidget(Qt::RightDockWidgetArea, graphDock);
 
-    // 분석 그래프 창 도킹 위젯 생성
+    // 분석 그래프 창
     m_analysisGraphWindow = new AnalysisGraphWindow(m_engine, this);
     QDockWidget *analysisGraphDock = new QDockWidget("Cycle Analysis", this);
     analysisGraphDock->setWidget(m_analysisGraphWindow);
 
-    // PhasorView 위젯 생성 및 도킹
+    // PhasorView
     m_phasorView = new PhasorView(this);
     QDockWidget *phasorDock = new QDockWidget("Phasor", this);
     phasorDock->setWidget(m_phasorView);
 
-    // 기본파 RMS 그래프 창 도킹 위젯 생성
+    // 기본파 RMS 그래프
     m_fundamentalAnalysisGraphWindow = new FundamentalAnalysisGraphWindow(m_engine, this);
     QDockWidget *fundamentalRmsDock = new QDockWidget("fundamental Analysis", this);
     fundamentalRmsDock->setWidget(m_fundamentalAnalysisGraphWindow);
 
-    // 고조파 RMS 그래프 창 도킹 위젯 생성
+    // 고조파 RMS 그래프
     m_harmonicAnalysisGraphWindow = new HarmonicAnalysisGraphWindow(m_engine, this) ;
     QDockWidget *harmonicRmsDock = new QDockWidget("Harmonic Analysis", this);
     harmonicRmsDock->setWidget(m_harmonicAnalysisGraphWindow);
@@ -140,20 +131,31 @@ void MainWindow::setupUiComponents()
     m_oneSecondSummaryWindow = new OneSecondSummaryWindow(this);
     QDockWidget *oneSecondSummaryDock = new QDockWidget("1초 데이터", this);
     oneSecondSummaryDock->setWidget(m_oneSecondSummaryWindow);
-    addDockWidget(Qt::RightDockWidgetArea, oneSecondSummaryDock);
 
-    // 추가 계측항목 창 추가
+    // 추가 계측항목 창
     m_additionalMetricsWindow = new AdditionalMetricsWindow(this);
     QDockWidget *additionalMetricsDock = new QDockWidget("추가 계측항목", this);
     additionalMetricsDock->setWidget(m_additionalMetricsWindow);
 
-    // 상하로 분할
+    // 2. 모든 DockWidget을 MainWindow에 추가
+    addDockWidget(Qt::LeftDockWidgetArea, controlDock);
+    addDockWidget(Qt::LeftDockWidgetArea, m_placeholderDock);
+    m_placeholderDock->hide();
+
+    addDockWidget(Qt::RightDockWidgetArea, graphDock);
+    addDockWidget(Qt::RightDockWidgetArea, analysisGraphDock);
+    addDockWidget(Qt::RightDockWidgetArea, phasorDock);
+    addDockWidget(Qt::RightDockWidgetArea, fundamentalRmsDock);
+    addDockWidget(Qt::RightDockWidgetArea, harmonicRmsDock);
+    addDockWidget(Qt::RightDockWidgetArea, oneSecondSummaryDock);
+    addDockWidget(Qt::RightDockWidgetArea, additionalMetricsDock);
+
+    // 3. 공간 분할
     splitDockWidget(graphDock, analysisGraphDock, Qt::Vertical);
-
-    // // 좌우로 분할
     splitDockWidget(analysisGraphDock, phasorDock, Qt::Horizontal);
-    // splitDockWidget(phasorDock, analysisGraphDock, Qt::Horizontal);
+    splitDockWidget(graphDock, oneSecondSummaryDock, Qt::Horizontal);
 
+    // 4. 분할된 공간 내에서 위젯들을 묶음
     tabifyDockWidget(analysisGraphDock, fundamentalRmsDock);
     tabifyDockWidget(analysisGraphDock, harmonicRmsDock);
     analysisGraphDock->raise(); // 전체 RMS를 기본으로 선택
@@ -161,6 +163,7 @@ void MainWindow::setupUiComponents()
     tabifyDockWidget(oneSecondSummaryDock, additionalMetricsDock);
     oneSecondSummaryDock->raise(); // 1초 데이터를 기본으로 선택
 
+    // 5. 각 영역의 크기를 조절함
     // 하단 두 위젯 너비 비율 설정
     QList<int> bottomSizes;
     bottomSizes << 400 << 260;
@@ -171,10 +174,14 @@ void MainWindow::setupUiComponents()
     mainSizes << 500 << 270;
     resizeDocks({graphDock, analysisGraphDock}, mainSizes, Qt::Vertical);
 
-    splitDockWidget(graphDock, oneSecondSummaryDock, Qt::Horizontal);
     QList<int> rightSizes;
     rightSizes << 600 << 200;
     resizeDocks({graphDock, oneSecondSummaryDock}, rightSizes, Qt::Horizontal);
+
+    // 6. 컨트롤 패널의 도킹 상태 변경 시그널 연결
+    connect(m_controlDock, &QDockWidget::dockLocationChanged, this, &MainWindow::updatePlaceholderVisibility);
+    connect(m_controlDock, &QDockWidget::topLevelChanged, this, &MainWindow::updatePlaceholderVisibility);
+
 }
 
 void MainWindow::createSignalSlotConnections()

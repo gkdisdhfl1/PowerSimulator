@@ -11,11 +11,10 @@ AdditionalMetricsWindow::AdditionalMetricsWindow(QWidget *parent) : QWidget(pare
 void AdditionalMetricsWindow::setupUi()
 {
     m_tableWidget = new QTableWidget(MetricsRow::RowCount, MetricsCol::ColumnCount, this);
-    m_tableWidget->setHorizontalHeaderLabels({"항목", "A상", "B상", "C상"});
+    m_tableWidget->setHorizontalHeaderLabels({"항목", "전압", "전류"});
     m_tableWidget->horizontalHeader()->setSectionResizeMode(MetricsCol::Title, QHeaderView::ResizeToContents);
-    m_tableWidget->horizontalHeader()->setSectionResizeMode(MetricsCol::A_Phase, QHeaderView::ResizeToContents);
-    m_tableWidget->horizontalHeader()->setSectionResizeMode(MetricsCol::B_Phase, QHeaderView::ResizeToContents);
-    m_tableWidget->horizontalHeader()->setSectionResizeMode(MetricsCol::C_Phase, QHeaderView::ResizeToContents);
+    m_tableWidget->horizontalHeader()->setSectionResizeMode(MetricsCol::Voltage, QHeaderView::Stretch);
+    m_tableWidget->horizontalHeader()->setSectionResizeMode(MetricsCol::Current, QHeaderView::Stretch);
 
     m_tableWidget->verticalHeader()->setVisible(false);
     m_tableWidget->setEditTriggers(QAbstractItemView::NoEditTriggers);
@@ -41,8 +40,8 @@ void AdditionalMetricsWindow::setupUi()
 
 void AdditionalMetricsWindow::updateData(const AdditionalMetricsData& data)
 {
-    m_tableWidget->item(MetricsRow::ResidualRms, MetricsCol::A_Phase)
+    m_tableWidget->item(MetricsRow::ResidualRms, MetricsCol::Voltage)
         ->setText(QString::number(data.residualVoltageRms, 'f', 3));
-    m_tableWidget->item(MetricsRow::ResidualRms, MetricsCol::B_Phase)
+    m_tableWidget->item(MetricsRow::ResidualRms, MetricsCol::Current)
         ->setText(QString::number(data.residualCurrentRms, 'f', 3));
 }

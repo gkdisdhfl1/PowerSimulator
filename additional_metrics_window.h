@@ -19,9 +19,8 @@ enum {
 namespace MetricsCol {
 enum {
     Title,
-    A_Phase,
-    B_Phase,
-    C_Phase,
+    Voltage,
+    Current,
     ColumnCount
 };
 }
