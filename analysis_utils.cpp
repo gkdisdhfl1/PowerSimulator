@@ -286,63 +286,140 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     }
 
     OneSecondSummaryData summary{};
-    double sum_v_a = 0;
     const auto& lastCycleData = cycleBuffer.back();
     const size_t N = cycleBuffer.size();
 
-    // 1. 마지막 사이클에서 A상 지배적 고조파의 차수와 위상을 결정
     summary.dominantHarmonicVoltageOrder = lastCycleData.dominantVoltage[0].order;
+    summary.dominantHarmonicCurrentOrder = lastCycleData.dominantCurrent[0].order;
+
+    // 1. 모든 누적 변수를 std::array로 선언
+    std::array<double, 3> totalVoltageRmsSumSq = {0.0};
+    std::array<double, 3> totalCurrentRmsSumSq = {0.0};
+    std::array<double, 3> activePowerSum = {0.0};
+    std::array<double, 3> fundVoltageRmsSumSq = {0.0};
+    std::array<double, 3> fundCurrentRmsSumSq = {0.0};
+
+    // A상 기준
+    double dominantVoltageRmsSumSq = 0.0; double dominantCurrentRmsSumSq = 0.0;
+
+    // 2. for 루프를 사용하여 모든 3상 값 누적
+    for(const auto& data : cycleBuffer) {
+        totalVoltageRmsSumSq[0] += data.voltageRms.a * data.voltageRms.a;
+        totalVoltageRmsSumSq[1] += data.voltageRms.b * data.voltageRms.b;
+        totalVoltageRmsSumSq[2] += data.voltageRms.c * data.voltageRms.c;
+
+        totalCurrentRmsSumSq[0] += data.currentRms.a * data.currentRms.a;
+        totalCurrentRmsSumSq[1] += data.currentRms.b * data.currentRms.b;
+        totalCurrentRmsSumSq[2] += data.currentRms.c * data.currentRms.c;
+
+        activePowerSum[0] += data.activePower.a;
+        activePowerSum[1] += data.activePower.b;
+        activePowerSum[2] += data.activePower.c;
+
+        fundVoltageRmsSumSq[0] += data.fundamentalVoltage[0].rms * data.fundamentalVoltage[0].rms;
+        fundVoltageRmsSumSq[1] += data.fundamentalVoltage[0].rms * data.fundamentalVoltage[1].rms;
+        fundVoltageRmsSumSq[2] += data.fundamentalVoltage[0].rms * data.fundamentalVoltage[2].rms;
+
+        fundCurrentRmsSumSq[0] += data.fundamentalCurrent[0].rms * data.fundamentalCurrent[0].rms;
+        fundCurrentRmsSumSq[1] += data.fundamentalCurrent[0].rms * data.fundamentalCurrent[1].rms;
+        fundCurrentRmsSumSq[2] += data.fundamentalCurrent[0].rms * data.fundamentalCurrent[2].rms;
+
+        if(summary.dominantHarmonicVoltageOrder > 1 && data.dominantVoltage[0].order == summary.dominantHarmonicVoltageOrder) {
+            dominantVoltageRmsSumSq += data.dominantVoltage[0].rms * data.dominantVoltage[0].rms;
+        }
+        if(summary.dominantHarmonicCurrentOrder > 1 && data.dominantCurrent[0].order == summary.dominantHarmonicCurrentOrder) {
+            dominantCurrentRmsSumSq += data.dominantCurrent[0].rms * data.dominantCurrent[0].rms;
+        }
+    }
+    // 3. 최종 계산
+    std::array<double, 3> voltageRms, currentRms, pActive, apparent, powerFactor, voltageThd, currentThd;
+
+    for(int i{0}; i < 3; ++i) {
+        voltageRms[i] = std::sqrt(totalVoltageRmsSumSq[i] / N);
+        currentRms[i] = std::sqrt(totalCurrentRmsSumSq[i] / N);
+        pActive[i] = activePowerSum[i] / N;
+
+        apparent[i] = voltageRms[i] * currentRms[i];
+        powerFactor[i] = (apparent[i] > 1e-6) ? std::abs(pActive[i]) / apparent[i] : 0.0;
+
+        // THD 계산
+        const double fundVoltageRms = std::sqrt(fundVoltageRmsSumSq[i] / N);
+        const double fundCurrentRms = std::sqrt(fundCurrentRmsSumSq[i] / N);
+
+        if(fundVoltageRms > 1e-6) {
+            double harmonicVoltageRmsSq = (voltageRms[i] * voltageRms[i]) - (fundVoltageRms * fundVoltageRms);
+            voltageThd[i] = (harmonicVoltageRmsSq > 0) ? (std::sqrt(harmonicVoltageRmsSq) / fundVoltageRms) * 100.0 : 0.0;
+        } else {
+            voltageThd[i] = 0.0;
+        }
+
+        if(fundCurrentRms > 1e-6) {
+            double harmonicCurrentRmsSq = (currentRms[i] * currentRms[i]) - (fundCurrentRms * fundCurrentRms);
+            currentThd[i] = (harmonicCurrentRmsSq > 0) ? (std::sqrt(harmonicCurrentRmsSq) / fundCurrentRms) * 100.0 : 0.0;
+        } else {
+            currentThd[i] = 0.0;
+        }
+    }
+
+    // 4. 총계 전체 역률 계산
+    double totalActivePower = pActive[0] + pActive[1] + pActive[2];
+    double totalApparentPower = apparent[0] + apparent[1] + apparent[2];
+    double totalPowerFactor = (totalApparentPower > 1e-6) ? std::abs(totalActivePower) / totalApparentPower : 0.0;
+
+    // --- system THD 계산 ---
+
+    // 3상 전체 RMS 제곱의 합
+    double totalRmsVoltageSqSum = (voltageRms[0] * voltageRms[0]) + (voltageRms[1] * voltageRms[1]) + (voltageRms[2] * voltageRms[2]);
+    // 3상 기본파 RMS 제곱의 합
+    double totalFundRmsVoltageSq = (fundVoltageRmsSumSq[0] / N) + (fundVoltageRmsSumSq[1] / N) + (fundVoltageRmsSumSq[2] / N);
+    double systemVoltageThd = 0.0;
+
+    if(totalFundRmsVoltageSq > 1e-12) {
+        double totalHarmonicVoltageSqSum = totalRmsVoltageSqSum - totalFundRmsVoltageSq;
+        if(totalHarmonicVoltageSqSum > 0) {
+            systemVoltageThd = (std::sqrt(totalHarmonicVoltageSqSum) / std::sqrt(totalFundRmsVoltageSq)) * 100.0;
+        }
+    }
+    double totalRmsCurrentSqSum = (currentRms[0] * currentRms[0]) + (currentRms[1] * currentRms[1]) + (currentRms[2] * currentRms[2]);
+    // 3상 기본파 RMS 제곱의 합
+    double totalFundRmsCurrentSq = (fundCurrentRmsSumSq[0] / N) + (fundCurrentRmsSumSq[1] / N) + (fundCurrentRmsSumSq[2] / N);
+    double systemCurrentThd = 0.0;
+
+    if(totalFundRmsCurrentSq > 1e-12) {
+        double totalHarmonicCurrentSqSum = totalRmsCurrentSqSum - totalFundRmsCurrentSq;
+        if(totalHarmonicCurrentSqSum) {
+            systemCurrentThd = (std::sqrt(totalHarmonicCurrentSqSum) / std::sqrt(totalFundRmsCurrentSq)) * 100.0;
+        }
+    }
+
+    // 5. 계산된 값들 구조체 할당
+    summary.totalVoltageRms = {voltageRms[0], voltageRms[1], voltageRms[2]};
+    summary.totalCurrentRms = {currentRms[0], currentRms[1], currentRms[2]};
+    summary.activePower = {pActive[0], pActive[1], pActive[2]};
+    summary.apparentPower = {apparent[0], apparent[1], apparent[2]};
+    summary.powerFactor = {powerFactor[0], powerFactor[1], powerFactor[2]};
+    summary.voltageThd = {voltageThd[0], voltageThd[1], voltageThd[2]};
+    summary.currentThd = {currentThd[0], currentThd[1], currentThd[2]};
+
+    summary.totalActivePower = totalActivePower;
+    summary.totalApparentPower = totalApparentPower;
+    summary.totalPowerFactor = totalPowerFactor;
+
+    summary.systemVoltageThd = systemVoltageThd;
+    summary.systemCurrentThd = systemCurrentThd;
+
+    // 6. 기존의 lastCycleData에서 가져오는 값들 할당
+    summary.dominantHarmonicVoltageRms = std::sqrt(dominantVoltageRmsSumSq / N);
+    summary.dominantHarmonicCurrentRms = std::sqrt(dominantCurrentRmsSumSq / N);
+
     summary.dominantHarmonicVoltagePhase = utils::radiansToDegrees(lastCycleData.dominantVoltage[0].phase);
 
-    summary.dominantHarmonicCurrentOrder = lastCycleData.dominantCurrent[0].order;
     summary.dominantHarmonicCurrentPhase = utils::radiansToDegrees(lastCycleData.dominantCurrent[0].order);
 
     summary.fundamentalVoltagePhase = utils::radiansToDegrees(lastCycleData.fundamentalVoltage[0].phase);
     summary.fundamentalCurrentPhase = utils::radiansToDegrees(lastCycleData.fundamentalCurrent[0].phase);
-
-    // 2. 전체 버퍼를 순회하며 RMS 값들의 제곱의 합과 유효 전력을 구함
-    double totalVoltageRmsSumSq = 0.0; double totalCurrentRmsSumSq = 0.0; double activePowerSum = 0.0;
-    double totalVoltageRmsSumSqB = 0.0; double totalCurrentRmsSumSqB = 0.0; double activePowerSumB = 0.0;
-    double totalVoltageRmsSumSqC = 0.0; double totalCurrentRmsSumSqC = 0.0; double activePowerSumC = 0.0;
-
-    // A상 기준
-    double fundVoltageRmsSumSq = 0.0; double fundCurrentRmsSumSq = 0.0;
-    double dominantVoltageRmsSumSq = 0.0; double dominantCurrentRmsSumSq = 0.0;
-
-    for(const auto& data : cycleBuffer) {
-        totalVoltageRmsSumSq += data.voltageRms.a * data.voltageRms.a;
-        totalCurrentRmsSumSq += data.currentRms.a * data.currentRms.a;
-        totalVoltageRmsSumSqB += data.voltageRms.b * data.voltageRms.b;
-        totalCurrentRmsSumSqB += data.currentRms.b * data.currentRms.b;
-        totalVoltageRmsSumSqC += data.voltageRms.c * data.voltageRms.c;
-        totalCurrentRmsSumSqC += data.currentRms.c * data.currentRms.c;
-        activePowerSum += data.activePower.a;
-        activePowerSumB += data.activePower.b;
-        activePowerSumC += data.activePower.c;
-        fundVoltageRmsSumSq += data.fundamentalVoltage[0].rms * data.fundamentalVoltage[0].rms;
-        fundCurrentRmsSumSq += data.fundamentalCurrent[0].rms * data.fundamentalCurrent[0].rms;
-        if(summary.dominantHarmonicVoltageOrder > 1 && data.dominantVoltage[0].order == summary.dominantHarmonicVoltageOrder)
-            dominantVoltageRmsSumSq += data.dominantVoltage[0].rms * data.dominantVoltage[0].rms;
-        if(summary.dominantHarmonicCurrentOrder > 1 && data.dominantCurrent[0].order == summary.dominantHarmonicCurrentOrder)
-            dominantCurrentRmsSumSq += data.dominantCurrent[0].rms * data.dominantCurrent[0].rms;
-    }
-
-    // 3. 최종 계산
-    summary.totalVoltageRms.a = std::sqrt(totalVoltageRmsSumSq / N);
-    summary.totalCurrentRms.a = std::sqrt(totalCurrentRmsSumSq / N);
-    summary.totalVoltageRms.b = std::sqrt(totalVoltageRmsSumSqB / N);
-    summary.totalCurrentRms.b = std::sqrt(totalCurrentRmsSumSqB / N);
-    summary.totalVoltageRms.c = std::sqrt(totalVoltageRmsSumSqC / N);
-    summary.totalCurrentRms.c = std::sqrt(totalCurrentRmsSumSqC / N);
-    summary.activePower.a = activePowerSum / N;
-    summary.activePower.b = activePowerSumB / N;
-    summary.activePower.c = activePowerSumC / N;
-
-    summary.fundamentalVoltageRms = std::sqrt(fundVoltageRmsSumSq / N);
-    summary.fundamentalCurrentRms = std::sqrt(fundCurrentRmsSumSq / N);
-
-    summary.dominantHarmonicVoltageRms = std::sqrt(dominantVoltageRmsSumSq / N);
-    summary.dominantHarmonicCurrentRms = std::sqrt(dominantCurrentRmsSumSq / N);
+    summary.fundamentalVoltageRms = lastCycleData.fundamentalVoltage[0].rms;
+    summary.fundamentalCurrentRms = lastCycleData.fundamentalCurrent[0].rms;
 
     return summary;
 }
@@ -389,7 +466,7 @@ AdditionalMetricsData AnalysisUtils::calculateAdditionalMetrics(const MeasuredDa
     for(int i{0}; i < 3; ++i) {
         const double apparent = v_rms_arr[i] * i_rms_arr[i];
         apparent_arr[i] = apparent;
-        qDebug() << "apparent_arr[" << i << "] = " << v_rms_arr[i] << " * " << i_rms_arr[i] << " = " << apparent_arr[i];
+        // qDebug() << "apparent_arr[" << i << "] = " << v_rms_arr[i] << " * " << i_rms_arr[i] << " = " << apparent_arr[i];
 
         double reactive = 0.0;
         const double reactive_sq_arg = apparent * apparent - p_active_arr[i] * p_active_arr[i];
@@ -400,8 +477,8 @@ AdditionalMetricsData AnalysisUtils::calculateAdditionalMetrics(const MeasuredDa
         // 음수일 경우 0으로 처리
 
         reactive_arr[i] = reactive;
-        qDebug() << "reactive_arr[" << i << "] = sqrt(" << apparent << " * " << apparent << " - " << p_active_arr[i] << " * " << p_active_arr[i] << ") = " << reactive_arr[i];
-        qDebug() << "--------------------------------";
+        // qDebug() << "reactive_arr[" << i << "] = sqrt(" << apparent << " * " << apparent << " - " << p_active_arr[i] << " * " << p_active_arr[i] << ") = " << reactive_arr[i];
+        // qDebug() << "--------------------------------";
     }
 
     result.apparentPower = {apparent_arr[0], apparent_arr[1], apparent_arr[2]};
