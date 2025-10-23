@@ -39,6 +39,10 @@ enum
     DominantOrder,
     DominantRms,
     DominantPhase,
+    HeaderSymmetrical,
+    ZeroSequence,
+    PositiveSequence,
+    NegativeSequence,
     RowCount
 };
 }

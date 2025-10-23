@@ -38,6 +38,19 @@ struct MeasuredData {
     std::vector<HarmonicAnalysisResult> currentHarmonicsC;
 };
 
+// 단일 시퀀스 성분
+struct SymmetricalComponent {
+    double magnitude = 0.0;
+    double phase_deg = 0.0;
+};
+
+// 영상/정상/역상분 집합
+struct SymmetricalComponents {
+    SymmetricalComponent zero;
+    SymmetricalComponent positive;
+    SymmetricalComponent negative;
+};
+
 // 1초 단위로 가공된 분석 데이터를 담는 구조체
 struct OneSecondSummaryData {
     PhaseData totalVoltageRms;
@@ -64,11 +77,14 @@ struct OneSecondSummaryData {
     double systemCurrentThd = 0.0;
     double totalEnergyWh; // 누적 전력량
 
-    // 1초 구간의 마지막 사이클에서 가져온 값들
+    // 1초 구간의 마지막 사이클에서 가져온 값들g
     double fundamentalVoltagePhase;
     double fundamentalCurrentPhase;
     double dominantHarmonicVoltagePhase;
     double dominantHarmonicCurrentPhase;
+
+    SymmetricalComponents voltageSymmetricalComponents;
+    SymmetricalComponents currentSymmetricalComponents;
 };
 
 // 추가 계측 항목 분석 데이터를 담는 구조체
@@ -84,6 +100,7 @@ struct AdditionalMetricsData
     // 무효 전력
     PhaseData reactivePower;
 };
+
 
 Q_DECLARE_METATYPE(MeasuredData)
 #endif // MEASURED_DATA_H

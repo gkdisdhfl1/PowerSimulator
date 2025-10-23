@@ -421,6 +421,10 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     summary.fundamentalVoltageRms = lastCycleData.fundamentalVoltage[0].rms;
     summary.fundamentalCurrentRms = lastCycleData.fundamentalCurrent[0].rms;
 
+    // 7. 대칭 성분 계산 및 할당
+    summary.voltageSymmetricalComponents = calculateSymmetricalComponents(lastCycleData.fundamentalVoltage);
+    summary.currentSymmetricalComponents = calculateSymmetricalComponents(lastCycleData.fundamentalCurrent);
+
     return summary;
 }
 
@@ -484,5 +488,35 @@ AdditionalMetricsData AnalysisUtils::calculateAdditionalMetrics(const MeasuredDa
     result.apparentPower = {apparent_arr[0], apparent_arr[1], apparent_arr[2]};
     result.reactivePower = {reactive_arr[0], reactive_arr[1], reactive_arr[2]};
 
+    return result;
+}
+
+SymmetricalComponents AnalysisUtils::calculateSymmetricalComponents(const std::array<HarmonicAnalysisResult, 3>& fundamentals)
+{
+    SymmetricalComponents result;
+
+    // 1. 3상 기본파 페이저를 복소수로 변환
+    const std::complex<double> V_a(fundamentals[0].phasorX, fundamentals[0].phasorY);
+    const std::complex<double> V_b(fundamentals[1].phasorX, fundamentals[1].phasorY);
+    const std::complex<double> V_c(fundamentals[2].phasorX, fundamentals[2].phasorY);
+
+    // 2. 회전 연산자 'a' 정의(a = 120도)
+    const std::complex<double> a = std::polar(1.0, utils::degreesToRadians((120.0)));
+    const std::complex<double> a_sq = a * a;
+
+    // 3. 대칭 성분 계산
+    const std::complex<double> V_zero = (V_a + V_b + V_c) / 3.0;
+    const std::complex<double> V_positive = (V_a + a * V_b + a_sq * V_c) / 3.0;
+    const std::complex<double> V_negative = (V_a + a_sq * V_b + a * V_c) / 3.0;
+
+    // 4. 계산된 복소수를 크기/위상으로 변환하여 결과 구조체에 저장
+    result.zero.magnitude = std::abs(V_zero);
+    result.zero.phase_deg = utils::radiansToDegrees(std::arg(V_zero));
+
+    result.positive.magnitude = std::abs(V_positive);
+    result.positive.phase_deg = utils::radiansToDegrees(std::arg(V_positive));
+
+    result.negative.magnitude = std::abs(V_negative);
+    result.negative.phase_deg = utils::radiansToDegrees(std::arg(V_negative));
     return result;
 }

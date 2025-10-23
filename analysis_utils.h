@@ -67,6 +67,8 @@ public:
     static OneSecondSummaryData buildOneSecondSummary(const std::vector<MeasuredData>& cycleBuffer);
 
     static AdditionalMetricsData calculateAdditionalMetrics(const MeasuredData& measuredData, const std::vector<DataPoint>& cycleBuffer);
+
+    static SymmetricalComponents calculateSymmetricalComponents(const std::array<HarmonicAnalysisResult, 3>& fundamentals);
 private:
     static std::map<int, kiss_fftr_cfg> m_fftConfigCache;
     static double calculateResidualRms(const std::vector<DataPoint>& samples, DataType type);

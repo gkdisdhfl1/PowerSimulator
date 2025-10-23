@@ -27,6 +27,7 @@ void OneSecondSummaryWindow::setupUi()
     setupHeaderRow(Row::HeaderTotal, "▼ 전체 분석");
     setupHeaderRow(Row::HeaderFundamental, "▼ 기분파 분석");
     setupHeaderRow(Row::HeaderDominant, "▼ 고조파 분석");
+    setupHeaderRow(Row::HeaderSymmetrical, "▼ 대칭 성분 분석");
 
     // 각 행의 제목 아이템 설정
     m_tableWidget->setItem(Row::TotalRmsA, Col::Title, new QTableWidgetItem("RMS (A) (V/A)"));
@@ -54,6 +55,9 @@ void OneSecondSummaryWindow::setupUi()
     m_tableWidget->setItem(Row::DominantOrder, Col::Title, new QTableWidgetItem("차수"));
     m_tableWidget->setItem(Row::DominantRms, Col::Title, new QTableWidgetItem("RMS (V/A)"));
     m_tableWidget->setItem(Row::DominantPhase, Col::Title, new QTableWidgetItem("위상 (°)"));
+    m_tableWidget->setItem(Row::ZeroSequence, Col::Title, new QTableWidgetItem("영상분 (V/A)"));
+    m_tableWidget->setItem(Row::PositiveSequence, Col::Title, new QTableWidgetItem("정상분 (V/A)"));
+    m_tableWidget->setItem(Row::NegativeSequence, Col::Title, new QTableWidgetItem("역상분 (V/A)"));
 
     // 초기값 아이템 생성 및 설정
     for(int row = 0; row < Row::RowCount; ++row) {
@@ -138,4 +142,12 @@ void OneSecondSummaryWindow::updateData(const OneSecondSummaryData& data)
     m_tableWidget->item(Row::DominantRms, Col::Current)->setText(QString::number(data.dominantHarmonicCurrentRms, 'f', 3));
     m_tableWidget->item(Row::DominantPhase, Col::Voltage)->setText(QString::number(data.dominantHarmonicVoltagePhase, 'f', 2));
     m_tableWidget->item(Row::DominantPhase, Col::Current)->setText(QString::number(data.dominantHarmonicCurrentPhase, 'f', 2));
+
+    // 대칭 정보 표시
+    m_tableWidget->item(Row::ZeroSequence, Col::Voltage)->setText(QString::number(data.voltageSymmetricalComponents.zero.magnitude, 'f', 3));
+    m_tableWidget->item(Row::ZeroSequence, Col::Current)->setText(QString::number(data.currentSymmetricalComponents.zero.magnitude, 'f', 3));
+    m_tableWidget->item(Row::PositiveSequence, Col::Voltage)->setText(QString::number(data.voltageSymmetricalComponents.positive.magnitude, 'f', 3));
+    m_tableWidget->item(Row::PositiveSequence, Col::Current)->setText(QString::number(data.currentSymmetricalComponents.positive.magnitude, 'f', 3));
+    m_tableWidget->item(Row::NegativeSequence, Col::Voltage)->setText(QString::number(data.voltageSymmetricalComponents.negative.magnitude, 'f', 3));
+    m_tableWidget->item(Row::NegativeSequence, Col::Current)->setText(QString::number(data.currentSymmetricalComponents.negative.magnitude, 'f', 3));
 }
