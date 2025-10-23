@@ -1,7 +1,6 @@
 #include "simulation_engine.h"
 #include "analysis_utils.h"
 #include "frequency_tracker.h"
-#include "three_phase_dialog.h"
 #include <QDebug>
 
 SimulationEngine::SimulationEngine()

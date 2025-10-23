@@ -377,11 +377,35 @@ AdditionalMetricsData AnalysisUtils::calculateAdditionalMetrics(const MeasuredDa
     AdditionalMetricsData result;
     result.residualVoltageRms = calculateResidualRms(cycleBuffer, DataType::Voltage);
     result.residualCurrentRms = calculateResidualRms(cycleBuffer, DataType::Current);
-    result.voltageThd = PhaseData();
-    result.currentThd = PhaseData();
-    result.apparentPower = PhaseData();
-    result.reactivePower = PhaseData();
-    result.powerFactor = PhaseData();
+
+    // --- 피상전력, 무효전력 계산 ---
+    const std::array<double, 3> v_rms_arr = {measuredData.voltageRms.a, measuredData.voltageRms.b, measuredData.voltageRms.c};
+    const std::array<double, 3> i_rms_arr = {measuredData.currentRms.a, measuredData.currentRms.b, measuredData.currentRms.c};
+    const std::array<double, 3> p_active_arr = {measuredData.activePower.a, measuredData.activePower.b, measuredData.activePower.c};
+
+    std::array<double, 3> apparent_arr;
+    std::array<double, 3> reactive_arr;
+
+    for(int i{0}; i < 3; ++i) {
+        const double apparent = v_rms_arr[i] * i_rms_arr[i];
+        apparent_arr[i] = apparent;
+        qDebug() << "apparent_arr[" << i << "] = " << v_rms_arr[i] << " * " << i_rms_arr[i] << " = " << apparent_arr[i];
+
+        double reactive = 0.0;
+        const double reactive_sq_arg = apparent * apparent - p_active_arr[i] * p_active_arr[i];
+
+        // 오차 처리
+        if(reactive_sq_arg > 0.0)
+            reactive = std::sqrt(reactive_sq_arg);
+        // 음수일 경우 0으로 처리
+
+        reactive_arr[i] = reactive;
+        qDebug() << "reactive_arr[" << i << "] = sqrt(" << apparent << " * " << apparent << " - " << p_active_arr[i] << " * " << p_active_arr[i] << ") = " << reactive_arr[i];
+        qDebug() << "--------------------------------";
+    }
+
+    result.apparentPower = {apparent_arr[0], apparent_arr[1], apparent_arr[2]};
+    result.reactivePower = {reactive_arr[0], reactive_arr[1], reactive_arr[2]};
 
     return result;
 }

@@ -9,10 +9,14 @@ class QTableWidget;
 namespace MetricsRow {
 enum {
     ResidualRms,
-    Thd,
-    ApparentPower,
-    ReactivePower,
-    powerFactor,
+    ApparentPowerA,
+    ApparentPowerB,
+    ApparentPowerC,
+    TotalApparentPower,
+    ReactivePowerA,
+    ReactivePowerB,
+    ReactivePowerC,
+    TotalReactivePower,
     RowCount
     };
 }

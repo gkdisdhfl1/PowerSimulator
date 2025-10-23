@@ -107,14 +107,7 @@ void OneSecondSummaryWindow::setupUi()
     m_tableWidget->horizontalHeader()->setSectionResizeMode(Col::Voltage, QHeaderView::Stretch);
     m_tableWidget->horizontalHeader()->setSectionResizeMode(Col::Current, QHeaderView::Stretch);
 
-    // // 테이블 위젯 자체의 최소 크기가 내용물에 따라 결정되도록 함
-    // m_tableWidget->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::MinimumExpanding);
-    // m_tableWidget->setVerticalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-    // m_tableWidget->setHorizontalScrollBarPolicy(Qt::ScrollBarAsNeeded);
-
     auto mainLayout = new QVBoxLayout(this);
-
-
     mainLayout->addWidget(m_tableWidget);
     setLayout(mainLayout);
 }

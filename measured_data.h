@@ -69,18 +69,11 @@ struct AdditionalMetricsData
     double residualVoltageRms = 0.0;
     double residualCurrentRms = 0.0;
 
-    // THD
-    PhaseData voltageThd;
-    PhaseData currentThd;
-
     // 피상전력
     PhaseData apparentPower;
 
     // 무효 전력
     PhaseData reactivePower;
-
-    // 역률
-    PhaseData powerFactor;
 };
 
 Q_DECLARE_METATYPE(MeasuredData)
