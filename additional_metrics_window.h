@@ -9,14 +9,35 @@ class QTableWidget;
 namespace MetricsRow {
 enum {
     ResidualRms,
+    HeaderApparent,
     ApparentPowerA,
     ApparentPowerB,
     ApparentPowerC,
     TotalApparentPower,
+    HeaderReactivePower,
     ReactivePowerA,
     ReactivePowerB,
     ReactivePowerC,
     TotalReactivePower,
+    HeaderPowerFactor,
+    PowerFactorA,
+    PowerFactorB,
+    PowerFactorC,
+    TotalPowerFactor,
+    HeaderThd,
+    ThdA,
+    ThdB,
+    ThdC,
+    SystemThd,
+    HeaderSymmetrical,
+    ZeroSequence,
+    PositiveSequence,
+    NegativeSequence,
+    HeaderNemaUnbalance,
+    NemaUnbalance,
+    HeaederU0U2Unbalance,
+    U0Unbalance,
+    U2Unbalance,
     RowCount
     };
 }
@@ -36,7 +57,7 @@ public:
     explicit AdditionalMetricsWindow(QWidget* parent = nullptr);
 
 public slots:
-    void updateData(const AdditionalMetricsData& data);
+    void updateData(const OneSecondSummaryData& data);
 private:
     void setupUi();
 

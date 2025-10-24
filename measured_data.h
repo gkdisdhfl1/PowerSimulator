@@ -36,6 +36,10 @@ struct MeasuredData {
     std::vector<HarmonicAnalysisResult> currentHarmonics;
     std::vector<HarmonicAnalysisResult> currentHarmonicsB;
     std::vector<HarmonicAnalysisResult> currentHarmonicsC;
+
+    // 잔류 RMS 멤버
+    double residualVoltageRms = 0.0;
+    double residualCurrentRms = 0.0;
 };
 
 // 단일 시퀀스 성분
@@ -57,6 +61,7 @@ struct OneSecondSummaryData {
     PhaseData totalCurrentRms;
     PhaseData activePower;
     PhaseData apparentPower;
+    PhaseData reactivePower;
     PhaseData powerFactor;
     PhaseData voltageThd;
     PhaseData currentThd;
@@ -72,6 +77,7 @@ struct OneSecondSummaryData {
 
     double totalActivePower = 0.0;
     double totalApparentPower = 0.0;
+    double totalReactivePower = 0.0;
     double totalPowerFactor = 0.0;
     double systemVoltageThd = 0.0;
     double systemCurrentThd = 0.0;
@@ -85,22 +91,17 @@ struct OneSecondSummaryData {
 
     SymmetricalComponents voltageSymmetricalComponents;
     SymmetricalComponents currentSymmetricalComponents;
+
+    double residualVoltageRms = 0.0; // 1초 평균 잔류 전압
+    double residualCurrentRms = 0.0; // 1초 평균 잔류 전류
+    double nemaVoltageUnbalance = 0.0;
+    double nemaCurrentUnbalance = 0.0;
+
+    double voltageU0Unbalance = 0.0;
+    double voltageU2Unbalance = 0.0;
+    double currentU0Unbalance = 0.0;
+    double currentU2Unbalance = 0.0;
 };
-
-// 추가 계측 항목 분석 데이터를 담는 구조체
-struct AdditionalMetricsData
-{
-    // Residual
-    double residualVoltageRms = 0.0;
-    double residualCurrentRms = 0.0;
-
-    // 피상전력
-    PhaseData apparentPower;
-
-    // 무효 전력
-    PhaseData reactivePower;
-};
-
 
 Q_DECLARE_METATYPE(MeasuredData)
 #endif // MEASURED_DATA_H

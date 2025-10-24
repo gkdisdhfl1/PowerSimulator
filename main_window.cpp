@@ -233,7 +233,7 @@ void MainWindow::createSignalSlotConnections()
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_fundamentalAnalysisGraphWindow, &FundamentalAnalysisGraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_harmonicAnalysisGraphWindow, &HarmonicAnalysisGraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_oneSecondSummaryWindow, &OneSecondSummaryWindow::updateData);
-    connect(m_engine, &SimulationEngine::additionalMetricsUpdated, m_additionalMetricsWindow, &AdditionalMetricsWindow::updateData);
+    connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_additionalMetricsWindow, &AdditionalMetricsWindow::updateData);
 
     // ---- GraphWindow 시그널 -> UI 슬롯 ----
     connect(m_graphWindow, &GraphWindow::pointHovered, this, [this](const DataPoint& point) {

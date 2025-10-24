@@ -331,22 +331,20 @@ void SimulationEngine::calculateCycleData()
     newData.voltageRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Voltage);
     newData.currentRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Current);
     newData.activePower = AnalysisUtils::calculateActivePower(m_cycleSampleBuffer);
+    newData.residualVoltageRms = AnalysisUtils::calculateResidualRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Voltage);
+    newData.residualCurrentRms = AnalysisUtils::calculateResidualRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Current);
 
 
     // 3. 완성된 데이터를 컨테이너에 추가
     m_measuredData.push_back(newData);
 
-    // 4. 추가 계측항목 계산 및 시그널 발생
-    AdditionalMetricsData metrics = AnalysisUtils::calculateAdditionalMetrics(newData, m_cycleSampleBuffer);
-    emit additionalMetricsUpdated(metrics);
-
-    // 5. 1초 데이터 처리 로직 호출
+    // 4. 1초 데이터 처리 로직 호출
     processOneSecondData(m_measuredData.back());
 
-    // 6. UI에 업데이트 알림
+    // 5. UI에 업데이트 알림
     emit measuredDataUpdated(m_measuredData);
 
-    // 7. 버퍼 비우기
+    // 6. 버퍼 비우기
     m_cycleSampleBuffer.clear();
 }
 
