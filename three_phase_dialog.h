@@ -4,7 +4,9 @@
 #include <QDialog>
 #include "simulation_engine.h"
 
-class QDoubleSpinBox;
+class ValueControlWidget;
+class FineTuningDial;
+class QLabel;
 
 class ThreePhaseDialog : public QDialog
 {
@@ -31,7 +33,9 @@ signals:
 
 private:
     void setupUi();
-    std::array<QDoubleSpinBox*, ParamCount> m_spinboxes;
+    std::array<ValueControlWidget*, 4> m_amplitudeControls;
+    std::array<FineTuningDial*, 4> m_phaseDials;
+    std::array<QLabel*, 4> m_phaseLabels;
 };
 
 #endif // THREE_PHASE_DIALOG_H
