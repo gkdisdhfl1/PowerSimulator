@@ -354,7 +354,7 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
         // 잔류 계산
         double reactive = 0.0;
         const double reactive_sq_arg = apparent[i] * apparent[i] - pActive[i] * pActive[i];
-        qDebug() << "apparent_arr[" << i << "] = " << voltageRms[i] << " * " << currentRms[i] << " = " << apparent[i];
+        // qDebug() << "apparent_arr[" << i << "] = " << voltageRms[i] << " * " << currentRms[i] << " = " << apparent[i];
 
         // 오차 처리
         if(reactive_sq_arg > 0.0)
@@ -470,7 +470,7 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
         summary.voltageU0Unbalance = (voltageSym.zero.magnitude > 1e-9) ? std::numeric_limits<double>::infinity() : 0.0;
         summary.voltageU2Unbalance = (voltageSym.negative.magnitude > 1e-9) ? std::numeric_limits<double>::infinity() : 0.0;
     }
-    const auto& currentSym = summary.voltageSymmetricalComponents;
+    const auto& currentSym = summary.currentSymmetricalComponents;
     if(currentSym.positive.magnitude > 1e-9) {
         summary.currentU0Unbalance = (currentSym.zero.magnitude / currentSym.positive.magnitude) * 100;
         summary.currentU2Unbalance = (currentSym.negative.magnitude / currentSym.positive.magnitude) * 100;

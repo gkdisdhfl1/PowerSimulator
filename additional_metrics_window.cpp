@@ -86,6 +86,10 @@ void AdditionalMetricsWindow::setupUi()
     m_tableWidget->item(MetricsRow::ReactivePowerB, MetricsCol::Current)->setText("");
     m_tableWidget->item(MetricsRow::ReactivePowerC, MetricsCol::Current)->setText("");
     m_tableWidget->item(MetricsRow::TotalReactivePower, MetricsCol::Current)->setText("");
+    m_tableWidget->item(MetricsRow::PowerFactorA, MetricsCol::Current)->setText("");
+    m_tableWidget->item(MetricsRow::PowerFactorB, MetricsCol::Current)->setText("");
+    m_tableWidget->item(MetricsRow::PowerFactorC, MetricsCol::Current)->setText("");
+    m_tableWidget->item(MetricsRow::TotalPowerFactor, MetricsCol::Current)->setText("");
 
     auto mainLayout = new QVBoxLayout(this);
     mainLayout->addWidget(m_tableWidget);
@@ -151,7 +155,7 @@ void AdditionalMetricsWindow::updateData(const OneSecondSummaryData& data)
 
     // U0U2 불평형
     m_tableWidget->item(MetricsRow::U0Unbalance, MetricsCol::Voltage)->setText(QString::number(data.voltageU0Unbalance, 'f', 3));
-    m_tableWidget->item(MetricsRow::U0Unbalance, MetricsCol::Current)->setText(QString::number(data.voltageU0Unbalance, 'f', 3));
+    m_tableWidget->item(MetricsRow::U0Unbalance, MetricsCol::Current)->setText(QString::number(data.currentU0Unbalance, 'f', 3));
     m_tableWidget->item(MetricsRow::U2Unbalance, MetricsCol::Voltage)->setText(QString::number(data.voltageU2Unbalance, 'f', 3));
-    m_tableWidget->item(MetricsRow::U2Unbalance, MetricsCol::Current)->setText(QString::number(data.voltageU2Unbalance, 'f', 3));
+    m_tableWidget->item(MetricsRow::U2Unbalance, MetricsCol::Current)->setText(QString::number(data.currentU2Unbalance, 'f', 3));
 }
