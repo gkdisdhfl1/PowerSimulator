@@ -345,7 +345,11 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
         pActive[i] = activePowerSum[i] / N;
 
         apparent[i] = voltageRms[i] * currentRms[i];
-        powerFactor[i] = (apparent[i] > 1e-6) ? std::abs(pActive[i]) / apparent[i] : 0.0;
+        if(apparent[i] > 1e-9) {
+            powerFactor[i] = std::abs(pActive[i]) / apparent[i];
+        } else {
+            powerFactor[i] = 0.0;
+        }
 
         // 잔류 계산
         double reactive = 0.0;
@@ -362,11 +366,11 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
         const double fundVoltageRms = std::sqrt(fundVoltageRmsSumSq[i] / N);
         const double fundCurrentRms = std::sqrt(fundCurrentRmsSumSq[i] / N);
 
-        if(fundVoltageRms > 1e-6) {
+        if(fundVoltageRms > 1e-9) {
             double harmonicVoltageRmsSq = (voltageRms[i] * voltageRms[i]) - (fundVoltageRms * fundVoltageRms);
             voltageThd[i] = (harmonicVoltageRmsSq > 0) ? (std::sqrt(harmonicVoltageRmsSq) / fundVoltageRms) * 100.0 : 0.0;
         } else {
-            voltageThd[i] = 0.0;
+            voltageThd[i] = (voltageRms[i] > 1e-9) ? std::numeric_limits<double>::infinity() : 0.0;
         }
 
         if(fundCurrentRms > 1e-6) {
@@ -462,11 +466,17 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     if(voltageSym.positive.magnitude > 1e-9) {
         summary.voltageU0Unbalance = (voltageSym.zero.magnitude / voltageSym.positive.magnitude) * 100;
         summary.voltageU2Unbalance = (voltageSym.negative.magnitude / voltageSym.positive.magnitude) * 100;
+    } else {
+        summary.voltageU0Unbalance = (voltageSym.zero.magnitude > 1e-9) ? std::numeric_limits<double>::infinity() : 0.0;
+        summary.voltageU2Unbalance = (voltageSym.negative.magnitude > 1e-9) ? std::numeric_limits<double>::infinity() : 0.0;
     }
     const auto& currentSym = summary.voltageSymmetricalComponents;
     if(currentSym.positive.magnitude > 1e-9) {
-        summary.voltageU0Unbalance = (currentSym.zero.magnitude / currentSym.positive.magnitude) * 100;
-        summary.voltageU2Unbalance = (currentSym.negative.magnitude / currentSym.positive.magnitude) * 100;
+        summary.currentU0Unbalance = (currentSym.zero.magnitude / currentSym.positive.magnitude) * 100;
+        summary.currentU2Unbalance = (currentSym.negative.magnitude / currentSym.positive.magnitude) * 100;
+    } else {
+        summary.currentU0Unbalance = (currentSym.zero.magnitude > 1e-9) ? std::numeric_limits<double>::infinity() : 0.0;
+        summary.currentU2Unbalance = (currentSym.negative.magnitude > 1e-9) ? std::numeric_limits<double>::infinity() : 0.0;
     }
     return summary;
 }
