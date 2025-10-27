@@ -9,6 +9,9 @@ struct HarmonicComponent {
     int order;
     double magnitude;
     double phase;
+
+    // c++20 이상에서 defulat 비교 연산자를 사용하면 operator==와 <=>를 자동으로 생성해줌
+    auto operator<=>(const HarmonicComponent&) const  = default;
 };
 
 // 시뮬레이션 화면 갱신 모드

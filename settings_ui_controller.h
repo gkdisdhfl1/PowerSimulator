@@ -25,7 +25,6 @@ signals:
     void taskFinished(const std::expected<void, std::string>& result, const QString& successMessage);
     void presetListChanged(const std::vector<std::string>& presetList);;
     void presetValuesFetched(const QVariantMap& data);
-    void currentSettingsFetched(SimulationEngine::Parameters& params);
     void maxDataSizeChangeRequested(int maxSize);
 
 public slots:
@@ -38,7 +37,6 @@ public slots:
     // SettingsDialog가 프리셋 목록이나 상세 값을 요청할 때 호출될 슬롯
     void onRequestPresetList();
     void onRequestPresetValues(const QString& presetName);
-    void onRequestCurrentSettings();
     void onApplyDialogSettings(const SimulationEngine::Parameters& params);
     void showSettingsDialog();
 

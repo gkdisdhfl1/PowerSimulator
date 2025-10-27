@@ -10,6 +10,7 @@
 #include "config.h"
 #include "measured_data.h"
 #include "shared_data_types.h"
+#include "Property.h"
 
 class FrequencyTracker;
 
@@ -19,32 +20,34 @@ class SimulationEngine : public QObject
 public:
    // 시뮬레이션 매개변수를 담는 구조체
     struct Parameters {
-        double amplitude = config::Source::Amplitude::Default;
-        double currentAmplitude = config::Source::Current::DefaultAmplitude;
-        double frequency = config::Source::Frequency::Default;
-        double phaseRadians = 0.0;
-        double currentPhaseOffsetRadians = 0.0;
-        double timeScale = config::TimeScale::Default;
-        double samplingCycles = config::Sampling::DefaultSamplingCycles;
-        double samplesPerCycle = config::Sampling::DefaultSamplesPerCycle;
-        int maxDataSize = config::Simulation::DefaultDataSize;
-        double graphWidthSec = config::View::GraphWidth::Default;
-        UpdateMode updateMode = UpdateMode::PerSample;
-        HarmonicComponent voltageHarmonic = {config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase};
-        HarmonicComponent currentHarmonic = {config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase};
+        Property<double>* amplitude;
+        Property<double>* currentAmplitude;
+        Property<double>* frequency;
+        Property<double>* phaseRadians;
+        Property<double>* currentPhaseOffsetRadians;
+        Property<double>* timeScale;
+        Property<double>* samplingCycles;
+        Property<int>* samplesPerCycle;
+        Property<int>* maxDataSize;
+        Property<double>* graphWidthSec;
+        Property<UpdateMode>* updateMode;
 
-        // -- 3상 설정을 위한 매개변수 ---
+        // 고조파 설정
+        Property<HarmonicComponent>* voltageHarmonic;
+        Property<HarmonicComponent>* currentHarmonic;
+
+        // 3상 설정
         // 전압
-        double voltage_B_amplitude = config::Source::ThreePhase::DefaultAmplitudeB;
-        double voltage_B_phase_deg = config::Source::ThreePhase::DefaultPhaseB_deg;
-        double voltage_C_amplitude = config::Source::ThreePhase::DefaultAmplitudeC;
-        double voltage_C_phase_deg = config::Source::ThreePhase::DefaultPhaseC_deg;
+        Property<double>* voltage_B_amplitude;
+        Property<double>* voltage_B_phase_deg;
+        Property<double>* voltage_C_amplitude;
+        Property<double>* voltage_C_phase_deg;
 
         // 전류
-        double current_B_amplitude = config::Source::ThreePhase::DefaultCurrentAmplitudeB;
-        double current_B_phase_deg = config::Source::ThreePhase::DefaultCurrentPhaseB_deg;
-        double current_C_amplitude = config::Source::ThreePhase::DefaultCurrentAmplitudeC;
-        double current_C_phase_deg = config::Source::ThreePhase::DefaultCurrentPhaseC_deg;
+        Property<double>* current_B_amplitude;
+        Property<double>* current_B_phase_deg;
+        Property<double>* current_C_amplitude;
+        Property<double>* current_C_phase_deg;
     };
 
     explicit SimulationEngine();
@@ -52,18 +55,15 @@ public:
     bool isRunning() const;
     int getDataSize() const;
 
-    // 파라미터에 직접 접근할 수 있는 인터페이스
-    Parameters& parameters();
-    const Parameters& parameters() const;
-
     FrequencyTracker* getFrequencyTracker() const;
+    Parameters m_params;
 
 public slots:
     void start();
     void stop();
     void onRedrawRequest();
     void onRedrawAnalysisRequest();
-    void onMaxDataSizeChanged(int newSize);
+    void onMaxDataSizeChanged(int newSize); // 추후 정리
     void updateCaptureTimer();
     void recalculateCaptureInterval();
     void enableFrequencyTracking(bool enabled);
@@ -72,11 +72,12 @@ signals:
     void dataUpdated(const std::deque<DataPoint>& data);
     void runningStateChanged(bool isRunning);
     void measuredDataUpdated(const std::deque<MeasuredData>& data);
-    void samplingCyclesUpdated(double newFrequency);
+    // void samplingCyclesUpdated(double newFrequency); // 추후 정리
     void oneSecondDataUpdated(const OneSecondSummaryData& data);
 
 private slots:
     void captureData();
+    void handleMaxDataSizeChange(int newSize);
 
 private:
     friend FrequencyTracker;
@@ -97,7 +98,6 @@ private:
 
     QChronoTimer m_captureTimer;
     std::deque<DataPoint> m_data;
-    Parameters m_params;
 
     double m_currentPhaseRadians; // 현재 누적 위상
     int m_sampleCounterForUpdate;

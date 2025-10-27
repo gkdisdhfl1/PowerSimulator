@@ -106,7 +106,7 @@ void GraphWindow::setupSeries()
     // ----------------------------
 
     // X축 설정
-    m_axisX->setRange(0, m_engine->parameters().graphWidthSec ); // 초기 범위를 설정값으로
+    m_axisX->setRange(0, m_engine->m_params.graphWidthSec->value() ); // 초기 범위를 설정값으로
     for(const auto& info : m_seriesInfoList) {
         m_chart->addSeries(info.series);
         info.series->attachAxis(m_axisX);
@@ -124,13 +124,15 @@ void GraphWindow::stretchGraph(double factor)
     //     return;
 
     // 현재 그래프 폭에 팩터를 곱하여 새로운 폭을 계산
-    m_engine->parameters().graphWidthSec /= factor;
+    double currentWidth = m_engine->m_params.graphWidthSec->value();
+    m_engine->m_params.graphWidthSec->setValue(currentWidth / factor);
+    // m_engine->m_params.graphWidthSec /= factor;
 
     // 그래프 폭이 너무 크거나 작아지지 않도록 범위 제한
-    m_engine->parameters().graphWidthSec = std::clamp(m_engine->parameters().graphWidthSec , config::View::GraphWidth::Min, config::View::GraphWidth::Max);
+    m_engine->m_params.graphWidthSec->setValue(std::clamp(m_engine->m_params.graphWidthSec->value() , config::View::GraphWidth::Min, config::View::GraphWidth::Max));
 
     // updateGraph를 즉시 호출하지 않음.
-    qDebug() << "new graph width: " << m_engine->parameters().graphWidthSec  << "s";
+    qDebug() << "new graph width: " << m_engine->m_params.graphWidthSec  << "s";
 }
 
 void GraphWindow::updateGraph(const std::deque<DataPoint> &data)

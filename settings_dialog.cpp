@@ -140,8 +140,8 @@ void SettingsDialog::setupUi()
 
 int SettingsDialog::openWithValues(const SimulationEngine::Parameters &params)
 {
-    m_maxDataSizeSpinBox->setValue(params.maxDataSize);
-    m_graphWidthSpinBox->setValue(params.graphWidthSec);
+    m_maxDataSizeSpinBox->setValue(params.maxDataSize->value());
+    m_graphWidthSpinBox->setValue(params.graphWidthSec->value());
     refreshPresetList();
     updateUiStates();
 
@@ -218,12 +218,6 @@ void SettingsDialog::onPresetValuesFetched(const QVariantMap& data)
         valueItem->setFlags(valueItem->flags() & ~Qt::ItemIsEditable);
         m_previewTableWidget->setItem(currentRow, 1, valueItem);
     }
-}
-
-void SettingsDialog::onCurrentSettingsFetched(SimulationEngine::Parameters& params)
-{
-    m_maxDataSizeSpinBox->setValue(params.maxDataSize);
-    m_graphWidthSpinBox->setValue(params.graphWidthSec);
 }
 // ---------------------
 
@@ -339,8 +333,8 @@ void SettingsDialog::accept()
 {
     if(m_controller) {
         SimulationEngine::Parameters params;
-        params.maxDataSize = m_maxDataSizeSpinBox->value();
-        params.graphWidthSec = m_graphWidthSpinBox->value();
+        params.maxDataSize->setValue(m_maxDataSizeSpinBox->value());
+        params.graphWidthSec->setValue(m_graphWidthSpinBox->value());
         emit settingsApplied(params);
     }
     m_resultState = DialogResult::Accepted; // 상태를 ok 눌림으로 설정

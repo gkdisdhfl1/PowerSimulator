@@ -96,14 +96,14 @@ void FrequencyTracker::process(const DataPoint& latestDataPoint, const MeasuredD
         break;
     case TrackingState::FLL_Acquisition:
         // FLL은 매 사이클 데이터가 필요
-        if(cycleBuffer.size() >= static_cast<size_t>(m_engine->parameters().samplesPerCycle)) {
+        if(cycleBuffer.size() >= static_cast<size_t>(m_engine->m_params.samplesPerCycle->value())) {
             processFll(latestMeasuredData);
         }
         break;
     case TrackingState::FineTune:
         // 정밀 조정 상태일 때만 사이클 데이터 계산
         // 버퍼에 설정된 samplesPerCycle 만큼 데이터가 쌓이면 계산을 실행
-        if(cycleBuffer.size() >= static_cast<size_t>(m_engine->parameters().samplesPerCycle)) {
+        if(cycleBuffer.size() >= static_cast<size_t>(m_engine->m_params.samplesPerCycle->value())) {
             processFineTune(latestMeasuredData);
         }
         break;
@@ -191,7 +191,7 @@ void FrequencyTracker::processFll(const MeasuredData& latestMeasuredData)
     m_fll_failCounter = 0; // 성공 시 카운터 리셋
 
     const double phaseError = phaseErrorResult->error; // 성공값 추출
-    const double cycleDuration = m_engine->parameters().samplesPerCycle * m_engine->m_captureIntervalsNs.count();
+    const double cycleDuration = m_engine->m_params.samplesPerCycle->value() * m_engine->m_captureIntervalsNs.count();
     const double frequencyError = phaseError / (config::Math::TwoPi * cycleDuration);
 
     // FLL 실패 감지
@@ -220,10 +220,10 @@ void FrequencyTracker::processFll(const MeasuredData& latestMeasuredData)
     }
     m_fll_previousLfOutput = lf_output;
 
-    double newSamplingcycles = m_engine->parameters().samplingCycles + lf_output;
+    double newSamplingcycles = m_engine->m_params.samplingCycles->value() + lf_output;
     newSamplingcycles = std::clamp(newSamplingcycles, static_cast<double>(config::Sampling::MinValue), static_cast<double>(config::Sampling::maxValue));
 
-    if(std::abs(m_engine->parameters().samplingCycles - newSamplingcycles) > 1e-9) {
+    if(std::abs(m_engine->m_params.samplingCycles->value() - newSamplingcycles) > 1e-9) {
         emit samplingCyclesUpdated(newSamplingcycles);
     }
 
@@ -282,10 +282,10 @@ void FrequencyTracker::processFineTune(const MeasuredData& latestMeasuredData)
     // PID 출력 계산
     double phase_lf_output = m_zcController.process(zcPhaseError);
 
-    double newSamplingCycles = m_engine->parameters().samplingCycles + phase_lf_output;
+    double newSamplingCycles = m_engine->m_params.samplingCycles->value() + phase_lf_output;
     newSamplingCycles = std::clamp(newSamplingCycles, static_cast<double>(config::Sampling::MinValue), static_cast<double>(config::Sampling::maxValue));
 
-    if(std::abs(m_engine->parameters().samplingCycles - newSamplingCycles) > 1e-9) {
+    if(std::abs(m_engine->m_params.samplingCycles->value() - newSamplingCycles) > 1e-9) {
         emit samplingCyclesUpdated(newSamplingCycles);
     }
     m_pll_previousVoltagePhase = phaseErrorResult->currentAngle;
@@ -310,7 +310,7 @@ void FrequencyTracker::processVerification(const DataPoint& latestDataPoint)
     const auto& clean_wave = *cleanWaveResult;
 
     double zc_freq = estimateFrequencyByZeroCrossing(clean_wave);
-    double pll_freq = m_engine->parameters().samplingCycles;
+    double pll_freq = m_engine->m_params.samplingCycles->value();
 
     if(zc_freq > 0) {
         double ratio = pll_freq / zc_freq;
@@ -339,7 +339,7 @@ void FrequencyTracker::startCoarseSearch()
     m_trackingState = TrackingState::Coarse;
 
     const double initialSamplingRate = 50.0 * 20.0;
-    const double currentSamplingRate = m_engine->parameters().samplingCycles * m_engine->parameters().samplesPerCycle;
+    const double currentSamplingRate = m_engine->m_params.samplingCycles->value() * m_engine->m_params.samplesPerCycle->value();
 
     // 0.5초 분량의 샘플 개수를 계산
     if(currentSamplingRate > 1.0) {
@@ -431,7 +431,7 @@ void FrequencyTracker::startVerification()
     m_coarseSearchBuffer.clear(); // Coarse Search 버퍼 재사용
 
     // 0.2초 분량의 샘플을 수집하여 검증
-    const double currentSamplingRate = m_engine->parameters().samplingCycles * m_engine->parameters().samplesPerCycle;
+    const double currentSamplingRate = m_engine->m_params.samplingCycles->value() * m_engine->m_params.samplesPerCycle->value();
     if(currentSamplingRate > 1.0) {
         int calculatedSamples = static_cast<int>(currentSamplingRate * VerificationConstants::Durationi_S);
         m_coarseSearchSamplesNeeded = (calculatedSamples % 2 == 0) ? calculatedSamples : calculatedSamples - 1;

@@ -48,7 +48,6 @@ public slots:
     // Controller로부터 프리셋 목록을 받는 슬롯
     void onPresetListChanged(const std::vector<std::string>& presetList);
     void onPresetValuesFetched(const QVariantMap& data);
-    void onCurrentSettingsFetched(SimulationEngine::Parameters& params);
 
 private slots:
     void onNewPresetClicked();

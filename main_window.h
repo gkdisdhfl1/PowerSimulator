@@ -32,6 +32,7 @@ private slots:
     void updatePlaceholderVisibility();
     void updateFpsLabel();
     void onPresetLoaded();
+    void showThreePhaseDialog();
 
 private:
     QAction* m_actionSettings;

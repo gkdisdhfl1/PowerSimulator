@@ -181,7 +181,6 @@ void MainWindow::setupUiComponents()
     // 6. 컨트롤 패널의 도킹 상태 변경 시그널 연결
     connect(m_controlDock, &QDockWidget::dockLocationChanged, this, &MainWindow::updatePlaceholderVisibility);
     connect(m_controlDock, &QDockWidget::topLevelChanged, this, &MainWindow::updatePlaceholderVisibility);
-
 }
 
 void MainWindow::createSignalSlotConnections()
@@ -189,7 +188,7 @@ void MainWindow::createSignalSlotConnections()
     // 메뉴바 액션 연결
     connect(m_actionSettings, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showSettingsDialog);
     connect(m_actionPidTuning, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showPidTuningDialog);
-    connect(m_actionThreePhaseSettings, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showThreePhaseDialog);
+    connect(m_actionThreePhaseSettings, &QAction::triggered, this, &MainWindow::showThreePhaseDialog);
     connect(m_fpsTimer, &QTimer::timeout, this, &MainWindow::updateFpsLabel);
 
     connect(m_settingsUiController.get(), &SettingsUiController::maxDataSizeChangeRequested, m_engine, &SimulationEngine::onMaxDataSizeChanged);
@@ -228,7 +227,7 @@ void MainWindow::createSignalSlotConnections()
     // Model(engine) 시그널 -> UI 슬롯
     connect(m_engine, &SimulationEngine::dataUpdated, m_graphWindow, &GraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::runningStateChanged, m_controlPanel, &ControlPanel::setRunningState);
-    connect(m_engine, &SimulationEngine::samplingCyclesUpdated, m_controlPanel, &ControlPanel::onEngineSamplingCyclesChanged);
+    connect(m_engine->m_params.samplingCycles, qOverload<const double&>(&Property<double>::valueChanged), m_controlPanel, &ControlPanel::onEngineSamplingCyclesChanged);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_analysisGraphWindow, &AnalysisGraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_phasorView, &PhasorView::updateData);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_fundamentalAnalysisGraphWindow, &FundamentalAnalysisGraphWindow::updateGraph);
@@ -291,12 +290,22 @@ void MainWindow::onPresetLoaded()
     // QTimer::singleShot(0, this, [this]() {
     //     qDebug() << "[Debug] MainWindow: Executing scheduled update.";
     //     if(m_threePhaseDialog) {
-    //         m_threePhaseDialog->setInitialValues(m_engine->parameters());
+    //         m_threePhaseDialog->setInitialValues(m_engine->m_params);
     //         m_threePhaseDialog->update();
     //     }
     // });
     if(m_threePhaseDialog) {
-        m_threePhaseDialog->setInitialValues(m_engine->parameters());
+        m_threePhaseDialog->setInitialValues(m_engine->m_params);
         m_threePhaseDialog->update();
     }
+}
+
+void MainWindow::showThreePhaseDialog()
+{
+    const auto& currentParams = m_engine->m_params;
+    m_threePhaseDialog->setInitialValues(currentParams);
+
+    m_threePhaseDialog->show();
+    m_threePhaseDialog->raise();
+    m_threePhaseDialog->activateWindow();
 }
