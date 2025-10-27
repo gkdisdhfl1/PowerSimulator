@@ -18,6 +18,7 @@ class QLabel;
 class QTimer;
 class OneSecondSummaryWindow;
 class AdditionalMetricsWindow;
+class ThreePhaseDialog;
 
 class MainWindow : public QMainWindow
 {
@@ -30,6 +31,7 @@ public:
 private slots:
     void updatePlaceholderVisibility();
     void updateFpsLabel();
+    void onPresetLoaded();
 
 private:
     QAction* m_actionSettings;
@@ -53,6 +55,7 @@ private:
     int m_frameCount;
     OneSecondSummaryWindow* m_oneSecondSummaryWindow;
     AdditionalMetricsWindow* m_additionalMetricsWindow;
+    std::unique_ptr<ThreePhaseDialog> m_threePhaseDialog;
 
     void createSignalSlotConnections(); // 조립 역할
     void setupUiComponents();

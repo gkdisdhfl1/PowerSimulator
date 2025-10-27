@@ -83,6 +83,7 @@ void ControlPanel::setState(const ControlPanelState& state)
     }
 
     setRunningState(state.isRunning);
+    emit stateLoaded();
 }
 
 void ControlPanel::setupUi()

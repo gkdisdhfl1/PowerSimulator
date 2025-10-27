@@ -40,6 +40,7 @@ signals:
     void deletePresetRequested(const QString& presetName);
     void renamePresetRequested(const QString& oldName, const QString& newName);
     void settingsApplied(const SimulationEngine::Parameters& params);
+    void presetLoaded();
 
 public slots:
     // Controller로부터 작업 결과를 받는 슬롯

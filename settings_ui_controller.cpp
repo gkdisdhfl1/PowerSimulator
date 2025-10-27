@@ -45,11 +45,12 @@ namespace {
 constexpr int StatusBarTimeOut = 3000;
 }
 
-SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsManager& settingsManager, SimulationEngine* engine, QWidget* parent)
+SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsManager& settingsManager, SimulationEngine* engine, ThreePhaseDialog* threePhaseDialog, QWidget* parent)
     : QObject(parent)
     ,m_controlPanel(controlPanel)
     ,m_settingsManager(settingsManager)
     ,m_engine(engine)
+    ,m_threePhaseDialog(threePhaseDialog)
     ,m_parent(parent)
 {
     initializeSettingsMap();
@@ -57,10 +58,9 @@ SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsM
 
     m_settingsDialog = std::make_unique<SettingsDialog>(this, m_parent);
     m_pidTuningDialog = std::make_unique<PidTuningDialog>(m_parent);
-    m_threePhaseDialog = std::make_unique<ThreePhaseDialog>(m_parent);
 
     connect(m_pidTuningDialog.get(), &PidTuningDialog::settingsApplied, this, &SettingsUiController::onCoefficientsChanged);
-    connect(m_threePhaseDialog.get(), &ThreePhaseDialog::valueChanged, this, &SettingsUiController::onThreePhaseValueChanged);
+    // connect(m_threePhaseDialog, &ThreePhaseDialog::valueChanged, this, &SettingsUiController::onThreePhaseValueChanged);
 }
 
 // --- public slot 구현 ---
@@ -72,6 +72,7 @@ void SettingsUiController::onSaveAsPresetRequested(const QString& presetName)
 void SettingsUiController::onLoadPresetRequested(const QString& presetName)
 {
     auto result = applySettingsToUi(presetName.toStdString());
+    // qDebug() << "[Debug] SettingsUiController: Emitting presetLoaded signal.";
     emit taskFinished(result, "프리셋을 성공적으로 적용했습니다.");
 }
 void SettingsUiController::onDeletePresetRequested(const QString& presetName)

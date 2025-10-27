@@ -41,8 +41,8 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     setupUiComponents();
 
     // 컨트롤러 생성 (UI 컴포넌트가 생성된 후)
-    m_settingsUiController = std::make_unique<SettingsUiController>(m_controlPanel, *m_settingsManager, m_engine, this);
-
+    m_threePhaseDialog = std::make_unique<ThreePhaseDialog>(this);
+    m_settingsUiController = std::make_unique<SettingsUiController>(m_controlPanel, *m_settingsManager, m_engine, m_threePhaseDialog.get(), this);
 
 
     // 시그널-슬롯 연결
@@ -222,6 +222,7 @@ void MainWindow::createSignalSlotConnections()
     connect(m_controlPanel, &ControlPanel::waveformVisibilityChanged, m_graphWindow, &GraphWindow::onWaveformVisibilityChanged);
     connect(m_controlPanel, &ControlPanel::analysisWaveformVisibilityChanged, m_analysisGraphWindow, &AnalysisGraphWindow::onWaveformVisibilityChanged);
     connect(m_controlPanel, &ControlPanel::phasorVisibilityChanged, m_phasorView, &PhasorView::onVisibilityChanged);
+    connect(m_controlPanel, &ControlPanel::stateLoaded, this, &MainWindow::onPresetLoaded);
     // ----------------------
 
     // Model(engine) 시그널 -> UI 슬롯
@@ -240,8 +241,8 @@ void MainWindow::createSignalSlotConnections()
         const double timeSec = std::chrono::duration<double>(point.timestamp).count();
         QString status = QString::asprintf("Time: %.3f s, Voltage: %.3f V, Current: %.3f A",
                                            timeSec,
-                                           point.voltage,
-                                           point.current);
+                                           point.voltage.a,
+                                           point.current.a);
         statusBar()->showMessage(status);
     });
     connect(m_graphWindow, &GraphWindow::autoScrollToggled, m_controlPanel, &ControlPanel::setAutoScroll);
@@ -280,4 +281,22 @@ void MainWindow::updateFpsLabel()
 
     // 다음 1초를 위해 카운터 리셋
     m_frameCount = 0;
+}
+
+void MainWindow::onPresetLoaded()
+{
+    // qDebug() << "[Debug] MainWindow: onPresetLoaded slot called. Scheduling UI update";
+    // qDebug() << "[DBG] MainWindow calls setInitialValues on" << m_threePhaseDialog;
+
+    // QTimer::singleShot(0, this, [this]() {
+    //     qDebug() << "[Debug] MainWindow: Executing scheduled update.";
+    //     if(m_threePhaseDialog) {
+    //         m_threePhaseDialog->setInitialValues(m_engine->parameters());
+    //         m_threePhaseDialog->update();
+    //     }
+    // });
+    if(m_threePhaseDialog) {
+        m_threePhaseDialog->setInitialValues(m_engine->parameters());
+        m_threePhaseDialog->update();
+    }
 }

@@ -18,7 +18,7 @@ class SettingsUiController : public QObject
 {
     Q_OBJECT
 public:
-    explicit SettingsUiController(ControlPanel* controlPanel, SettingsManager& settingsManager, SimulationEngine* engine, QWidget* parent);
+    explicit SettingsUiController(ControlPanel* controlPanel, SettingsManager& settingsManager, SimulationEngine* engine, ThreePhaseDialog* threePhaseDialog, QWidget* parent);
 
 
 signals:
@@ -80,7 +80,7 @@ private:
     QWidget* m_parent;        
     std::unique_ptr<SettingsDialog> m_settingsDialog; // SettingsDialog 소유권 이전
     std::unique_ptr<PidTuningDialog> m_pidTuningDialog;
-    std::unique_ptr<ThreePhaseDialog> m_threePhaseDialog;
+    ThreePhaseDialog* m_threePhaseDialog;
 
     std::unordered_map<std::string, SettingInfo> m_settingsMap;
     QMap<QString, QString> m_keyNameMap;

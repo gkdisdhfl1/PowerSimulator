@@ -25,11 +25,11 @@ public:
         CurrentCPhase,
         ParamCount // 배열 크기를 위해 마지막 추가
     };
-
     void setInitialValues(const SimulationEngine::Parameters& params);
 
 signals:
     void valueChanged(int type, double value);
+
 
 private:
     void setupUi();
