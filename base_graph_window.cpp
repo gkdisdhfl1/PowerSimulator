@@ -48,7 +48,7 @@ std::pair<double, double> BaseGraphWindow::getVisibleXRange(const Container& dat
 
     if(m_isAutoScrollEnabled) {
         if(data.empty()) {
-            return {0.0, m_engine->m_params.graphWidthSec->value()};
+            return {0.0, m_engine->m_graphWidthSec.value()};
         }
 
         // C++20 concept를 사용하여 일반화 가능
@@ -60,7 +60,7 @@ std::pair<double, double> BaseGraphWindow::getVisibleXRange(const Container& dat
             lastTimestamp = std::chrono::duration<double>(data.back().timestamp).count();
         }
 
-        const double graphWidth = m_engine->m_params.graphWidthSec->value();
+        const double graphWidth = m_engine->m_graphWidthSec.value();
         minX = (lastTimestamp < graphWidth) ? 0 : lastTimestamp - graphWidth;
         maxX = (lastTimestamp < graphWidth) ? graphWidth : lastTimestamp;
     } else {

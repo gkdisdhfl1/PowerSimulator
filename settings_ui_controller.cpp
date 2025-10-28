@@ -140,55 +140,55 @@ void SettingsUiController::onRequestPresetValues(const QString& presetName)
     emit presetValuesFetched(previewData);
 }
 
-void SettingsUiController::onApplyDialogSettings(const SimulationEngine::Parameters& params)
+void SettingsUiController::onApplyDialogSettings(const SimulationEngine* params)
 {
     if(!m_engine) return;
 
-    m_engine->m_params.maxDataSize->setValue(params.maxDataSize->value());
-    m_engine->m_params.graphWidthSec->setValue(params.graphWidthSec->value());
-    m_engine->m_params.voltage_B_amplitude->setValue(params.voltage_B_amplitude->value());
-    m_engine->m_params.voltage_B_phase_deg->setValue(params.voltage_B_phase_deg->value());
-    m_engine->m_params.voltage_C_amplitude->setValue(params.voltage_C_amplitude->value());
-    m_engine->m_params.voltage_C_phase_deg->setValue(params.voltage_C_phase_deg->value());
-    m_engine->m_params.current_B_amplitude->setValue(params.current_B_amplitude->value());
-    m_engine->m_params.current_B_phase_deg->setValue(params.current_B_phase_deg->value());
-    m_engine->m_params.current_C_amplitude->setValue(params.current_C_amplitude->value());
-    m_engine->m_params.current_C_phase_deg->setValue(params.current_C_phase_deg->value());
+    m_engine->m_maxDataSize.setValue(params->m_maxDataSize.value());
+    m_engine->m_graphWidthSec.setValue(params->m_graphWidthSec.value());
+    m_engine->m_voltage_B_amplitude.setValue(params->m_voltage_B_amplitude.value());
+    m_engine->m_voltage_B_phase_deg.setValue(params->m_voltage_B_phase_deg.value());
+    m_engine->m_voltage_C_amplitude.setValue(params->m_voltage_C_amplitude.value());
+    m_engine->m_voltage_C_phase_deg.setValue(params->m_voltage_C_phase_deg.value());
+    m_engine->m_current_B_amplitude.setValue(params->m_current_B_amplitude.value());
+    m_engine->m_current_B_phase_deg.setValue(params->m_current_B_phase_deg.value());
+    m_engine->m_current_C_amplitude.setValue(params->m_current_C_amplitude.value());
+    m_engine->m_current_C_phase_deg.setValue(params->m_current_C_phase_deg.value());
 }
 
 void SettingsUiController::onAmplitudeChanged(double value)
 {
-    m_engine->m_params.amplitude->setValue(value);
+    m_engine->m_amplitude.setValue(value);
 }
 void SettingsUiController::onCurrentAmplitudeChanged(double value)
 {
-    m_engine->m_params.currentAmplitude->setValue(value);
+    m_engine->m_currentAmplitude.setValue(value);
 }
 void SettingsUiController::onFrequencyChanged(double value)
 {
-    m_engine->m_params.frequency->setValue(value);
+    m_engine->m_frequency.setValue(value);
     if(m_blockUiSignals) return;
     m_engine->recalculateCaptureInterval();
 }
 void SettingsUiController::onCurrentPhaseChanged(int degrees)
 {
-    m_engine->m_params.currentPhaseOffsetRadians->setValue(utils::degreesToRadians(degrees));
+    m_engine->m_currentPhaseOffsetRadians.setValue(utils::degreesToRadians(degrees));
 }
 void SettingsUiController::onTimeScaleChanged(double value)
 {
-    m_engine->m_params.timeScale->setValue(value);
+    m_engine->m_timeScale.setValue(value);
     if(m_blockUiSignals) return;
     m_engine->updateCaptureTimer();
 }
 void SettingsUiController::onSamplingCyclesChanged(double value)
 {
-    m_engine->m_params.samplingCycles->setValue(value);
+    m_engine->m_samplingCycles.setValue(value);
     if(m_blockUiSignals) return;
     m_engine->recalculateCaptureInterval();
 }
 void SettingsUiController::onSamplesPerCycleChanged(int value)
 {
-    m_engine->m_params.samplesPerCycle->setValue(value);
+    m_engine->m_samplesPerCycle.setValue(value);
     if(m_blockUiSignals) return;
     m_engine->recalculateCaptureInterval();
 }
@@ -197,12 +197,12 @@ void SettingsUiController::onUpdateModeChanged()
     ControlPanelState state = m_controlPanel->getState();
 
     // state 객체에 담긴 updateMode 값을 엔진의 파라미터에 직접 설정
-    m_engine->m_params.updateMode->setValue(static_cast<UpdateMode>(state.updateMode));
+    m_engine->m_updateMode.setValue(static_cast<UpdateMode>(state.updateMode));
 }
 
 void SettingsUiController::showSettingsDialog()
 {
-    SimulationEngine::Parameters& params = m_engine->m_params;
+    // SimulationEngine* params = m_engine;
 
     if (m_settingsDialog->exec() == QDialog::Accepted) {
         // // Dialog가 닫혔을 때, 이유를 확인
@@ -248,41 +248,41 @@ void SettingsUiController::onCoefficientsChanged(const FrequencyTracker::PidCoef
 void SettingsUiController::onHarmonicsChanged()
 {
     const auto state = m_controlPanel->getState();
-    auto& params = m_engine->m_params;
+    auto& params = m_engine;
 
-    params.voltageHarmonic->setValue(state.voltageHarmonic);
-    params.currentHarmonic->setValue(state.currentHarmonic);
+    params->m_voltageHarmonic.setValue(state.voltageHarmonic);
+    params->m_currentHarmonic.setValue(state.currentHarmonic);
 }
 
 void SettingsUiController::onThreePhaseValueChanged(int type, double value)
 {
-    auto& params = m_engine->m_params;
+    auto& params = m_engine;
 
     switch(static_cast<ThreePhaseDialog::ParamType>(type))
     {
     case ThreePhaseDialog::VoltageBAmplitude:
-        if(params.voltage_B_amplitude->value() != value) params.voltage_B_amplitude->setValue(value);
+        if(params->m_voltage_B_amplitude.value() != value) params->m_voltage_B_amplitude.setValue(value);
         break;
     case ThreePhaseDialog::VoltageBPhase:
-        if(params.voltage_B_phase_deg->value() != value) params.voltage_B_phase_deg->setValue(value);
+        if(params->m_voltage_B_phase_deg.value() != value) params->m_voltage_B_phase_deg.setValue(value);
         break;
     case ThreePhaseDialog::VoltageCAmplitude:
-        if(params.voltage_C_amplitude->value() != value) params.voltage_C_amplitude->setValue(value);
+        if(params->m_voltage_C_amplitude.value() != value) params->m_voltage_C_amplitude.setValue(value);
         break;
     case ThreePhaseDialog::VoltageCPhase:
-        if(params.voltage_C_phase_deg->value() != value) params.voltage_C_phase_deg->setValue(value);
+        if(params->m_voltage_C_phase_deg.value() != value) params->m_voltage_C_phase_deg.setValue(value);
         break;
     case ThreePhaseDialog::CurrentBAmplitude:
-        if(params.current_B_amplitude->value() != value) params.current_B_amplitude->setValue(value);
+        if(params->m_current_B_amplitude.value() != value) params->m_current_B_amplitude.setValue(value);
         break;
     case ThreePhaseDialog::CurrentBPhase:
-        if(params.current_B_phase_deg->value() != value) params.current_B_phase_deg->setValue(value);
+        if(params->m_current_B_phase_deg.value() != value) params->m_current_B_phase_deg.setValue(value);
         break;
     case ThreePhaseDialog::CurrentCAmplitude:
-        if(params.current_C_amplitude->value() != value) params.current_C_amplitude->setValue(value);
+        if(params->m_current_C_amplitude.value() != value) params->m_current_C_amplitude.setValue(value);
         break;
     case ThreePhaseDialog::CurrentCPhase:
-        if(params.current_C_phase_deg->value() != value) params.current_C_phase_deg->setValue(value);
+        if(params->m_current_C_phase_deg.value() != value) params->m_current_C_phase_deg.setValue(value);
         break;
     default:
         break;
@@ -291,7 +291,7 @@ void SettingsUiController::onThreePhaseValueChanged(int type, double value)
 
 void SettingsUiController::showThreePhaseDialog()
 {
-    const auto& currentParams = m_engine->m_params;
+    const auto& currentParams = m_engine;
     m_threePhaseDialog->setInitialValues(currentParams);
 
     m_threePhaseDialog->show();
@@ -422,73 +422,73 @@ void SettingsUiController::initializeSettingsMap()
     // 3상 관련 설정
     m_settingsMap["voltageBAmplitude"] = {
         [this](const auto&) {
-            return m_engine->m_params.voltage_B_amplitude->value();
+            return m_engine->m_voltage_B_amplitude.value();
         },
         [this](auto&, const SettingValue& val) {
-            m_engine->m_params.voltage_B_amplitude->setValue(std::get<double>(val));
+            m_engine->m_voltage_B_amplitude.setValue(std::get<double>(val));
         },
         config::Source::ThreePhase::DefaultAmplitudeB
     };
     m_settingsMap["voltageBPhase"] = {
         [this](const auto&) {
-            return m_engine->m_params.voltage_B_phase_deg->value();
+            return m_engine->m_voltage_B_phase_deg.value();
         },
         [this](auto&, const SettingValue& val) {
-            m_engine->m_params.voltage_B_phase_deg->setValue(std::get<double>(val));
+            m_engine->m_voltage_B_phase_deg.setValue(std::get<double>(val));
         },
         config::Source::ThreePhase::DefaultPhaseB_deg
     };
     m_settingsMap["voltageCAmplitude"] = {
         [this](const auto&) {
-            return m_engine->m_params.voltage_C_amplitude->value();
+            return m_engine->m_voltage_C_amplitude.value();
         },
         [this](auto&, const SettingValue& val) {
-            m_engine->m_params.voltage_C_amplitude->setValue(std::get<double>(val));
+            m_engine->m_voltage_C_amplitude.setValue(std::get<double>(val));
         },
         config::Source::ThreePhase::DefaultAmplitudeC
     };
     m_settingsMap["voltageCPhase"] = {
         [this](const auto&) {
-            return m_engine->m_params.voltage_C_phase_deg->value();
+            return m_engine->m_voltage_C_phase_deg.value();
         },
         [this](auto&, const SettingValue& val) {
-            m_engine->m_params.voltage_C_phase_deg->setValue(std::get<double>(val));
+            m_engine->m_voltage_C_phase_deg.setValue(std::get<double>(val));
         },
         config::Source::ThreePhase::DefaultPhaseC_deg
     };
     m_settingsMap["currentBAmplitude"] = {
         [this](const auto&) {
-            return m_engine->m_params.current_B_amplitude->value();
+            return m_engine->m_current_B_amplitude.value();
         },
         [this](auto&, const SettingValue& val) {
-            m_engine->m_params.current_B_amplitude->setValue(std::get<double>(val));
+            m_engine->m_current_B_amplitude.setValue(std::get<double>(val));
         },
         config::Source::ThreePhase::DefaultCurrentAmplitudeB
     };
     m_settingsMap["currentBPhase"] = {
         [this](const auto&) {
-            return m_engine->m_params.current_B_phase_deg->value();
+            return m_engine->m_current_B_phase_deg.value();
         },
         [this](auto&, const SettingValue& val) {
-            m_engine->m_params.current_B_phase_deg->setValue(std::get<double>(val));
+            m_engine->m_current_B_phase_deg.setValue(std::get<double>(val));
         },
         config::Source::ThreePhase::DefaultCurrentPhaseB_deg
     };
     m_settingsMap["currentCAmplitude"] = {
         [this](const auto&) {
-            return m_engine->m_params.current_C_amplitude->value();
+            return m_engine->m_current_C_amplitude.value();
         },
         [this](auto&, const SettingValue& val) {
-            m_engine->m_params.current_C_amplitude->setValue(std::get<double>(val));
+            m_engine->m_current_C_amplitude.setValue(std::get<double>(val));
         },
         config::Source::ThreePhase::DefaultCurrentAmplitudeC
     };
     m_settingsMap["currentCPhase"] = {
         [this](const auto&) {
-            return m_engine->m_params.current_C_phase_deg->value();
+            return m_engine->m_current_C_phase_deg.value();
         },
         [this](auto&, const SettingValue& val) {
-            m_engine->m_params.current_C_phase_deg->setValue(std::get<double>(val));
+            m_engine->m_current_C_phase_deg.setValue(std::get<double>(val));
         },
         config::Source::ThreePhase::DefaultCurrentPhaseC_deg
     };
@@ -577,11 +577,11 @@ std::expected<void, std::string> SettingsUiController::applySettingsToUi(std::st
     m_controlPanel->setState(state);
 
     // UI와 별개인 엔진 파라미터들도 업데이트
-    if(auto res = m_settingsManager.loadSetting(presetName, "maxDataSize", m_engine->m_params.maxDataSize->value()); res) {
+    if(auto res = m_settingsManager.loadSetting(presetName, "maxDataSize", m_engine->m_maxDataSize.value()); res) {
         requestMaxSizeChange(*res);
     }
-    if(auto res = m_settingsManager.loadSetting(presetName, "graphWidthSec", m_engine->m_params.graphWidthSec->value()); res) {
-        m_engine->m_params.graphWidthSec->setValue(*res);
+    if(auto res = m_settingsManager.loadSetting(presetName, "graphWidthSec", m_engine->m_graphWidthSec.value()); res) {
+        m_engine->m_graphWidthSec.setValue(*res);
     }
 
     m_blockUiSignals = false;
@@ -605,8 +605,8 @@ std::expected<void, std::string> SettingsUiController::saveUiToSettings(std::str
     }
 
     // UI와 별개인 엔진 파라미터들도 저장
-    if(auto res = m_settingsManager.saveSetting(presetName, "maxDataSize", m_engine->m_params.maxDataSize); !res) return res;
-    if(auto res = m_settingsManager.saveSetting(presetName, "graphWidthSec", m_engine->m_params.graphWidthSec); !res) return res;
+    if(auto res = m_settingsManager.saveSetting(presetName, "maxDataSize", m_engine->m_maxDataSize.value()); !res) return res;
+    if(auto res = m_settingsManager.saveSetting(presetName, "graphWidthSec", m_engine->m_graphWidthSec.value()); !res) return res;
 
     m_parent->findChild<QStatusBar*>()->showMessage(QString("'%1' 이름으로 설정을 저장했습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), StatusBarTimeOut);
     return {};

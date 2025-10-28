@@ -27,7 +27,7 @@ public:
 
     enum class DialogResult { Accepted, PresetLoaded, Cancled };
 
-    int openWithValues(const SimulationEngine::Parameters& params); // 다이얼 열고 초기화하는 함수
+    int openWithValues(const SimulationEngine* engine); // 다이얼 열고 초기화하는 함수
     DialogResult getResultState() const;
 
     int getMaxSize() const;
@@ -39,7 +39,7 @@ signals:
     void loadPresetRequested(const QString& presetName);
     void deletePresetRequested(const QString& presetName);
     void renamePresetRequested(const QString& oldName, const QString& newName);
-    void settingsApplied(const SimulationEngine::Parameters& params);
+    void settingsApplied(const SimulationEngine* params);
     void presetLoaded();
 
 public slots:

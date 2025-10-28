@@ -138,10 +138,10 @@ void SettingsDialog::setupUi()
     mainLayout->addLayout(rightLayout, 2);
 }
 
-int SettingsDialog::openWithValues(const SimulationEngine::Parameters &params)
+int SettingsDialog::openWithValues(const SimulationEngine* params)
 {
-    m_maxDataSizeSpinBox->setValue(params.maxDataSize->value());
-    m_graphWidthSpinBox->setValue(params.graphWidthSec->value());
+    m_maxDataSizeSpinBox->setValue(params->m_maxDataSize.value());
+    m_graphWidthSpinBox->setValue(params->m_graphWidthSec.value());
     refreshPresetList();
     updateUiStates();
 
@@ -332,9 +332,9 @@ void SettingsDialog::updateUiStates()
 void SettingsDialog::accept()
 {
     if(m_controller) {
-        SimulationEngine::Parameters params;
-        params.maxDataSize->setValue(m_maxDataSizeSpinBox->value());
-        params.graphWidthSec->setValue(m_graphWidthSpinBox->value());
+        SimulationEngine*  params;
+        params->m_maxDataSize.setValue(m_maxDataSizeSpinBox->value());
+        params->m_graphWidthSec.setValue(m_graphWidthSpinBox->value());
         emit settingsApplied(params);
     }
     m_resultState = DialogResult::Accepted; // 상태를 ok 눌림으로 설정

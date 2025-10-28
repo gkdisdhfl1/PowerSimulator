@@ -143,7 +143,7 @@ void AnalysisGraphWindow::setupSeries()
     // -------------------------
 
     // X축 설정
-    m_axisX->setRange(0, m_engine->m_params.graphWidthSec->value() ); // 초기 범위를 설정값으로
+    m_axisX->setRange(0, m_engine->m_graphWidthSec.value() ); // 초기 범위를 설정값으로
     for(const auto& info : m_seriesInfoList) {
         m_chart->addSeries(info.series);
         info.series->attachAxis(m_axisX);

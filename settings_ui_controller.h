@@ -37,7 +37,7 @@ public slots:
     // SettingsDialog가 프리셋 목록이나 상세 값을 요청할 때 호출될 슬롯
     void onRequestPresetList();
     void onRequestPresetValues(const QString& presetName);
-    void onApplyDialogSettings(const SimulationEngine::Parameters& params);
+    void onApplyDialogSettings(const SimulationEngine* params);
     void showSettingsDialog();
 
     // ControlPanel의 실시간 변경에 반응하는 슬롯들
@@ -64,7 +64,7 @@ private:
     using SettingValue = std::variant<int, double>;
     using StateGetter = std::function<SettingValue(const ControlPanelState&)>;
     using StateSetter = std::function<void(ControlPanelState&, const SettingValue&)>;
-    using ParamDoublePtr = double SimulationEngine::Parameters::*;
+    using ParamDoublePtr = double SimulationEngine::*;
 
     struct SettingInfo {
         StateGetter getter;

@@ -68,42 +68,42 @@ void ThreePhaseDialog::setupUi()
     setLayout(mainLayout);
 }
 
-void ThreePhaseDialog::setInitialValues(const SimulationEngine::Parameters& params)
+void ThreePhaseDialog::setInitialValues(const SimulationEngine* engine)
 {
     // qDebug() << "[DBG] setInitialValues this=" << this
     //          << " dialog visible=" << this->isVisible()
     //          << " windowTitle=" << windowTitle();
     // qDebug() << "[DBG] VbPhase param =" << params.voltage_B_phase_deg;
     m_amplitudeControls[0]->setRange(config::Source::Amplitude::Min, config::Source::Amplitude::Max);
-    m_amplitudeControls[0]->setValue(params.voltage_B_amplitude->value());
+    m_amplitudeControls[0]->setValue(engine->m_voltage_B_amplitude.value());
     m_phaseDials[0]->setRange(0, 359);
-    m_phaseDials[0]->setValue(params.voltage_B_phase_deg->value());
+    m_phaseDials[0]->setValue(engine->m_voltage_B_phase_deg.value());
     m_phaseDials[0]->setWrapping(true);
     m_phaseDials[0]->setNotchesVisible(true);
 
     m_amplitudeControls[1]->setRange(config::Source::Amplitude::Min, config::Source::Amplitude::Max);
-    m_amplitudeControls[1]->setValue(params.voltage_C_amplitude->value());
+    m_amplitudeControls[1]->setValue(engine->m_voltage_C_amplitude.value());
     m_phaseDials[1]->setRange(0, 359);
-    m_phaseDials[1]->setValue(params.voltage_C_phase_deg->value());
+    m_phaseDials[1]->setValue(engine->m_voltage_C_phase_deg.value());
     m_phaseDials[1]->setWrapping(true);
     m_phaseDials[1]->setNotchesVisible(true);
 
     m_amplitudeControls[2]->setRange(config::Source::Current::MinAmplitude, config::Source::Current::MaxAmplitude);
-    m_amplitudeControls[2]->setValue(params.current_B_amplitude->value());
+    m_amplitudeControls[2]->setValue(engine->m_current_B_amplitude.value());
     m_phaseDials[2]->setRange(0, 359);
-    m_phaseDials[2]->setValue(params.current_B_phase_deg->value());
+    m_phaseDials[2]->setValue(engine->m_current_B_phase_deg.value());
     m_phaseDials[2]->setWrapping(true);
     m_phaseDials[2]->setNotchesVisible(true);
 
     m_amplitudeControls[3]->setRange(config::Source::Current::MinAmplitude, config::Source::Current::MaxAmplitude);
-    m_amplitudeControls[3]->setValue(params.current_C_amplitude->value());
+    m_amplitudeControls[3]->setValue(engine->m_current_C_amplitude.value());
     m_phaseDials[3]->setRange(0, 359);
-    m_phaseDials[3]->setValue(params.current_C_phase_deg->value());
+    m_phaseDials[3]->setValue(engine->m_current_C_phase_deg.value());
     m_phaseDials[3]->setWrapping(true);
     m_phaseDials[3]->setNotchesVisible(true);
 
-    m_phaseLabels[0]->setText(QString::number(params.voltage_B_phase_deg->value()) + " °");
-    m_phaseLabels[1]->setText(QString::number(params.voltage_C_phase_deg->value()) + " °");
-    m_phaseLabels[2]->setText(QString::number(params.current_B_phase_deg->value()) + " °");
-    m_phaseLabels[3]->setText(QString::number(params.current_C_phase_deg->value()) + " °");
+    m_phaseLabels[0]->setText(QString::number(engine->m_voltage_B_phase_deg.value()) + " °");
+    m_phaseLabels[1]->setText(QString::number(engine->m_voltage_C_phase_deg.value()) + " °");
+    m_phaseLabels[2]->setText(QString::number(engine->m_current_B_phase_deg.value()) + " °");
+    m_phaseLabels[3]->setText(QString::number(engine->m_current_C_phase_deg.value()) + " °");
 }

@@ -227,7 +227,7 @@ void MainWindow::createSignalSlotConnections()
     // Model(engine) 시그널 -> UI 슬롯
     connect(m_engine, &SimulationEngine::dataUpdated, m_graphWindow, &GraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::runningStateChanged, m_controlPanel, &ControlPanel::setRunningState);
-    connect(m_engine->m_params.samplingCycles, qOverload<const double&>(&Property<double>::valueChanged), m_controlPanel, &ControlPanel::onEngineSamplingCyclesChanged);
+    connect(&m_engine->m_samplingCycles, qOverload<const double&>(&Property<double>::valueChanged), m_controlPanel, &ControlPanel::onEngineSamplingCyclesChanged);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_analysisGraphWindow, &AnalysisGraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_phasorView, &PhasorView::updateData);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_fundamentalAnalysisGraphWindow, &FundamentalAnalysisGraphWindow::updateGraph);
@@ -295,14 +295,14 @@ void MainWindow::onPresetLoaded()
     //     }
     // });
     if(m_threePhaseDialog) {
-        m_threePhaseDialog->setInitialValues(m_engine->m_params);
+        m_threePhaseDialog->setInitialValues(m_engine);
         m_threePhaseDialog->update();
     }
 }
 
 void MainWindow::showThreePhaseDialog()
 {
-    const auto& currentParams = m_engine->m_params;
+    const auto& currentParams = m_engine;
     m_threePhaseDialog->setInitialValues(currentParams);
 
     m_threePhaseDialog->show();
