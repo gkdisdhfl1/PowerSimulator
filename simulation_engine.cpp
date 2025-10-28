@@ -11,37 +11,39 @@ SimulationEngine::SimulationEngine()
     , m_sampleCounterForUpdate(0)
     , m_oneSecondBlockStartTime(0)
     , m_totalEngeryWh(0.0)
+
+    // --- 시뮬레이션 파라미터 초기화 ---
+    , m_amplitude(config::Source::Amplitude::Default, this)
+    , m_currentAmplitude(config::Source::Current::DefaultAmplitude, this)
+    , m_frequency(config::Source::Frequency::Default, this)
+    , m_phaseRadians(0.0, this)
+    , m_currentPhaseOffsetRadians(0.0, this)
+    , m_timeScale(config::TimeScale::Default, this)
+    , m_samplingCycles(config::Sampling::DefaultSamplingCycles, this)
+    , m_samplesPerCycle(config::Sampling::DefaultSamplesPerCycle, this)
+    , m_maxDataSize(config::Simulation::DefaultDataSize, this)
+    , m_graphWidthSec(config::View::GraphWidth::Default, this)
+    , m_updateMode(UpdateMode::PerSample, this)
+
+    , m_voltageHarmonic({config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase}, this)
+    , m_currentHarmonic({config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase}, this)
+
+    , m_voltage_B_amplitude(config::Source::ThreePhase::DefaultAmplitudeB, this)
+    , m_voltage_B_phase_deg(config::Source::ThreePhase::DefaultPhaseB_deg, this)
+    , m_voltage_C_amplitude(config::Source::ThreePhase::DefaultAmplitudeC, this)
+    , m_voltage_C_phase_deg(config::Source::ThreePhase::DefaultPhaseC_deg, this)
+    , m_current_B_amplitude(config::Source::ThreePhase::DefaultCurrentAmplitudeB, this)
+    , m_current_B_phase_deg(config::Source::ThreePhase::DefaultCurrentPhaseB_deg, this)
+    , m_current_C_amplitude(config::Source::ThreePhase::DefaultCurrentAmplitudeC, this)
+    , m_current_C_phase_deg(config::Source::ThreePhase::DefaultCurrentPhaseC_deg, this)
 {
-    // --- Parameters 구조체의 모든 Property 멤버들을 new로 생성하고, parent로 this 지정 ---
-    m_params.amplitude = new Property<double>(config::Source::Amplitude::Default, this);
-    m_params.currentAmplitude = new Property<double>(config::Source::Current::DefaultAmplitude, this);
-    m_params.frequency = new Property<double>(config::Source::Frequency::Default, this);
-    m_params.phaseRadians = new Property<double>(0.0, this);
-    m_params.currentPhaseOffsetRadians = new Property<double>(0.0, this);
-    m_params.timeScale = new Property<double>(config::TimeScale::Default, this);
-    m_params.samplingCycles = new Property<double>(config::Sampling::DefaultSamplingCycles, this);
-    m_params.samplesPerCycle = new Property<int>(config::Sampling::DefaultSamplesPerCycle, this);
-    m_params.maxDataSize = new Property<int>(config::Simulation::DefaultDataSize, this);
-    m_params.graphWidthSec = new Property<double>(config::View::GraphWidth::Default, this);
-    m_params.updateMode = new Property<UpdateMode>(UpdateMode::PerSample, this);
-
-    m_params.voltageHarmonic = new Property<HarmonicComponent>({config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase}, this);
-    m_params.currentHarmonic = new Property<HarmonicComponent>({config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase}, this);
-
-    m_params.voltage_B_amplitude = new Property<double>(config::Source::ThreePhase::DefaultAmplitudeB, this);
-    m_params.voltage_B_phase_deg = new Property<double>(config::Source::ThreePhase::DefaultPhaseB_deg, this);
-    m_params.voltage_C_amplitude = new Property<double>(config::Source::ThreePhase::DefaultAmplitudeC, this);
-    m_params.voltage_C_phase_deg = new Property<double>(config::Source::ThreePhase::DefaultPhaseC_deg, this);
-    m_params.current_B_amplitude = new Property<double>(config::Source::ThreePhase::DefaultCurrentAmplitudeB, this);
-    m_params.current_B_phase_deg = new Property<double>(config::Source::ThreePhase::DefaultCurrentPhaseB_deg, this);
-    m_params.current_C_amplitude = new Property<double>(config::Source::ThreePhase::DefaultCurrentAmplitudeC, this);
-    m_params.current_C_phase_deg = new Property<double>(config::Source::ThreePhase::DefaultCurrentPhaseC_deg, this);
+    // --- 시뮬레이션 파라미터 초기화 ---
 
     // --- Property의 valueChanged 시그널 내부 슬롯에 연결 ---
-    connect(m_params.maxDataSize, qOverload<const int&>(&Property<int>::valueChanged), this, &SimulationEngine::handleMaxDataSizeChange);
-    connect(m_params.timeScale, qOverload<const double&>(&Property<double>::valueChanged), this, &SimulationEngine::updateCaptureTimer);
-    connect(m_params.samplingCycles, qOverload<const double&>(&Property<double>::valueChanged), this, &SimulationEngine::recalculateCaptureInterval);
-    connect(m_params.samplesPerCycle, qOverload<const int&>(&Property<int>::valueChanged), this, &SimulationEngine::recalculateCaptureInterval);
+    connect(&m_maxDataSize, qOverload<const int&>(&Property<int>::valueChanged), this, &SimulationEngine::handleMaxDataSizeChange);
+    connect(&m_timeScale, qOverload<const double&>(&Property<double>::valueChanged), this, &SimulationEngine::updateCaptureTimer);
+    connect(&m_samplingCycles, qOverload<const double&>(&Property<double>::valueChanged), this, &SimulationEngine::recalculateCaptureInterval);
+    connect(&m_samplesPerCycle, qOverload<const int&>(&Property<int>::valueChanged), this, &SimulationEngine::recalculateCaptureInterval);
 
     // --- 나머지 초기화 로직 ---
     using namespace std::chrono_literals;
@@ -51,7 +53,7 @@ SimulationEngine::SimulationEngine()
 
     // FrequencyTracker 생성 및 시그널 연결
     m_frequencyTracker = std::make_unique<FrequencyTracker>(this, this);
-    connect(m_frequencyTracker.get(), &FrequencyTracker::samplingCyclesUpdated, m_params.samplingCycles, qOverload<const double&>(&Property<double>::setValue));
+    connect(m_frequencyTracker.get(), &FrequencyTracker::samplingCyclesUpdated, &m_samplingCycles, qOverload<const double&>(&Property<double>::setValue));
 }
 
 // ---- public -----
@@ -64,8 +66,8 @@ FrequencyTracker* SimulationEngine::getFrequencyTracker() const { return m_frequ
 void SimulationEngine::start()
 {
     if (isRunning()) return;
-    qDebug() << "m_amplitude = " << m_params.amplitude << " " << "m_frequency = " << m_params.frequency;
-    qDebug() << "m_maxDataSize = " << m_params.maxDataSize << "m_timeScale = " << m_params.timeScale;
+    qDebug() << "m_amplitude = " << m_amplitude.value() << " " << "m_frequency = " << m_frequency.value();
+    qDebug() << "m_maxDataSize = " << m_maxDataSize.value() << "m_timeScale = " << m_timeScale.value();
 
     m_captureTimer.start();
     emit runningStateChanged(true);
@@ -84,7 +86,7 @@ void SimulationEngine::stop()
 
 void SimulationEngine::onMaxDataSizeChanged(int newSize)
 {
-    m_params.maxDataSize->setValue(newSize);
+    m_maxDataSize.setValue(newSize);
 
     while(m_data.size() > static_cast<size_t>(newSize)) {
         m_data.pop_front();
@@ -99,7 +101,7 @@ void SimulationEngine::onMaxDataSizeChanged(int newSize)
 void SimulationEngine::updateCaptureTimer()
 {
     // 기본 캡처 간격에 시간 비율을 곱해서 실제 타이머 주기를 계산
-    const auto scaledIntervalNs = m_captureIntervalsNs * m_params.timeScale->value();
+    const auto scaledIntervalNs = m_captureIntervalsNs * m_timeScale.value();
 
     // QChornoTimer는 std::chrono::duration을 직접 인자로 받음
     m_captureTimer.setInterval(std::chrono::duration_cast<Nanoseconds>(scaledIntervalNs));
@@ -111,7 +113,7 @@ void SimulationEngine::recalculateCaptureInterval()
 {
     using namespace std::chrono_literals;
 
-    double totalSamplesPerSecond = m_params.samplingCycles->value() * m_params.samplesPerCycle->value();
+    double totalSamplesPerSecond = m_samplingCycles.value() * m_samplesPerCycle.value();
     // qDebug() << "---------------------------------------";
     // qDebug() << "SimulationEngine::recalculateCaptureInterval()";
     // qDebug() << "---------------------------------------";/*
@@ -174,7 +176,7 @@ void SimulationEngine::captureData()
 
     // 사이클 계산을 위해 버퍼 채우기
     m_cycleSampleBuffer.push_back(m_data.back());
-    if(m_cycleSampleBuffer.size() > static_cast<size_t>(m_params.samplesPerCycle->value())) {
+    if(m_cycleSampleBuffer.size() > static_cast<size_t>(m_samplesPerCycle.value())) {
         m_cycleSampleBuffer.erase(m_cycleSampleBuffer.begin());
     }
 
@@ -182,13 +184,13 @@ void SimulationEngine::captureData()
     m_frequencyTracker->process(m_data.back(), m_measuredData.empty() ? MeasuredData{} : m_measuredData.back(), m_cycleSampleBuffer);
 
     // 사이클이 꽉 찼으면 사이클 단위 연산 수행
-    if(m_cycleSampleBuffer.size() >= static_cast<size_t>(m_params.samplesPerCycle->value())) {
+    if(m_cycleSampleBuffer.size() >= static_cast<size_t>(m_samplesPerCycle.value())) {
         calculateCycleData();
     }
 
     // 다음 스텝을 위해 현재 진행 위상 업데이트
     const FpSeconds timeDelta = m_captureIntervalsNs;
-    const double phaseDelta = config::Math::TwoPi * m_params.frequency->value() * timeDelta.count();
+    const double phaseDelta = config::Math::TwoPi * m_frequency.value() * timeDelta.count();
     m_currentPhaseRadians = std::fmod(m_currentPhaseRadians + phaseDelta, config::Math::TwoPi);
 
     // UI 갱신 및 사이클 계산을 위한 누적 위상 업데이트
@@ -223,33 +225,33 @@ void SimulationEngine::advanceSimulationTime()
 PhaseData SimulationEngine::calculateCurrentVoltage() const
 {
     PhaseData result;
-    const double fundamentalPhase = m_currentPhaseRadians + m_params.phaseRadians->value();
-    const auto& harmonic = m_params.voltageHarmonic->value();
+    const double fundamentalPhase = m_currentPhaseRadians + m_phaseRadians.value();
+    const auto& harmonic = m_voltageHarmonic.value();
     const double harmonicPhaseOffset = utils::degreesToRadians(harmonic.phase) ;
 
     // 기본파, 고조파 계산
     // A상
-    result.a = m_params.amplitude->value() * sin(fundamentalPhase);
+    result.a = m_amplitude.value() * sin(fundamentalPhase);
     if(harmonic.magnitude > 0.0) {
         const double harmonicPhase = harmonic.order * fundamentalPhase + harmonicPhaseOffset;
         result.a += harmonic.magnitude * sin(harmonicPhase);
     }
 
     // B상
-    const double phase_B_offset = utils::degreesToRadians(m_params.voltage_B_phase_deg->value());
+    const double phase_B_offset = utils::degreesToRadians(m_voltage_B_phase_deg.value());
     const double fundamentalPhase_B = fundamentalPhase + phase_B_offset;
 
-    result.b = m_params.voltage_B_amplitude->value() * sin(fundamentalPhase_B);
+    result.b = m_voltage_B_amplitude.value() * sin(fundamentalPhase_B);
     if(harmonic.magnitude > 0.0) {
         const double harmonicPhase = harmonic.order * fundamentalPhase_B + harmonicPhaseOffset;
         result.b += harmonic.magnitude * sin(harmonicPhase);
     }
 
     // C상
-    const double phase_C_offset = utils::degreesToRadians(m_params.voltage_C_phase_deg->value());
+    const double phase_C_offset = utils::degreesToRadians(m_voltage_C_phase_deg.value());
     const double fundamentalPhase_C = fundamentalPhase + phase_C_offset;
 
-    result.c = m_params.voltage_C_amplitude->value() * sin(fundamentalPhase_C);
+    result.c = m_voltage_C_amplitude.value() * sin(fundamentalPhase_C);
     if(harmonic.magnitude > 0.0) {
         const double harmonicPhase = harmonic.order * fundamentalPhase_C + harmonicPhaseOffset;
         result.c += harmonic.magnitude * sin(harmonicPhase);
@@ -261,33 +263,33 @@ PhaseData SimulationEngine::calculateCurrentVoltage() const
 PhaseData SimulationEngine::calculateCurrentAmperage() const
 {
     PhaseData result;
-    const double baseCurrentPhase = m_currentPhaseRadians + m_params.phaseRadians->value() + m_params.currentPhaseOffsetRadians->value();
-    const auto& harmonic = m_params.currentHarmonic->value();
+    const double baseCurrentPhase = m_currentPhaseRadians + m_phaseRadians.value() + m_currentPhaseOffsetRadians.value();
+    const auto& harmonic = m_currentHarmonic.value();
     const double harmonicPhaseOffset = utils::degreesToRadians(harmonic.phase) ;
 
     // 기본파, 고조파 계산
     // A상
-    result.a = m_params.currentAmplitude->value() * sin(baseCurrentPhase);
+    result.a = m_currentAmplitude.value() * sin(baseCurrentPhase);
     if(harmonic.magnitude > 0.0) {
         const double harmonicPhase = harmonic.order * baseCurrentPhase + harmonicPhaseOffset;
         result.a += harmonic.magnitude * sin(harmonicPhase);
     }
 
     // B상
-    const double phase_B_offset = utils::degreesToRadians(m_params.current_B_phase_deg->value());
+    const double phase_B_offset = utils::degreesToRadians(m_current_B_phase_deg.value());
     const double currentSettignsFetched = baseCurrentPhase + phase_B_offset;
 
-    result.b = m_params.current_B_amplitude->value() * sin(currentSettignsFetched);
+    result.b = m_current_B_amplitude.value() * sin(currentSettignsFetched);
     if(harmonic.magnitude > 0.0) {
         const double harmonicPhase = harmonic.order * currentSettignsFetched + harmonicPhaseOffset;
         result.b += harmonic.magnitude * sin(harmonicPhase);
     }
 
     // C상
-    const double phase_C_offset = utils::degreesToRadians(m_params.current_C_phase_deg->value());
+    const double phase_C_offset = utils::degreesToRadians(m_current_C_phase_deg.value());
     const double fundamentalPhase_C = baseCurrentPhase + phase_C_offset;
 
-    result.c = m_params.current_C_amplitude->value() * sin(fundamentalPhase_C);
+    result.c = m_current_C_amplitude.value() * sin(fundamentalPhase_C);
     if(harmonic.magnitude > 0.0) {
         const double harmonicPhase = harmonic.order * fundamentalPhase_C + harmonicPhaseOffset;
         result.c += harmonic.magnitude * sin(harmonicPhase);
@@ -305,7 +307,7 @@ void SimulationEngine::addNewDataPoint(PhaseData voltage, PhaseData current)
     m_data.push_back({m_simulationTimeNs, voltage, current});
 
     // 최대 개수 관리
-    if(m_data.size() > static_cast<size_t>(m_params.maxDataSize->value())) {
+    if(m_data.size() > static_cast<size_t>(m_maxDataSize.value())) {
         // qDebug() << " ---- data{" << m_simulationTimeNs << ", " << voltage << "} 삭제 ----";
         m_data.pop_front();
     }
@@ -383,8 +385,8 @@ void SimulationEngine::calculateCycleData()
 void SimulationEngine::processUpdateByMode(bool resetCounter)
 {
     bool shouldEmitUpdate = false;
-    const int samplesPerCycle = m_params.samplesPerCycle->value();
-    const UpdateMode updateMode = m_params.updateMode->value();
+    const int samplesPerCycle = m_samplesPerCycle.value();
+    const UpdateMode updateMode = m_updateMode.value();
 
     switch (updateMode) {
     case UpdateMode::PerSample:

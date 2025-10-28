@@ -19,36 +19,35 @@ class SimulationEngine : public QObject
     Q_OBJECT
 public:
    // 시뮬레이션 매개변수를 담는 구조체
-    struct Parameters {
-        Property<double>* amplitude;
-        Property<double>* currentAmplitude;
-        Property<double>* frequency;
-        Property<double>* phaseRadians;
-        Property<double>* currentPhaseOffsetRadians;
-        Property<double>* timeScale;
-        Property<double>* samplingCycles;
-        Property<int>* samplesPerCycle;
-        Property<int>* maxDataSize;
-        Property<double>* graphWidthSec;
-        Property<UpdateMode>* updateMode;
+    Property<double> m_amplitude;
+    Property<double> m_currentAmplitude;
+    Property<double> m_frequency;
+    Property<double> m_phaseRadians;
+    Property<double> m_currentPhaseOffsetRadians;
+    Property<double> m_timeScale;
+    Property<double> m_samplingCycles;
+    Property<int> m_samplesPerCycle;
+    Property<int> m_maxDataSize;
+    Property<double> m_graphWidthSec;
+    Property<UpdateMode> m_updateMode;
 
-        // 고조파 설정
-        Property<HarmonicComponent>* voltageHarmonic;
-        Property<HarmonicComponent>* currentHarmonic;
+    // 고조파 설정
+    Property<HarmonicComponent> m_voltageHarmonic;
+    Property<HarmonicComponent> m_currentHarmonic;
 
-        // 3상 설정
-        // 전압
-        Property<double>* voltage_B_amplitude;
-        Property<double>* voltage_B_phase_deg;
-        Property<double>* voltage_C_amplitude;
-        Property<double>* voltage_C_phase_deg;
+    // 3상 설정
+    // 전압
+    Property<double> m_voltage_B_amplitude;
+    Property<double> m_voltage_B_phase_deg;
+    Property<double> m_voltage_C_amplitude;
+    Property<double> m_voltage_C_phase_deg;
 
-        // 전류
-        Property<double>* current_B_amplitude;
-        Property<double>* current_B_phase_deg;
-        Property<double>* current_C_amplitude;
-        Property<double>* current_C_phase_deg;
-    };
+    // 전류
+    Property<double> m_current_B_amplitude;
+    Property<double> m_current_B_phase_deg;
+    Property<double> m_current_C_amplitude;
+    Property<double> m_current_C_phase_deg;
+// ---------------------------------------------
 
     explicit SimulationEngine();
 
@@ -56,7 +55,6 @@ public:
     int getDataSize() const;
 
     FrequencyTracker* getFrequencyTracker() const;
-    Parameters m_params;
 
 public slots:
     void start();
