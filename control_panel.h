@@ -33,7 +33,19 @@ public slots:
     // MainWindow 또는 다른 컨트롤러가 이 위젯의 상태를 변경할 때 사용
     void setRunningState(bool isRunning);
     void setAutoScroll(bool enabled);
-    void onEngineSamplingCyclesChanged(double newFrequency);
+    // void onEngineSamplingCyclesChanged(double newFrequency);
+
+    // --- Model -> View 바인딩을 위한 슬롯들 ----
+    void setAmplitude(double value);
+    void setCurrentAmplitude(double value);
+    void setFrequency(double value);
+    void setCurrentPhase(int degrees);
+    void setTimeScale(double value);
+    void setSamplingCycles(double value);
+    void setSamplesPerCycle(int value);
+    void setUpdateMode(UpdateMode mode);
+    void setVoltageHarmonic(const HarmonicComponent& hc);
+    void setCurrentHarmonic(const HarmonicComponent& hc);
 
 private slots:
     void updateCurrentPhaseLabel(int value);

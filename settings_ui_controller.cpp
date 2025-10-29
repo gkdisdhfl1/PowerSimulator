@@ -66,12 +66,12 @@ SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsM
 // --- public slot 구현 ---
 void SettingsUiController::onSaveAsPresetRequested(const QString& presetName)
 {
-    auto result = saveUiToSettings(presetName.toStdString());
+    auto result = saveEngineToSettings(presetName.toStdString());
     emit taskFinished(result, "프리셋이 성공적으로 저장되었습니다.");
 }
 void SettingsUiController::onLoadPresetRequested(const QString& presetName)
 {
-    auto result = applySettingsToUi(presetName.toStdString());
+    auto result = applySettingsToEngine(presetName.toStdString());
     // qDebug() << "[Debug] SettingsUiController: Emitting presetLoaded signal.";
     emit taskFinished(result, "프리셋을 성공적으로 적용했습니다.");
 }
@@ -289,205 +289,219 @@ void SettingsUiController::onThreePhaseValueChanged(int type, double value)
     }
 }
 
-void SettingsUiController::showThreePhaseDialog()
-{
-    const auto& currentParams = m_engine;
-    m_threePhaseDialog->setInitialValues(currentParams);
+// void SettingsUiController::showThreePhaseDialog()
+// {
+//     const auto& currentParams = m_engine;
+//     m_threePhaseDialog->setInitialValues(currentParams);
 
-    m_threePhaseDialog->show();
-    m_threePhaseDialog->raise();
-    m_threePhaseDialog->activateWindow();
-}
+//     m_threePhaseDialog->show();
+//     m_threePhaseDialog->raise();
+//     m_threePhaseDialog->activateWindow();
+// }
 // -------------------------
 
 // ----- private 헬퍼 함수들 ------
 void SettingsUiController::initializeSettingsMap()
 {
     // 각 설정 항목의 정보를 맵에 등록
+    // getter: m_engine의 Property에서 값을 가져옴
+    // setter: m_engine의 Property에서 값을 설정함
+
     m_settingsMap["voltageAmplitude"] = {
-        [](const ControlPanelState& s){return s.amplitude; },
-        [](ControlPanelState& s, const SettingValue& val) {
-            s.amplitude = std::get<double>(val);
+        [&](){return m_engine->m_amplitude.value(); },
+        [&](const SettingValue& val) {
+            m_engine->m_amplitude.setValue(std::get<double>(val));
         },
         config::Source::Amplitude::Default
     };
-    m_settingsMap["currentAmplitude"]  = {
-        [](const ControlPanelState& s) { return s.currentAmplitude; },
-        [](ControlPanelState& s, const SettingValue& val) {
-            s.currentAmplitude = std::get<double>(val);
+    m_settingsMap["currentAmplitude"] = {
+        [&](){return m_engine->m_currentAmplitude.value(); },
+        [&](const SettingValue& val) {
+            m_engine->m_currentAmplitude.setValue(std::get<double>(val));
         },
         config::Source::Current::DefaultAmplitude
     };
     m_settingsMap["frequency"] = {
-        [](const ControlPanelState& s) { return s.frequency; },
-        [](ControlPanelState& s, const SettingValue& val) {
-            s.frequency = std::get<double>(val);
+        [&](){ return m_engine->m_frequency.value(); },
+        [&](const SettingValue& val) {
+            m_engine->m_frequency.setValue(std::get<double>(val));
         },
         config::Source::Frequency::Default
     };
     m_settingsMap["currentPhaseOffset"] = {
-        [](const ControlPanelState& s) { return s.currentPhaseDegrees; },
-        [](ControlPanelState& s, const SettingValue& val){
-            s.currentPhaseDegrees = std::get<int>(val);
+                                           [&]() { return static_cast<int>(utils::radiansToDegrees(m_engine->m_currentPhaseOffsetRadians.value())); },
+        [&](const SettingValue& val){
+            m_engine->m_currentPhaseOffsetRadians.setValue(std::get<int>(val));
         },
         config::Source::Current::DefaultPhaseOffset
     };
     m_settingsMap["timeScale"] = {
-        [](const ControlPanelState& s) { return s.timeScale; },
-        [](ControlPanelState& s, const SettingValue& val) {
-            s.timeScale = std::get<double>(val);
+        [&]() { return m_engine->m_timeScale.value(); },
+        [&](const SettingValue& val) {
+            m_engine->m_timeScale.setValue(std::get<double>(val));
         },
         config::TimeScale::Default
     };
     m_settingsMap["samplingCycles"] = {
-        [](const ControlPanelState& s) { return s.samplingCycles; },
-        [](ControlPanelState& s, const SettingValue& val) {
-            s.samplingCycles = std::get<double>(val);
+        [&]() { return m_engine->m_samplingCycles.value(); },
+        [&](const SettingValue& val) {
+            m_engine->m_samplingCycles.setValue(std::get<double>(val));
         },
         config::Sampling::DefaultSamplingCycles
     };
     m_settingsMap["samplesPerCycle"] = {
-        [](const ControlPanelState& s) { return s.samplesPerCycle; },
-        [](ControlPanelState& s, const SettingValue& val) {
-            s.samplesPerCycle = std::get<int>(val);
+        [&]() { return m_engine->m_samplesPerCycle.value(); },
+        [&](const SettingValue& val) {
+            m_engine->m_samplesPerCycle.setValue(std::get<int>(val));
         },
         config::Sampling::DefaultSamplesPerCycle
     };
     m_settingsMap["updateMode"] = {
-        [](const ControlPanelState& s) {
-            return static_cast<int>(s.updateMode);
+        [&]() { return static_cast<int>(m_engine->m_updateMode.value()); },
+        [&](const SettingValue& val) {
+            m_engine->m_updateMode.setValue(static_cast<UpdateMode>(std::get<int>(val)));
         },
-        [](ControlPanelState& s, const SettingValue& val) {
-            s.updateMode = static_cast<UpdateMode>(std::get<int>(val));
-        },
-        0
+        0 // PerSample
     };
 
     // 고조파 관련 설정
     m_settingsMap["voltHarmonicOrder"] = {
-        [](const ControlPanelState& s) {
-            return s.voltageHarmonic.order;
+        [&]() {
+            return m_engine->m_voltageHarmonic.value().order;
         },
-        [](ControlPanelState& s, const SettingValue& val) {
-            s.voltageHarmonic.order = std::get<int>(val);
+        [&](const SettingValue& val) {
+            auto hc = m_engine->m_voltageHarmonic.value();
+            hc.order = std::get<int>(val);
+            m_engine->m_voltageHarmonic.setValue(hc);
         },
         config::Harmonics::DefaultOrder
     };
     m_settingsMap["voltHarmonicMagnitude"] = {
-        [](const ControlPanelState& s) {
-            return s.voltageHarmonic.magnitude;
+        [&]() {
+            return m_engine->m_voltageHarmonic.value().magnitude;
         },
-        [](ControlPanelState& s, const SettingValue& val) {
-            s.voltageHarmonic.magnitude = std::get<double>(val);
+        [&](const SettingValue& val) {
+            auto hc = m_engine->m_voltageHarmonic.value();
+            hc.magnitude = std::get<double>(val);
+            m_engine->m_voltageHarmonic.setValue(hc);
         },
         config::Harmonics::DefaultMagnitude
     };
     m_settingsMap["voltHarmonicPhase"] = {
-        [](const ControlPanelState& s) {
-            return s.voltageHarmonic.phase;
+        [&]() {
+            return m_engine->m_voltageHarmonic.value().phase;
         },
-        [](ControlPanelState& s, const SettingValue& val) {
-            s.voltageHarmonic.phase = std::get<double>(val);
+        [&](const SettingValue& val) {
+            auto hc = m_engine->m_voltageHarmonic.value();
+            hc.phase = std::get<double>(val);
+            m_engine->m_voltageHarmonic.setValue(hc);
         },
         config::Harmonics::DefaultPhase
     };
     m_settingsMap["currHarmonicOrder"] = {
-        [](const ControlPanelState& s) {
-            return s.currentHarmonic.order;
+        [&]() {
+            return m_engine->m_currentHarmonic.value().order;
         },
-        [](ControlPanelState& s, const SettingValue& val) {
-            s.currentHarmonic.order = std::get<int>(val);
+        [&](const SettingValue& val) {
+            auto hc = m_engine->m_currentHarmonic.value();
+            hc.order = std::get<int>(val);
+            m_engine->m_currentHarmonic.setValue(hc);
         },
         config::Harmonics::DefaultOrder
     };
     m_settingsMap["currHarmonicMagnitude"] = {
-        [](const ControlPanelState& s) {
-            return s.currentHarmonic.magnitude;
+        [&]() {
+            return m_engine->m_currentHarmonic.value().magnitude;
         },
-        [](ControlPanelState& s, const SettingValue& val) {
-            s.currentHarmonic.magnitude = std::get<double>(val);
+        [&](const SettingValue& val) {
+            auto hc = m_engine->m_currentHarmonic.value();
+            hc.magnitude = std::get<double>(val);
+            m_engine->m_currentHarmonic.setValue(hc);
         },
         config::Harmonics::DefaultMagnitude
     };
     m_settingsMap["currHarmonicPhase"] = {
-        [](const ControlPanelState& s) {
-            return s.currentHarmonic.phase;
+        [&]() {
+            return m_engine->m_currentHarmonic.value().phase;
         },
-        [](ControlPanelState& s, const SettingValue& val) {
-            s.currentHarmonic.phase = std::get<double>(val);
+        [&](const SettingValue& val) {
+            auto hc = m_engine->m_currentHarmonic.value();
+            hc.phase = std::get<double>(val);
+            m_engine->m_currentHarmonic.setValue(hc);
         },
         config::Harmonics::DefaultPhase
     };
 
+
     // 3상 관련 설정
     m_settingsMap["voltageBAmplitude"] = {
-        [this](const auto&) {
+        [&]() {
             return m_engine->m_voltage_B_amplitude.value();
         },
-        [this](auto&, const SettingValue& val) {
+        [&](const SettingValue& val) {
             m_engine->m_voltage_B_amplitude.setValue(std::get<double>(val));
         },
         config::Source::ThreePhase::DefaultAmplitudeB
     };
     m_settingsMap["voltageBPhase"] = {
-        [this](const auto&) {
+        [&]() {
             return m_engine->m_voltage_B_phase_deg.value();
         },
-        [this](auto&, const SettingValue& val) {
+        [&](const SettingValue& val) {
             m_engine->m_voltage_B_phase_deg.setValue(std::get<double>(val));
         },
         config::Source::ThreePhase::DefaultPhaseB_deg
     };
     m_settingsMap["voltageCAmplitude"] = {
-        [this](const auto&) {
+        [&]() {
             return m_engine->m_voltage_C_amplitude.value();
         },
-        [this](auto&, const SettingValue& val) {
+        [&](const SettingValue& val) {
             m_engine->m_voltage_C_amplitude.setValue(std::get<double>(val));
         },
         config::Source::ThreePhase::DefaultAmplitudeC
     };
     m_settingsMap["voltageCPhase"] = {
-        [this](const auto&) {
+        [&]() {
             return m_engine->m_voltage_C_phase_deg.value();
         },
-        [this](auto&, const SettingValue& val) {
+        [&](const SettingValue& val) {
             m_engine->m_voltage_C_phase_deg.setValue(std::get<double>(val));
         },
         config::Source::ThreePhase::DefaultPhaseC_deg
     };
     m_settingsMap["currentBAmplitude"] = {
-        [this](const auto&) {
+        [&]() {
             return m_engine->m_current_B_amplitude.value();
         },
-        [this](auto&, const SettingValue& val) {
+        [&](const SettingValue& val) {
             m_engine->m_current_B_amplitude.setValue(std::get<double>(val));
         },
         config::Source::ThreePhase::DefaultCurrentAmplitudeB
     };
     m_settingsMap["currentBPhase"] = {
-        [this](const auto&) {
+        [&]() {
             return m_engine->m_current_B_phase_deg.value();
         },
-        [this](auto&, const SettingValue& val) {
+        [&](const SettingValue& val) {
             m_engine->m_current_B_phase_deg.setValue(std::get<double>(val));
         },
         config::Source::ThreePhase::DefaultCurrentPhaseB_deg
     };
     m_settingsMap["currentCAmplitude"] = {
-        [this](const auto&) {
+        [&]() {
             return m_engine->m_current_C_amplitude.value();
         },
-        [this](auto&, const SettingValue& val) {
+        [&](const SettingValue& val) {
             m_engine->m_current_C_amplitude.setValue(std::get<double>(val));
         },
         config::Source::ThreePhase::DefaultCurrentAmplitudeC
     };
     m_settingsMap["currentCPhase"] = {
-        [this](const auto&) {
+        [&]() {
             return m_engine->m_current_C_phase_deg.value();
         },
-        [this](auto&, const SettingValue& val) {
+        [&](const SettingValue& val) {
             m_engine->m_current_C_phase_deg.setValue(std::get<double>(val));
         },
         config::Source::ThreePhase::DefaultCurrentPhaseC_deg
@@ -547,12 +561,11 @@ void SettingsUiController::requestMaxSizeChange(int newSize)
 
 }
 
-std::expected<void, std::string> SettingsUiController::applySettingsToUi(std::string_view presetName)
+std::expected<void, std::string> SettingsUiController::applySettingsToEngine(std::string_view presetName)
 {
     m_blockUiSignals = true; // 프리셋 적용 시 슬롯 호출 잠시 무시
-    ControlPanelState state = m_controlPanel->getState(); // 현재 상태를 기본값으로
 
-    // 맵을 순회하면 DB에서 값을 불러와 각 setter에 적용
+    // 맵을 순회하면 DB에서 값을 불러와 각 Property에 적용
     for(auto const& [key, info] : m_settingsMap) {
         std::expected<SettingValue, std::string> loadedValueResult = std::visit([&](auto&& defaultValue) -> std::expected<SettingValue, std::string> {
             auto loadResult = m_settingsManager.loadSetting(presetName, key, defaultValue);
@@ -570,11 +583,8 @@ std::expected<void, std::string> SettingsUiController::applySettingsToUi(std::st
             m_blockUiSignals = false;
             return std::unexpected(loadedValueResult.error());
         }
-        info.setter(state, *loadedValueResult);
+        info.setter(*loadedValueResult);
     }
-
-    // 완성된 state로 UI를 한 번에 업데이트
-    m_controlPanel->setState(state);
 
     // UI와 별개인 엔진 파라미터들도 업데이트
     if(auto res = m_settingsManager.loadSetting(presetName, "maxDataSize", m_engine->m_maxDataSize.value()); res) {
@@ -587,16 +597,16 @@ std::expected<void, std::string> SettingsUiController::applySettingsToUi(std::st
     m_blockUiSignals = false;
     m_engine->recalculateCaptureInterval(); // 엔진 파라미터 재계산
     m_parent->findChild<QStatusBar*>()->showMessage(QString("'%1' 설정을 불러왔습니다.").arg(QString::fromUtf8(presetName.data() , presetName.size())), StatusBarTimeOut);
+    emit preset
     return {};
 }
 
-std::expected<void, std::string> SettingsUiController::saveUiToSettings(std::string_view presetName)
+std::expected<void, std::string> SettingsUiController::saveEngineToSettings(std::string_view presetName)
 {
-    ControlPanelState state = m_controlPanel->getState(); // 현재 UI 상태를 가져옴
 
     // 맵을 순회하며 각 getter를 호출하여 값을 DB에 저장
     for(auto const& [key, info] : m_settingsMap) {
-        auto valueToSave = info.getter(state);
+        auto valueToSave = info.getter();
         auto result = std::visit([&](auto&& value) {
             return m_settingsManager.saveSetting(presetName, key, value);
         }, valueToSave);

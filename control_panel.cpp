@@ -468,12 +468,80 @@ void ControlPanel::setAutoScroll(bool enabled)
     m_autoScrollCheckBox->setChecked(enabled);
 }
 
-void ControlPanel::onEngineSamplingCyclesChanged(double newFrequency)
+// void ControlPanel::onEngineSamplingCyclesChanged(double newFrequency)
+// {
+//     // 이 슬롯은 엔진의 상태를 UI에 반영하는 역할
+//     // valueChanged 시그널이 다시 발생하여 로직이 꼬이면 안됨
+//     QSignalBlocker blocker(m_samplingCyclesControlWidget);
+//     m_samplingCyclesControlWidget->setValue(newFrequency);
+// }
+
+void ControlPanel::setAmplitude(double value)
 {
-    // 이 슬롯은 엔진의 상태를 UI에 반영하는 역할
-    // valueChanged 시그널이 다시 발생하여 로직이 꼬이면 안됨
+    QSignalBlocker blocker(m_voltageControlWidget);
+    m_voltageControlWidget->setValue(value);
+}
+void ControlPanel::setCurrentAmplitude(double value)
+{
+    QSignalBlocker blocker(m_currentAmplitudeControlWidget);
+    m_currentAmplitudeControlWidget->setValue(value);
+}
+void ControlPanel::setFrequency(double value)
+{
+    QSignalBlocker blocker(m_frequencyControlWidget);
+    m_frequencyControlWidget->setValue(value);
+}
+void ControlPanel::setCurrentPhase(int degrees)
+{
+    QSignalBlocker blocker(m_currentPhaseDial);
+    m_currentPhaseDial->setValue(degrees);
+}
+void ControlPanel::setTimeScale(double value)
+{
+    QSignalBlocker blocker(m_timeScaleControlWidget);
+    m_timeScaleControlWidget->setValue(value);
+}
+void ControlPanel::setSamplingCycles(double value)
+{
     QSignalBlocker blocker(m_samplingCyclesControlWidget);
-    m_samplingCyclesControlWidget->setValue(newFrequency);
+    m_samplingCyclesControlWidget->setValue(value);
+}
+void ControlPanel::setSamplesPerCycle(int value)
+{
+    QSignalBlocker blocker(m_samplesPerCycleControlWidget);
+    m_samplesPerCycleControlWidget->setValue(value);
+}
+void ControlPanel::setUpdateMode(UpdateMode mode)
+{
+    QSignalBlocker b1(m_perSampleRadioButton);
+    QSignalBlocker b2(m_perHalfCycleRadioButton);
+    QSignalBlocker b3(m_perCycleRadioButton);
+
+    switch (mode) {
+    case UpdateMode::PerSample: m_perSampleRadioButton->setChecked(true); break;
+    case UpdateMode::PerHalfCycle: m_perHalfCycleRadioButton->setChecked(true); break;
+    case UpdateMode::PerCycle: m_perCycleRadioButton->setChecked(true); break;
+    }
+}
+void ControlPanel::setVoltageHarmonic(const HarmonicComponent& hc)
+{
+    QSignalBlocker orderBlocker(m_voltageHarmonicOrder);
+    QSignalBlocker magnitudeBlocker(m_voltageHarmonicMagnitude);
+    QSignalBlocker phaseBlocker(m_voltageHarmonicPhaseDial);
+
+    m_voltageHarmonicOrder->setValue(hc.order);
+    m_voltageHarmonicMagnitude->setValue(hc.magnitude);
+    m_voltageHarmonicPhaseDial->setValue(hc.phase);
+}
+void ControlPanel::setCurrentHarmonic(const HarmonicComponent& hc)
+{
+    QSignalBlocker orderBlocker(m_currentHarmonicOrder);
+    QSignalBlocker magnitudeBlocker(m_currentHarmonicMagnitude);
+    QSignalBlocker phaseBlocker(m_currentHarmonicPhaseDial);
+
+    m_currentHarmonicOrder->setValue(hc.order);
+    m_currentHarmonicMagnitude->setValue(hc.magnitude);
+    m_currentHarmonicPhaseDial->setValue(hc.phase);
 }
 // --------------------
 

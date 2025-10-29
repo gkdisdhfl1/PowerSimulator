@@ -224,10 +224,22 @@ void MainWindow::createSignalSlotConnections()
     connect(m_controlPanel, &ControlPanel::stateLoaded, this, &MainWindow::onPresetLoaded);
     // ----------------------
 
-    // Model(engine) 시그널 -> UI 슬롯
+    // Model(engine) 시그널 -> View
+    connect(static_cast<PropertySignals*>(&m_engine->m_amplitude), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setAmplitude);
+    connect(static_cast<PropertySignals*>(&m_engine->m_currentAmplitude), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setCurrentAmplitude);
+    connect(static_cast<PropertySignals*>(&m_engine->m_frequency), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setFrequency);
+    connect(static_cast<PropertySignals*>(&m_engine->m_timeScale), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setTimeScale);
+    connect(static_cast<PropertySignals*>(&m_engine->m_samplingCycles), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setSamplingCycles);
+    connect(static_cast<PropertySignals*>(&m_engine->m_samplesPerCycle), static_cast<void (PropertySignals::*)(const int&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setSamplesPerCycle);
+    connect(static_cast<PropertySignals*>(&m_engine->m_updateMode), static_cast<void (PropertySignals::*)(const UpdateMode&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setUpdateMode);
+    connect(static_cast<PropertySignals*>(&m_engine->m_voltageHarmonic), static_cast<void (PropertySignals::*)(const HarmonicComponent&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setVoltageHarmonic);
+    connect(static_cast<PropertySignals*>(&m_engine->m_currentHarmonic), static_cast<void (PropertySignals::*)(const HarmonicComponent&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setCurrentHarmonic);
+    connect(static_cast<PropertySignals*>(&m_engine->m_currentPhaseOffsetRadians), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), this, [this](const double& radians) {
+        m_controlPanel->setCurrentPhase(qRound(utils::radiansToDegrees(radians)));
+    });
+
     connect(m_engine, &SimulationEngine::dataUpdated, m_graphWindow, &GraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::runningStateChanged, m_controlPanel, &ControlPanel::setRunningState);
-    connect(&m_engine->m_samplingCycles, qOverload<const double&>(&Property<double>::valueChanged), m_controlPanel, &ControlPanel::onEngineSamplingCyclesChanged);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_analysisGraphWindow, &AnalysisGraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_phasorView, &PhasorView::updateData);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_fundamentalAnalysisGraphWindow, &FundamentalAnalysisGraphWindow::updateGraph);
@@ -284,16 +296,6 @@ void MainWindow::updateFpsLabel()
 
 void MainWindow::onPresetLoaded()
 {
-    // qDebug() << "[Debug] MainWindow: onPresetLoaded slot called. Scheduling UI update";
-    // qDebug() << "[DBG] MainWindow calls setInitialValues on" << m_threePhaseDialog;
-
-    // QTimer::singleShot(0, this, [this]() {
-    //     qDebug() << "[Debug] MainWindow: Executing scheduled update.";
-    //     if(m_threePhaseDialog) {
-    //         m_threePhaseDialog->setInitialValues(m_engine->m_params);
-    //         m_threePhaseDialog->update();
-    //     }
-    // });
     if(m_threePhaseDialog) {
         m_threePhaseDialog->setInitialValues(m_engine);
         m_threePhaseDialog->update();

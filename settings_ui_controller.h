@@ -58,17 +58,19 @@ public slots:
     void onHarmonicsChanged();
 
     // 3상 변경 관련 슬롯
-    void showThreePhaseDialog();
+    // void showThreePhaseDialog();
     void onThreePhaseValueChanged(int type, double value);
 private:
     using SettingValue = std::variant<int, double>;
-    using StateGetter = std::function<SettingValue(const ControlPanelState&)>;
-    using StateSetter = std::function<void(ControlPanelState&, const SettingValue&)>;
-    using ParamDoublePtr = double SimulationEngine::*;
+    // using StateGetter = std::function<SettingValue(const ControlPanelState&)>;
+    // using StateSetter = std::function<void(ControlPanelState&, const SettingValue&)>;
+    // using ParamDoublePtr = double SimulationEngine::*;
+    using EngineGetter = std::function<SettingValue()>;
+    using EngineSetter = std::function<void(const SettingValue&)>;
 
     struct SettingInfo {
-        StateGetter getter;
-        StateSetter setter;
+        EngineGetter getter;
+        EngineSetter setter;
         SettingValue defaultValue; // DB에 값이 없을 때 사용할 기본값
     };
 
@@ -87,8 +89,8 @@ private:
     void initializeSettingsMap();
     void initializeKeyNameMap();
     void requestMaxSizeChange(int newSize);
-    std::expected<void, std::string> applySettingsToUi(std::string_view presetName); // 특정 프리셋을 UI에 적용하는 함수
-    std::expected<void, std::string> saveUiToSettings(std::string_view presetName); // 현재 UI 상태를 특정 프리셋으로 저장하는 함수
+    std::expected<void, std::string> applySettingsToEngine(std::string_view presetName); // 특정 프리셋을 UI에 적용하는 함수
+    std::expected<void, std::string> saveEngineToSettings(std::string_view presetName); // 현재 UI 상태를 특정 프리셋으로 저장하는 함수
 
     bool m_blockUiSignals = false;
 };
