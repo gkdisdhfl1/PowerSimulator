@@ -316,9 +316,9 @@ void SettingsUiController::initializeSettingsMap()
         config::Source::Frequency::Default
     };
     m_settingsMap["currentPhaseOffset"] = {
-                                           [&]() { return static_cast<int>(utils::radiansToDegrees(m_engine->m_currentPhaseOffsetRadians.value())); },
+        [&]() { return static_cast<int>(utils::radiansToDegrees(m_engine->m_currentPhaseOffsetRadians.value())); },
         [&](const SettingValue& val){
-            m_engine->m_currentPhaseOffsetRadians.setValue(std::get<int>(val));
+            m_engine->m_currentPhaseOffsetRadians.setValue(utils::degreesToRadians(std::get<int>(val)));
         },
         config::Source::Current::DefaultPhaseOffset
     };
