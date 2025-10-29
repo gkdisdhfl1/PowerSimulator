@@ -19,6 +19,8 @@ class QTimer;
 class OneSecondSummaryWindow;
 class AdditionalMetricsWindow;
 class ThreePhaseDialog;
+// class SettingsDialog;
+class PidTuningDialog;
 
 class MainWindow : public QMainWindow
 {
@@ -33,6 +35,8 @@ private slots:
     void updateFpsLabel();
     void onPresetLoaded();
     void showThreePhaseDialog();
+    // void showSettingsDialog();
+    void showPidTuningDialog();
 
 private:
     QAction* m_actionSettings;
@@ -56,7 +60,11 @@ private:
     int m_frameCount;
     OneSecondSummaryWindow* m_oneSecondSummaryWindow;
     AdditionalMetricsWindow* m_additionalMetricsWindow;
+
+    // Dialog
     std::unique_ptr<ThreePhaseDialog> m_threePhaseDialog;
+    // std::unique_ptr<SettingsDialog> m_settingsDialog;
+    std::unique_ptr<PidTuningDialog> m_pidTuningDialog;
 
     void createSignalSlotConnections(); // 조립 역할
     void setupUiComponents();

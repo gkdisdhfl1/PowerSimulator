@@ -56,10 +56,8 @@ SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsM
     initializeKeyNameMap();
 
     m_settingsDialog = std::make_unique<SettingsDialog>(this, m_parent);
-    m_pidTuningDialog = std::make_unique<PidTuningDialog>(m_parent);
 
-    connect(m_pidTuningDialog.get(), &PidTuningDialog::settingsApplied, this, &SettingsUiController::onCoefficientsChanged);
-    // connect(m_threePhaseDialog, &ThreePhaseDialog::valueChanged, this, &SettingsUiController::onThreePhaseValueChanged);
+    // connect(m_pidTuningDialog.get(), &PidTuningDialog::settingsApplied, this, &SettingsUiController::onCoefficientsChanged);
 }
 
 // --- public slot 구현 ---
@@ -220,19 +218,19 @@ void SettingsUiController::onTrackingToggled(bool enabled)
     m_engine->enableFrequencyTracking(enabled);
 }
 
-void SettingsUiController::showPidTuningDialog()
-{
-    // FrequencyTracker로부터 현재 PID 계수를 가져옴
-    auto fllCoeffs = m_engine->getFrequencyTracker()->getFllCoefficients();
-    auto zcCoeffs = m_engine->getFrequencyTracker()->getZcCoefficients();
+// void SettingsUiController::showPidTuningDialog()
+// {
+//     // FrequencyTracker로부터 현재 PID 계수를 가져옴
+//     auto fllCoeffs = m_engine->getFrequencyTracker()->getFllCoefficients();
+//     auto zcCoeffs = m_engine->getFrequencyTracker()->getZcCoefficients();
 
-    // 다이얼로그 현재 값 설정
-    m_pidTuningDialog->setInitialValues(fllCoeffs, zcCoeffs);
+//     // 다이얼로그 현재 값 설정
+//     m_pidTuningDialog->setInitialValues(fllCoeffs, zcCoeffs);
 
-    m_pidTuningDialog->show();
-    m_pidTuningDialog->raise();
-    m_pidTuningDialog->activateWindow();
-}
+//     m_pidTuningDialog->show();
+//     m_pidTuningDialog->raise();
+//     m_pidTuningDialog->activateWindow();
+// }
 
 void SettingsUiController::onCoefficientsChanged(const FrequencyTracker::PidCoefficients& fllCoeffs, const FrequencyTracker::PidCoefficients& zcCoeffs)
 {

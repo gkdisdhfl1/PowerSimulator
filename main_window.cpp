@@ -42,6 +42,8 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
 
     // 컨트롤러 생성 (UI 컴포넌트가 생성된 후)
     m_threePhaseDialog = std::make_unique<ThreePhaseDialog>(this);
+    m_pidTuningDialog = std::make_unique<PidTuningDialog>(this);
+
     m_settingsUiController = std::make_unique<SettingsUiController>(m_controlPanel, *m_settingsManager, m_engine, this);
 
 
@@ -187,7 +189,7 @@ void MainWindow::createSignalSlotConnections()
 {
     // 메뉴바 액션 연결
     connect(m_actionSettings, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showSettingsDialog);
-    connect(m_actionPidTuning, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showPidTuningDialog);
+    connect(m_actionPidTuning, &QAction::triggered, this, &MainWindow::showPidTuningDialog);
     connect(m_actionThreePhaseSettings, &QAction::triggered, this, &MainWindow::showThreePhaseDialog);
     connect(m_fpsTimer, &QTimer::timeout, this, &MainWindow::updateFpsLabel);
 
@@ -223,8 +225,11 @@ void MainWindow::createSignalSlotConnections()
     connect(m_controlPanel, &ControlPanel::phasorVisibilityChanged, m_phasorView, &PhasorView::onVisibilityChanged);
     connect(m_controlPanel, &ControlPanel::stateLoaded, this, &MainWindow::onPresetLoaded);
 
-    // ThreePhaseDialog -> Controller 연결
+    //  --- Dialog -> Controller 연결 ---
     connect(m_threePhaseDialog.get(), &ThreePhaseDialog::valueChanged, m_settingsUiController.get(), &SettingsUiController::onThreePhaseValueChanged);
+    connect(m_pidTuningDialog.get(), &PidTuningDialog::settingsApplied, m_settingsUiController.get(), &SettingsUiController::onCoefficientsChanged);
+
+
     // ----------------------
 
     // Model(engine) 시그널 -> View
@@ -313,4 +318,16 @@ void MainWindow::showThreePhaseDialog()
     m_threePhaseDialog->show();
     m_threePhaseDialog->raise();
     m_threePhaseDialog->activateWindow();
+}
+
+void MainWindow::showPidTuningDialog()
+{
+    // FrequencyTracker로부터 현재 PID 계수를 가져옴
+    auto fllCoeffs = m_engine->getFrequencyTracker()->getFllCoefficients();
+    auto zcCoeffs = m_engine->getFrequencyTracker()->getZcCoefficients();
+    // 다이얼로그 현재 값 설정
+    m_pidTuningDialog->setInitialValues(fllCoeffs, zcCoeffs);
+    m_pidTuningDialog->show();
+    m_pidTuningDialog->raise();
+    m_pidTuningDialog->activateWindow();
 }

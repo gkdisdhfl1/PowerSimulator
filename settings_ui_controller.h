@@ -4,14 +4,11 @@
 #include <QVariantMap>
 #include <expected>
 #include "frequency_tracker.h"
-#include "simulation_engine.h"
+#include "settings_dialog.h"
 
-class SettingsDialog;
-class PidTuningDialog;
 class ControlPanel;
 class SettingsManager;
-class QDoubleSpinBox;
-class ThreePhaseDialog;
+class SimulationEngine;
 
 class SettingsUiController : public QObject
 {
@@ -32,12 +29,12 @@ public slots:
     void onLoadPresetRequested(const QString& presetName);
     void onDeletePresetRequested(const QString& presetName);
     void onRenamePresetRequested(const QString& oldName, const QString& newName);
+    void showSettingsDialog();
 
     // SettingsDialog가 프리셋 목록이나 상세 값을 요청할 때 호출될 슬롯
     void onRequestPresetList();
     void onRequestPresetValues(const QString& presetName);
     void onApplyDialogSettings(const SimulationEngine* params);
-    void showSettingsDialog();
 
     // ControlPanel의 실시간 변경에 반응하는 슬롯들
     void onAmplitudeChanged(double value);
@@ -51,19 +48,14 @@ public slots:
     void onTrackingToggled(bool enabled);
 
     // PID 튜닝 다이얼로그 관련 슬롯
-    void showPidTuningDialog();
     void onCoefficientsChanged(const FrequencyTracker::PidCoefficients& fllCoeffs, const FrequencyTracker::PidCoefficients& zcCoeffs);
 
     void onHarmonicsChanged();
 
     // 3상 변경 관련 슬롯
-    // void showThreePhaseDialog();
     void onThreePhaseValueChanged(int type, double value);
 private:
     using SettingValue = std::variant<int, double>;
-    // using StateGetter = std::function<SettingValue(const ControlPanelState&)>;
-    // using StateSetter = std::function<void(ControlPanelState&, const SettingValue&)>;
-    // using ParamDoublePtr = double SimulationEngine::*;
     using EngineGetter = std::function<SettingValue()>;
     using EngineSetter = std::function<void(const SettingValue&)>;
 
@@ -76,9 +68,8 @@ private:
     ControlPanel* m_controlPanel;
     SettingsManager& m_settingsManager;
     SimulationEngine* m_engine;
-    QWidget* m_parent;        
+    QWidget* m_parent;
     std::unique_ptr<SettingsDialog> m_settingsDialog; // SettingsDialog 소유권 이전
-    std::unique_ptr<PidTuningDialog> m_pidTuningDialog;
 
     std::unordered_map<std::string, SettingInfo> m_settingsMap;
     QMap<QString, QString> m_keyNameMap;
