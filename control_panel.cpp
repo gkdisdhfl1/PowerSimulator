@@ -83,7 +83,6 @@ void ControlPanel::setState(const ControlPanelState& state)
     }
 
     setRunningState(state.isRunning);
-    emit stateLoaded();
 }
 
 void ControlPanel::setupUi()
@@ -495,6 +494,7 @@ void ControlPanel::setCurrentPhase(int degrees)
 {
     QSignalBlocker blocker(m_currentPhaseDial);
     m_currentPhaseDial->setValue(degrees);
+    updateCurrentPhaseLabel(degrees);
 }
 void ControlPanel::setTimeScale(double value)
 {
@@ -532,6 +532,7 @@ void ControlPanel::setVoltageHarmonic(const HarmonicComponent& hc)
     m_voltageHarmonicOrder->setValue(hc.order);
     m_voltageHarmonicMagnitude->setValue(hc.magnitude);
     m_voltageHarmonicPhaseDial->setValue(hc.phase);
+    updateVoltageHarmonicPhaseLabel(hc.phase);
 }
 void ControlPanel::setCurrentHarmonic(const HarmonicComponent& hc)
 {
@@ -542,6 +543,7 @@ void ControlPanel::setCurrentHarmonic(const HarmonicComponent& hc)
     m_currentHarmonicOrder->setValue(hc.order);
     m_currentHarmonicMagnitude->setValue(hc.magnitude);
     m_currentHarmonicPhaseDial->setValue(hc.phase);
+    updateCurrentHarmonicPhaseLabel(hc.phase);
 }
 // --------------------
 

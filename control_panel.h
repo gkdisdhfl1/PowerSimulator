@@ -61,7 +61,6 @@ signals:
     void waveformVisibilityChanged(int type, bool isVisible);
     void analysisWaveformVisibilityChanged(int type, bool isVisible);
     void phasorVisibilityChanged(int type, bool isVisible);
-    void stateLoaded();
 
     // 파라미터 변경 시그널
     void amplitudeChanged(double value);
