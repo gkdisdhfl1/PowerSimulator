@@ -3,7 +3,6 @@
 
 #include <QVariantMap>
 #include <expected>
-#include "control_panel_state.h"
 #include "frequency_tracker.h"
 #include "simulation_engine.h"
 
@@ -18,7 +17,7 @@ class SettingsUiController : public QObject
 {
     Q_OBJECT
 public:
-    explicit SettingsUiController(ControlPanel* controlPanel, SettingsManager& settingsManager, SimulationEngine* engine, ThreePhaseDialog* threePhaseDialog, QWidget* parent);
+    explicit SettingsUiController(ControlPanel* controlPanel, SettingsManager& settingsManager, SimulationEngine* engine, QWidget* parent);
 
 
 signals:
@@ -80,7 +79,6 @@ private:
     QWidget* m_parent;        
     std::unique_ptr<SettingsDialog> m_settingsDialog; // SettingsDialog 소유권 이전
     std::unique_ptr<PidTuningDialog> m_pidTuningDialog;
-    ThreePhaseDialog* m_threePhaseDialog;
 
     std::unordered_map<std::string, SettingInfo> m_settingsMap;
     QMap<QString, QString> m_keyNameMap;

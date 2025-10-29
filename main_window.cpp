@@ -42,7 +42,7 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
 
     // 컨트롤러 생성 (UI 컴포넌트가 생성된 후)
     m_threePhaseDialog = std::make_unique<ThreePhaseDialog>(this);
-    m_settingsUiController = std::make_unique<SettingsUiController>(m_controlPanel, *m_settingsManager, m_engine, m_threePhaseDialog.get(), this);
+    m_settingsUiController = std::make_unique<SettingsUiController>(m_controlPanel, *m_settingsManager, m_engine, this);
 
 
     // 시그널-슬롯 연결
@@ -222,6 +222,9 @@ void MainWindow::createSignalSlotConnections()
     connect(m_controlPanel, &ControlPanel::analysisWaveformVisibilityChanged, m_analysisGraphWindow, &AnalysisGraphWindow::onWaveformVisibilityChanged);
     connect(m_controlPanel, &ControlPanel::phasorVisibilityChanged, m_phasorView, &PhasorView::onVisibilityChanged);
     connect(m_controlPanel, &ControlPanel::stateLoaded, this, &MainWindow::onPresetLoaded);
+
+    // ThreePhaseDialog -> Controller 연결
+    connect(m_threePhaseDialog.get(), &ThreePhaseDialog::valueChanged, m_settingsUiController.get(), &SettingsUiController::onThreePhaseValueChanged);
     // ----------------------
 
     // Model(engine) 시그널 -> View

@@ -45,12 +45,11 @@ namespace {
 constexpr int StatusBarTimeOut = 3000;
 }
 
-SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsManager& settingsManager, SimulationEngine* engine, ThreePhaseDialog* threePhaseDialog, QWidget* parent)
+SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsManager& settingsManager, SimulationEngine* engine, QWidget* parent)
     : QObject(parent)
     ,m_controlPanel(controlPanel)
     ,m_settingsManager(settingsManager)
     ,m_engine(engine)
-    ,m_threePhaseDialog(threePhaseDialog)
     ,m_parent(parent)
 {
     initializeSettingsMap();
@@ -597,7 +596,6 @@ std::expected<void, std::string> SettingsUiController::applySettingsToEngine(std
     m_blockUiSignals = false;
     m_engine->recalculateCaptureInterval(); // 엔진 파라미터 재계산
     m_parent->findChild<QStatusBar*>()->showMessage(QString("'%1' 설정을 불러왔습니다.").arg(QString::fromUtf8(presetName.data() , presetName.size())), StatusBarTimeOut);
-    emit preset
     return {};
 }
 
