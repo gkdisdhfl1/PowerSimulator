@@ -223,11 +223,11 @@ void MainWindow::createSignalSlotConnections()
     connect(m_controlPanel, &ControlPanel::waveformVisibilityChanged, m_graphWindow, &GraphWindow::onWaveformVisibilityChanged);
     connect(m_controlPanel, &ControlPanel::analysisWaveformVisibilityChanged, m_analysisGraphWindow, &AnalysisGraphWindow::onWaveformVisibilityChanged);
     connect(m_controlPanel, &ControlPanel::phasorVisibilityChanged, m_phasorView, &PhasorView::onVisibilityChanged);
-    connect(m_controlPanel, &ControlPanel::stateLoaded, this, &MainWindow::onPresetLoaded);
 
     //  --- Dialog -> Controller 연결 ---
     connect(m_threePhaseDialog.get(), &ThreePhaseDialog::valueChanged, m_settingsUiController.get(), &SettingsUiController::onThreePhaseValueChanged);
     connect(m_pidTuningDialog.get(), &PidTuningDialog::settingsApplied, m_settingsUiController.get(), &SettingsUiController::onCoefficientsChanged);
+
 
 
     // ----------------------
@@ -277,6 +277,8 @@ void MainWindow::createSignalSlotConnections()
     connect(m_analysisGraphWindow, &AnalysisGraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawAnalysisRequest);
     connect(m_fundamentalAnalysisGraphWindow, &FundamentalAnalysisGraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawAnalysisRequest);
     connect(m_harmonicAnalysisGraphWindow, &HarmonicAnalysisGraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawAnalysisRequest);
+
+    connect(m_settingsUiController.get(), &SettingsUiController::presetApplied, this, &MainWindow::onPresetLoaded);
 }
 
 void MainWindow::updatePlaceholderVisibility()

@@ -22,6 +22,7 @@ signals:
     void presetListChanged(const std::vector<std::string>& presetList);;
     void presetValuesFetched(const QVariantMap& data);
     void maxDataSizeChangeRequested(int maxSize);
+    void presetApplied();
 
 public slots:
     // View(SettingsDialog)로부터 오는 요청을 처리하는 슬롯

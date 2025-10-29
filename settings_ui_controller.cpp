@@ -199,9 +199,8 @@ void SettingsUiController::onUpdateModeChanged()
 
 void SettingsUiController::showSettingsDialog()
 {
-    // SimulationEngine* params = m_engine;
-
-    if (m_settingsDialog->exec() == QDialog::Accepted) {
+    m_settingsDialog->openWithValues(m_engine);
+    // if (m_settingsDialog->exec() == QDialog::Accepted) {
         // // Dialog가 닫혔을 때, 이유를 확인
         // if(m_settingsDialog->getResultState() == SettingsDialog::DialogResult::Accepted) {
         //     int newMaxSize = m_settingsDialog->getMaxSize();
@@ -210,7 +209,7 @@ void SettingsUiController::showSettingsDialog()
         //     requestMaxSizeChange(newMaxSize);
         //     m_engine->m_params.graphWidthSec = newGraphWidth;
         // }
-    }
+    // }
 }
 
 void SettingsUiController::onTrackingToggled(bool enabled)
@@ -286,15 +285,6 @@ void SettingsUiController::onThreePhaseValueChanged(int type, double value)
     }
 }
 
-// void SettingsUiController::showThreePhaseDialog()
-// {
-//     const auto& currentParams = m_engine;
-//     m_threePhaseDialog->setInitialValues(currentParams);
-
-//     m_threePhaseDialog->show();
-//     m_threePhaseDialog->raise();
-//     m_threePhaseDialog->activateWindow();
-// }
 // -------------------------
 
 // ----- private 헬퍼 함수들 ------
@@ -592,6 +582,7 @@ std::expected<void, std::string> SettingsUiController::applySettingsToEngine(std
     }
 
     m_blockUiSignals = false;
+    emit presetApplied();
     m_engine->recalculateCaptureInterval(); // 엔진 파라미터 재계산
     m_parent->findChild<QStatusBar*>()->showMessage(QString("'%1' 설정을 불러왔습니다.").arg(QString::fromUtf8(presetName.data() , presetName.size())), StatusBarTimeOut);
     return {};
