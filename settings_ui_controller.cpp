@@ -137,20 +137,12 @@ void SettingsUiController::onRequestPresetValues(const QString& presetName)
     emit presetValuesFetched(previewData);
 }
 
-void SettingsUiController::onApplyDialogSettings(const SimulationEngine* params)
+void SettingsUiController::onApplyDialogSettings(const int maxDatasize, const int graphWidth)
 {
     if(!m_engine) return;
 
-    m_engine->m_maxDataSize.setValue(params->m_maxDataSize.value());
-    m_engine->m_graphWidthSec.setValue(params->m_graphWidthSec.value());
-    m_engine->m_voltage_B_amplitude.setValue(params->m_voltage_B_amplitude.value());
-    m_engine->m_voltage_B_phase_deg.setValue(params->m_voltage_B_phase_deg.value());
-    m_engine->m_voltage_C_amplitude.setValue(params->m_voltage_C_amplitude.value());
-    m_engine->m_voltage_C_phase_deg.setValue(params->m_voltage_C_phase_deg.value());
-    m_engine->m_current_B_amplitude.setValue(params->m_current_B_amplitude.value());
-    m_engine->m_current_B_phase_deg.setValue(params->m_current_B_phase_deg.value());
-    m_engine->m_current_C_amplitude.setValue(params->m_current_C_amplitude.value());
-    m_engine->m_current_C_phase_deg.setValue(params->m_current_C_phase_deg.value());
+    m_engine->m_maxDataSize.setValue(maxDatasize);
+    m_engine->m_graphWidthSec.setValue(graphWidth);
 }
 
 void SettingsUiController::onAmplitudeChanged(double value)

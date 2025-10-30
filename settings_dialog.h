@@ -39,7 +39,7 @@ signals:
     void loadPresetRequested(const QString& presetName);
     void deletePresetRequested(const QString& presetName);
     void renamePresetRequested(const QString& oldName, const QString& newName);
-    void settingsApplied(const SimulationEngine* params);
+    void settingsApplied(int maxDataSize, double graphWidth);
     void presetLoaded();
 
 public slots:

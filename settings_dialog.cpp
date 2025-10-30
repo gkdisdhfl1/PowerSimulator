@@ -332,10 +332,7 @@ void SettingsDialog::updateUiStates()
 void SettingsDialog::accept()
 {
     if(m_controller) {
-        SimulationEngine*  params;
-        params->m_maxDataSize.setValue(m_maxDataSizeSpinBox->value());
-        params->m_graphWidthSec.setValue(m_graphWidthSpinBox->value());
-        emit settingsApplied(params);
+        emit settingsApplied(m_maxDataSizeSpinBox->value(), m_graphWidthSpinBox->value());
     }
     m_resultState = DialogResult::Accepted; // 상태를 ok 눌림으로 설정
     QDialog::accept();

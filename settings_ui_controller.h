@@ -35,7 +35,7 @@ public slots:
     // SettingsDialog가 프리셋 목록이나 상세 값을 요청할 때 호출될 슬롯
     void onRequestPresetList();
     void onRequestPresetValues(const QString& presetName);
-    void onApplyDialogSettings(const SimulationEngine* params);
+    void onApplyDialogSettings(const int maxDatasize, const int graphWidth);
 
     // ControlPanel의 실시간 변경에 반응하는 슬롯들
     void onAmplitudeChanged(double value);

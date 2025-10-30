@@ -51,11 +51,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
-find_package(Qt6 REQUIRED COMPONENTS Core)
 
     qt_add_executable(PowerSimulator
         MANUAL_FINALIZATION
@@ -123,12 +118,6 @@ target_link_libraries(PowerSimulator PRIVATE
     sqlite_modern_cpp
     sqlite3_lib
 )
-target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
-target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
-target_link_libraries(PowerSimulator PRIVATE Qt6::Core)
-target_link_libraries(PowerSimulator PRIVATE Qt6::Core)
-target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
-target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Core)
 
