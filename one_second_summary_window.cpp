@@ -1,4 +1,5 @@
 #include "one_second_summary_window.h"
+#include "config.h"
 #include <QVBoxLayout>
 #include <QTableWidget>
 #include <analysis_utils.h>
@@ -98,10 +99,10 @@ void OneSecondSummaryWindow::updateData(const OneSecondSummaryData& data)
     m_tableWidget->item(Row::TotalEnergy, Col::Voltage)->setText(QString::number(data.totalEnergyWh, 'f', 6));
 
     // 기본파 정보 표시
-    m_tableWidget->item(Row::FundamentalRms, Col::Voltage)->setText(QString::number(data.fundamentalVoltageRms, 'f', 3));
-    m_tableWidget->item(Row::FundamentalRms, Col::Current)->setText(QString::number(data.fundamentalCurrentRms, 'f', 3));
-    m_tableWidget->item(Row::FundamentalPhase, Col::Voltage)->setText(QString::number(data.fundamentalVoltagePhase, 'f', 2));
-    m_tableWidget->item(Row::FundamentalPhase, Col::Current)->setText(QString::number(data.fundamentalCurrentPhase, 'f', 2));
+    m_tableWidget->item(Row::FundamentalRms, Col::Voltage)->setText(QString::number(data.fundamentalVoltage[0].rms, 'f', 3));
+    m_tableWidget->item(Row::FundamentalRms, Col::Current)->setText(QString::number(data.fundamentalCurrent[0].rms, 'f', 3));
+    m_tableWidget->item(Row::FundamentalPhase, Col::Voltage)->setText(QString::number(utils::radiansToDegrees(data.fundamentalVoltage[0].phase), 'f', 2));
+    m_tableWidget->item(Row::FundamentalPhase, Col::Current)->setText(QString::number(utils::radiansToDegrees(data.fundamentalCurrent[0].phase), 'f', 2));
 
     // 고조파 정보 표시
     m_tableWidget->item(Row::DominantOrder, Col::Voltage)->setText(QString::number(data.dominantHarmonicVoltageOrder));

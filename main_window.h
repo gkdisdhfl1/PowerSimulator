@@ -19,8 +19,8 @@ class QTimer;
 class OneSecondSummaryWindow;
 class AdditionalMetricsWindow;
 class ThreePhaseDialog;
-// class SettingsDialog;
 class PidTuningDialog;
+class A3700N_Window;
 
 class MainWindow : public QMainWindow
 {
@@ -35,13 +35,14 @@ private slots:
     void updateFpsLabel();
     void onPresetLoaded();
     void showThreePhaseDialog();
-    // void showSettingsDialog();
     void showPidTuningDialog();
+    void showA3700Window();
 
 private:
     QAction* m_actionSettings;
     QAction* m_actionPidTuning;
     QAction* m_actionThreePhaseSettings;
+    QAction* m_actionA3700;
     SimulationEngine *m_engine;
 
     // View와 Controller들을 소유
@@ -52,8 +53,6 @@ private:
     FundamentalAnalysisGraphWindow *m_fundamentalAnalysisGraphWindow;
     HarmonicAnalysisGraphWindow *m_harmonicAnalysisGraphWindow;
     PhasorView* m_phasorView;
-    std::unique_ptr<SettingsManager> m_settingsManager;
-    std::unique_ptr<SettingsUiController> m_settingsUiController;
     QDockWidget* m_placeholderDock;
     QLabel* m_fpsLabel;
     QTimer* m_fpsTimer;
@@ -61,9 +60,12 @@ private:
     OneSecondSummaryWindow* m_oneSecondSummaryWindow;
     AdditionalMetricsWindow* m_additionalMetricsWindow;
 
+    std::unique_ptr<SettingsManager> m_settingsManager;
+    std::unique_ptr<SettingsUiController> m_settingsUiController;
+    std::unique_ptr<A3700N_Window> m_a3700nWindow;
+
     // Dialog
     std::unique_ptr<ThreePhaseDialog> m_threePhaseDialog;
-    // std::unique_ptr<SettingsDialog> m_settingsDialog;
     std::unique_ptr<PidTuningDialog> m_pidTuningDialog;
 
     void createSignalSlotConnections(); // 조립 역할

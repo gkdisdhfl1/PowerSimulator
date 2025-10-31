@@ -13,6 +13,7 @@
 #include "phasor_view.h"
 #include "three_phase_dialog.h"
 #include "additional_metrics_window.h"
+#include "a3700n_window.h"
 
 #include <QDockWidget>
 #include <QStatusBar>
@@ -43,6 +44,7 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     // 컨트롤러 생성 (UI 컴포넌트가 생성된 후)
     m_threePhaseDialog = std::make_unique<ThreePhaseDialog>(this);
     m_pidTuningDialog = std::make_unique<PidTuningDialog>(this);
+    m_a3700nWindow = std::make_unique<A3700N_Window>(); // 부모를 지정하지 않음. 최상위 위젯
 
     m_settingsUiController = std::make_unique<SettingsUiController>(m_controlPanel, *m_settingsManager, m_engine, this);
 
@@ -72,12 +74,15 @@ void MainWindow::createMenus()
     QMenu *toolsMenu = menuBar()->addMenu("도구(&T)");
 
     // 'PID 튜닝' 액션 생성 및 메뉴에 추가
-    m_actionPidTuning = new QAction("PID 튜닝", this);
+    m_actionPidTuning = new QAction("PID 튜닝(&P)", this);
     toolsMenu->addAction(m_actionPidTuning);
 
     // 3상 설정 액션 추가
-    m_actionThreePhaseSettings = new QAction("3상 상세 설정..", this);
+    m_actionThreePhaseSettings = new QAction("3상 상세 설정(&O)", this);
     toolsMenu->addAction(m_actionThreePhaseSettings);
+
+    m_actionA3700 = new QAction("A3700 Display", this);
+    toolsMenu->addAction(m_actionA3700);
 }
 
 void MainWindow::setupUiComponents()
@@ -191,6 +196,7 @@ void MainWindow::createSignalSlotConnections()
     connect(m_actionSettings, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showSettingsDialog);
     connect(m_actionPidTuning, &QAction::triggered, this, &MainWindow::showPidTuningDialog);
     connect(m_actionThreePhaseSettings, &QAction::triggered, this, &MainWindow::showThreePhaseDialog);
+    connect(m_actionA3700, &QAction::triggered, this, &MainWindow::showA3700Window);
     connect(m_fpsTimer, &QTimer::timeout, this, &MainWindow::updateFpsLabel);
 
     connect(m_settingsUiController.get(), &SettingsUiController::maxDataSizeChangeRequested, m_engine, &SimulationEngine::onMaxDataSizeChanged);
@@ -254,6 +260,7 @@ void MainWindow::createSignalSlotConnections()
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_harmonicAnalysisGraphWindow, &HarmonicAnalysisGraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_oneSecondSummaryWindow, &OneSecondSummaryWindow::updateData);
     connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_additionalMetricsWindow, &AdditionalMetricsWindow::updateData);
+    connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_a3700nWindow.get(), &A3700N_Window::updateData);
 
     // ---- GraphWindow 시그널 -> UI 슬롯 ----
     connect(m_graphWindow, &GraphWindow::pointHovered, this, [this](const DataPoint& point) {
@@ -332,4 +339,13 @@ void MainWindow::showPidTuningDialog()
     m_pidTuningDialog->show();
     m_pidTuningDialog->raise();
     m_pidTuningDialog->activateWindow();
+}
+
+void MainWindow::showA3700Window()
+{
+    if(m_a3700nWindow) {
+        m_a3700nWindow->show();
+        m_a3700nWindow->raise();
+        m_a3700nWindow->activateWindow();
+    }
 }

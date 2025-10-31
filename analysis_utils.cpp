@@ -409,6 +409,7 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     summary.currentThd = {currentThd[0], currentThd[1], currentThd[2]};
     summary.reactivePower = {reactive_arr[0], reactive_arr[1], reactive_arr[2]};
 
+    summary.frequency = cycleBuffer.back().fundamentalVoltage[0].order * (1.0 / (cycleBuffer.back().timestamp.count() / 1e9));
     summary.totalActivePower = totalActivePower;
     summary.totalApparentPower = totalApparentPower;
     summary.totalReactivePower = totalReactivePower;
@@ -424,10 +425,12 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     summary.dominantHarmonicVoltagePhase = utils::radiansToDegrees(lastCycleData.dominantVoltage[0].phase);
     summary.dominantHarmonicCurrentPhase = utils::radiansToDegrees(lastCycleData.dominantCurrent[0].order);
 
-    summary.fundamentalVoltagePhase = utils::radiansToDegrees(lastCycleData.fundamentalVoltage[0].phase);
-    summary.fundamentalCurrentPhase = utils::radiansToDegrees(lastCycleData.fundamentalCurrent[0].phase);
-    summary.fundamentalVoltageRms = lastCycleData.fundamentalVoltage[0].rms;
-    summary.fundamentalCurrentRms = lastCycleData.fundamentalCurrent[0].rms;
+    summary.fundamentalVoltage = lastCycleData.fundamentalVoltage;
+    summary.fundamentalCurrent = lastCycleData.fundamentalCurrent;
+    // summary.fundamentalVoltagePhase = utils::radiansToDegrees(lastCycleData.fundamentalVoltage[0].phase);
+    // summary.fundamentalCurrentPhase = utils::radiansToDegrees(lastCycleData.fundamentalCurrent[0].phase);
+    // summary.fundamentalVoltageRms = lastCycleData.fundamentalVoltage[0].rms;
+    // summary.fundamentalCurrentRms = lastCycleData.fundamentalCurrent[0].rms;
 
     // 7. 대칭 성분 계산 및 할당
     summary.voltageSymmetricalComponents = calculateSymmetricalComponents(lastCycleData.fundamentalVoltage);

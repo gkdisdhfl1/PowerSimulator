@@ -66,8 +66,10 @@ struct OneSecondSummaryData {
     PhaseData voltageThd;
     PhaseData currentThd;
 
-    double fundamentalVoltageRms;
-    double fundamentalCurrentRms;
+    std::array<HarmonicAnalysisResult, 3> fundamentalVoltage;
+    std::array<HarmonicAnalysisResult, 3> fundamentalCurrent;
+    double dominantHarmonicVoltagePhase;
+    double dominantHarmonicCurrentPhase;
 
     int dominantHarmonicVoltageOrder;
     double dominantHarmonicVoltageRms;
@@ -75,17 +77,14 @@ struct OneSecondSummaryData {
     int dominantHarmonicCurrentOrder;
     double dominantHarmonicCurrentRms;
 
+    double frequency = 0.0;
     double totalActivePower = 0.0;
     double totalApparentPower = 0.0;
     double totalReactivePower = 0.0;
     double totalPowerFactor = 0.0;
     double totalEnergyWh; // 누적 전력량
 
-    // 1초 구간의 마지막 사이클에서 가져온 값들g
-    double fundamentalVoltagePhase;
-    double fundamentalCurrentPhase;
-    double dominantHarmonicVoltagePhase;
-    double dominantHarmonicCurrentPhase;
+    // 1초 구간의 마지막 사이클에서 가져온 값들
 
     SymmetricalComponents voltageSymmetricalComponents;
     SymmetricalComponents currentSymmetricalComponents;
@@ -101,5 +100,5 @@ struct OneSecondSummaryData {
     double currentU2Unbalance = 0.0;
 };
 
-Q_DECLARE_METATYPE(MeasuredData)
+// Q_DECLARE_METATYPE(MeasuredData)
 #endif // MEASURED_DATA_H
