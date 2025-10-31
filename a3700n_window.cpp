@@ -15,6 +15,7 @@ void A3700N_Window::setupUi()
 {
     // 1. 왼쪽 서브메뉴 생성
     m_submenu = new QListWidget();
+    m_submenu->setObjectName("submenuList");
     m_submenu->addItems({"RMS", "Fundamental", "THD %", "Frequency", "Residual"});
     m_submenu->setMaximumWidth(150);
 
@@ -22,7 +23,7 @@ void A3700N_Window::setupUi()
     m_contentsStack = new QStackedWidget();
     m_contentsStack->addWidget(createTablePage(m_rmsTable, {"A", "B", "C", "Average"}, "V"));
     m_contentsStack->addWidget(createTablePage(m_fundamentalTable, {"A", "B", "C", "Average"}, "V"));
-    m_contentsStack->addWidget(createTablePage(m_thdTable, {"A", "B", "C"}, "&"));
+    m_contentsStack->addWidget(createTablePage(m_thdTable, {"A", "B", "C"}, "%"));
     m_contentsStack->addWidget(createTablePage(m_frequencyTable, {"Frequency"}, "Hz"));
     m_contentsStack->addWidget(createTablePage(m_residualTable, {"RMS", "Fund."}, "V"));
 

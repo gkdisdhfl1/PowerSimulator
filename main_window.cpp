@@ -81,7 +81,7 @@ void MainWindow::createMenus()
     m_actionThreePhaseSettings = new QAction("3상 상세 설정(&O)", this);
     toolsMenu->addAction(m_actionThreePhaseSettings);
 
-    m_actionA3700 = new QAction("A3700 Display", this);
+    m_actionA3700 = new QAction("A3700 Display(&D)", this);
     toolsMenu->addAction(m_actionA3700);
 }
 

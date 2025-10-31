@@ -409,7 +409,7 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     summary.currentThd = {currentThd[0], currentThd[1], currentThd[2]};
     summary.reactivePower = {reactive_arr[0], reactive_arr[1], reactive_arr[2]};
 
-    summary.frequency = cycleBuffer.back().fundamentalVoltage[0].order * (1.0 / (cycleBuffer.back().timestamp.count() / 1e9));
+    summary.frequency = cycleBuffer.back().fundamentalVoltage[0].order * (1.0 / std::chrono::duration<double>(lastCycleData.timestamp - (cycleBuffer.end() - 2)->timestamp).count());
     summary.totalActivePower = totalActivePower;
     summary.totalApparentPower = totalApparentPower;
     summary.totalReactivePower = totalReactivePower;
