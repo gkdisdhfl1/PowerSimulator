@@ -79,8 +79,6 @@ struct OneSecondSummaryData {
     double totalApparentPower = 0.0;
     double totalReactivePower = 0.0;
     double totalPowerFactor = 0.0;
-    double systemVoltageThd = 0.0;
-    double systemCurrentThd = 0.0;
     double totalEnergyWh; // 누적 전력량
 
     // 1초 구간의 마지막 사이클에서 가져온 값들g

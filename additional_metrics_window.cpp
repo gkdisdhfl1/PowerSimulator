@@ -53,7 +53,6 @@ void AdditionalMetricsWindow::setupUi()
     m_tableWidget->setItem(MetricsRow::ThdA, MetricsCol::Title, new QTableWidgetItem("THD (A) (%)"));
     m_tableWidget->setItem(MetricsRow::ThdB, MetricsCol::Title, new QTableWidgetItem("THD (B) (%)"));
     m_tableWidget->setItem(MetricsRow::ThdC, MetricsCol::Title, new QTableWidgetItem("THD (C) (%)"));
-    m_tableWidget->setItem(MetricsRow::SystemThd, MetricsCol::Title, new QTableWidgetItem("Ststem THD (%)"));
     m_tableWidget->setItem(MetricsRow::ZeroSequence, MetricsCol::Title, new QTableWidgetItem("영상분 (V/A)"));
     m_tableWidget->setItem(MetricsRow::PositiveSequence, MetricsCol::Title, new QTableWidgetItem("정상분 (V/A)"));
     m_tableWidget->setItem(MetricsRow::NegativeSequence, MetricsCol::Title, new QTableWidgetItem("역상분 (V/A)"));
@@ -138,8 +137,6 @@ void AdditionalMetricsWindow::updateData(const OneSecondSummaryData& data)
     m_tableWidget->item(MetricsRow::ThdB, MetricsCol::Current)->setText(QString::number(data.currentThd.b, 'f', 3));
     m_tableWidget->item(MetricsRow::ThdC, MetricsCol::Voltage)->setText(QString::number(data.voltageThd.c, 'f', 3));
     m_tableWidget->item(MetricsRow::ThdC, MetricsCol::Current)->setText(QString::number(data.currentThd.c, 'f', 3));
-    m_tableWidget->item(MetricsRow::SystemThd, MetricsCol::Voltage)->setText(QString::number(data.systemVoltageThd, 'f', 3));
-    m_tableWidget->item(MetricsRow::SystemThd, MetricsCol::Current)->setText(QString::number(data.systemCurrentThd, 'f', 3));
 
     // 대칭 정보 표시
     m_tableWidget->item(MetricsRow::ZeroSequence, MetricsCol::Voltage)->setText(QString::number(data.voltageSymmetricalComponents.zero.magnitude, 'f', 3));

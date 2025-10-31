@@ -368,14 +368,14 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
 
         if(fundVoltageRms > 1e-9) {
             double harmonicVoltageRmsSq = (voltageRms[i] * voltageRms[i]) - (fundVoltageRms * fundVoltageRms);
-            voltageThd[i] = (harmonicVoltageRmsSq > 0) ? (std::sqrt(harmonicVoltageRmsSq) / fundVoltageRms) * 100.0 : 0.0;
+            voltageThd[i] = (harmonicVoltageRmsSq > 1e-9) ? (std::sqrt(harmonicVoltageRmsSq) / fundVoltageRms) * 100.0 : 0.0;
         } else {
             voltageThd[i] = (voltageRms[i] > 1e-9) ? std::numeric_limits<double>::infinity() : 0.0;
         }
 
-        if(fundCurrentRms > 1e-6) {
+        if(fundCurrentRms > 1e-9) {
             double harmonicCurrentRmsSq = (currentRms[i] * currentRms[i]) - (fundCurrentRms * fundCurrentRms);
-            currentThd[i] = (harmonicCurrentRmsSq > 0) ? (std::sqrt(harmonicCurrentRmsSq) / fundCurrentRms) * 100.0 : 0.0;
+            currentThd[i] = (harmonicCurrentRmsSq > 1e-9) ? (std::sqrt(harmonicCurrentRmsSq) / fundCurrentRms) * 100.0 : 0.0;
         } else {
             currentThd[i] = 0.0;
         }
@@ -399,32 +399,6 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     double totalReactivePower = reactive_arr[0] + reactive_arr[1] + reactive_arr[2];
     double totalPowerFactor = (totalApparentPower > 1e-6) ? std::abs(totalActivePower) / totalApparentPower : 0.0;
 
-    // ----- system THD 계산 --------
-    // 3상 전체 RMS 제곱의 합
-    double totalRmsVoltageSqSum = (voltageRms[0] * voltageRms[0]) + (voltageRms[1] * voltageRms[1]) + (voltageRms[2] * voltageRms[2]);
-    // 3상 기본파 RMS 제곱의 합
-    double totalFundRmsVoltageSq = (fundVoltageRmsSumSq[0] / N) + (fundVoltageRmsSumSq[1] / N) + (fundVoltageRmsSumSq[2] / N);
-    double systemVoltageThd = 0.0;
-
-    if(totalFundRmsVoltageSq > 1e-12) {
-        double totalHarmonicVoltageSqSum = totalRmsVoltageSqSum - totalFundRmsVoltageSq;
-        if(totalHarmonicVoltageSqSum > 0) {
-            systemVoltageThd = (std::sqrt(totalHarmonicVoltageSqSum) / std::sqrt(totalFundRmsVoltageSq)) * 100.0;
-        }
-    }
-    double totalRmsCurrentSqSum = (currentRms[0] * currentRms[0]) + (currentRms[1] * currentRms[1]) + (currentRms[2] * currentRms[2]);
-    // 3상 기본파 RMS 제곱의 합
-    double totalFundRmsCurrentSq = (fundCurrentRmsSumSq[0] / N) + (fundCurrentRmsSumSq[1] / N) + (fundCurrentRmsSumSq[2] / N);
-    double systemCurrentThd = 0.0;
-
-    if(totalFundRmsCurrentSq > 1e-12) {
-        double totalHarmonicCurrentSqSum = totalRmsCurrentSqSum - totalFundRmsCurrentSq;
-        if(totalHarmonicCurrentSqSum) {
-            systemCurrentThd = (std::sqrt(totalHarmonicCurrentSqSum) / std::sqrt(totalFundRmsCurrentSq)) * 100.0;
-        }
-    }
-    // -------------------------
-
     // 5. 계산된 값들 구조체 할당
     summary.totalVoltageRms = {voltageRms[0], voltageRms[1], voltageRms[2]};
     summary.totalCurrentRms = {currentRms[0], currentRms[1], currentRms[2]};
@@ -440,8 +414,6 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     summary.totalReactivePower = totalReactivePower;
     summary.totalPowerFactor = totalPowerFactor;
 
-    summary.systemVoltageThd = systemVoltageThd;
-    summary.systemCurrentThd = systemCurrentThd;
     summary.residualVoltageRms = residualVoltageRmsSum / N;
     summary.residualCurrentRms = residualCurrentRmsSum / N;
 

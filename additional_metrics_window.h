@@ -28,7 +28,6 @@ enum {
     ThdA,
     ThdB,
     ThdC,
-    SystemThd,
     HeaderSymmetrical,
     ZeroSequence,
     PositiveSequence,
