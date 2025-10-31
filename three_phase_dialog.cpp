@@ -43,6 +43,9 @@ void ThreePhaseDialog::setupUi()
 
         m_amplitudeControls[i] = new ValueControlWidget();
         m_phaseDials[i] = new FineTuningDial();
+        m_phaseDials[i]->setRange(0, 359);
+        m_phaseDials[i]->setWrapping(true);
+        m_phaseDials[i]->setNotchesVisible(true);
         m_phaseLabels[i] = new QLabel("0 °");
 
         auto phaseLayout = new QHBoxLayout();
@@ -74,33 +77,29 @@ void ThreePhaseDialog::setInitialValues(const SimulationEngine* engine)
     //          << " dialog visible=" << this->isVisible()
     //          << " windowTitle=" << windowTitle();
     // qDebug() << "[DBG] VbPhase param =" << params.voltage_B_phase_deg;
+    QSignalBlocker b0(m_amplitudeControls[0]);
+    QSignalBlocker b1(m_phaseDials[0]);
     m_amplitudeControls[0]->setRange(config::Source::Amplitude::Min, config::Source::Amplitude::Max);
     m_amplitudeControls[0]->setValue(engine->m_voltage_B_amplitude.value());
-    m_phaseDials[0]->setRange(0, 359);
     m_phaseDials[0]->setValue(engine->m_voltage_B_phase_deg.value());
-    m_phaseDials[0]->setWrapping(true);
-    m_phaseDials[0]->setNotchesVisible(true);
 
+    QSignalBlocker b2(m_amplitudeControls[1]);
+    QSignalBlocker b3(m_phaseDials[1]);
     m_amplitudeControls[1]->setRange(config::Source::Amplitude::Min, config::Source::Amplitude::Max);
     m_amplitudeControls[1]->setValue(engine->m_voltage_C_amplitude.value());
-    m_phaseDials[1]->setRange(0, 359);
     m_phaseDials[1]->setValue(engine->m_voltage_C_phase_deg.value());
-    m_phaseDials[1]->setWrapping(true);
-    m_phaseDials[1]->setNotchesVisible(true);
 
+    QSignalBlocker b4(m_amplitudeControls[2]);
+    QSignalBlocker b5(m_phaseDials[2]);
     m_amplitudeControls[2]->setRange(config::Source::Current::MinAmplitude, config::Source::Current::MaxAmplitude);
     m_amplitudeControls[2]->setValue(engine->m_current_B_amplitude.value());
-    m_phaseDials[2]->setRange(0, 359);
     m_phaseDials[2]->setValue(engine->m_current_B_phase_deg.value());
-    m_phaseDials[2]->setWrapping(true);
-    m_phaseDials[2]->setNotchesVisible(true);
 
+    QSignalBlocker b6(m_amplitudeControls[3]);
+    QSignalBlocker b7(m_phaseDials[3]);
     m_amplitudeControls[3]->setRange(config::Source::Current::MinAmplitude, config::Source::Current::MaxAmplitude);
     m_amplitudeControls[3]->setValue(engine->m_current_C_amplitude.value());
-    m_phaseDials[3]->setRange(0, 359);
     m_phaseDials[3]->setValue(engine->m_current_C_phase_deg.value());
-    m_phaseDials[3]->setWrapping(true);
-    m_phaseDials[3]->setNotchesVisible(true);
 
     m_phaseLabels[0]->setText(QString::number(engine->m_voltage_B_phase_deg.value()) + " °");
     m_phaseLabels[1]->setText(QString::number(engine->m_voltage_C_phase_deg.value()) + " °");

@@ -2,6 +2,7 @@
 #define SHARED_DATA_TYPES_H
 
 #include <QString>
+#include <QDebug>
 
 // 고조파 성분을 정의하는 구조체
 // magnitude가 0이면 비활성화된 것으로 간주
@@ -28,4 +29,25 @@ struct PhaseData {
     double c = 0.0;
 };
 
+inline QDebug operator<<(QDebug dbg, const HarmonicComponent& hc)
+{
+    // QDebugStateSaver를 사용해 스트림 상태를 안전하게 관리
+    QDebugStateSaver saver(dbg);
+    dbg.nospace() << "Harmonic(order:" << hc.order
+                  << ", mag:" << hc.magnitude
+                  << ", phase:" << hc.phase << ")";
+    return dbg;
+}
+inline QDebug operator<<(QDebug dbg, const UpdateMode& mode)
+{
+    // QDebugStateSaver를 사용해 스트림 상태를 안전하게 관리
+    QDebugStateSaver saver(dbg);
+    switch(mode) {
+    case UpdateMode::PerSample: dbg.nospace() << "PerSample"; break;
+    case UpdateMode::PerHalfCycle: dbg.nospace() << "PerHalfCycle"; break;
+    case UpdateMode::PerCycle: dbg.nospace() << "PerCycle"; break;
+    }
+
+    return dbg;
+}
 #endif // SHARED_DATA_TYPES_H

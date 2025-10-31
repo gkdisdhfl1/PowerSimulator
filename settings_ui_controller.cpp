@@ -1,7 +1,6 @@
  #include "settings_ui_controller.h"
 #include "control_panel.h"
 #include "config.h"
-#include "pid_tuning_dialog.h"
 #include "settings_dialog.h"
 #include "settings_manager.h"
 #include "simulation_engine.h"
