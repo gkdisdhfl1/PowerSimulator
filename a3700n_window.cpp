@@ -141,8 +141,8 @@ void A3700N_Window::setupUi()
     m_mainTabs->setTabPosition(QTabWidget::North);
 
     // 각 탭 생성
-    m_mainTabs->addTab(createVoltageTab(), "VOLTAGE");
-    m_mainTabs->addTab(createCurrentTab(), "CURRENT");
+    m_mainTabs->addTab(createTabPage("Voltage"), "VOLTAGE");
+    m_mainTabs->addTab(createTabPage("Current"), "CURRENT");
     m_mainTabs->setObjectName("mainTabs");
     m_mainTabs->tabBar()->setObjectName("mainTabBar");
 
@@ -153,9 +153,9 @@ void A3700N_Window::setupUi()
 
 }
 
-QWidget* A3700N_Window::createVoltageTab()
+QWidget* A3700N_Window::createTabPage(const QString& type)
 {
-    // 1. 왼쪽 서브메뉴 생성
+    // 왼쪽 서브메뉴 생성
     auto submenu = new QListWidget();
     submenu->setObjectName("submenuList");
     submenu->setMaximumWidth(150);
@@ -170,6 +170,53 @@ QWidget* A3700N_Window::createVoltageTab()
     contentsStack->setAutoFillBackground(true);
     contentsStack->setPalette(pal);
 
+    if(type == "Voltage") {
+        createVoltagePage(submenu, contentsStack);
+    } else if(type == "Current") {
+        createCurrentPage(submenu, contentsStack);
+    }
+
+    auto mainLayout = new QHBoxLayout(this);
+    mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->setSpacing(0);
+
+    mainLayout->addWidget(submenu);
+    mainLayout->addWidget(contentsStack, 1);
+
+    connect(submenu, &QListWidget::currentRowChanged, contentsStack, &QStackedWidget::setCurrentIndex);
+    submenu->setCurrentRow(0);
+
+    auto container = new QWidget();
+    container->setLayout(mainLayout)    ;
+    return container;
+}
+
+void A3700N_Window::createAndAddPage(
+    QListWidget* submenu,
+    QStackedWidget* stack,
+    const QString& submenuName,
+    const QString& title,
+    const QStringList& rowLabels,
+    const QString& unit,
+    const std::vector<std::function<double(const OneSecondSummaryData&)>>& extractors)
+{
+
+    DataPage* page = new DataPage(title, rowLabels, unit, extractors);
+
+    m_pages.push_back(page);
+    stack->addWidget(page);
+    submenu->addItem(submenuName); // 메뉴 이름 설정
+}
+
+void A3700N_Window::updateData(const OneSecondSummaryData& data)
+{
+    for(DataPage* page : m_pages) {
+        page->updateDataFromSummary(data);
+    }
+}
+
+void A3700N_Window::createVoltagePage(QListWidget* submenu, QStackedWidget* contentsStack)
+{
     createAndAddPage(submenu, contentsStack, "RMS", "RMS Voltage", {"A", "B", "C", "Average"}, "V",
                      {
                          [](const auto& d) { return d.totalVoltageRms.a; },
@@ -203,39 +250,10 @@ QWidget* A3700N_Window::createVoltageTab()
                          [](const auto& d) { return d.residualVoltageRms; },
                          [](const auto& d) { return d.residualVoltageFundamental; }
                      });
-
-    auto mainLayout = new QHBoxLayout(this);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
-    mainLayout->setSpacing(0);
-
-    mainLayout->addWidget(submenu);
-    mainLayout->addWidget(contentsStack, 1);
-
-    connect(submenu, &QListWidget::currentRowChanged, contentsStack, &QStackedWidget::setCurrentIndex);
-    submenu->setCurrentRow(0);
-
-    auto container = new QWidget();
-    container->setLayout(mainLayout)    ;
-    return container;
 }
 
-QWidget* A3700N_Window::createCurrentTab()
+void A3700N_Window::createCurrentPage(QListWidget* submenu, QStackedWidget* contentsStack)
 {
-    // 1. 왼쪽 서브메뉴 생성
-    auto submenu = new QListWidget();
-    submenu->setObjectName("submenuList");
-    submenu->setMaximumWidth(150);
-
-    auto contentsStack = new QStackedWidget(this);
-    contentsStack->setObjectName("contentsStack");
-
-    QPalette pal = contentsStack->palette();
-
-    // contentsStack 배경색 설정
-    pal.setColor(QPalette::Window, Qt::white);
-    contentsStack->setAutoFillBackground(true);
-    contentsStack->setPalette(pal);
-
     createAndAddPage(submenu, contentsStack, "RMS", "RMS Current", {"A", "B", "C", "Average"}, "A",
                      {
                          [](const auto& d) { return d.totalCurrentRms.a; },
@@ -264,43 +282,5 @@ QWidget* A3700N_Window::createCurrentTab()
                          [](const auto& d) { return d.residualCurrentRms; },
                          [](const auto& d) { return d.residualCurrentFundamental; }
                      });
-
-    auto mainLayout = new QHBoxLayout(this);
-    mainLayout->setContentsMargins(0, 0, 0, 0);
-    mainLayout->setSpacing(0);
-
-    mainLayout->addWidget(submenu);
-    mainLayout->addWidget(contentsStack, 1);
-
-    connect(submenu, &QListWidget::currentRowChanged, contentsStack, &QStackedWidget::setCurrentIndex);
-    submenu->setCurrentRow(0);
-
-    auto container = new QWidget();
-    container->setLayout(mainLayout)    ;
-    return container;
 }
-
-void A3700N_Window::createAndAddPage(
-    QListWidget* submenu,
-    QStackedWidget* stack,
-    const QString& submenuName,
-    const QString& title,
-    const QStringList& rowLabels,
-    const QString& unit,
-    const std::vector<std::function<double(const OneSecondSummaryData&)>>& extractors)
-{
-
-    DataPage* page = new DataPage(title, rowLabels, unit, extractors);
-
-    connect(this, &A3700N_Window::dataUpdated, page, &DataPage::updateDataFromSummary);
-
-    stack->addWidget(page);
-    submenu->addItem(submenuName); // 메뉴 이름 설정
-}
-
-void A3700N_Window::updateData(const OneSecondSummaryData& data)
-{
-    emit dataUpdated(data);
-}
-
 #include "a3700n_window.moc"
