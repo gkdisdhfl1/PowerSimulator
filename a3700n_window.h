@@ -36,6 +36,7 @@ private:
 
     void createVoltagePage(QListWidget* submenu, QStackedWidget* stack);
     void createCurrentPage(QListWidget* submenu, QStackedWidget* stack);
+    void createPowerPage(QListWidget* submenu, QStackedWidget* stack);
 };
 
 #endif // A37__N_WINDOW_H

@@ -143,6 +143,7 @@ void A3700N_Window::setupUi()
     // 각 탭 생성
     m_mainTabs->addTab(createTabPage("Voltage"), "VOLTAGE");
     m_mainTabs->addTab(createTabPage("Current"), "CURRENT");
+    m_mainTabs->addTab(createTabPage("POWER"), "POWER");
     m_mainTabs->setObjectName("mainTabs");
     m_mainTabs->tabBar()->setObjectName("mainTabBar");
 
@@ -170,10 +171,13 @@ QWidget* A3700N_Window::createTabPage(const QString& type)
     contentsStack->setAutoFillBackground(true);
     contentsStack->setPalette(pal);
 
+    // 페이지 생성
     if(type == "Voltage") {
         createVoltagePage(submenu, contentsStack);
     } else if(type == "Current") {
         createCurrentPage(submenu, contentsStack);
+    } else if(type == "POWER") {
+        createPowerPage(submenu, contentsStack);
     }
 
     auto mainLayout = new QHBoxLayout(this);
@@ -281,6 +285,46 @@ void A3700N_Window::createCurrentPage(QListWidget* submenu, QStackedWidget* cont
                      {
                          [](const auto& d) { return d.residualCurrentRms; },
                          [](const auto& d) { return d.residualCurrentFundamental; }
+                     });
+}
+
+void A3700N_Window::createPowerPage(QListWidget* submenu, QStackedWidget* stack)
+{
+    createAndAddPage(submenu, stack, "Active(P)", "Active Power", {"A", "B", "C", "Total"}, "kW",
+                     {
+                         [](const OneSecondSummaryData& d) { return d.activePower.a / 10e3; },
+                         [](const OneSecondSummaryData& d) { return d.activePower.b / 10e3; },
+                         [](const OneSecondSummaryData& d) { return d.activePower.c / 10e3; },
+                         [](const OneSecondSummaryData& d) { return d.totalActivePower / 10e3; }
+                     });
+
+    createAndAddPage(submenu, stack, "Reactive(Q)", "Reactive Power", {"A", "B", "C", "Total"}, "kVAR",
+                     {
+                         [](const OneSecondSummaryData& d) { return d.reactivePower.a / 10e3; },
+                         [](const OneSecondSummaryData& d) { return d.reactivePower.b / 10e3; },
+                         [](const OneSecondSummaryData& d) { return d.reactivePower.c / 10e3; },
+                         [](const OneSecondSummaryData& d) { return d.totalReactivePower / 10e3; }
+                     });
+
+    createAndAddPage(submenu, stack, "Apparent(S)", "Apparent Power", {"A", "B", "C", "Total"}, "kVA",
+                     {
+                         [](const OneSecondSummaryData& d) { return d.apparentPower.a / 10e3; },
+                         [](const OneSecondSummaryData& d) { return d.apparentPower.b / 10e3; },
+                         [](const OneSecondSummaryData& d) { return d.apparentPower.c / 10e3; },
+                         [](const OneSecondSummaryData& d) { return d.totalApparentPower / 10e3; }
+                     });
+
+    createAndAddPage(submenu, stack, "PF", "Power Factor", {"A", "B", "C", "Total"}, "",
+                     {
+                         [](const OneSecondSummaryData& d) { return d.powerFactor.a; },
+                         [](const OneSecondSummaryData& d) { return d.powerFactor.b; },
+                         [](const OneSecondSummaryData& d) { return d.powerFactor.c; },
+                         [](const OneSecondSummaryData& d) { return d.totalPowerFactor; }
+                     });
+
+    createAndAddPage(submenu, stack, "Energy", "Energy", {"Net"}, "kWh",
+                     {
+                         [](const OneSecondSummaryData& d) { return d.totalEnergyWh / 10e3; }
                      });
 }
 #include "a3700n_window.moc"
