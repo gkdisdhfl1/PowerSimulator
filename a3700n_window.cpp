@@ -123,7 +123,7 @@ void A3700N_Window::setupUi()
 
     m_contentsStack = new QStackedWidget(this);
 
-    createAndAddPage("RMS Voltage", {"A", "B", "C", "Average"}, "V",
+    createAndAddPage("RMS", "RMS Voltage", {"A", "B", "C", "Average"}, "V",
                      {
                          [](const auto& d) { return d.totalVoltageRms.a; },
                          [](const auto& d) { return d.totalVoltageRms.b; },
@@ -131,7 +131,7 @@ void A3700N_Window::setupUi()
                          [](const auto& d) { return (d.totalVoltageRms.a + d.totalVoltageRms.b + d.totalVoltageRms.c) / 3.0; }
                      });
 
-    createAndAddPage("Fund. Volt.", {"A", "B", "C", "Average"}, "V",
+    createAndAddPage("Fundamental", "Fund. Volt.", {"A", "B", "C", "Average"}, "V",
                      {
                       [](const auto& d) { return d.fundamentalVoltage[0].rms; },
                       [](const auto& d) { return d.fundamentalVoltage[1].rms; },
@@ -139,19 +139,19 @@ void A3700N_Window::setupUi()
                       [](const auto& d) { return (d.fundamentalVoltage[0].rms + d.fundamentalVoltage[1].rms + d.fundamentalVoltage[2].rms) / 3.0; }
                       });
 
-    createAndAddPage("Total Harmonic Distortion", {"A", "B", "C"}, "%",
+    createAndAddPage("THD %", "Total Harmonic Distortion", {"A", "B", "C"}, "%",
                      {
                       [](const auto& d) { return d.voltageThd.a; },
                       [](const auto& d) { return d.voltageThd.b; },
                       [](const auto& d) { return d.voltageThd.c; }
                       });
 
-    createAndAddPage("Frequency", {"Frequency"}, "Hz",
+    createAndAddPage("Frequency", "Frequency", {"Frequency"}, "Hz",
                      {
                          [](const auto& d) { return d.frequency; }
                      });
 
-    createAndAddPage("Residual Voltage", {"RMS", "Fund."}, "V",
+    createAndAddPage("Residual", "Residual Voltage", {"RMS", "Fund."}, "V",
                      {
                          [](const auto& d) { return d.residualVoltageRms; },
                          [](const auto& d) { return 0.0; }
@@ -166,17 +166,19 @@ void A3700N_Window::setupUi()
     m_submenu->setCurrentRow(0);
 }
 
-void A3700N_Window::createAndAddPage(const QString& title,
-                      const QStringList& rowLabels,
-                      const QString& unit,
-                      const std::vector<std::function<double(const OneSecondSummaryData&)>>& extractors)
+void A3700N_Window::createAndAddPage(
+    const QString& submenuName,
+    const QString& title,
+    const QStringList& rowLabels,
+    const QString& unit,
+    const std::vector<std::function<double(const OneSecondSummaryData&)>>& extractors)
 {
     DataPage* page = new DataPage(title, rowLabels, unit, extractors);
 
     connect(this, &A3700N_Window::dataUpdated, page, &DataPage::updateDataFromSummary);
 
     m_contentsStack->addWidget(page);
-    m_submenu->addItem(rowLabels.count() > 1 ? title : rowLabels[0]); // 메뉴 이름 설정
+    m_submenu->addItem(submenuName); // 메뉴 이름 설정
 }
 
 void A3700N_Window::updateData(const OneSecondSummaryData& data)

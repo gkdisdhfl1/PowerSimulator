@@ -24,7 +24,8 @@ signals:
 
 private:
     void setupUi();
-    void createAndAddPage(const QString& title,
+    void createAndAddPage( const QString& submenuName,
+                          const QString& title,
                           const QStringList& rowLabels,
                           const QString& unit,
                           const std::vector<std::function<double(const OneSecondSummaryData&)>>& extractors);
