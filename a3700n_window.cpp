@@ -13,7 +13,7 @@ class DataRowWidget : public QWidget
 {
     Q_OBJECT
 public:
-    DataRowWidget(const QString& name, const QString& unit, QWidget* parent = nullptr)
+    DataRowWidget(const QString& name, const QString& unit, bool hasLine = true, QWidget* parent = nullptr)
         : QWidget(parent)
     {
         auto mainLayout = new QVBoxLayout(this);
@@ -28,22 +28,30 @@ public:
 
         m_valueLabel = new QLabel("0.000", this);
         m_valueLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        m_valueLabel->setObjectName("valueLabel");
 
         QLabel* unitLabel = new QLabel(unit, this);
         unitLabel->setMinimumWidth(20); // 단위 영역 너비 고정
+
+        nameLabel->setObjectName("nameLabel");
+        m_valueLabel->setObjectName("valueLabel");
+        unitLabel->setObjectName("unitLabel");
 
         rowLayout->addWidget(nameLabel);
         rowLayout->addWidget(m_valueLabel, 1); // 값 라벨이 남은 공간 모두 차지
         rowLayout->addWidget(unitLabel);
 
-        // 2. 하단 라인
-        QFrame* hLine = new QFrame(this);
-        hLine->setFrameShape(QFrame::HLine);
-        hLine->setFrameShadow(QFrame::Sunken);
-
         mainLayout->addLayout(rowLayout);
-        mainLayout->addWidget(hLine);
+
+        // 2. 하단 라인
+        if(hasLine) {
+            QFrame* hLine = new QFrame(this);
+            hLine->setFrameShape(QFrame::HLine);
+            hLine->setFixedHeight(1);
+            hLine->setObjectName("hLine");
+
+            mainLayout->addWidget(hLine);
+        }
+
     }
 
 public slots:
@@ -74,24 +82,33 @@ public:
         layout->setContentsMargins(15, 10, 15, 10);
         layout->setSpacing(0);
 
+        // 제목
         QLabel* titleLabel = new QLabel(title, this);
-        QFont titleFont = titleLabel->font();
-        titleFont.setPointSize(11);
-        titleLabel->setFont(titleFont);
+        titleLabel->setObjectName("titleLabel");
+
         layout->addWidget(titleLabel);
         layout->addSpacing(5);
 
+        // 제목 밑 진한 라인
+        QFrame* titleLine = new QFrame(this);
+        titleLine->setFrameShape(QFrame::HLine);
+        titleLine->setObjectName("titleLine");
+        titleLine->setFixedHeight(2);
+        layout->addWidget(titleLine);
+
         m_rowWidgets.reserve(rowLabels.count());
         for(int i{0}; i < rowLabels.count(); ++i) {
-            DataRowWidget* row = new DataRowWidget(rowLabels[i], unit, this);
+            bool hasLine = (i != rowLabels.count() - 1); // 마지막 행은 line 없음
+            DataRowWidget* row = new DataRowWidget(rowLabels[i], unit, hasLine, this);
             layout->addWidget(row);
             m_rowWidgets.push_back(row); // 행 위젯 포인터 저장
         }
 
         layout->addStretch(); // 모든 요소를 밀착
     }
+
 public slots:
-void updateDataFromSummary(const OneSecondSummaryData& data)
+    void updateDataFromSummary(const OneSecondSummaryData& data)
     {
         for(size_t i = 0; i < m_extractors.size(); ++i) {
             if(i < m_rowWidgets.size()) {
@@ -107,11 +124,20 @@ private:
 };
 
 
-// ---------------------------------------------
+// ==================================================
+
 A3700N_Window::A3700N_Window(QWidget *parent)
     : QWidget{parent}
 {
     setupUi();
+    setFixedSize(500, 250);
+
+    QPalette pal = m_contentsStack->palette();
+
+    // contentsStack 배경색 설정
+    pal.setColor(QPalette::Window, Qt::white);
+    m_contentsStack->setAutoFillBackground(true);
+    m_contentsStack->setPalette(pal);
 }
 
 void A3700N_Window::setupUi()
@@ -122,6 +148,7 @@ void A3700N_Window::setupUi()
     m_submenu->setMaximumWidth(150);
 
     m_contentsStack = new QStackedWidget(this);
+    m_contentsStack->setObjectName("contentsStack");
 
     createAndAddPage("RMS", "RMS Voltage", {"A", "B", "C", "Average"}, "V",
                      {
@@ -159,6 +186,8 @@ void A3700N_Window::setupUi()
 
     auto mainLayout = new QHBoxLayout(this);
     mainLayout->setContentsMargins(0, 0, 0, 0);
+    mainLayout->setSpacing(0);
+
     mainLayout->addWidget(m_submenu);
     mainLayout->addWidget(m_contentsStack, 1);
 
@@ -173,6 +202,7 @@ void A3700N_Window::createAndAddPage(
     const QString& unit,
     const std::vector<std::function<double(const OneSecondSummaryData&)>>& extractors)
 {
+
     DataPage* page = new DataPage(title, rowLabels, unit, extractors);
 
     connect(this, &A3700N_Window::dataUpdated, page, &DataPage::updateDataFromSummary);

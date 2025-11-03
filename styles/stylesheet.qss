@@ -1,23 +1,23 @@
-/*
- * Minimal Stylesheet for ValueControlWidget
- * Only defines the background color for fine-tuning mode.
- */
-
 /* FineTuning Mode 일 때 spinbox 배경색 */
 QDoubleSpinBox[fineTuning="true"] {
     background-color: #e0f0ff; /* Light blue background */
 }
 
+
+/*  --- Accura 3700 --- */
+
+/* submenuList */
 QListWidget#submenuList {
-    background-color: #808080; /* Dark Gray */
+    background-color: #808080; /* Gray */
     border: none;
+    font-weight: bold;
     outline: 0;
 }
 
 QListWidget::item#submenuList {
-    background-color: #c0c0c0; /* light Gray */
-    spacing: 10px;
-    /* padding: 6px 10px; */
+    background-color: #c0c0c0; /* silver */
+    height: 30px;
+    padding-left: 10px;
 }
 
 /*
@@ -31,6 +31,42 @@ QListWidget::item:selected#submenuList {
     color: black;
 }
 
+/* contentsStack */
+contentsStack {
+    background-color: #ffffff; /* white */
+}
+
+/* --- Label --- */
+QLabel#titleLabel {
+    font-size: 11px;
+    font-weight: bold;
+    /* color: #D3D3D3; /* light gray */
+    color: #808080; /* gray */
+}
+
+QLabel#nameLabel {
+    padding-left: 5px;
+    font-weight: bold;
+}
+
 QLabel#valueLabel {
-    front-size: 14px;
+    font-size: 25px;
+    color: #008CFF;
+    font-weight: bold;
+    padding-right: 10px;
+}
+
+QLabel#unitLabel {
+    font-weight: bold;
+}
+
+/* --- Frame --- */
+QFrame#titleLine {
+    background-color: black;
+    font-weight: bold;
+    /* height: 1px; */
+}
+
+QFrame#hLine {
+    background-color: black;
 }
