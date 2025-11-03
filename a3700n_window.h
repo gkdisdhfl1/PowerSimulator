@@ -7,6 +7,7 @@
 class QListWidget;
 class QStackedWidget;
 class QLabel;
+class QTabWidget;
 
 class DataPage;
 
@@ -24,14 +25,19 @@ signals:
 
 private:
     void setupUi();
-    void createAndAddPage( const QString& submenuName,
-                          const QString& title,
-                          const QStringList& rowLabels,
-                          const QString& unit,
-                          const std::vector<std::function<double(const OneSecondSummaryData&)>>& extractors);
-
-    QListWidget* m_submenu;
-    QStackedWidget* m_contentsStack;
+    QWidget* createVoltageTab();
+    QWidget* createCurrentTab();
+    void createAndAddPage(
+        QListWidget* submenu,
+        QStackedWidget* stack,
+        const QString& submenuName,
+        const QString& title,
+        const QStringList& rowLabels,
+        const QString& unit,
+        const std::vector<std::function<double(const OneSecondSummaryData&)>>& extractors);
+    QTabWidget* m_mainTabs;
+    // QListWidget* m_submenu;
+    // QStackedWidget* m_contentsStack;
 };
 
 #endif // A37__N_WINDOW_H
