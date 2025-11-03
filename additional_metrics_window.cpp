@@ -38,6 +38,7 @@ void AdditionalMetricsWindow::setupUi()
 
     // 각 행의 제목 아이템 설정
     m_tableWidget->setItem(MetricsRow::ResidualRms, MetricsCol::Title, new QTableWidgetItem("잔류 RMS (V/A)"));
+    m_tableWidget->setItem(MetricsRow::ResidualFundamental, MetricsCol::Title, new QTableWidgetItem("잔류 Fund. (V/A)"));
     m_tableWidget->setItem(MetricsRow::ApparentPowerA, MetricsCol::Title, new QTableWidgetItem("피상전력 (A) (VA)"));
     m_tableWidget->setItem(MetricsRow::ApparentPowerB, MetricsCol::Title, new QTableWidgetItem("피상전력 (B) (VA)"));
     m_tableWidget->setItem(MetricsRow::ApparentPowerC, MetricsCol::Title, new QTableWidgetItem("피상전력 (C) (VA)"));
@@ -103,6 +104,10 @@ void AdditionalMetricsWindow::updateData(const OneSecondSummaryData& data)
         ->setText(QString::number(data.residualVoltageRms, 'f', 3));
     m_tableWidget->item(MetricsRow::ResidualRms, MetricsCol::Current)
         ->setText(QString::number(data.residualCurrentRms, 'f', 3));
+    m_tableWidget->item(MetricsRow::ResidualFundamental, MetricsCol::Voltage)
+        ->setText(QString::number(data.residualVoltageFundamental, 'f', 3));
+    m_tableWidget->item(MetricsRow::ResidualFundamental, MetricsCol::Current)
+        ->setText(QString::number(data.residualCurrentFundamental, 'f', 3));
 
     // 피상전력 정보 표시
     m_tableWidget->item(MetricsRow::ApparentPowerA, MetricsCol::Voltage)

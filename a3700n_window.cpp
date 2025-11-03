@@ -181,7 +181,7 @@ void A3700N_Window::setupUi()
     createAndAddPage("Residual", "Residual Voltage", {"RMS", "Fund."}, "V",
                      {
                          [](const auto& d) { return d.residualVoltageRms; },
-                         [](const auto& d) { return 0.0; }
+                         [](const auto& d) { return d.residualVoltageFundamental; }
                      });
 
     auto mainLayout = new QHBoxLayout(this);

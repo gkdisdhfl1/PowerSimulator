@@ -9,6 +9,7 @@ class QTableWidget;
 namespace MetricsRow {
 enum {
     ResidualRms,
+    ResidualFundamental,
     HeaderApparent,
     ApparentPowerA,
     ApparentPowerB,

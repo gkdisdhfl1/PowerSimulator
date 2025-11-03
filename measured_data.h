@@ -91,6 +91,9 @@ struct OneSecondSummaryData {
 
     double residualVoltageRms = 0.0; // 1초 평균 잔류 전압
     double residualCurrentRms = 0.0; // 1초 평균 잔류 전류
+    double residualVoltageFundamental = 0.0;
+    double residualCurrentFundamental = 0.0;
+
     double nemaVoltageUnbalance = 0.0;
     double nemaCurrentUnbalance = 0.0;
 

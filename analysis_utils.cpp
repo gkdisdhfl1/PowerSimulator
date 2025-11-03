@@ -300,6 +300,8 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     std::array<double, 3> fundCurrentRmsSumSq = {0.0};
     double residualVoltageRmsSum = 0.0;
     double residualCurrentRmsSum = 0.0;
+    double residualVoltageFundamentalSum = 0.0;
+    double residualCurrentFundamentalSum = 0.0;
 
     // A상 기준
     double dominantVoltageRmsSumSq = 0.0; double dominantCurrentRmsSumSq = 0.0;
@@ -320,6 +322,16 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
 
         residualVoltageRmsSum += data.residualVoltageRms;
         residualCurrentRmsSum += data.residualCurrentRms;
+
+        std::complex<double> v_fund_a(data.fundamentalVoltage[0].phasorX, data.fundamentalVoltage[0].phasorY);
+        std::complex<double> v_fund_b(data.fundamentalVoltage[1].phasorX, data.fundamentalVoltage[1].phasorY);
+        std::complex<double> v_fund_c(data.fundamentalVoltage[2].phasorX, data.fundamentalVoltage[2].phasorY);
+        residualVoltageFundamentalSum += std::abs(v_fund_a + v_fund_b + v_fund_c);
+
+        std::complex<double> i_fund_a(data.fundamentalCurrent[0].phasorX, data.fundamentalCurrent[0].phasorY);
+        std::complex<double> i_fund_b(data.fundamentalCurrent[1].phasorX, data.fundamentalCurrent[1].phasorY);
+        std::complex<double> i_fund_c(data.fundamentalCurrent[2].phasorX, data.fundamentalCurrent[2].phasorY);
+        residualCurrentFundamentalSum += std::abs(i_fund_a + i_fund_b + i_fund_c);
 
         fundVoltageRmsSumSq[0] += data.fundamentalVoltage[0].rms * data.fundamentalVoltage[0].rms;
         fundVoltageRmsSumSq[1] += data.fundamentalVoltage[1].rms * data.fundamentalVoltage[1].rms;
@@ -417,6 +429,8 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
 
     summary.residualVoltageRms = residualVoltageRmsSum / N;
     summary.residualCurrentRms = residualCurrentRmsSum / N;
+    summary.residualVoltageFundamental = residualVoltageFundamentalSum / N;
+    summary.residualCurrentFundamental = residualCurrentFundamentalSum / N;
 
     // 6. 기존의 lastCycleData에서 가져오는 값들 할당
     summary.dominantHarmonicVoltageRms = std::sqrt(dominantVoltageRmsSumSq / N);
@@ -427,10 +441,6 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
 
     summary.fundamentalVoltage = lastCycleData.fundamentalVoltage;
     summary.fundamentalCurrent = lastCycleData.fundamentalCurrent;
-    // summary.fundamentalVoltagePhase = utils::radiansToDegrees(lastCycleData.fundamentalVoltage[0].phase);
-    // summary.fundamentalCurrentPhase = utils::radiansToDegrees(lastCycleData.fundamentalCurrent[0].phase);
-    // summary.fundamentalVoltageRms = lastCycleData.fundamentalVoltage[0].rms;
-    // summary.fundamentalCurrentRms = lastCycleData.fundamentalCurrent[0].rms;
 
     // 7. 대칭 성분 계산 및 할당
     summary.voltageSymmetricalComponents = calculateSymmetricalComponents(lastCycleData.fundamentalVoltage);
