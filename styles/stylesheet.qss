@@ -30,3 +30,7 @@ QListWidget::item:selected#submenuList {
     background-color: #ffffff;
     color: black;
 }
+
+QLabel#valueLabel {
+    front-size: 14px;
+}
