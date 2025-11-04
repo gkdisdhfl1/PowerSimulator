@@ -30,6 +30,8 @@ DrawingContext::DrawingContext(const QRect& widgetRect, int topMargin)
 
 PhasorView::PhasorView(QWidget *parent)
     : QWidget{parent}
+    , m_voltageLabel(new QLabel("전압:", this))
+    , m_currentLabel(new QLabel("전류:", this))
     , m_voltageInfoLabel(new QLabel(this))
     , m_currentInfoLabel(new QLabel(this))
 {
@@ -39,9 +41,9 @@ PhasorView::PhasorView(QWidget *parent)
     m_phasorIsVisible[3] = true; // I(A)
 
     m_infoLayout = new QGridLayout();
-    m_infoLayout->addWidget(new QLabel("전압:"), 0, 0);
+    m_infoLayout->addWidget(m_voltageLabel, 0, 0);
     m_infoLayout->addWidget(m_voltageInfoLabel, 0, 1);
-    m_infoLayout->addWidget(new QLabel("전류:"), 1, 0);
+    m_infoLayout->addWidget(m_currentLabel, 1, 0);
     m_infoLayout->addWidget(m_currentInfoLabel, 1, 1);
     m_infoLayout->setColumnStretch(1, 1);
 
@@ -52,6 +54,7 @@ PhasorView::PhasorView(QWidget *parent)
 
     // 위젯 최소 크기 설정
     setMinimumSize(350, 250);
+    setInfoLabelVisibility(true);
 }
 
 void PhasorView::updateData(const std::array<HarmonicAnalysisResult, 3>& fundamentalVoltage,
@@ -254,4 +257,12 @@ void PhasorView::onVisibilityChanged(int type, bool isVisible)
         m_phasorIsVisible[type] = isVisible;
         update();
     }
+}
+
+void PhasorView::setInfoLabelVisibility(bool visible)
+{
+    m_voltageLabel->setVisible(visible);
+    m_currentLabel->setVisible(visible);
+    m_voltageInfoLabel->setVisible(visible);
+    m_currentInfoLabel->setVisible(visible);
 }

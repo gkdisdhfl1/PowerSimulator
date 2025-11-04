@@ -167,33 +167,65 @@ public:
 
         // PhasorView 위젯 사용
         m_phasorView = new PhasorView(this);
-        m_phasorView->setMinimumSize(200, 200);
+        m_phasorView->setMinimumSize(180, 180);
+        m_phasorView->setInfoLabelVisibility(false);
+
+        // 처음에 모든 페이저 표시
+        for(int i{0}; i < 6; ++i) {
+            m_phasorView->onVisibilityChanged(i, true);
+        }
+
         contentLayout->addWidget(m_phasorView, 1);
+
+
+        // 데이터 테이블 (VLN)
+        auto tableLayout = new QGridLayout();
+        tableLayout->setContentsMargins(0, 0, 0, 0);
+        tableLayout->setSpacing(0);
+
+        // 전압 섹션
+        m_voltageTableContainer = new QWidget(this);
+        auto voltageSectionLayout = new QVBoxLayout(m_voltageTableContainer);
+        voltageSectionLayout->setContentsMargins(0, 0, 0, 0);
+        voltageSectionLayout->setSpacing(0);
+        voltageSectionLayout->addWidget(new QLabel("Voltage"));
+        m_voltageTable = createPhasorTable(voltageSectionLayout, {"A", "B", "C"});
+        tableLayout->addWidget(m_voltageTableContainer, 0, 0); // 0번 행
+
+        // 전류 섹션
+        m_currentTableContainer = new QWidget(this);
+        auto currentSectionLayout = new QVBoxLayout(m_currentTableContainer);
+        currentSectionLayout->setContentsMargins(0, 0, 0, 0);
+        currentSectionLayout->setSpacing(0);
+        currentSectionLayout->addWidget(new QLabel("Current"));
+        m_currentTable = createPhasorTable(currentSectionLayout, {"A", "B", "C"});
+        tableLayout->addWidget(m_currentTableContainer, 2, 0); // 2번 행
+
+        // 스페이서 위젯 추가
+        auto spacerWidget = new QWidget(this);
+        tableLayout->addWidget(spacerWidget, 1, 0); // 1번 행
+
+        // 행 스트레치 비율 설정
+        tableLayout->setRowStretch(0, 0); // 전압 섹션은 늘어나지 않음
+        tableLayout->setRowStretch(1, 1); // 스페이서 위젯이 남은 모든 공간 차지
+        tableLayout->setRowStretch(2, 0); // 전류 섹션은 늘어나지 않음
+
+        contentLayout->addLayout(tableLayout, 1);
+        mainLayout->addLayout(contentLayout, 1);
 
         // 체크박스와 PhasorView 가시성 연결
         connect(voltageCheck, &QCheckBox::toggled, this, [this](bool checked) {
             m_phasorView->onVisibilityChanged(0, checked); // V(A)
             m_phasorView->onVisibilityChanged(1, checked); // V(B)
             m_phasorView->onVisibilityChanged(2, checked); // V(C)
+            m_voltageTableContainer->setVisible(checked);
         });
         connect(currentCheck, &QCheckBox::toggled, this, [this](bool checked) {
             m_phasorView->onVisibilityChanged(3, checked); // I(A)
             m_phasorView->onVisibilityChanged(4, checked); // I(B)
             m_phasorView->onVisibilityChanged(5, checked); // I(C)
+            m_currentTableContainer->setVisible(checked);
         });
-
-        // 데이터 테이블 (VLN)
-        auto tableLayout = new QGridLayout();
-        tableLayout->addWidget(new QLabel("Voltage"), 0, 0);
-        m_voltageTable = createPhasorTable(tableLayout, 1, {"A", "B", "C"});
-
-        tableLayout->addWidget(new QLabel("Current"), 4, 0);
-        m_currentTable = createPhasorTable(tableLayout, 5, {"A", "B", "C"});
-
-        tableLayout->setRowStretch(8, 1); //테이블 아래 빈공간 추가
-
-        contentLayout->addLayout(tableLayout, 1);
-        mainLayout->addLayout(contentLayout, 1);
     }
 
 public slots:
@@ -216,24 +248,35 @@ public slots:
     }
 
 private:
-    std::array<QLabel*, 6> createPhasorTable(QGridLayout* layout, int startRow, const QStringList& labels) {
+    std::array<QLabel*, 6> createPhasorTable(QVBoxLayout* layout, const QStringList& labels) {
         std::array<QLabel*, 6> valueLabels;
         for(int i{0}; i < 3; ++i) {
-            layout->addWidget(new QLabel(labels[i]), startRow + i, 0);
+            auto rowLayout = new QHBoxLayout();
+            rowLayout->setContentsMargins(0, 0, 0, 0);
+            rowLayout->setSpacing(5);
+
+            QLabel* nameLabel = new QLabel(labels[i]);
+            nameLabel->setMinimumHeight(20);
+            nameLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+            rowLayout->addWidget(nameLabel, 0);
 
             valueLabels[i * 2 + 0] = new QLabel("0.000"); // 값
             valueLabels[i * 2 + 1] = new QLabel("0.0° "); // 위상
 
-            valueLabels[i * 2 + 0]->setAlignment(Qt::AlignRight);
-            valueLabels[i * 2 + 1]->setAlignment(Qt::AlignRight);
+            valueLabels[i * 2 + 0]->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+            valueLabels[i * 2 + 1]->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
-            layout->addWidget(valueLabels[i * 2 + 0], startRow + i, 1);
-            layout->addWidget(valueLabels[i * 2 + 1], startRow + i, 2);
+            rowLayout->addWidget(valueLabels[i * 2 + 0], 1);
+            rowLayout->addWidget(valueLabels[i * 2 + 1], 1);
+
+            layout->addLayout(rowLayout);
         }
         return valueLabels;
     }
 
     PhasorView* m_phasorView;
+    QWidget* m_voltageTableContainer;
+    QWidget* m_currentTableContainer;
     std::array<QLabel* , 6> m_voltageTable;
     std::array<QLabel*, 6> m_currentTable;
 };
@@ -332,7 +375,7 @@ A3700N_Window::A3700N_Window(SimulationEngine* engine, QWidget *parent)
     , m_engine(engine)
 {
     setupUi();
-    // setFixedSize(500, 250);
+    setFixedSize(500, 250);
 }
 
 void A3700N_Window::setupUi()

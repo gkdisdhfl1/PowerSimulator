@@ -31,6 +31,7 @@ public slots:
                     const std::vector<HarmonicAnalysisResult>& voltageHarmonics,
                     const std::vector<HarmonicAnalysisResult>& currentHarmonics);
     void onVisibilityChanged(int type, bool isVisible);
+    void setInfoLabelVisibility(bool visible);
 
 protected:
     // 위젯을 다시 그릴 때 호출되는 이벤트 핸들러
@@ -49,6 +50,8 @@ private:
 
 
     // UI 요소
+    QLabel* m_voltageLabel;
+    QLabel* m_currentLabel;
     QLabel* m_voltageInfoLabel;
     QLabel* m_currentInfoLabel;
 
