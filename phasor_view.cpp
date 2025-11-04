@@ -54,28 +54,31 @@ PhasorView::PhasorView(QWidget *parent)
     setMinimumSize(350, 250);
 }
 
-void PhasorView::updateData(const std::deque<MeasuredData>& data)
+void PhasorView::updateData(const std::array<HarmonicAnalysisResult, 3>& fundamentalVoltage,
+                            const std::array<HarmonicAnalysisResult, 3>& fundamentalCurrent,
+                            const std::vector<HarmonicAnalysisResult>& voltageHarmonics,
+                            const std::vector<HarmonicAnalysisResult>& currentHarmonics)
 {
-    if(data.empty()) {
-        m_harmonicVoltage = PhasorInfo();
-        m_harmonicCurrent = PhasorInfo();
-        const PhasorInfo emptyPhasor;
-        m_fundVoltage.fill(emptyPhasor);
-        m_fundCurrent.fill(emptyPhasor);
-        m_voltageInfoLabel->clear();
-        m_currentInfoLabel->clear();
-        return;
-    }
+    // if(data.empty()) {
+    //     m_harmonicVoltage = PhasorInfo();
+    //     m_harmonicCurrent = PhasorInfo();
+    //     const PhasorInfo emptyPhasor;
+    //     m_fundVoltage.fill(emptyPhasor);
+    //     m_fundCurrent.fill(emptyPhasor);
+    //     m_voltageInfoLabel->clear();
+    //     m_currentInfoLabel->clear();
+    //     return;
+    // }
 
     // AnalysisGraphWindow가 비어있을 때 ControlPanel에서 Cycle 데이터 체크박스가 변경되었을 경우
 
-    const auto& latestData = data.back();
+    // const auto& latestData = data.back();
 
     // --- 기본파 정보 계산 ---
 
     for(int i{0}; i < 3; ++i) {
         // 전압
-        const auto& v_fund = latestData.fundamentalVoltage[i];
+        const auto& v_fund = fundamentalVoltage[i];
         if (v_fund.order > 0) {
             m_fundVoltage[i].components = QPointF(v_fund.phasorX, v_fund.phasorY);
             m_fundVoltage[i].magnitude = v_fund.rms;
@@ -83,7 +86,7 @@ void PhasorView::updateData(const std::deque<MeasuredData>& data)
         } else { m_fundVoltage[i] = PhasorInfo(); }
 
         // 전류
-        const auto& i_fund = latestData.fundamentalCurrent[i];
+        const auto& i_fund = fundamentalCurrent[i];
         if (i_fund.order > 0) {
             m_fundCurrent[i].components = QPointF(i_fund.phasorX, i_fund.phasorY);
             m_fundCurrent[i].magnitude = i_fund.rms;
@@ -92,8 +95,8 @@ void PhasorView::updateData(const std::deque<MeasuredData>& data)
     }
 
     // --- 고조파 정보 계산 ---
-    const auto* v_harm = AnalysisUtils::getDominantHarmonic(latestData.voltageHarmonics);
-    const auto* i_harm = AnalysisUtils::getDominantHarmonic(latestData.currentHarmonics);
+    const auto* v_harm = AnalysisUtils::getDominantHarmonic(voltageHarmonics);
+    const auto* i_harm = AnalysisUtils::getDominantHarmonic(currentHarmonics);
 
     if(v_harm) {
         m_harmonicVoltage.components = QPointF(v_harm->phasorX, v_harm->phasorY);

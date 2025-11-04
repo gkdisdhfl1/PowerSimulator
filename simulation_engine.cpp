@@ -377,6 +377,10 @@ void SimulationEngine::calculateCycleData()
 
     // 5. UI에 업데이트 알림
     emit measuredDataUpdated(m_measuredData);
+    emit phasorUpdated(newData.fundamentalVoltage,
+                       newData.fundamentalCurrent,
+                       newData.voltageHarmonics,
+                       newData.currentHarmonics);
 
     // 6. 버퍼 비우기
     m_cycleSampleBuffer.clear();

@@ -22,12 +22,10 @@ public:
 
 public slots:
     void updateSummaryData(const OneSecondSummaryData& data);
-    void updateMeasuredData(const std::deque<MeasuredData>& data);
     void updateWaveformData(const std::deque<DataPoint>& data);
 
 signals:
     void summaryDataUpdated(const OneSecondSummaryData& data);
-    void measuredDataUpdated(const std::deque<MeasuredData>& data);
     void waveformDataUpdated(const std::deque<DataPoint>& data);
 
 private:

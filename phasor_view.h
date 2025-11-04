@@ -2,7 +2,6 @@
 #define PHASOR_VIEW_H
 
 #include <QWidget>
-#include <deque>
 #include "measured_data.h"
 
 class QCheckBox;
@@ -27,7 +26,10 @@ public:
     explicit PhasorView(QWidget *parent = nullptr);
 
 public slots:
-    void updateData(const std::deque<MeasuredData>& data);
+    void updateData(const std::array<HarmonicAnalysisResult, 3>& fundamentalVoltage,
+                    const std::array<HarmonicAnalysisResult, 3>& fundamentalCurrent,
+                    const std::vector<HarmonicAnalysisResult>& voltageHarmonics,
+                    const std::vector<HarmonicAnalysisResult>& currentHarmonics);
     void onVisibilityChanged(int type, bool isVisible);
 
 protected:

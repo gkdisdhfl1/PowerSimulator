@@ -463,6 +463,11 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
         summary.currentU0Unbalance = (currentSym.zero.magnitude > 1e-9) ? std::numeric_limits<double>::infinity() : 0.0;
         summary.currentU2Unbalance = (currentSym.negative.magnitude > 1e-9) ? std::numeric_limits<double>::infinity() : 0.0;
     }
+
+    // 마지막 사이클의 정보 복사
+    summary.lastCycleVoltageHarmonics = lastCycleData.voltageHarmonics;
+    summary.lastCycleCurrentHarmonics = lastCycleData.currentHarmonics;
+
     return summary;
 }
 

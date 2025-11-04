@@ -153,6 +153,14 @@ public:
         currentCheck->setChecked(true);
         topLayout->addWidget(voltageCheck);
         topLayout->addWidget(currentCheck);
+        mainLayout->addLayout(topLayout);
+
+        // 상단 밑 진한 라인
+        QFrame* titleLine = new QFrame(this);
+        titleLine->setFrameShape(QFrame::HLine);
+        titleLine->setObjectName("titleLine");
+        titleLine->setFixedHeight(2);
+        mainLayout->addWidget(titleLine);
 
         // 컨텐츠 (페이저 _ 데이터 테이블)
         auto contentLayout = new QHBoxLayout();
@@ -183,30 +191,27 @@ public:
         m_currentTable = createPhasorTable(tableLayout, 5, {"A", "B", "C"});
 
         tableLayout->setRowStretch(8, 1); //테이블 아래 빈공간 추가
+
+        contentLayout->addLayout(tableLayout, 1);
         mainLayout->addLayout(contentLayout, 1);
     }
 
 public slots:
-    void updateMeasuredData(const std::deque<MeasuredData>& data)
+    void updateSummaryData(const OneSecondSummaryData& data)
     {
-        if(data.empty()) return;
-
-        // PhasorView는 전체 Deque를 받아 마지막 값을 사용
-        m_phasorView->updateData(data);
-
-        // 테이블을 마지막 사이클의 데이터로 업데이트
-        const auto& lastCycle = data.back();
+        // PhasorView 업데이트
+        m_phasorView->updateData(data.fundamentalVoltage, data.fundamentalCurrent, data.lastCycleVoltageHarmonics, data.lastCycleCurrentHarmonics);
 
         // Voltage
         for(int i{0}; i < 3; ++i) {
-            m_voltageTable[i * 2 + 0]->setText(QString::number(lastCycle.fundamentalVoltage[i].rms, 'f', 3));
-            m_voltageTable[i * 2 + 1]->setText(QString::number(utils::radiansToDegrees(lastCycle.fundamentalVoltage[i].phase), 'f', 1) + "°");
+            m_voltageTable[i * 2 + 0]->setText(QString::number(data.fundamentalVoltage[i].rms, 'f', 3));
+            m_voltageTable[i * 2 + 1]->setText(QString::number(utils::radiansToDegrees(data.fundamentalVoltage[i].phase), 'f', 1) + "°");
         }
 
         // Current
         for(int i{0}; i < 3; ++i) {
-            m_currentTable[i * 2 + 0]->setText(QString::number(lastCycle.fundamentalCurrent[i].rms, 'f', 3));
-            m_currentTable[i * 2 + 1]->setText(QString::number(utils::radiansToDegrees(lastCycle.fundamentalCurrent[i].phase), 'f', 1) + "°");
+            m_currentTable[i * 2 + 0]->setText(QString::number(data.fundamentalCurrent[i].rms, 'f', 3));
+            m_currentTable[i * 2 + 1]->setText(QString::number(utils::radiansToDegrees(data.fundamentalCurrent[i].phase), 'f', 1) + "°");
         }
     }
 
@@ -416,10 +421,6 @@ void A3700N_Window::updateSummaryData(const OneSecondSummaryData& data)
 {
     emit summaryDataUpdated(data);
 }
-void A3700N_Window::updateMeasuredData(const std::deque<MeasuredData>& data)
-{
-    emit measuredDataUpdated(data);
-}
 void A3700N_Window::updateWaveformData(const std::deque<DataPoint>& data)
 {
     emit waveformDataUpdated(data);
@@ -539,7 +540,7 @@ void A3700N_Window::createAnalysisPage(QListWidget* submenu, QStackedWidget* sta
     // Phasor 페이지
     AnalysisPhasorPage* phasorPage = new AnalysisPhasorPage(this);
 
-    connect(this, &A3700N_Window::measuredDataUpdated, phasorPage, &AnalysisPhasorPage::updateMeasuredData);
+    connect(this, &A3700N_Window::summaryDataUpdated, phasorPage, &AnalysisPhasorPage::updateSummaryData);
     stack->addWidget(phasorPage);
     submenu->addItem("Phasor");
 

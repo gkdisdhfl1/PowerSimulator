@@ -255,14 +255,13 @@ void MainWindow::createSignalSlotConnections()
     connect(m_engine, &SimulationEngine::dataUpdated, m_graphWindow, &GraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::runningStateChanged, m_controlPanel, &ControlPanel::setRunningState);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_analysisGraphWindow, &AnalysisGraphWindow::updateGraph);
-    connect(m_engine, &SimulationEngine::measuredDataUpdated, m_phasorView, &PhasorView::updateData);
+    connect(m_engine, &SimulationEngine::phasorUpdated, m_phasorView, &PhasorView::updateData);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_fundamentalAnalysisGraphWindow, &FundamentalAnalysisGraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_harmonicAnalysisGraphWindow, &HarmonicAnalysisGraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_oneSecondSummaryWindow, &OneSecondSummaryWindow::updateData);
     connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_additionalMetricsWindow, &AdditionalMetricsWindow::updateData);
 
     connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_a3700nWindow.get(), &A3700N_Window::updateSummaryData);
-    connect(m_engine, &SimulationEngine::measuredDataUpdated, m_a3700nWindow.get(), &A3700N_Window::measuredDataUpdated);
     connect(m_engine, &SimulationEngine::dataUpdated, m_a3700nWindow.get(), &A3700N_Window::updateWaveformData);
 
     // ---- GraphWindow 시그널 -> UI 슬롯 ----

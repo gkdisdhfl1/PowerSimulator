@@ -72,6 +72,10 @@ signals:
     void measuredDataUpdated(const std::deque<MeasuredData>& data);
     // void samplingCyclesUpdated(double newFrequency); // 추후 정리
     void oneSecondDataUpdated(const OneSecondSummaryData& data);
+    void phasorUpdated(const std::array<HarmonicAnalysisResult, 3>& fundamentalVoltage,
+                       const std::array<HarmonicAnalysisResult, 3>& fundamentalCurrent,
+                       const std::vector<HarmonicAnalysisResult>& voltageHarmonics,
+                       const std::vector<HarmonicAnalysisResult>& currentHarmonics);
 
 private slots:
     void captureData();

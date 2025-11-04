@@ -101,6 +101,10 @@ struct OneSecondSummaryData {
     double voltageU2Unbalance = 0.0;
     double currentU0Unbalance = 0.0;
     double currentU2Unbalance = 0.0;
+
+    // 마지막 사이클의 전체 고조파 정보
+    std::vector<HarmonicAnalysisResult> lastCycleVoltageHarmonics;
+    std::vector<HarmonicAnalysisResult> lastCycleCurrentHarmonics;
 };
 
 // Q_DECLARE_METATYPE(MeasuredData)
