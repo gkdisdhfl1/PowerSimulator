@@ -207,16 +207,14 @@ void A3700N_Window::createAndAddPage(
 
     DataPage* page = new DataPage(title, rowLabels, unit, extractors);
 
-    m_pages.push_back(page);
+    connect(this, &A3700N_Window::dataUpdated, page, &DataPage::updateDataFromSummary);
     stack->addWidget(page);
     submenu->addItem(submenuName); // 메뉴 이름 설정
 }
 
 void A3700N_Window::updateData(const OneSecondSummaryData& data)
 {
-    for(DataPage* page : m_pages) {
-        page->updateDataFromSummary(data);
-    }
+    emit dataUpdated(data);
 }
 
 void A3700N_Window::createVoltagePage(QListWidget* submenu, QStackedWidget* contentsStack)
@@ -292,26 +290,26 @@ void A3700N_Window::createPowerPage(QListWidget* submenu, QStackedWidget* stack)
 {
     createAndAddPage(submenu, stack, "Active(P)", "Active Power", {"A", "B", "C", "Total"}, "kW",
                      {
-                         [](const OneSecondSummaryData& d) { return d.activePower.a / 10e3; },
-                         [](const OneSecondSummaryData& d) { return d.activePower.b / 10e3; },
-                         [](const OneSecondSummaryData& d) { return d.activePower.c / 10e3; },
-                         [](const OneSecondSummaryData& d) { return d.totalActivePower / 10e3; }
+                         [](const OneSecondSummaryData& d) { return d.activePower.a / 1e3; },
+                         [](const OneSecondSummaryData& d) { return d.activePower.b / 1e3; },
+                         [](const OneSecondSummaryData& d) { return d.activePower.c / 1e3; },
+                         [](const OneSecondSummaryData& d) { return d.totalActivePower / 1e3; }
                      });
 
     createAndAddPage(submenu, stack, "Reactive(Q)", "Reactive Power", {"A", "B", "C", "Total"}, "kVAR",
                      {
-                         [](const OneSecondSummaryData& d) { return d.reactivePower.a / 10e3; },
-                         [](const OneSecondSummaryData& d) { return d.reactivePower.b / 10e3; },
-                         [](const OneSecondSummaryData& d) { return d.reactivePower.c / 10e3; },
-                         [](const OneSecondSummaryData& d) { return d.totalReactivePower / 10e3; }
+                         [](const OneSecondSummaryData& d) { return d.reactivePower.a / 1e3; },
+                         [](const OneSecondSummaryData& d) { return d.reactivePower.b / 1e3; },
+                         [](const OneSecondSummaryData& d) { return d.reactivePower.c / 1e3; },
+                         [](const OneSecondSummaryData& d) { return d.totalReactivePower / 1e3; }
                      });
 
     createAndAddPage(submenu, stack, "Apparent(S)", "Apparent Power", {"A", "B", "C", "Total"}, "kVA",
                      {
-                         [](const OneSecondSummaryData& d) { return d.apparentPower.a / 10e3; },
-                         [](const OneSecondSummaryData& d) { return d.apparentPower.b / 10e3; },
-                         [](const OneSecondSummaryData& d) { return d.apparentPower.c / 10e3; },
-                         [](const OneSecondSummaryData& d) { return d.totalApparentPower / 10e3; }
+                         [](const OneSecondSummaryData& d) { return d.apparentPower.a / 1e3; },
+                         [](const OneSecondSummaryData& d) { return d.apparentPower.b / 1e3; },
+                         [](const OneSecondSummaryData& d) { return d.apparentPower.c / 1e3; },
+                         [](const OneSecondSummaryData& d) { return d.totalApparentPower / 1e3; }
                      });
 
     createAndAddPage(submenu, stack, "PF", "Power Factor", {"A", "B", "C", "Total"}, "",
@@ -324,7 +322,7 @@ void A3700N_Window::createPowerPage(QListWidget* submenu, QStackedWidget* stack)
 
     createAndAddPage(submenu, stack, "Energy", "Energy", {"Net"}, "kWh",
                      {
-                         [](const OneSecondSummaryData& d) { return d.totalEnergyWh / 10e3; }
+                         [](const OneSecondSummaryData& d) { return d.totalEnergyWh / 1e3; }
                      });
 }
 #include "a3700n_window.moc"

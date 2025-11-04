@@ -20,6 +20,9 @@ public:
 public slots:
     void updateData(const OneSecondSummaryData& data);
 
+signals:
+    void dataUpdated(const OneSecondSummaryData& data);
+
 private:
     void setupUi();
     QWidget* createTabPage(const QString& type);
@@ -32,7 +35,6 @@ private:
         const QString& unit,
         const std::vector<std::function<double(const OneSecondSummaryData&)>>& extractors);
     QTabWidget* m_mainTabs;
-    std::vector<DataPage*> m_pages;
 
     void createVoltagePage(QListWidget* submenu, QStackedWidget* stack);
     void createCurrentPage(QListWidget* submenu, QStackedWidget* stack);
