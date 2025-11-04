@@ -1,4 +1,8 @@
 #include "a3700n_window.h"
+#include "base_graph_window.h"
+#include "custom_chart_view.h"
+#include "phasor_view.h"
+#include "simulation_engine.h"
 #include <QHBoxLayout>
 #include <QListWidget>
 #include <QStackedWidget>
@@ -6,6 +10,9 @@
 #include <QHeaderView>
 #include <QLabel>
 #include <QTabWidget>
+#include <QCheckBox>
+#include <QLineSeries>
+#include <QValueAxis>
 
 // ==========================
 // 단일 행 위젯
@@ -124,14 +131,203 @@ private:
     std::vector<Extractor> m_extractors;
 };
 
+// ================================
+// Phasor 전용 위젯
+// ================================
+class AnalysisPhasorPage : public QWidget
+{
+    Q_OBJECT
+public:
+    AnalysisPhasorPage(QWidget* parent = nullptr) : QWidget(parent)
+    {
+        auto mainLayout = new QVBoxLayout(this);
+        mainLayout->setContentsMargins(15, 10, 15, 10);
+
+        // 상단(제목 + 체크박스)
+        auto topLayout = new QHBoxLayout();
+        topLayout->addWidget(new QLabel("Phasor [Vector Diagram]"));
+        topLayout->addStretch();
+        auto* voltageCheck = new QCheckBox("Voltage");
+        auto* currentCheck = new QCheckBox("Current");
+        voltageCheck->setChecked(true);
+        currentCheck->setChecked(true);
+        topLayout->addWidget(voltageCheck);
+        topLayout->addWidget(currentCheck);
+
+        // 컨텐츠 (페이저 _ 데이터 테이블)
+        auto contentLayout = new QHBoxLayout();
+
+        // PhasorView 위젯 사용
+        m_phasorView = new PhasorView(this);
+        m_phasorView->setMinimumSize(200, 200);
+        contentLayout->addWidget(m_phasorView, 1);
+
+        // 체크박스와 PhasorView 가시성 연결
+        connect(voltageCheck, &QCheckBox::toggled, this, [this](bool checked) {
+            m_phasorView->onVisibilityChanged(0, checked); // V(A)
+            m_phasorView->onVisibilityChanged(1, checked); // V(B)
+            m_phasorView->onVisibilityChanged(2, checked); // V(C)
+        });
+        connect(currentCheck, &QCheckBox::toggled, this, [this](bool checked) {
+            m_phasorView->onVisibilityChanged(3, checked); // I(A)
+            m_phasorView->onVisibilityChanged(4, checked); // I(B)
+            m_phasorView->onVisibilityChanged(5, checked); // I(C)
+        });
+
+        // 데이터 테이블 (VLN)
+        auto tableLayout = new QGridLayout();
+        tableLayout->addWidget(new QLabel("Voltage"), 0, 0);
+        m_voltageTable = createPhasorTable(tableLayout, 1, {"A", "B", "C"});
+
+        tableLayout->addWidget(new QLabel("Current"), 4, 0);
+        m_currentTable = createPhasorTable(tableLayout, 5, {"A", "B", "C"});
+
+        tableLayout->setRowStretch(8, 1); //테이블 아래 빈공간 추가
+        mainLayout->addLayout(contentLayout, 1);
+    }
+
+public slots:
+    void updateMeasuredData(const std::deque<MeasuredData>& data)
+    {
+        if(data.empty()) return;
+
+        // PhasorView는 전체 Deque를 받아 마지막 값을 사용
+        m_phasorView->updateData(data);
+
+        // 테이블을 마지막 사이클의 데이터로 업데이트
+        const auto& lastCycle = data.back();
+
+        // Voltage
+        for(int i{0}; i < 3; ++i) {
+            m_voltageTable[i * 2 + 0]->setText(QString::number(lastCycle.fundamentalVoltage[i].rms, 'f', 3));
+            m_voltageTable[i * 2 + 1]->setText(QString::number(utils::radiansToDegrees(lastCycle.fundamentalVoltage[i].phase), 'f', 1) + "°");
+        }
+
+        // Current
+        for(int i{0}; i < 3; ++i) {
+            m_currentTable[i * 2 + 0]->setText(QString::number(lastCycle.fundamentalCurrent[i].rms, 'f', 3));
+            m_currentTable[i * 2 + 1]->setText(QString::number(utils::radiansToDegrees(lastCycle.fundamentalCurrent[i].phase), 'f', 1) + "°");
+        }
+    }
+
+private:
+    std::array<QLabel*, 6> createPhasorTable(QGridLayout* layout, int startRow, const QStringList& labels) {
+        std::array<QLabel*, 6> valueLabels;
+        for(int i{0}; i < 3; ++i) {
+            layout->addWidget(new QLabel(labels[i]), startRow + i, 0);
+
+            valueLabels[i * 2 + 0] = new QLabel("0.000"); // 값
+            valueLabels[i * 2 + 1] = new QLabel("0.0° "); // 위상
+
+            valueLabels[i * 2 + 0]->setAlignment(Qt::AlignRight);
+            valueLabels[i * 2 + 1]->setAlignment(Qt::AlignRight);
+
+            layout->addWidget(valueLabels[i * 2 + 0], startRow + i, 1);
+            layout->addWidget(valueLabels[i * 2 + 1], startRow + i, 2);
+        }
+        return valueLabels;
+    }
+
+    PhasorView* m_phasorView;
+    std::array<QLabel* , 6> m_voltageTable;
+    std::array<QLabel*, 6> m_currentTable;
+};
+
+// ================================
+// Waveform 전용 위젯
+// ================================
+class AnalysisWaveformPage : public BaseGraphWindow
+{
+    Q_OBJECT
+public:
+    AnalysisWaveformPage(SimulationEngine* engine, QWidget* parent = nullptr)
+        : BaseGraphWindow(engine, parent)
+    {
+        m_chartView->setInteractive(false); // 스크롤, 줌 금지
+        m_chart->legend()->hide(); // 범례 숨기기
+        toggleAutoScroll(false); // 자동 스크롤 끄기
+
+        m_axisY = new QValueAxis(this);
+        m_axisY->setTitleText("V/A");
+        m_chart->addAxis(m_axisY, Qt::AlignLeft);
+
+        // A상 전압/전류 시리즈
+        m_voltageSeries = new QLineSeries(this);
+        m_currentSeries = new QLineSeries(this);
+        m_voltageSeries->setColor(QColor("blue"));
+        m_currentSeries->setColor(QColor("red"));
+
+        m_chart->addSeries(m_voltageSeries);
+        m_chart->addSeries(m_currentSeries);
+        m_voltageSeries->attachAxis(m_axisX);
+        m_voltageSeries->attachAxis(m_axisY);
+        m_currentSeries->attachAxis(m_axisX);
+        m_currentSeries->attachAxis(m_axisY);
+    }
+
+    void setupSeries() override {}
+
+public slots:
+    void updateWaveformData(const std::deque<DataPoint>& data)
+    {
+        if (data.empty()) return;
+
+        // 1. 2 사이클에 해당하는 샘플 수 계산
+        double freq = m_engine->m_frequency.value();
+        if (freq < 0.1) freq = 0.1;
+
+        double samplesPerCycle = m_engine->m_samplesPerCycle.value();
+        int samplesToTake = static_cast<int>(samplesPerCycle * 2.0); // 2 사이클
+
+        if (samplesToTake < 2) samplesToTake = 2;
+        if (samplesToTake > data.size()) samplesToTake = data.size();
+
+        // 2. 데이터의 마지막 N개(2 사이클 분량)를 가져옴
+        QList<QPointF> vPoints, iPoints;
+        vPoints.reserve(samplesToTake);
+        iPoints.reserve(samplesToTake);
+
+        double minY = std::numeric_limits<double>::max();
+        double maxY = std::numeric_limits<double>::lowest();
+
+        for (auto it = data.end() - samplesToTake; it != data.end(); ++it) {
+            double timeSec = std::chrono::duration<double>(it->timestamp).count();
+            double v = it->voltage.a;
+            double i = it->current.a;
+
+            vPoints.append(QPointF(timeSec, v));
+            iPoints.append(QPointF(timeSec, i));
+
+            minY = std::min({minY, v, i});
+            maxY = std::max({maxY, v, i});
+        }
+
+        // 3. 시리즈 및 축 업데이트
+        m_voltageSeries->replace(vPoints);
+        m_currentSeries->replace(iPoints);
+
+        if (!vPoints.isEmpty()) {
+            m_axisX->setRange(vPoints.first().x(), vPoints.last().x());
+            double padding = (maxY - minY) * 0.1 + 1.0;
+            m_axisY->setRange(minY - padding, maxY + padding);
+        }
+    }
+
+private:
+    QLineSeries* m_voltageSeries;
+    QLineSeries* m_currentSeries;
+    QValueAxis* m_axisY;
+};
+
 
 // ==================================================
 
-A3700N_Window::A3700N_Window(QWidget *parent)
+A3700N_Window::A3700N_Window(SimulationEngine* engine, QWidget *parent)
     : QWidget{parent}
+    , m_engine(engine)
 {
     setupUi();
-    setFixedSize(500, 250);
+    // setFixedSize(500, 250);
 }
 
 void A3700N_Window::setupUi()
@@ -144,6 +340,8 @@ void A3700N_Window::setupUi()
     m_mainTabs->addTab(createTabPage("Voltage"), "VOLTAGE");
     m_mainTabs->addTab(createTabPage("Current"), "CURRENT");
     m_mainTabs->addTab(createTabPage("POWER"), "POWER");
+    m_mainTabs->addTab(createTabPage("ANALYSIS"), "ANALYSIS");
+
     m_mainTabs->setObjectName("mainTabs");
     m_mainTabs->tabBar()->setObjectName("mainTabBar");
 
@@ -178,6 +376,8 @@ QWidget* A3700N_Window::createTabPage(const QString& type)
         createCurrentPage(submenu, contentsStack);
     } else if(type == "POWER") {
         createPowerPage(submenu, contentsStack);
+    } else if(type == "ANALYSIS") {
+        createAnalysisPage(submenu, contentsStack);
     }
 
     auto mainLayout = new QHBoxLayout(this);
@@ -207,14 +407,22 @@ void A3700N_Window::createAndAddPage(
 
     DataPage* page = new DataPage(title, rowLabels, unit, extractors);
 
-    connect(this, &A3700N_Window::dataUpdated, page, &DataPage::updateDataFromSummary);
+    connect(this, &A3700N_Window::summaryDataUpdated, page, &DataPage::updateDataFromSummary);
     stack->addWidget(page);
     submenu->addItem(submenuName); // 메뉴 이름 설정
 }
 
-void A3700N_Window::updateData(const OneSecondSummaryData& data)
+void A3700N_Window::updateSummaryData(const OneSecondSummaryData& data)
 {
-    emit dataUpdated(data);
+    emit summaryDataUpdated(data);
+}
+void A3700N_Window::updateMeasuredData(const std::deque<MeasuredData>& data)
+{
+    emit measuredDataUpdated(data);
+}
+void A3700N_Window::updateWaveformData(const std::deque<DataPoint>& data)
+{
+    emit waveformDataUpdated(data);
 }
 
 void A3700N_Window::createVoltagePage(QListWidget* submenu, QStackedWidget* contentsStack)
@@ -325,4 +533,51 @@ void A3700N_Window::createPowerPage(QListWidget* submenu, QStackedWidget* stack)
                          [](const OneSecondSummaryData& d) { return d.totalEnergyWh / 1e3; }
                      });
 }
+
+void A3700N_Window::createAnalysisPage(QListWidget* submenu, QStackedWidget* stack)
+{
+    // Phasor 페이지
+    AnalysisPhasorPage* phasorPage = new AnalysisPhasorPage(this);
+
+    connect(this, &A3700N_Window::measuredDataUpdated, phasorPage, &AnalysisPhasorPage::updateMeasuredData);
+    stack->addWidget(phasorPage);
+    submenu->addItem("Phasor");
+
+    // Waveform 페이지
+    AnalysisWaveformPage* waveformPage = new AnalysisWaveformPage(m_engine);
+
+    connect(this, &A3700N_Window::waveformDataUpdated, waveformPage, &AnalysisWaveformPage::updateWaveformData);
+    stack->addWidget(waveformPage);
+    submenu->addItem("Waveform");
+
+    // 나머지
+    createAndAddPage(submenu, stack, "Volt. Symm.", "Symmetrical Component", {"Positive-\nSequence", "Negative-\nSequence", "Zero-\nSequence"}, "V",
+                     {
+                         [](const OneSecondSummaryData& d) { return d.voltageSymmetricalComponents.positive.magnitude; },
+                         [](const OneSecondSummaryData& d) { return d.voltageSymmetricalComponents.negative.magnitude; },
+                         [](const OneSecondSummaryData& d) { return d.voltageSymmetricalComponents.zero.magnitude; },
+                     });
+
+    createAndAddPage(submenu, stack, "Volt. Unbal. %", "Voltage Unbalance", {"NEMA", "Negative-\nSequence", "Zero-\nSequence"}, "%",
+                     {
+                         [](const OneSecondSummaryData& d) { return d.nemaVoltageUnbalance; },
+                         [](const OneSecondSummaryData& d) { return d.voltageU2Unbalance; },
+                         [](const OneSecondSummaryData& d) { return d.voltageU0Unbalance; }
+                     });
+    createAndAddPage(submenu, stack, "Curr. Symm.", "Curr. Symm. Component", {"Positive-\nSequence", "Negative-\nSequence", "Zero-\nSequence"}, "A",
+                     {
+                      [](const OneSecondSummaryData& d) { return d.currentSymmetricalComponents.positive.magnitude; },
+                      [](const OneSecondSummaryData& d) { return d.currentSymmetricalComponents.negative.magnitude; },
+                      [](const OneSecondSummaryData& d) { return d.currentSymmetricalComponents.zero.magnitude; },
+                      });
+
+    createAndAddPage(submenu, stack, "Curr. Unbal. %", "Current Unbalance", {"NEMA", "Negative-\nSequence", "Zero-\nSequence"}, "%",
+                     {
+                         [](const OneSecondSummaryData& d) { return d.nemaCurrentUnbalance; },
+                         [](const OneSecondSummaryData& d) { return d.currentU2Unbalance; },
+                         [](const OneSecondSummaryData& d) { return d.currentU0Unbalance; }
+                     });
+}
+
 #include "a3700n_window.moc"
+
