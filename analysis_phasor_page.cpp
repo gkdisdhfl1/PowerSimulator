@@ -165,18 +165,15 @@ std::pair<std::array<QLabel*, 3>, std::array<QLabel*, 6>> AnalysisPhasorPage::cr
         rowLayout->addWidget(nameLabel, 0);
         nameLabels[i] = nameLabel; // 이름 라벨 포인터 저장
 
-        // rowLayout->addStretch(1);
-
         QLabel* valueLabel = new QLabel("0.000", this);
-        // valueLabel->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
         valueLabel->setFixedWidth(60);
+        valueLabel->setObjectName("phasorValueLabel");
+
         QLabel* unitLabel = new QLabel(unit, this);
+        unitLabel->setObjectName("phasorUnitLabel");
+
         QLabel* phaseLabel = new QLabel("0.0° ", this);
         phaseLabel->setFixedWidth(50);
-
-
-        valueLabel->setObjectName("phasorValueLabel");
-        unitLabel->setObjectName("phasorUnitLabel");
         phaseLabel->setObjectName("phasorValueLabel");
 
         valueLabels[i * 2 + 0] = valueLabel; // 값

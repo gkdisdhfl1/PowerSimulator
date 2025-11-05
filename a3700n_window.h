@@ -2,8 +2,6 @@
 #define A37__N_WINDOW_H
 
 #include <QWidget>
-#include <deque>
-#include "data_point.h"
 #include "measured_data.h"
 
 class QListWidget;
@@ -18,15 +16,13 @@ class A3700N_Window : public QWidget
 {
     Q_OBJECT
 public:
-    explicit A3700N_Window(SimulationEngine* engine, QWidget *parent = nullptr);
+    explicit A3700N_Window(QWidget *parent = nullptr);
 
 public slots:
     void updateSummaryData(const OneSecondSummaryData& data);
-    void updateWaveformData(const std::deque<DataPoint>& data);
 
 signals:
     void summaryDataUpdated(const OneSecondSummaryData& data);
-    void waveformDataUpdated(const std::deque<DataPoint>& data);
 
 private:
     void setupUi();
@@ -41,7 +37,6 @@ private:
         const std::vector<std::function<double(const OneSecondSummaryData&)>>& extractors);
 
     QTabWidget* m_mainTabs;
-    SimulationEngine* m_engine;
 
     void createVoltagePage(QListWidget* submenu, QStackedWidget* stack);
     void createCurrentPage(QListWidget* submenu, QStackedWidget* stack);

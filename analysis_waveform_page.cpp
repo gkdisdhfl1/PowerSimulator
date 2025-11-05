@@ -1,12 +1,11 @@
 #include "analysis_waveform_page.h"
 #include "custom_chart_view.h"
-#include "simulation_engine.h"
 #include <QChart>
 #include <QLineSeries>
 #include <QValueAxis>
 
-AnalysisWaveformPage::AnalysisWaveformPage(SimulationEngine* engine, QWidget* parent)
-    : BaseGraphWindow(engine, parent)
+AnalysisWaveformPage::AnalysisWaveformPage(QWidget* parent)
+    : BaseGraphWindow(nullptr, parent)
 {
     setupSeries();
 }
@@ -35,32 +34,23 @@ void AnalysisWaveformPage::setupSeries()
     m_currentSeries->attachAxis(m_axisY);
 };
 
-void AnalysisWaveformPage::updateWaveformData(const std::deque<DataPoint>& data)
+void AnalysisWaveformPage::updateWaveformData(const OneSecondSummaryData& data)
 {
-    if (data.empty()) return;
+    const auto& waveData = data.lastTwoCycleData;
+    if(waveData.empty()) return;
 
-    // 1. 2 사이클에 해당하는 샘플 수 계산
-    double freq = m_engine->m_frequency.value();
-    if (freq < 0.1) freq = 0.1;
-
-    double samplesPerCycle = m_engine->m_samplesPerCycle.value();
-    int samplesToTake = static_cast<int>(samplesPerCycle * 2.0); // 2 사이클
-
-    if (samplesToTake < 2) samplesToTake = 2;
-    if (samplesToTake > data.size()) samplesToTake = data.size();
-
-    // 2. 데이터의 마지막 N개(2 사이클 분량)를 가져옴
+    // 데이터의 마지막 N개(2 사이클 분량)를 가져옴
     QList<QPointF> vPoints, iPoints;
-    vPoints.reserve(samplesToTake);
-    iPoints.reserve(samplesToTake);
+    vPoints.reserve(waveData.size());
+    iPoints.reserve(waveData.size());
 
     double minY = std::numeric_limits<double>::max();
     double maxY = std::numeric_limits<double>::lowest();
 
-    for (auto it = data.end() - samplesToTake; it != data.end(); ++it) {
-        double timeSec = std::chrono::duration<double>(it->timestamp).count();
-        double v = it->voltage.a;
-        double i = it->current.a;
+    for (const auto& point : waveData) {
+        double timeSec = std::chrono::duration<double>(point.timestamp).count();
+        double v = point.voltage.a;
+        double i = point.current.a;
 
         vPoints.append(QPointF(timeSec, v));
         iPoints.append(QPointF(timeSec, i));
@@ -69,7 +59,7 @@ void AnalysisWaveformPage::updateWaveformData(const std::deque<DataPoint>& data)
         maxY = std::max({maxY, v, i});
     }
 
-    // 3. 시리즈 및 축 업데이트
+    // 시리즈 및 축 업데이트
     m_voltageSeries->replace(vPoints);
     m_currentSeries->replace(iPoints);
 

@@ -44,7 +44,7 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     // 컨트롤러 생성 (UI 컴포넌트가 생성된 후)
     m_threePhaseDialog = std::make_unique<ThreePhaseDialog>(this);
     m_pidTuningDialog = std::make_unique<PidTuningDialog>(this);
-    m_a3700nWindow = std::make_unique<A3700N_Window>(m_engine);
+    m_a3700nWindow = std::make_unique<A3700N_Window>(nullptr);
 
     m_settingsUiController = std::make_unique<SettingsUiController>(m_controlPanel, *m_settingsManager, m_engine, this);
 
@@ -260,9 +260,7 @@ void MainWindow::createSignalSlotConnections()
     connect(m_engine, &SimulationEngine::measuredDataUpdated, m_harmonicAnalysisGraphWindow, &HarmonicAnalysisGraphWindow::updateGraph);
     connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_oneSecondSummaryWindow, &OneSecondSummaryWindow::updateData);
     connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_additionalMetricsWindow, &AdditionalMetricsWindow::updateData);
-
     connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_a3700nWindow.get(), &A3700N_Window::updateSummaryData);
-    connect(m_engine, &SimulationEngine::dataUpdated, m_a3700nWindow.get(), &A3700N_Window::updateWaveformData);
 
     // ---- GraphWindow 시그널 -> UI 슬롯 ----
     connect(m_graphWindow, &GraphWindow::pointHovered, this, [this](const DataPoint& point) {

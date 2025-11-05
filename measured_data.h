@@ -1,6 +1,7 @@
 #ifndef MEASURED_DATA_H
 #define MEASURED_DATA_H
 
+#include "data_point.h"
 #include "shared_data_types.h"
 #include <QMetaType>
 #include <chrono>
@@ -105,6 +106,9 @@ struct OneSecondSummaryData {
     // 마지막 사이클의 전체 고조파 정보
     std::vector<HarmonicAnalysisResult> lastCycleVoltageHarmonics;
     std::vector<HarmonicAnalysisResult> lastCycleCurrentHarmonics;
+
+    // Waveform Page를 위한 데이터
+    std::vector<DataPoint> lastTwoCycleData;
 };
 
 // Q_DECLARE_METATYPE(MeasuredData)

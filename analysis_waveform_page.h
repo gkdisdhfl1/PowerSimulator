@@ -2,20 +2,19 @@
 #define ANALYSIS_WAVEFORM_PAGE_H
 
 #include "base_graph_window.h"
+#include "measured_data.h"
 
 #include <QWidget>
-
-class SimulationEngine;
 
 class AnalysisWaveformPage : public BaseGraphWindow
 {
     Q_OBJECT
 public:
-    explicit AnalysisWaveformPage(SimulationEngine* engine, QWidget *parent = nullptr);
+    explicit AnalysisWaveformPage(QWidget *parent = nullptr);
     void setupSeries() override;
 
 public slots:
-    void updateWaveformData(const std::deque<DataPoint>& data);
+    void updateWaveformData(const OneSecondSummaryData& data);
 
 private:
     QLineSeries* m_voltageSeries;

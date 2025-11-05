@@ -1,6 +1,4 @@
 #include "a3700n_window.h"
-#include "base_graph_window.h"
-#include "simulation_engine.h"
 #include "data_page.h"
 #include "analysis_waveform_page.h"
 #include "analysis_phasor_page.h"
@@ -15,9 +13,8 @@
 #include <QLineSeries>
 #include <QValueAxis>
 
-A3700N_Window::A3700N_Window(SimulationEngine* engine, QWidget *parent)
+A3700N_Window::A3700N_Window(QWidget *parent)
     : QWidget{parent}
-    , m_engine(engine)
 {
     setupUi();
     setFixedSize(500, 250);
@@ -109,10 +106,6 @@ void A3700N_Window::createAndAddPage(
 void A3700N_Window::updateSummaryData(const OneSecondSummaryData& data)
 {
     emit summaryDataUpdated(data);
-}
-void A3700N_Window::updateWaveformData(const std::deque<DataPoint>& data)
-{
-    emit waveformDataUpdated(data);
 }
 
 void A3700N_Window::createVoltagePage(QListWidget* submenu, QStackedWidget* contentsStack)
@@ -234,9 +227,9 @@ void A3700N_Window::createAnalysisPage(QListWidget* submenu, QStackedWidget* sta
     submenu->addItem("Phasor");
 
     // Waveform 페이지
-    AnalysisWaveformPage* waveformPage = new AnalysisWaveformPage(m_engine);
+    AnalysisWaveformPage* waveformPage = new AnalysisWaveformPage(this);
 
-    connect(this, &A3700N_Window::waveformDataUpdated, waveformPage, &AnalysisWaveformPage::updateWaveformData);
+    connect(this, &A3700N_Window::summaryDataUpdated, waveformPage, &AnalysisWaveformPage::updateWaveformData);
     stack->addWidget(waveformPage);
     submenu->addItem("Waveform");
 
