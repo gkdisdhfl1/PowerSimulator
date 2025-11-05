@@ -60,6 +60,28 @@ QLabel#unitLabel {
     font-weight: bold;
 }
 
+QLabel#phasorTitleLabel {
+    font-family: "Montserrat";
+    font-size: 10px;
+    font-weight: 900;
+    color: #808080; /* gray */
+}
+
+QLabel#phasorValueLabel {
+    color: #008CFF;
+    font-weight: 900; /* extra bold */
+    padding-left: 10px;
+}
+
+QLabel#phasorUnitLabel {
+    font-size: 8px;
+    font-weight: 900; /* extra bold */
+}
+
+QLabel#phasorNameLabel {
+
+}
+
 /* --- Frame --- */
 QFrame#titleLine {
     background-color: black;
@@ -68,6 +90,10 @@ QFrame#titleLine {
 }
 
 QFrame#hLine {
+    background-color: black;
+}
+
+QFrame#phasorHLine {
     background-color: black;
 }
 
@@ -93,3 +119,31 @@ QTabBar::tab#mainTabBar {
 QTabBar::tab:selected#mainTabBar {
     background: #008CFF;
 }
+
+/* --- checkbox --- */
+QCheckBox#check {
+    background-color: #808080;
+    color: white;
+    font-weight: bold;
+    font-size: 11px;
+    padding: 4px 6px;
+    spacing: 3px;
+}
+
+QCheckBox:checked#check {
+    background-color: #008CFF;
+}
+QCheckBox::indicator#check {
+    width: 10px;
+    height: 10px;
+    border: 1px solid gray;
+    background-color: #ffffff;
+
+    subcontrol-position: left center;
+    margin-left: -4px;
+}
+
+QCheckBox::indicator:checked#check {
+    image: url(:/image/check.png);
+}
+

@@ -62,21 +62,6 @@ void PhasorView::updateData(const std::array<HarmonicAnalysisResult, 3>& fundame
                             const std::vector<HarmonicAnalysisResult>& voltageHarmonics,
                             const std::vector<HarmonicAnalysisResult>& currentHarmonics)
 {
-    // if(data.empty()) {
-    //     m_harmonicVoltage = PhasorInfo();
-    //     m_harmonicCurrent = PhasorInfo();
-    //     const PhasorInfo emptyPhasor;
-    //     m_fundVoltage.fill(emptyPhasor);
-    //     m_fundCurrent.fill(emptyPhasor);
-    //     m_voltageInfoLabel->clear();
-    //     m_currentInfoLabel->clear();
-    //     return;
-    // }
-
-    // AnalysisGraphWindow가 비어있을 때 ControlPanel에서 Cycle 데이터 체크박스가 변경되었을 경우
-
-    // const auto& latestData = data.back();
-
     // --- 기본파 정보 계산 ---
 
     for(int i{0}; i < 3; ++i) {
@@ -151,8 +136,6 @@ void PhasorView::paintEvent(QPaintEvent *event)
 
     // --- 페이저 그리기 ---
     // 3상 기본파 페이저 그리기
-    const std::array<QColor, 3> voltageColors = {Qt::blue, Qt::darkYellow, Qt::darkGreen};
-    const std::array<QColor, 3> currentColors = {Qt::red, Qt::darkCyan, Qt::darkMagenta};
 
     // 최대값 찾기
     double maxVoltageMagnitude = 0.0;
@@ -176,7 +159,7 @@ void PhasorView::paintEvent(QPaintEvent *event)
         for(int i{0}; i < 3; ++i) {
             if(m_phasorIsVisible[i]) {
                 double ratio = m_fundVoltage[i].magnitude / maxVoltageMagnitude;
-                drawPhasor(painter, m_fundVoltage[i], voltageColors[i], getPhasorDisplayLength(ratio, ctx, true));
+                drawPhasor(painter, m_fundVoltage[i], m_voltageColors[i], getPhasorDisplayLength(ratio, ctx, true));
             }
         }
         // 고조파 전압
@@ -191,7 +174,7 @@ void PhasorView::paintEvent(QPaintEvent *event)
         for(int i{0}; i < 3; ++i) {
             if(m_phasorIsVisible[i + 3]) {
                 double ratio  = m_fundCurrent[i].magnitude / maxCurrentMagnitude;
-                drawPhasor(painter, m_fundCurrent[i], currentColors[i], getPhasorDisplayLength(ratio, ctx, false));
+                drawPhasor(painter, m_fundCurrent[i], m_currentColors[i], getPhasorDisplayLength(ratio, ctx, false));
             }
         }
         // 고조파 전류

@@ -2,4 +2,7 @@
     <qresource prefix="/">
         <file>styles/stylesheet.qss</file>
     </qresource>
+    <qresource prefix="/image">
+        <file>check.png</file>
+    </qresource>
 </RCC>
