@@ -52,6 +52,10 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Core)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
+find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
     qt_add_executable(PowerSimulator
         MANUAL_FINALIZATION
@@ -88,6 +92,10 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
         additional_metrics_window.h additional_metrics_window.cpp
         Property.h
         a3700n_window.h a3700n_window.cpp
+        data_row_widget.h data_row_widget.cpp
+        data_page.h data_page.cpp
+        analysis_phasor_page.h analysis_phasor_page.cpp
+        analysis_waveform_page.h analysis_waveform_page.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET PowerSimulator APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -122,6 +130,10 @@ target_link_libraries(PowerSimulator PRIVATE
 )
 target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Core)
+target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
+target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
+target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
+target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 
 
