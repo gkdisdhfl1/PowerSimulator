@@ -17,7 +17,7 @@ A3700N_Window::A3700N_Window(QWidget *parent)
     : QWidget{parent}
 {
     setupUi();
-    // setFixedSize(500, 250);
+    setFixedSize(500, 325);
 }
 
 void A3700N_Window::setupUi()

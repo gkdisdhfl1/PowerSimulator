@@ -20,7 +20,7 @@ void AnalysisWaveformPage::setupUi()
 {
     auto mainLayout = new QVBoxLayout(this);
     mainLayout->setContentsMargins(15, 10, 15, 10);
-    mainLayout->setSpacing(5);
+    mainLayout->setSpacing(2);
 
     // 1. 상단 UI (제목, 전체 on/off)
     auto topLayout = new QHBoxLayout();
@@ -48,6 +48,8 @@ void AnalysisWaveformPage::setupUi()
 
     // 3. 중간 컨트롤 바 (시작/정지, 상별 on/off)
     auto controlBarLayout = new QHBoxLayout();
+    controlBarLayout->setContentsMargins(0, 0, 0, 0);
+    controlBarLayout->setSpacing(2);
     m_startButton = new QPushButton("❚❚");
     m_startButton->setCheckable(true);
     m_startButton->setChecked(true);
@@ -108,7 +110,10 @@ void AnalysisWaveformPage::setupUi()
 
     // 차트 및 축 설정
     m_chart->legend()->hide();
-    m_chart->setContentsMargins(-10, -10, -10, -10); // 여백 최소화
+    m_chart->setContentsMargins(-20, -10, -20, -10); // 여백 최소화
+
+    QFont axisFont;
+    axisFont.setPixelSize(8);
 
     m_axisX = new QValueAxis();
     m_axisX->setLabelsVisible(false);
@@ -116,17 +121,17 @@ void AnalysisWaveformPage::setupUi()
     m_chart->addAxis(m_axisX, Qt::AlignBottom);
 
     m_axisV = new QValueAxis();
-    m_axisV->setTitleText("V");
     m_axisV->setRange(-400, 400);
     m_axisV->setTickCount(9);
     m_axisV->setLabelFormat("%.0f");
+    m_axisV->setLabelsFont(axisFont);
     m_chart->addAxis(m_axisV, Qt::AlignLeft);
 
     m_axisA = new QValueAxis();
-    m_axisA->setTitleText("A");
     m_axisA->setRange(-10, 10);
     m_axisA->setTickCount(9);
     m_axisA->setLabelFormat("%.1f");
+    m_axisA->setLabelsFont(axisFont);
     m_chart->addAxis(m_axisA, Qt::AlignRight);
 
     // 시리즈 생성 및 연결

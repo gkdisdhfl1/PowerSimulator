@@ -53,7 +53,9 @@ AnalysisPhasorPage::AnalysisPhasorPage(QWidget *parent)
 
 
     // 데이터 테이블 (VLN)
-    auto tableLayout = new QGridLayout();
+    // GridLayout을 감쌀 컨테이너 위젯
+    auto* gridContainer = new QWidget(this);
+    auto tableLayout = new QGridLayout(gridContainer);
     tableLayout->setContentsMargins(0, 0, 0, 0);
     tableLayout->setSpacing(0);
 
@@ -61,7 +63,7 @@ AnalysisPhasorPage::AnalysisPhasorPage(QWidget *parent)
     m_voltageTableContainer = new QWidget(this);
     auto voltageSectionLayout = new QVBoxLayout(m_voltageTableContainer);
     voltageSectionLayout->setContentsMargins(0, 0, 0, 0);
-    voltageSectionLayout->setSpacing(0);
+    voltageSectionLayout->setSpacing(5);
 
     auto voltageData = createPhasorTable(voltageSectionLayout, "Voltage", {"A", "B", "C"}, "V");
     m_voltageNameLabels = voltageData.first;
@@ -88,7 +90,7 @@ AnalysisPhasorPage::AnalysisPhasorPage(QWidget *parent)
     tableLayout->setRowStretch(1, 1); // 스페이서 위젯이 남은 모든 공간 차지
     tableLayout->setRowStretch(2, 0); // 전류 섹션은 늘어나지 않음
 
-    contentLayout->addLayout(tableLayout, 1);
+    contentLayout->addWidget(gridContainer, 0, Qt::AlignCenter);
     mainLayout->addLayout(contentLayout, 1);
 
     // 라벨 배경색 설정
@@ -187,6 +189,7 @@ std::pair<std::array<QLabel*, 3>, std::array<QLabel*, 6>> AnalysisPhasorPage::cr
         rowLayout->addWidget(valueLabels[i * 2 + 1], 1);
 
         layout->addLayout(rowLayout);
+        layout->addSpacing(5);
     }
     return {nameLabels, valueLabels};
 }
