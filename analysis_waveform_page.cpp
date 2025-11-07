@@ -198,12 +198,51 @@ void AnalysisWaveformPage::setupUi()
     onScaleTargetToggled(true);
 }
 
-void AnalysisWaveformPage::updateWaveformData(const OneSecondSummaryData& data)
+void AnalysisWaveformPage::onOneSecondDataUpdated(const OneSecondSummaryData& data)
 {
-    if(!m_isUpdating || data.lastTwoCycleData.empty())
+    m_lastData = data;
+    if(m_isUpdating) {
+        updatePage();
+    }
+}
+
+void AnalysisWaveformPage::updatePage()
+{
+    if(m_lastData.lastTwoCycleData.empty())
         return;
 
-    const auto& waveData = data.lastTwoCycleData;
+    if(m_isAutoScaling) {
+        double v_abs_max = 0.0, a_abs_max = 0.0;
+
+        for(const auto& point : m_lastData.lastTwoCycleData) {
+            v_abs_max = std::max({v_abs_max, std::abs(point.voltage.a), std::abs(point.voltage.b), std::abs(point.voltage.c)});
+            a_abs_max = std::max({a_abs_max, std::abs(point.current.a), std::abs(point.current.b), std::abs(point.current.c)});
+        }
+
+        // voltage auto scaling
+        for(size_t i{0}; i < RANGE_TABLE.size(); ++i) {
+            if(v_abs_max <= RANGE_TABLE[i]) {
+                if(i != m_voltageScaleIndex) {
+                    m_voltageScaleIndex = i;
+                    updateAxis(true);
+                }
+                break;
+            }
+        }
+
+        // current auto scaling
+        for(size_t i{0}; i < RANGE_TABLE.size(); ++i) {
+            if(a_abs_max <= RANGE_TABLE[i]) {
+                if(i != m_currentScaleIndex) {
+                    m_currentScaleIndex=  i;
+                    updateAxis(false);
+                }
+                break;
+            }
+        }
+    }
+
+    const auto& waveData = m_lastData.lastTwoCycleData;
 
     // 데이터 포인트들을 각 시리즈에 맞게 분리
 
@@ -247,37 +286,6 @@ void AnalysisWaveformPage::updateWaveformData(const OneSecondSummaryData& data)
     // 축 범위 설정
     if (!waveData.empty()) {
         m_axisX->setRange(vPoints[0].first().x(), vPoints[0].last().x());
-
-        if(m_isAutoScaling) {
-            double v_abs_max = 0.0, a_abs_max = 0.0;
-
-            for(const auto& point : data.lastTwoCycleData) {
-                v_abs_max = std::max({v_abs_max, std::abs(point.voltage.a), std::abs(point.voltage.b), std::abs(point.voltage.c)});
-                a_abs_max = std::max({a_abs_max, std::abs(point.current.a), std::abs(point.current.b), std::abs(point.current.c)});
-            }
-
-            // voltage auto scaling
-            for(size_t i{0}; i < RANGE_TABLE.size(); ++i) {
-                if(v_abs_max <= RANGE_TABLE[i]) {
-                    if(i != m_voltageScaleIndex) {
-                        m_voltageScaleIndex = i;
-                        updateAxis(true);
-                    }
-                    break;
-                }
-            }
-
-            // current auto scaling
-            for(size_t i{0}; i < RANGE_TABLE.size(); ++i) {
-                if(a_abs_max <= RANGE_TABLE[i]) {
-                    if(i != m_currentScaleIndex) {
-                        m_currentScaleIndex=  i;
-                        updateAxis(false);
-                    }
-                    break;
-                }
-            }
-        }
     }
 }
 
@@ -334,6 +342,7 @@ void AnalysisWaveformPage::applyScaleStep(bool zoomIn, bool isVoltage)
     qDebug() << "after index: " << index;
 
     updateAxis(isVoltage);
+    updatePage();
 }
 
 void AnalysisWaveformPage::updateScaleUnit(double range, bool voltage)
@@ -387,4 +396,12 @@ void AnalysisWaveformPage::updateAxis(bool isVoltageAxis)
         unitString = QString("k%1").arg(baseUnit);
     else unitString = baseUnit;
     targetLabel->setText(QString("[%1]").arg(unitString));
+
+    qDebug() << "isVoltageAxis: " << isVoltageAxis;
+    qDebug() << "newRange: " << newRange;
+    qDebug() << "displayRange: " << displayRange;
+    qDebug() << "unitString: " << unitString;
+    qDebug() << "---------------------------";
 }
+
+

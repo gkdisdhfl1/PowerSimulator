@@ -17,7 +17,7 @@ A3700N_Window::A3700N_Window(QWidget *parent)
     : QWidget{parent}
 {
     setupUi();
-    // setFixedSize(600, 325);
+    setFixedSize(600, 325);
 }
 
 void A3700N_Window::setupUi()
@@ -229,7 +229,7 @@ void A3700N_Window::createAnalysisPage(QListWidget* submenu, QStackedWidget* sta
     // Waveform 페이지
     AnalysisWaveformPage* waveformPage = new AnalysisWaveformPage(this);
 
-    connect(this, &A3700N_Window::summaryDataUpdated, waveformPage, &AnalysisWaveformPage::updateWaveformData);
+    connect(this, &A3700N_Window::summaryDataUpdated, waveformPage, &AnalysisWaveformPage::onOneSecondDataUpdated);
     stack->addWidget(waveformPage);
     submenu->addItem("Waveform");
 

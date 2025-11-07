@@ -29,7 +29,7 @@ public:
     explicit AnalysisWaveformPage(QWidget *parent = nullptr);
 
 public slots:
-    void updateWaveformData(const OneSecondSummaryData& data);
+    void onOneSecondDataUpdated(const OneSecondSummaryData& data);
 
 private slots:
     void onStartStopToggled(bool checked);
@@ -48,6 +48,7 @@ private:
     void updateScaleUnit(double range, bool voltage);
     double scaleValue(double value, ScaleUnit unit);
     void updateAxis(bool isVoltageAxis);
+    void updatePage();
 
     // UI 위젯
     QPushButton* m_startButton;
@@ -74,6 +75,8 @@ private:
     bool m_isTargetVoltage;
     int m_voltageScaleIndex = 0;
     int m_currentScaleIndex = 0;
+
+    OneSecondSummaryData m_lastData;
 };
 
 #endif // ANALYSIS_WAVEFORM_PAGE_H
