@@ -47,6 +47,7 @@ private:
     void applyScaleStep(bool zoomIn, bool voltage);
     void updateScaleUnit(double range, bool voltage);
     double scaleValue(double value, ScaleUnit unit);
+    void updateAxis(bool isVoltageAxis);
 
     // UI 위젯
     QPushButton* m_startButton;

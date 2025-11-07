@@ -249,11 +249,34 @@ void AnalysisWaveformPage::updateWaveformData(const OneSecondSummaryData& data)
         m_axisX->setRange(vPoints[0].first().x(), vPoints[0].last().x());
 
         if(m_isAutoScaling) {
-            double voltagePadding = (maxV - minV) * 0.1 + 1.0;
-            m_axisV->setRange(minV - voltagePadding, maxV + voltagePadding);
+            double v_abs_max = 0.0, a_abs_max = 0.0;
 
-            double amperePadding = (maxA - minA) * 0.1 + 1.0;
-            m_axisA->setRange(minA - amperePadding, maxA + amperePadding);
+            for(const auto& point : data.lastTwoCycleData) {
+                v_abs_max = std::max({v_abs_max, std::abs(point.voltage.a), std::abs(point.voltage.b), std::abs(point.voltage.c)});
+                a_abs_max = std::max({a_abs_max, std::abs(point.current.a), std::abs(point.current.b), std::abs(point.current.c)});
+            }
+
+            // voltage auto scaling
+            for(size_t i{0}; i < RANGE_TABLE.size(); ++i) {
+                if(v_abs_max <= RANGE_TABLE[i]) {
+                    if(i != m_voltageScaleIndex) {
+                        m_voltageScaleIndex = i;
+                        updateAxis(true);
+                    }
+                    break;
+                }
+            }
+
+            // current auto scaling
+            for(size_t i{0}; i < RANGE_TABLE.size(); ++i) {
+                if(a_abs_max <= RANGE_TABLE[i]) {
+                    if(i != m_currentScaleIndex) {
+                        m_currentScaleIndex=  i;
+                        updateAxis(false);
+                    }
+                    break;
+                }
+            }
         }
     }
 }
@@ -295,12 +318,12 @@ void AnalysisWaveformPage::onScaleOutClicked()
     applyScaleStep(false, m_isTargetVoltage);
 }
 
-void AnalysisWaveformPage::applyScaleStep(bool zoomIn, bool voltage)
+void AnalysisWaveformPage::applyScaleStep(bool zoomIn, bool isVoltage)
 {
     if(m_isAutoScaling)
         m_scaleButtons[0]->setChecked(false);
 
-    int& index =(voltage) ? m_voltageScaleIndex : m_currentScaleIndex; // 멤버 인덱스 값 변경 가능
+    int& index =(isVoltage) ? m_voltageScaleIndex : m_currentScaleIndex; // 멤버 인덱스 값 변경 가능
     qDebug() << "zoomIn: " << zoomIn;
     qDebug() << "before index: " << index;
 
@@ -310,37 +333,7 @@ void AnalysisWaveformPage::applyScaleStep(bool zoomIn, bool voltage)
         --index;
     qDebug() << "after index: " << index;
 
-    double newRange = RANGE_TABLE[index];
-    updateScaleUnit(newRange, m_isTargetVoltage);
-
-    // 표시되는 값으로 환산
-    double displayedRange = newRange;
-    switch((m_isTargetVoltage) ? m_voltageUnit : m_currentUnit)
-    {
-    case ScaleUnit::Milli: displayedRange *= 1000.0; break;
-    case ScaleUnit::Kilo: displayedRange /= 1000.0; break;
-    default: break;
-    }
-
-    QValueAxis* targetAxis = (m_isTargetVoltage) ? m_axisV : m_axisA;
-    qDebug() << "m_axisV: " << m_axisV;
-    qDebug() << "m_axisA: " << m_axisA;
-    qDebug() << "targetAxis: " << targetAxis;
-    qDebug() << "newRange: " << newRange;
-    qDebug() << "displayedRange: " << displayedRange;
-    qDebug() << "---------------------------";
-    targetAxis->setRange(-displayedRange, displayedRange);
-
-    if(m_isTargetVoltage)
-        m_voltageScaleLabel->setText(
-            m_voltageUnit == ScaleUnit::Milli ? "[mV]" :
-                m_voltageUnit == ScaleUnit::Base ? "[V]": "[kV]"
-        );
-    else
-        m_currentScaleLabel->setText(
-            m_currentUnit == ScaleUnit::Milli ? "[mA]" :
-                m_currentUnit == ScaleUnit::Base ? "[A]": "[kA]"
-            );
+    updateAxis(isVoltage);
 }
 
 void AnalysisWaveformPage::updateScaleUnit(double range, bool voltage)
@@ -366,4 +359,32 @@ double AnalysisWaveformPage::scaleValue(double value, ScaleUnit unit)
     default:
         return value;
     }
+}
+
+void AnalysisWaveformPage::updateAxis(bool isVoltageAxis)
+{
+    int& index = isVoltageAxis ? m_voltageScaleIndex : m_currentScaleIndex;
+    ScaleUnit& unit = isVoltageAxis ? m_voltageUnit : m_currentUnit;
+    QValueAxis* targetAxis = isVoltageAxis ? m_axisV : m_axisA;
+    QLabel* targetLabel = isVoltageAxis ? m_voltageScaleLabel : m_currentScaleLabel;
+    const char* baseUnit = isVoltageAxis ? "V" : "A";
+
+    double newRange = RANGE_TABLE[index];
+    updateScaleUnit(newRange, isVoltageAxis);
+
+    double displayRange = newRange;
+    if(unit == ScaleUnit::Milli)
+        displayRange *= 1000.0;
+    else if(unit == ScaleUnit::Kilo)
+        displayRange /= 1000.0;
+
+    targetAxis->setRange(-displayRange, displayRange);
+
+    QString unitString;
+    if(unit == ScaleUnit::Milli)
+        unitString = QString("m%1").arg(baseUnit);
+    else if(unit == ScaleUnit::Kilo)
+        unitString = QString("k%1").arg(baseUnit);
+    else unitString = baseUnit;
+    targetLabel->setText(QString("[%1]").arg(unitString));
 }
