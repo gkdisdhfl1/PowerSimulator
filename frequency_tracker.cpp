@@ -275,7 +275,8 @@ void FrequencyTracker::processFineTune(const MeasuredData& latestMeasuredData)
     const double targetPhaseMinus90 = -std::numbers::pi / 2.0;
 
     // 현재 각도에서 목표까지의 각도 계산
-    double zcPhaseError = currentPhasorAngle - targetPhaseMinus90;
+    // double zcPhaseError = currentPhasorAngle - targetPhaseMinus90;
+    double zcPhaseError = currentPhasorAngle;
     while(zcPhaseError <= -std::numbers::pi) zcPhaseError += config::Math::TwoPi;
     while(zcPhaseError > std::numbers::pi)  zcPhaseError -= config::Math::TwoPi;
 
