@@ -12,8 +12,8 @@
 AnalysisWaveformPage::AnalysisWaveformPage(QWidget* parent)
     : QWidget(parent)
     , m_isUpdating(true)
-    , m_axisTarget(AxisTarget::Voltage)
     , m_isAutoScaling(true)
+    , m_isTargetVoltage(true)
 {
     setupUi();
 }
@@ -82,6 +82,8 @@ void AnalysisWaveformPage::setupUi()
 
     // 4. 컨텐츠 영역 (스케일 버튼, 차트)
     auto contentLayout = new QHBoxLayout();
+    QFont axisFont;
+    axisFont.setPixelSize(8);
 
     // 4-1 스케일 버튼 그룹
     auto scaleButtonsContainer = new QWidget();
@@ -109,6 +111,21 @@ void AnalysisWaveformPage::setupUi()
     scaleButtonsLayout->addStretch();
     contentLayout->addWidget(scaleButtonsContainer);
 
+    // 4-1.5 차트 위 라벨
+    m_voltageScaleLabel = new QLabel("[V]");
+    m_currentScaleLabel = new QLabel("[A]");
+
+    m_voltageScaleLabel->setFont(axisFont);
+    m_currentScaleLabel->setFont(axisFont);
+    m_voltageScaleLabel->setAlignment(Qt::AlignCenter);
+    m_currentScaleLabel->setAlignment(Qt::AlignCenter);
+
+    auto chartHeaderLayout = new QHBoxLayout();
+    chartHeaderLayout->addWidget(m_voltageScaleLabel);
+    chartHeaderLayout->addStretch();
+    chartHeaderLayout->addWidget(m_currentScaleLabel);
+    mainLayout->addLayout(chartHeaderLayout);
+
     // 4-2 차트 뷰
     m_chart = new QChart();
     m_chartView = new QChartView(m_chart);
@@ -118,9 +135,6 @@ void AnalysisWaveformPage::setupUi()
     // 차트 및 축 설정
     m_chart->legend()->hide();
     m_chart->setContentsMargins(-20, -10, -20, -10); // 여백 최소화
-
-    QFont axisFont;
-    axisFont.setPixelSize(8);
 
     m_axisX = new QValueAxis();
     m_axisX->setLabelsVisible(false);
@@ -135,7 +149,7 @@ void AnalysisWaveformPage::setupUi()
     m_chart->addAxis(m_axisV, Qt::AlignLeft);
 
     m_axisA = new QValueAxis();
-    m_axisA->setRange(-10, 10);
+    m_axisA->setRange(-400, 400);
     m_axisA->setTickCount(9);
     m_axisA->setLabelFormat("%.1f");
     m_axisA->setLabelsFont(axisFont);
@@ -210,18 +224,18 @@ void AnalysisWaveformPage::updateWaveformData(const OneSecondSummaryData& data)
         const auto& v = point.voltage;
         const auto& i = point.current;
 
-        vPoints[0].append(QPointF(timeSec, v.a));
-        vPoints[1].append(QPointF(timeSec, v.b));
-        vPoints[2].append(QPointF(timeSec, v.c));
+        vPoints[0].append(QPointF(timeSec, scaleValue(v.a, m_voltageUnit)));
+        vPoints[1].append(QPointF(timeSec, scaleValue(v.b, m_voltageUnit)));
+        vPoints[2].append(QPointF(timeSec, scaleValue(v.c, m_voltageUnit)));
 
-        iPoints[0].append(QPointF(timeSec, i.a));
-        iPoints[1].append(QPointF(timeSec, i.b));
-        iPoints[2].append(QPointF(timeSec, i.c));
+        iPoints[0].append(QPointF(timeSec, scaleValue(i.a, m_currentUnit)));
+        iPoints[1].append(QPointF(timeSec, scaleValue(i.b, m_currentUnit)));
+        iPoints[2].append(QPointF(timeSec, scaleValue(i.c, m_currentUnit)));
 
-        minV = std::min({minV, v.a, v.b, v.c});
-        maxV = std::max({maxV, v.a, v.b, v.c});
-        minA = std::min({minA, i.a, i.b, i.c});
-        maxA = std::max({maxA, i.a, i.b, i.c});
+        minV = std::min({minV, scaleValue(v.a, m_voltageUnit), scaleValue(v.b, m_voltageUnit), scaleValue(v.c, m_voltageUnit)});
+        maxV = std::max({maxV, scaleValue(v.a, m_voltageUnit), scaleValue(v.b, m_voltageUnit), scaleValue(v.c, m_voltageUnit)});
+        minA = std::min({minA, scaleValue(i.a, m_currentUnit), scaleValue(i.b, m_currentUnit), scaleValue(i.c, m_currentUnit)});
+        maxA = std::max({maxA, scaleValue(i.a, m_currentUnit), scaleValue(i.b, m_currentUnit), scaleValue(i.c, m_currentUnit)});
     }
 
     // 시리즈 및 축 업데이트
@@ -261,48 +275,95 @@ void AnalysisWaveformPage::onScaleAutoToggled(bool checked)
 void AnalysisWaveformPage::onScaleTargetToggled(bool checked)
 {
     if(checked) {
-        m_axisTarget = AxisTarget::Voltage;
+        m_isTargetVoltage = true;
         m_scaleButtons[1]->setText("V/a");
     } else {
-        m_axisTarget = AxisTarget::Amperage;
+        m_isTargetVoltage = false;
         m_scaleButtons[1]->setText("v/A");
     }
 }
 
 void AnalysisWaveformPage::onScaleInClicked()
 {
-    qDebug() << "inClicked";
-    if(m_isAutoScaling)
-        m_scaleButtons[0]->setChecked(false);
-
-    if(!m_isAutoScaling) {
-        QValueAxis* targetAxis = (m_axisTarget == AxisTarget::Voltage) ? m_axisV : m_axisA;
-        double center = (targetAxis->max() + targetAxis->min()) / 2.0;
-        double span = (targetAxis->max() - targetAxis->min()) * 0.8;
-        qDebug() << "m_axisV: " << m_axisV;
-        qDebug() << "m_axisA: " << m_axisA;
-        qDebug() << "targetAxis: " << targetAxis;
-        qDebug() << "targetAixs -> setRange(" << center << " - " << span << " / 2.0, " << center << " + " << span << " / 2.0)";
-        qDebug() << "---------------------------";
-        targetAxis->setRange(center - span / 2.0, center + span / 2.0);
-    }
+    qDebug() << "InClicked";
+    applyScaleStep(true, m_isTargetVoltage);
 }
 
 void AnalysisWaveformPage::onScaleOutClicked()
 {
-    qDebug() << "outClicked";
+    qDebug() << "OutClicked";
+    applyScaleStep(false, m_isTargetVoltage);
+}
+
+void AnalysisWaveformPage::applyScaleStep(bool zoomIn, bool voltage)
+{
     if(m_isAutoScaling)
         m_scaleButtons[0]->setChecked(false);
 
-    if(!m_isAutoScaling) {
-        QValueAxis* targetAxis = (m_axisTarget == AxisTarget::Voltage) ? m_axisV : m_axisA;
-        double center = (targetAxis->max() + targetAxis->min()) / 2.0;
-        double span = (targetAxis->max() - targetAxis->min()) * 1.2;
-        qDebug() << "m_axisV: " << m_axisV;
-        qDebug() << "m_axisA: " << m_axisA;
-        qDebug() << "targetAxis: " << targetAxis;
-        qDebug() << "targetAixs -> setRange(" << center << " - " << span << " / 2.0, " << center << " + " << span << " / 2.0)";
-        qDebug() << "---------------------------";
-        targetAxis->setRange(center - span / 2.0, center + span / 2.0);
+    int& index =(voltage) ? m_voltageScaleIndex : m_currentScaleIndex; // 멤버 인덱스 값 변경 가능
+    qDebug() << "zoomIn: " << zoomIn;
+    qDebug() << "before index: " << index;
+
+    if(zoomIn && index < (int)RANGE_TABLE.size() - 1)
+        ++index;
+    else if(!zoomIn && index > 0)
+        --index;
+    qDebug() << "after index: " << index;
+
+    double newRange = RANGE_TABLE[index];
+    updateScaleUnit(newRange, m_isTargetVoltage);
+
+    // 표시되는 값으로 환산
+    double displayedRange = newRange;
+    switch((m_isTargetVoltage) ? m_voltageUnit : m_currentUnit)
+    {
+    case ScaleUnit::Milli: displayedRange *= 1000.0; break;
+    case ScaleUnit::Kilo: displayedRange /= 1000.0; break;
+    default: break;
+    }
+
+    QValueAxis* targetAxis = (m_isTargetVoltage) ? m_axisV : m_axisA;
+    qDebug() << "m_axisV: " << m_axisV;
+    qDebug() << "m_axisA: " << m_axisA;
+    qDebug() << "targetAxis: " << targetAxis;
+    qDebug() << "newRange: " << newRange;
+    qDebug() << "displayedRange: " << displayedRange;
+    qDebug() << "---------------------------";
+    targetAxis->setRange(-displayedRange, displayedRange);
+
+    if(m_isTargetVoltage)
+        m_voltageScaleLabel->setText(
+            m_voltageUnit == ScaleUnit::Milli ? "[mV]" :
+                m_voltageUnit == ScaleUnit::Base ? "[V]": "[kV]"
+        );
+    else
+        m_currentScaleLabel->setText(
+            m_currentUnit == ScaleUnit::Milli ? "[mA]" :
+                m_currentUnit == ScaleUnit::Base ? "[A]": "[kA]"
+            );
+}
+
+void AnalysisWaveformPage::updateScaleUnit(double range, bool voltage)
+{
+    ScaleUnit unit;
+
+    if(range < 1.0)             unit = ScaleUnit::Milli;
+    else if(range >= 1000.0)    unit = ScaleUnit::Kilo;
+    else                        unit = ScaleUnit::Base;
+
+    if(voltage) m_voltageUnit = unit;
+    else m_currentUnit = unit;
+}
+
+double AnalysisWaveformPage::scaleValue(double value, ScaleUnit unit)
+{
+    switch(unit)
+    {
+    case ScaleUnit::Milli:
+        return value * 1000.0;
+    case ScaleUnit::Kilo:
+        return value / 1000.0;
+    default:
+        return value;
     }
 }
