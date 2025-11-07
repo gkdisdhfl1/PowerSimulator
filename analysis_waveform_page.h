@@ -23,8 +23,19 @@ public:
 public slots:
     void updateWaveformData(const OneSecondSummaryData& data);
 
+private slots:
+    void onStartStopToggled(bool checked);
+    void onScaleAutoToggled(bool checked);
+    void onScaleTargetToggled(bool checked);
+    void onScaleInClicked();
+    void onScaleOutClicked();
+
 private:
+    enum class AxisTarget { Voltage, Amperage };
+    AxisTarget m_axisTarget;
+
     void setupUi();
+    void updateAxisRanges();
 
     // UI 위젯
     QPushButton* m_startButton;
@@ -45,6 +56,7 @@ private:
     std::array<QLineSeries*, 3> m_currentSeries;
 
     bool m_isUpdating; // 시작/정지 상태
+    bool m_isAutoScaling;
 };
 
 #endif // ANALYSIS_WAVEFORM_PAGE_H

@@ -12,6 +12,8 @@
 AnalysisWaveformPage::AnalysisWaveformPage(QWidget* parent)
     : QWidget(parent)
     , m_isUpdating(true)
+    , m_axisTarget(AxisTarget::Voltage)
+    , m_isAutoScaling(true)
 {
     setupUi();
 }
@@ -90,15 +92,20 @@ void AnalysisWaveformPage::setupUi()
     // scaleButtonsLayout->setContentsMargins(5, 5, 5, 5);
 
     m_scaleButtonGroup = new QButtonGroup(this);
-    m_scaleButtonGroup->setExclusive(true);
+    m_scaleButtonGroup->setExclusive(false);
+
+    const QStringList scaleButtonNames = {"Auto", "V/A", "+", "-"};
     for(int i{0}; i < 4; ++i) {
-        m_scaleButtons[i] = new QPushButton(QString("x%1").arg(i + 1));
-        m_scaleButtons[i]->setCheckable(true);
+        m_scaleButtons[i] = new QPushButton(scaleButtonNames[i]);
+        if(i < 2) {
+            m_scaleButtons[i]->setCheckable(true);
+        }
         m_scaleButtons[i]->setObjectName("waveformScaleButton");
         scaleButtonsLayout->addWidget(m_scaleButtons[i]);
         m_scaleButtonGroup->addButton(m_scaleButtons[i], 1);
     }
-    m_scaleButtons[0]->setChecked(true);
+    m_scaleButtons[0]->setChecked(true); // Auto
+    m_scaleButtons[1]->setChecked(true); // V가 기본
     scaleButtonsLayout->addStretch();
     contentLayout->addWidget(scaleButtonsContainer);
 
@@ -123,7 +130,7 @@ void AnalysisWaveformPage::setupUi()
     m_axisV = new QValueAxis();
     m_axisV->setRange(-400, 400);
     m_axisV->setTickCount(9);
-    m_axisV->setLabelFormat("%.0f");
+    m_axisV->setLabelFormat("%.1f");
     m_axisV->setLabelsFont(axisFont);
     m_chart->addAxis(m_axisV, Qt::AlignLeft);
 
@@ -165,10 +172,16 @@ void AnalysisWaveformPage::setupUi()
     });
 
     // 시작/정지 버튼 연결
-    connect(m_startButton, &QPushButton::toggled, this, [this](bool checked){
-        m_isUpdating = checked;
-        m_startButton->setText(checked ? "❚❚" : "▶");
-    });
+    connect(m_startButton, &QPushButton::toggled, this, &AnalysisWaveformPage::onStartStopToggled);
+    connect(m_scaleButtons[0], &QPushButton::toggled, this, &AnalysisWaveformPage::onScaleAutoToggled);
+    connect(m_scaleButtons[1], &QPushButton::toggled, this, &AnalysisWaveformPage::onScaleTargetToggled);
+    connect(m_scaleButtons[2], &QPushButton::clicked, this, &AnalysisWaveformPage::onScaleInClicked);
+    connect(m_scaleButtons[3], &QPushButton::clicked, this, &AnalysisWaveformPage::onScaleOutClicked);
+
+    // 초기 상태 설정
+    onStartStopToggled(true);
+    onScaleAutoToggled(true);
+    onScaleTargetToggled(true);
 }
 
 void AnalysisWaveformPage::updateWaveformData(const OneSecondSummaryData& data)
@@ -221,10 +234,75 @@ void AnalysisWaveformPage::updateWaveformData(const OneSecondSummaryData& data)
     if (!waveData.empty()) {
         m_axisX->setRange(vPoints[0].first().x(), vPoints[0].last().x());
 
-        double voltagePadding = (maxV - minV) * 0.1 + 1.0;
-        m_axisV->setRange(minV - voltagePadding, maxV + voltagePadding);
+        if(m_isAutoScaling) {
+            double voltagePadding = (maxV - minV) * 0.1 + 1.0;
+            m_axisV->setRange(minV - voltagePadding, maxV + voltagePadding);
 
-        double amperePadding = (maxA - minA) * 0.1 + 1.0;
-        m_axisA->setRange(minA - amperePadding, maxA + amperePadding);
+            double amperePadding = (maxA - minA) * 0.1 + 1.0;
+            m_axisA->setRange(minA - amperePadding, maxA + amperePadding);
+        }
+    }
+}
+
+void AnalysisWaveformPage::onStartStopToggled(bool checked)
+{
+    m_isUpdating = checked;
+    m_startButton->setText(checked ? "❚❚" : "▶");
+}
+
+void AnalysisWaveformPage::onScaleAutoToggled(bool checked)
+{
+    qDebug() << "onScaleAutoToggled process";
+    m_isAutoScaling = checked;
+    qDebug() << "current m_isAutoScaling Value: " << m_isAutoScaling;
+    qDebug() << "---------------------------";
+}
+
+void AnalysisWaveformPage::onScaleTargetToggled(bool checked)
+{
+    if(checked) {
+        m_axisTarget = AxisTarget::Voltage;
+        m_scaleButtons[1]->setText("V/a");
+    } else {
+        m_axisTarget = AxisTarget::Amperage;
+        m_scaleButtons[1]->setText("v/A");
+    }
+}
+
+void AnalysisWaveformPage::onScaleInClicked()
+{
+    qDebug() << "inClicked";
+    if(m_isAutoScaling)
+        m_scaleButtons[0]->setChecked(false);
+
+    if(!m_isAutoScaling) {
+        QValueAxis* targetAxis = (m_axisTarget == AxisTarget::Voltage) ? m_axisV : m_axisA;
+        double center = (targetAxis->max() + targetAxis->min()) / 2.0;
+        double span = (targetAxis->max() - targetAxis->min()) * 0.8;
+        qDebug() << "m_axisV: " << m_axisV;
+        qDebug() << "m_axisA: " << m_axisA;
+        qDebug() << "targetAxis: " << targetAxis;
+        qDebug() << "targetAixs -> setRange(" << center << " - " << span << " / 2.0, " << center << " + " << span << " / 2.0)";
+        qDebug() << "---------------------------";
+        targetAxis->setRange(center - span / 2.0, center + span / 2.0);
+    }
+}
+
+void AnalysisWaveformPage::onScaleOutClicked()
+{
+    qDebug() << "outClicked";
+    if(m_isAutoScaling)
+        m_scaleButtons[0]->setChecked(false);
+
+    if(!m_isAutoScaling) {
+        QValueAxis* targetAxis = (m_axisTarget == AxisTarget::Voltage) ? m_axisV : m_axisA;
+        double center = (targetAxis->max() + targetAxis->min()) / 2.0;
+        double span = (targetAxis->max() - targetAxis->min()) * 1.2;
+        qDebug() << "m_axisV: " << m_axisV;
+        qDebug() << "m_axisA: " << m_axisA;
+        qDebug() << "targetAxis: " << targetAxis;
+        qDebug() << "targetAixs -> setRange(" << center << " - " << span << " / 2.0, " << center << " + " << span << " / 2.0)";
+        qDebug() << "---------------------------";
+        targetAxis->setRange(center - span / 2.0, center + span / 2.0);
     }
 }

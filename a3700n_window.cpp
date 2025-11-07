@@ -17,7 +17,7 @@ A3700N_Window::A3700N_Window(QWidget *parent)
     : QWidget{parent}
 {
     setupUi();
-    setFixedSize(500, 325);
+    // setFixedSize(600, 325);
 }
 
 void A3700N_Window::setupUi()
@@ -82,7 +82,7 @@ QWidget* A3700N_Window::createTabPage(const QString& type)
     submenu->setCurrentRow(0);
 
     auto container = new QWidget();
-    container->setLayout(mainLayout)    ;
+    container->setLayout(mainLayout);
     return container;
 }
 
