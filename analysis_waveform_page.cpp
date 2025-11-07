@@ -179,10 +179,13 @@ void AnalysisWaveformPage::setupUi()
 
     // 전체 on/off 체크박스 연결
     connect(voltageAllCheck, &QCheckBox::toggled, [this](bool checked){
+        // qDebug() << "AnalysisWavefromPage::voltageAllcheck::checked: " << checked;
         for(int i{0}; i < 3; ++i) m_voltagePhaseChecks[i]->setChecked(checked);
+        for(int i{0}; i < 3; ++i) m_voltagePhaseChecks[i]->setEnabled(checked);
     });
     connect(currentAllCheck, &QCheckBox::toggled, [this](bool checked){
         for(int i{0}; i < 3; ++i) m_currentPhaseChecks[i]->setChecked(checked);
+        for(int i{0}; i < 3; ++i) m_currentPhaseChecks[i]->setEnabled(checked);
     });
 
     // 시작/정지 버튼 연결
