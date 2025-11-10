@@ -3,6 +3,7 @@
 
 #include <cmath>
 #include <QString>
+#include <QColor>
 #include <string_view>
 #include <chrono>
 #include <QPointF>
@@ -105,6 +106,20 @@ namespace config {
             // 가장 가까운 점을 찾기 위한 픽셀 거리 임계값
             struct Proximity {
                 static constexpr double Threshold = 20.0;
+            };
+        };
+
+        // 3상을 구분하는 색상
+        struct PhaseColors {
+            constexpr static std::array<QColor, 3> Voltage = {
+                QColor(0, 0, 0),    // black
+                QColor(255, 0, 0),  // red
+                QColor(0, 0, 255)   // blue
+            };
+            constexpr static std::array<QColor, 3> Current = {
+                QColor(0, 100, 0),    // dark green
+                QColor(255, 165, 0),  // orange
+                QColor(135, 206, 235)   // sky blue
             };
         };
     };

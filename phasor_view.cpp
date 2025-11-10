@@ -159,13 +159,13 @@ void PhasorView::paintEvent(QPaintEvent *event)
         for(int i{0}; i < 3; ++i) {
             if(m_phasorIsVisible[i]) {
                 double ratio = m_fundVoltage[i].magnitude / maxVoltageMagnitude;
-                drawPhasor(painter, m_fundVoltage[i], m_voltageColors[i], getPhasorDisplayLength(ratio, ctx, true));
+                drawPhasor(painter, m_fundVoltage[i], config::View::PhaseColors::Voltage[i], getPhasorDisplayLength(ratio, ctx, true));
             }
         }
         // 고조파 전압
         if(m_phasorIsVisible[6]) {
             double ratio = m_harmonicVoltage.magnitude / maxVoltageMagnitude;
-            drawPhasor(painter, m_harmonicVoltage, Qt::cyan, getPhasorDisplayLength(ratio, ctx, true));
+            drawPhasor(painter, m_harmonicVoltage, Qt::gray, getPhasorDisplayLength(ratio, ctx, true));
         }
     }
 
@@ -174,13 +174,13 @@ void PhasorView::paintEvent(QPaintEvent *event)
         for(int i{0}; i < 3; ++i) {
             if(m_phasorIsVisible[i + 3]) {
                 double ratio  = m_fundCurrent[i].magnitude / maxCurrentMagnitude;
-                drawPhasor(painter, m_fundCurrent[i], m_currentColors[i], getPhasorDisplayLength(ratio, ctx, false));
+                drawPhasor(painter, m_fundCurrent[i], config::View::PhaseColors::Current[i], getPhasorDisplayLength(ratio, ctx, false));
             }
         }
         // 고조파 전류
         if(m_phasorIsVisible[7]) {
             double ratio = m_harmonicCurrent.magnitude / maxCurrentMagnitude;
-            drawPhasor(painter, m_harmonicCurrent, Qt::magenta, getPhasorDisplayLength(ratio, ctx, false));
+            drawPhasor(painter, m_harmonicCurrent, Qt::green, getPhasorDisplayLength(ratio, ctx, false));
         }
     }
 }

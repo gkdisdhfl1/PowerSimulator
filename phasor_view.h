@@ -25,9 +25,6 @@ class PhasorView : public QWidget
 public:
     explicit PhasorView(QWidget *parent = nullptr);
 
-    const std::array<QColor, 3>& getVoltageColors() const { return m_voltageColors; }
-    const std::array<QColor, 3>& getCurrentColors() const { return m_currentColors; }
-
 public slots:
     void updateData(const std::array<HarmonicAnalysisResult, 3>& fundamentalVoltage,
                     const std::array<HarmonicAnalysisResult, 3>& fundamentalCurrent,
@@ -66,9 +63,6 @@ private:
     std::array<PhasorInfo, 3> m_fundCurrent;
     PhasorInfo m_harmonicVoltage;
     PhasorInfo m_harmonicCurrent;
-
-    const std::array<QColor, 3> m_voltageColors = {Qt::blue, Qt::darkYellow, Qt::darkGreen};
-    const std::array<QColor, 3> m_currentColors = {Qt::red, Qt::darkCyan, Qt::darkMagenta};
 };
 
 #endif // PHASOR_VIEW_H

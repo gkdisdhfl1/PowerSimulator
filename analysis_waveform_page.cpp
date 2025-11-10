@@ -1,4 +1,5 @@
 #include "analysis_waveform_page.h"
+#include "config.h"
 #include <QButtonGroup>
 #include <QChart>
 #include <QChartView>
@@ -213,20 +214,17 @@ void AnalysisWaveformPage::setupChart()
     m_chart->addAxis(m_axisA, Qt::AlignRight);
 
     // 시리즈 생성 및 연결
-    const std::array<QColor, 3> voltageColors = {Qt::blue, Qt::darkYellow, Qt::black};
-    const std::array<QColor, 3> currentColors = {Qt::red, QColorConstants::Svg::orange, QColorConstants::Svg::gray};
-
 
     for(int i{0}; i < 3; ++i) {
         m_voltageSeries[i] = new QLineSeries();
-        m_voltageSeries[i]->setColor(voltageColors[i]);
+        m_voltageSeries[i]->setColor(config::View::PhaseColors::Voltage[i]);
         m_chart->addSeries(m_voltageSeries[i]);
         m_voltageSeries[i]->attachAxis(m_axisX);
         m_voltageSeries[i]->attachAxis(m_axisV);
         connect(m_voltagePhaseChecks[i], &QCheckBox::toggled, m_voltageSeries[i], &QLineSeries::setVisible);
 
         m_currentSeries[i] = new QLineSeries();
-        m_currentSeries[i]->setColor(currentColors[i]);
+        m_currentSeries[i]->setColor(config::View::PhaseColors::Current[i]);
         m_chart->addSeries(m_currentSeries[i]);
         m_currentSeries[i]->attachAxis(m_axisX);
         m_currentSeries[i]->attachAxis(m_axisA);

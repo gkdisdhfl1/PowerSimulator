@@ -55,6 +55,7 @@ void GraphWindow::setupSeries()
         true, {}
     });
     m_seriesInfoList.back().series->setName("Voltage");
+    m_seriesInfoList.back().series->setColor(config::View::PhaseColors::Voltage[0]);
 
     m_seriesInfoList.emplace_back(SeriesInfo{
         new QLineSeries(this),
@@ -63,7 +64,7 @@ void GraphWindow::setupSeries()
         true, {}
     });
     m_seriesInfoList.back().series->setName("Current");
-    m_seriesInfoList.back().series->setColor(QColor(QColorConstants::Svg::red));
+    m_seriesInfoList.back().series->setColor(config::View::PhaseColors::Current[0]);
 
     // B상
     m_seriesInfoList.emplace_back(SeriesInfo{
@@ -73,7 +74,7 @@ void GraphWindow::setupSeries()
         false, {}
     });
     m_seriesInfoList.back().series->setName("Voltage B");
-    m_seriesInfoList.back().series->setColor(QColor(Qt::darkYellow));
+    m_seriesInfoList.back().series->setColor(config::View::PhaseColors::Voltage[1]);
 
     m_seriesInfoList.emplace_back(SeriesInfo{
         new QLineSeries(this),
@@ -82,7 +83,7 @@ void GraphWindow::setupSeries()
         false, {}
     });
     m_seriesInfoList.back().series->setName("Current B");
-    m_seriesInfoList.back().series->setColor(QColor(QColorConstants::Svg::orange));
+    m_seriesInfoList.back().series->setColor(config::View::PhaseColors::Current[1]);
 
     // C상
     m_seriesInfoList.emplace_back(SeriesInfo{
@@ -92,7 +93,7 @@ void GraphWindow::setupSeries()
         false, {}
     });
     m_seriesInfoList.back().series->setName("Voltage C");
-    m_seriesInfoList.back().series->setColor(QColor(QColorConstants::Svg::black));
+    m_seriesInfoList.back().series->setColor(config::View::PhaseColors::Voltage[2]);
 
     m_seriesInfoList.emplace_back(SeriesInfo{
         new QLineSeries(this),
@@ -101,7 +102,7 @@ void GraphWindow::setupSeries()
         false, {}
     });
     m_seriesInfoList.back().series->setName("Current C");
-    m_seriesInfoList.back().series->setColor(QColor(QColorConstants::Svg::gray));
+    m_seriesInfoList.back().series->setColor(config::View::PhaseColors::Current[2]);
 
     // ----------------------------
 
@@ -115,6 +116,8 @@ void GraphWindow::setupSeries()
         info.series->setPointsVisible(true);
     }
 
+
+    m_seriesInfoList[0].series->setColor(config::View::PhaseColors::Voltage[0]);
 }
 
 // --- public slot ----

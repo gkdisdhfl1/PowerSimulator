@@ -93,15 +93,11 @@ AnalysisPhasorPage::AnalysisPhasorPage(QWidget *parent)
     contentLayout->addWidget(gridContainer, 0, Qt::AlignCenter);
     mainLayout->addLayout(contentLayout, 1);
 
-    // 라벨 배경색 설정
-    const auto& voltageColors = m_phasorView->getVoltageColors();
-    const auto& currentColors = m_phasorView->getCurrentColors();
-
     for(int i{0}; i < 3; ++i) {
-        QString voltageStyle = QString("background-color: %1; color: white;").arg(voltageColors[i].name());
+        QString voltageStyle = QString("background-color: %1; color: white;").arg(config::View::PhaseColors::Voltage[i].name());
         m_voltageNameLabels[i]->setStyleSheet(voltageStyle);
 
-        QString currentStyle = QString("background-color: %1; color: white;").arg(currentColors[i].name());
+        QString currentStyle = QString("background-color: %1; color: white;").arg(config::View::PhaseColors::Current[i].name());
         m_currentNameLabels[i]->setStyleSheet(currentStyle);
     }
 
