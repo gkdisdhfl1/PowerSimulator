@@ -82,6 +82,7 @@ void AnalysisWaveformPage::setupUi()
 
     // 4. 컨텐츠 영역 (스케일 버튼, 차트)
     auto contentLayout = new QHBoxLayout();
+
     QFont axisFont;
     axisFont.setPixelSize(8);
 
@@ -111,26 +112,30 @@ void AnalysisWaveformPage::setupUi()
     scaleButtonsLayout->addStretch();
     contentLayout->addWidget(scaleButtonsContainer);
 
-    // 4-1.5 차트 위 라벨
-    m_voltageScaleLabel = new QLabel("[V]");
-    m_currentScaleLabel = new QLabel("[A]");
-
-    m_voltageScaleLabel->setFont(axisFont);
-    m_currentScaleLabel->setFont(axisFont);
-    m_voltageScaleLabel->setAlignment(Qt::AlignCenter);
-    m_currentScaleLabel->setAlignment(Qt::AlignCenter);
-
-    auto chartHeaderLayout = new QHBoxLayout();
-    chartHeaderLayout->addWidget(m_voltageScaleLabel);
-    chartHeaderLayout->addStretch();
-    chartHeaderLayout->addWidget(m_currentScaleLabel);
-    mainLayout->addLayout(chartHeaderLayout);
-
     // 4-2 차트 뷰
     m_chart = new QChart();
+    m_chart->setPlotArea(QRect(25, 25, 295, 180));
     m_chartView = new QChartView(m_chart);
     m_chartView->setRenderHint(QPainter::Antialiasing);
     contentLayout->addWidget(m_chartView, 1);
+
+    auto* internalVLayout = new QVBoxLayout(m_chartView);
+    auto* chartHeaderLayout = new QHBoxLayout();
+    internalVLayout->addLayout(chartHeaderLayout);
+    internalVLayout->addStretch(); // 헤더를 상단에 고정
+
+    m_voltageScaleLabel = new QLabel("[V]");
+    m_voltageScaleLabel->setFont(axisFont);
+    m_voltageScaleLabel->setObjectName("axisUnitLabel");
+
+    m_currentScaleLabel = new QLabel("[A]");
+    m_currentScaleLabel->setFont(axisFont);
+    m_currentScaleLabel->setObjectName("axisUnitLabel");
+
+    chartHeaderLayout->addWidget(m_voltageScaleLabel);
+    chartHeaderLayout->addStretch();
+    chartHeaderLayout->addWidget(m_currentScaleLabel);
+    chartHeaderLayout->setContentsMargins(15, 0, 15, 0);
 
     // 차트 및 축 설정
     m_chart->legend()->hide();
@@ -179,13 +184,18 @@ void AnalysisWaveformPage::setupUi()
 
     // 전체 on/off 체크박스 연결
     connect(voltageAllCheck, &QCheckBox::toggled, [this](bool checked){
-        // qDebug() << "AnalysisWavefromPage::voltageAllcheck::checked: " << checked;
         for(int i{0}; i < 3; ++i) m_voltagePhaseChecks[i]->setChecked(checked);
         for(int i{0}; i < 3; ++i) m_voltagePhaseChecks[i]->setEnabled(checked);
+
+        checked ? m_axisV->setLabelsColor(QColor(Qt::black)) : m_axisV->setLabelsColor(Qt::transparent);
+        m_voltageScaleLabel->setVisible(checked);
     });
     connect(currentAllCheck, &QCheckBox::toggled, [this](bool checked){
         for(int i{0}; i < 3; ++i) m_currentPhaseChecks[i]->setChecked(checked);
         for(int i{0}; i < 3; ++i) m_currentPhaseChecks[i]->setEnabled(checked);
+
+        checked ? m_axisA->setLabelsColor(QColor(Qt::black)) : m_axisA->setLabelsColor(Qt::transparent);
+        m_currentScaleLabel->setVisible(checked);
     });
 
     // 시작/정지 버튼 연결
