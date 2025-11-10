@@ -126,12 +126,11 @@ QWidget* AnalysisWaveformPage::setupRightPanel()
 {
     auto rightContentPanel = new QWidget();
     auto rightContentLayout = new QVBoxLayout(rightContentPanel);
-    rightContentLayout->setContentsMargins(0, 0, 0, 0);
+    rightContentLayout->setContentsMargins(10, 0, 0, 0);
 
     auto controlBarLayout = new QHBoxLayout();
     controlBarLayout->setContentsMargins(0, 0, 0, 0);
     controlBarLayout->setSpacing(2);
-    controlBarLayout->addSpacing(2);
 
     QLabel* voltageLabel = new QLabel("Volt");
     QLabel* currentLabel = new QLabel("Curr");
@@ -154,6 +153,7 @@ QWidget* AnalysisWaveformPage::setupRightPanel()
     }
     controlBarLayout->addStretch();
     rightContentLayout->addLayout(controlBarLayout);
+    rightContentLayout->addSpacing(20);
 
     setupChart();
     rightContentLayout->addWidget(m_chartView, 1);
