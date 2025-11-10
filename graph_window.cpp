@@ -116,7 +116,6 @@ void GraphWindow::setupSeries()
         info.series->setPointsVisible(true);
     }
 
-
     m_seriesInfoList[0].series->setColor(config::View::PhaseColors::Voltage[0]);
 }
 

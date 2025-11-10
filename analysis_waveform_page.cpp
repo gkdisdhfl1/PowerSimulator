@@ -217,15 +217,15 @@ void AnalysisWaveformPage::setupChart()
 
     for(int i{0}; i < 3; ++i) {
         m_voltageSeries[i] = new QLineSeries();
-        m_voltageSeries[i]->setColor(config::View::PhaseColors::Voltage[i]);
         m_chart->addSeries(m_voltageSeries[i]);
+        m_voltageSeries[i]->setColor(config::View::PhaseColors::Voltage[i]);
         m_voltageSeries[i]->attachAxis(m_axisX);
         m_voltageSeries[i]->attachAxis(m_axisV);
         connect(m_voltagePhaseChecks[i], &QCheckBox::toggled, m_voltageSeries[i], &QLineSeries::setVisible);
 
         m_currentSeries[i] = new QLineSeries();
-        m_currentSeries[i]->setColor(config::View::PhaseColors::Current[i]);
         m_chart->addSeries(m_currentSeries[i]);
+        m_currentSeries[i]->setColor(config::View::PhaseColors::Current[i]);
         m_currentSeries[i]->attachAxis(m_axisX);
         m_currentSeries[i]->attachAxis(m_axisA);
         connect(m_currentPhaseChecks[i], &QCheckBox::toggled, m_currentSeries[i], &QLineSeries::setVisible);
