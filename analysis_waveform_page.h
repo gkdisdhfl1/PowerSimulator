@@ -14,6 +14,7 @@ class QPushButton;
 class QCheckBox;
 class QButtonGroup;
 class QLabel;
+class QVBoxLayout;
 
 static const std::vector<double> RANGE_TABLE = {
     0.004, 0.008, 0.020, 0.040, 0.080,
@@ -44,6 +45,11 @@ private:
     ScaleUnit m_currentUnit;
 
     void setupUi();
+    void setupTopBar(QVBoxLayout* mainLayout);
+    QWidget* setupLeftPanel();
+    QWidget* setupRightPanel();
+    void setupChart();
+
     void applyScaleStep(bool zoomIn, bool voltage);
     void updateScaleUnit(double range, bool voltage);
     double scaleValue(double value, ScaleUnit unit);

@@ -25,6 +25,40 @@ void AnalysisWaveformPage::setupUi()
     mainLayout->setSpacing(2);
 
     // 1. 상단 UI (제목, 전체 on/off)
+    setupTopBar(mainLayout);
+
+    // 2. 구분선
+    QFrame* titleLine = new QFrame(this);
+    titleLine->setFrameShape(QFrame::HLine);
+    titleLine->setObjectName("titleLine");
+    titleLine->setFixedHeight(2);
+    mainLayout->addWidget(titleLine);
+
+    // 3. 컨텐츠 영역
+    auto middleLayout = new QHBoxLayout();
+    mainLayout->addLayout(middleLayout, 1);
+
+    QWidget* leftPanel = setupLeftPanel();
+    QWidget* rightPanel = setupRightPanel();
+
+    middleLayout->addWidget(leftPanel);
+    middleLayout->addWidget(rightPanel, 1);
+
+    // 시작/정지 버튼 연결
+    connect(m_startButton, &QPushButton::toggled, this, &AnalysisWaveformPage::onStartStopToggled);
+    connect(m_scaleButtons[0], &QPushButton::toggled, this, &AnalysisWaveformPage::onScaleAutoToggled);
+    connect(m_scaleButtons[1], &QPushButton::toggled, this, &AnalysisWaveformPage::onScaleTargetToggled);
+    connect(m_scaleButtons[2], &QPushButton::clicked, this, &AnalysisWaveformPage::onScaleInClicked);
+    connect(m_scaleButtons[3], &QPushButton::clicked, this, &AnalysisWaveformPage::onScaleOutClicked);
+
+    // 초기 상태 설정
+    onStartStopToggled(true);
+    onScaleAutoToggled(true);
+    onScaleTargetToggled(true);
+}
+
+void AnalysisWaveformPage::setupTopBar(QVBoxLayout* mainLayout)
+{
     auto topLayout = new QHBoxLayout();
     QLabel* titleLabel = new QLabel("Waveform");
     titleLabel->setObjectName("titleLabel");
@@ -40,60 +74,26 @@ void AnalysisWaveformPage::setupUi()
     topLayout->addWidget(voltageAllCheck);
     topLayout->addWidget(currentAllCheck);
     mainLayout->addLayout(topLayout);
+}
 
-    // 2. 구분선
-    QFrame* titleLine = new QFrame(this);
-    titleLine->setFrameShape(QFrame::HLine);
-    titleLine->setObjectName("titleLine");
-    titleLine->setFixedHeight(2);
-    mainLayout->addWidget(titleLine);
+QWidget* AnalysisWaveformPage::setupLeftPanel()
+{
+    auto leftButtonPanel = new QWidget();
+    auto leftButtonLayout = new QVBoxLayout(leftButtonPanel);
+    leftButtonLayout->setContentsMargins(0, 0, 0, 0);
+    leftButtonLayout->setSpacing(10); // 버튼 사이 간격
 
-    // 3. 중간 컨트롤 바 (시작/정지, 상별 on/off)
-    auto controlBarLayout = new QHBoxLayout();
-    controlBarLayout->setContentsMargins(0, 0, 0, 0);
-    controlBarLayout->setSpacing(2);
     m_startButton = new QPushButton("❚❚");
     m_startButton->setCheckable(true);
     m_startButton->setChecked(true);
     m_startButton->setProperty("buttonType", "waveformToggle");
-    controlBarLayout->addWidget(m_startButton);
-    controlBarLayout->addSpacing(20);
+    leftButtonLayout->addWidget(m_startButton);
 
-    QLabel* voltageLabel = new QLabel("Volt");
-    QLabel* currentLabel = new QLabel("Curr");
-    voltageLabel->setObjectName("waveformLabel");
-    currentLabel->setObjectName("waveformLabel");
-
-    controlBarLayout->addWidget(voltageLabel);
-    for(int i{0}; i < 3; ++i) {
-        m_voltagePhaseChecks[i] = new QCheckBox(QString(QChar('A' + i)));
-        m_voltagePhaseChecks[i]->setChecked(true);
-        controlBarLayout->addWidget(m_voltagePhaseChecks[i]);
-    }
-    controlBarLayout->addSpacing(20);
-
-    controlBarLayout->addWidget(currentLabel);
-    for(int i{0}; i < 3; ++i) {
-        m_currentPhaseChecks[i] = new QCheckBox(QString(QChar('A' + i)));
-        m_currentPhaseChecks[i]->setChecked(true);
-        controlBarLayout->addWidget(m_currentPhaseChecks[i]);
-    }
-    controlBarLayout->addStretch();
-    mainLayout->addLayout(controlBarLayout);
-
-    // 4. 컨텐츠 영역 (스케일 버튼, 차트)
-    auto contentLayout = new QHBoxLayout();
-
-    QFont axisFont;
-    axisFont.setPixelSize(8);
-
-    // 4-1 스케일 버튼 그룹
     auto scaleButtonsContainer = new QWidget();
     scaleButtonsContainer->setObjectName("scaleButtonsContainer");
-    scaleButtonsContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+    // scaleButtonsContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
     auto scaleButtonsLayout = new QVBoxLayout(scaleButtonsContainer);
-    // scaleButtonsLayout->setSpacing(10);
-    // scaleButtonsLayout->setContentsMargins(5, 5, 5, 5);
+    scaleButtonsLayout->setContentsMargins(0, 0, 0, 0);
 
     m_scaleButtonGroup = new QButtonGroup(this);
     m_scaleButtonGroup->setExclusive(false);
@@ -116,14 +116,59 @@ void AnalysisWaveformPage::setupUi()
     }
     m_scaleButtons[0]->setChecked(true); // Auto
     m_scaleButtons[1]->setChecked(true); // V가 기본
+    leftButtonLayout->addWidget(scaleButtonsContainer);
     scaleButtonsLayout->addStretch();
-    contentLayout->addWidget(scaleButtonsContainer);
 
-    // 4-2 차트 뷰
+    return leftButtonPanel;
+}
+
+QWidget* AnalysisWaveformPage::setupRightPanel()
+{
+    auto rightContentPanel = new QWidget();
+    auto rightContentLayout = new QVBoxLayout(rightContentPanel);
+    rightContentLayout->setContentsMargins(0, 0, 0, 0);
+
+    auto controlBarLayout = new QHBoxLayout();
+    controlBarLayout->setContentsMargins(0, 0, 0, 0);
+    controlBarLayout->setSpacing(2);
+    controlBarLayout->addSpacing(2);
+
+    QLabel* voltageLabel = new QLabel("Volt");
+    QLabel* currentLabel = new QLabel("Curr");
+    voltageLabel->setObjectName("waveformLabel");
+    currentLabel->setObjectName("waveformLabel");
+
+    controlBarLayout->addWidget(voltageLabel);
+    for(int i{0}; i < 3; ++i) {
+        m_voltagePhaseChecks[i] = new QCheckBox(QString(QChar('A' + i)));
+        m_voltagePhaseChecks[i]->setChecked(true);
+        controlBarLayout->addWidget(m_voltagePhaseChecks[i]);
+    }
+    controlBarLayout->addSpacing(20);
+
+    controlBarLayout->addWidget(currentLabel);
+    for(int i{0}; i < 3; ++i) {
+        m_currentPhaseChecks[i] = new QCheckBox(QString(QChar('A' + i)));
+        m_currentPhaseChecks[i]->setChecked(true);
+        controlBarLayout->addWidget(m_currentPhaseChecks[i]);
+    }
+    controlBarLayout->addStretch();
+    rightContentLayout->addLayout(controlBarLayout);
+
+    setupChart();
+    rightContentLayout->addWidget(m_chartView, 1);
+
+    return rightContentPanel;
+}
+
+void AnalysisWaveformPage::setupChart()
+{
     m_chart = new QChart();
     m_chartView = new QChartView(m_chart);
     m_chartView->setRenderHint(QPainter::Antialiasing);
-    contentLayout->addWidget(m_chartView, 1);
+
+    QFont axisFont;
+    axisFont.setPixelSize(8);
 
     auto* internalVLayout = new QVBoxLayout(m_chartView);
     auto* chartHeaderLayout = new QHBoxLayout();
@@ -171,7 +216,6 @@ void AnalysisWaveformPage::setupUi()
     const std::array<QColor, 3> voltageColors = {Qt::blue, Qt::darkYellow, Qt::black};
     const std::array<QColor, 3> currentColors = {Qt::red, QColorConstants::Svg::orange, QColorConstants::Svg::gray};
 
-    mainLayout->addLayout(contentLayout, 1);
 
     for(int i{0}; i < 3; ++i) {
         m_voltageSeries[i] = new QLineSeries();
@@ -188,34 +232,6 @@ void AnalysisWaveformPage::setupUi()
         m_currentSeries[i]->attachAxis(m_axisA);
         connect(m_currentPhaseChecks[i], &QCheckBox::toggled, m_currentSeries[i], &QLineSeries::setVisible);
     }
-
-    // 전체 on/off 체크박스 연결
-    connect(voltageAllCheck, &QCheckBox::toggled, [this](bool checked){
-        for(int i{0}; i < 3; ++i) m_voltagePhaseChecks[i]->setChecked(checked);
-        for(int i{0}; i < 3; ++i) m_voltagePhaseChecks[i]->setEnabled(checked);
-
-        checked ? m_axisV->setLabelsColor(QColor(Qt::black)) : m_axisV->setLabelsColor(Qt::transparent);
-        m_voltageScaleLabel->setVisible(checked);
-    });
-    connect(currentAllCheck, &QCheckBox::toggled, [this](bool checked){
-        for(int i{0}; i < 3; ++i) m_currentPhaseChecks[i]->setChecked(checked);
-        for(int i{0}; i < 3; ++i) m_currentPhaseChecks[i]->setEnabled(checked);
-
-        checked ? m_axisA->setLabelsColor(QColor(Qt::black)) : m_axisA->setLabelsColor(Qt::transparent);
-        m_currentScaleLabel->setVisible(checked);
-    });
-
-    // 시작/정지 버튼 연결
-    connect(m_startButton, &QPushButton::toggled, this, &AnalysisWaveformPage::onStartStopToggled);
-    connect(m_scaleButtons[0], &QPushButton::toggled, this, &AnalysisWaveformPage::onScaleAutoToggled);
-    connect(m_scaleButtons[1], &QPushButton::toggled, this, &AnalysisWaveformPage::onScaleTargetToggled);
-    connect(m_scaleButtons[2], &QPushButton::clicked, this, &AnalysisWaveformPage::onScaleInClicked);
-    connect(m_scaleButtons[3], &QPushButton::clicked, this, &AnalysisWaveformPage::onScaleOutClicked);
-
-    // 초기 상태 설정
-    onStartStopToggled(true);
-    onScaleAutoToggled(true);
-    onScaleTargetToggled(true);
 }
 
 void AnalysisWaveformPage::onOneSecondDataUpdated(const OneSecondSummaryData& data)
