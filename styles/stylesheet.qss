@@ -4,7 +4,11 @@ QDoubleSpinBox[fineTuning="true"] {
 }
 
 
-/*  --- Accura 3700 --- */
+/*
+*   ===================
+*       Accura 3700
+*   ===================
+*/
 
 /* submenuList */
 QListWidget#submenuList {
@@ -30,11 +34,13 @@ QListWidget::item:selected#submenuList {
     background-color: #ffffff;
     color: black;
 }
+/* -------------------------------------- */
 
 /* contentsStack */
 contentsStack {
     background-color: #ffffff; /* white */
 }
+/* -------------------------------------- */
 
 /* --- Label --- */
 QLabel#titleLabel {
@@ -81,6 +87,7 @@ QLabel#phasorUnitLabel {
 QLabel#phasorNameLabel {
 
 }
+/* -------------------------------------- */
 
 /* --- Frame --- */
 QFrame#titleLine {
@@ -96,6 +103,7 @@ QFrame#hLine {
 QFrame#phasorHLine {
     background-color: black;
 }
+/* -------------------------------------- */
 
 /* --- MainTabs --- */
 QTabWidget#mainTabs {
@@ -119,6 +127,7 @@ QTabBar::tab#mainTabBar {
 QTabBar::tab:selected#mainTabBar {
     background: #008CFF;
 }
+/* -------------------------------------- */
 
 /* --- checkbox --- */
 QCheckBox#check {
@@ -146,4 +155,31 @@ QCheckBox::indicator#check {
 QCheckBox::indicator:checked#check {
     image: url(:/image/check.png);
 }
+/* -------------------------------------- */
 
+/* === QPushButton === */
+QPushButton[buttonType="waveformToggle"],
+QPushButton[buttonType="waveformControl"] {
+    background-color: #c0c0c0; /* silver */
+    min-width: 40px;
+    min-height: 25px;
+    padding: 2px;
+}
+
+/* Auto, V/A 버튼 스타일 */
+QPushButton[buttonType="waveformToggle"] {
+    font: bold 10px;
+}
+QPushButton[buttonType="waveformToggle"]:checked {
+    background-color: #008CFF;
+    color: white;
+}
+QPushButton[buttonType="waveformToggle"][toggleType="VA"]:checked {
+    background-color: #c0c0c0; /* silver 로 유지*/
+    color: black;
+}
+
+/* +, - 버튼 스타일 */
+QPushButton[buttonType="waveformControl"] {
+    font: bold 15px;
+}

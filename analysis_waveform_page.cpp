@@ -55,6 +55,7 @@ void AnalysisWaveformPage::setupUi()
     m_startButton = new QPushButton("❚❚");
     m_startButton->setCheckable(true);
     m_startButton->setChecked(true);
+    m_startButton->setProperty("buttonType", "waveformToggle");
     controlBarLayout->addWidget(m_startButton);
     controlBarLayout->addSpacing(20);
 
@@ -102,8 +103,14 @@ void AnalysisWaveformPage::setupUi()
         m_scaleButtons[i] = new QPushButton(scaleButtonNames[i]);
         if(i < 2) {
             m_scaleButtons[i]->setCheckable(true);
+            m_scaleButtons[i]->setProperty("buttonType", "waveformToggle");
+
+            if(i == 1) {// V/A버튼
+                m_scaleButtons[i]->setProperty("toggleType", "VA");
+            }
+        } else {
+            m_scaleButtons[i]->setProperty("buttonType", "waveformControl");
         }
-        m_scaleButtons[i]->setObjectName("waveformScaleButton");
         scaleButtonsLayout->addWidget(m_scaleButtons[i]);
         m_scaleButtonGroup->addButton(m_scaleButtons[i], 1);
     }
@@ -114,7 +121,6 @@ void AnalysisWaveformPage::setupUi()
 
     // 4-2 차트 뷰
     m_chart = new QChart();
-    m_chart->setPlotArea(QRect(25, 25, 295, 180));
     m_chartView = new QChartView(m_chart);
     m_chartView->setRenderHint(QPainter::Antialiasing);
     contentLayout->addWidget(m_chartView, 1);
@@ -139,6 +145,7 @@ void AnalysisWaveformPage::setupUi()
 
     // 차트 및 축 설정
     m_chart->legend()->hide();
+    m_chart->setPlotArea(QRect(25, 25, 295, 180));
     m_chart->setContentsMargins(-20, -10, -20, -10); // 여백 최소화
 
     m_axisX = new QValueAxis();
