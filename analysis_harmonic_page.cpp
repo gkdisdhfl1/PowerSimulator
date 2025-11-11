@@ -7,6 +7,7 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QVBoxLayout>
+#include <config.h>
 
 AnalysisHarmonicPage::AnalysisHarmonicPage(QWidget *parent)
     : QWidget{parent}
@@ -40,11 +41,13 @@ void AnalysisHarmonicPage::setupUi()
     // 데이터 종류 콤보박스
     m_dataTypeComboBox = new QComboBox();
     m_dataTypeComboBox->addItems({"Voltage", "[%]RMS", "[%]Fund"});
+    m_dataTypeComboBox->setObjectName("harmonicsCombobox");
     controlBarLayout->addWidget(m_dataTypeComboBox);
 
     // 표시 형식 콤보박스
     m_viewTypeComboBox = new QComboBox();
     m_viewTypeComboBox->addItems({"Graph", "Text"});
+    m_viewTypeComboBox->setObjectName("harmonicsCombobox");
     controlBarLayout->addWidget(m_viewTypeComboBox);
 
     controlBarLayout->addSpacing(30);
@@ -52,6 +55,7 @@ void AnalysisHarmonicPage::setupUi()
     // Fund. 체크박스
     m_fundCheckBox = new QCheckBox("Fund.");
     m_fundCheckBox->setChecked(true);
+    m_fundCheckBox->setProperty("checkType", "fundCheck");
 
     controlBarLayout->addWidget(m_fundCheckBox);
     controlBarLayout->addStretch();
@@ -61,6 +65,10 @@ void AnalysisHarmonicPage::setupUi()
     for(int i{0}; i < 3; ++i) {
         m_phaseCheckBoxes[i] = new QCheckBox(phaseNames[i]);
         m_phaseCheckBoxes[i]->setChecked(true);
+        m_phaseCheckBoxes[i]->setProperty("checkType", "phaseCheck");
+        QString phaseStyle = QString("QCheckBox::checked { background-color: %1; }")
+                                 .arg(config::View::PhaseColors::Voltage[i].name());
+        m_phaseCheckBoxes[i]->setStyleSheet(phaseStyle);
 
         controlBarLayout->addWidget(m_phaseCheckBoxes[i]);
     }
@@ -79,6 +87,12 @@ void AnalysisHarmonicPage::setupTopBar(QVBoxLayout* mainLayout)
     // Voltage/Current 토글 버튼
     m_voltageButton = new QPushButton("Voltage");
     m_currentButton = new QPushButton("Current");
+    m_voltageButton->setCheckable(true);
+    m_currentButton->setCheckable(true);
+
+    // 버튼에 스타일 속성 부여
+    m_voltageButton->setObjectName("harmonicsToggle");
+    m_currentButton->setObjectName("harmonicsToggle");
 
     // QButtonGroup으로 상호 배타적 동작 설정
     m_buttonGroup = new QButtonGroup(this);
@@ -91,6 +105,7 @@ void AnalysisHarmonicPage::setupTopBar(QVBoxLayout* mainLayout)
 
     // 버튼을 topLayout에 추가
     topLayout->addWidget(m_voltageButton);
+    topLayout->addSpacing(5);
     topLayout->addWidget(m_currentButton);
 
     connect(m_buttonGroup, &QButtonGroup::idClicked, this, &AnalysisHarmonicPage::onDisplayTypeChanged);

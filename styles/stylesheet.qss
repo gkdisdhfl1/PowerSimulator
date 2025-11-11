@@ -147,9 +147,12 @@ QCheckBox[checkType="allCheck"] {
     spacing: 3px;
 }
 
+QCheckBox[checkType="fundCheck"]:checked,
 QCheckBox[checkType="allCheck"]:checked {
     background-color: #008CFF;
 }
+
+QCheckBox[checkType="fundCheck"]:indicator,
 QCheckBox[checkType="phaseCheck"]:indicator,
 QCheckBox[checkType="allCheck"]:indicator{
     width: 10px;
@@ -161,20 +164,30 @@ QCheckBox[checkType="allCheck"]:indicator{
     margin-left: -4px;
 }
 
+QCheckBox[checkType="fundCheck"]:indicator:checked,
 QCheckBox[checkType="phaseCheck"]:indicator:checked,
 QCheckBox[checkType="allCheck"]:indicator:checked {
     image: url(:/image/check.png);
 }
 
-QCheckBox[checkType="phaseCheck"] {
+QCheckBox[checkType="phaseCheck"],
+QCheckBox[checkType="fundCheck"] {
     background-color: #c0c0c0;
     color: white;
     font: bold 11px;
     padding: 4px 6px;
     spacing: 3px;
-    width: 15px;
     height: 8px;
 }
+
+QCheckBox[checkType="phaseCheck"] {
+    width: 15px;
+}
+
+QCheckBox[checkType="fundCheck"] {
+    width: 40px;
+}
+
 
 /* -------------------------------------- */
 
@@ -205,6 +218,17 @@ QPushButton[buttonType="waveformControl"] {
     font: bold 15px;
 }
 
+QPushButton#harmonicsToggle {
+    background-color: #808080;
+    color: white;
+    padding: 4px 6px;
+    border-radius: 0px;
+}
+
+QPushButton#harmonicsToggle:checked {
+    background-color: #008CFF;
+}
+
 /* -------------------------------------- */
 /* --- GroupBox --- */
 QGroupBox#scaleBox {
@@ -219,4 +243,13 @@ QGroupBox#scaleBox::title {
     background-color: #0056b3;
     color: white;
     font-weight: bold;
+}
+
+/* -------------------------------------- */
+
+QComboBox#harmonicsCombobox {
+    border: 1px solid black;
+    font-weight: bold;
+    padding: 1px 18px 1px 3px;
+    min-width: 4em;
 }
