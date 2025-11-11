@@ -11,6 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Charts)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 
 # =================================================
 # 외부 라이브러리 (SQLite, sqplite_modern_cpp)
@@ -96,6 +97,7 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
         data_page.h data_page.cpp
         analysis_phasor_page.h analysis_phasor_page.cpp
         analysis_waveform_page.h analysis_waveform_page.cpp
+        analysis_harmonic_page.h analysis_harmonic_page.cpp
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET PowerSimulator APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR
@@ -135,6 +137,7 @@ target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
+target_link_libraries(PowerSimulator PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

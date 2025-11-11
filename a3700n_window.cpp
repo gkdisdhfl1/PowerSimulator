@@ -2,6 +2,7 @@
 #include "data_page.h"
 #include "analysis_waveform_page.h"
 #include "analysis_phasor_page.h"
+#include "analysis_harmonic_page.h"
 #include <QHBoxLayout>
 #include <QListWidget>
 #include <QStackedWidget>
@@ -225,6 +226,11 @@ void A3700N_Window::createAnalysisPage(QListWidget* submenu, QStackedWidget* sta
     connect(this, &A3700N_Window::summaryDataUpdated, phasorPage, &AnalysisPhasorPage::updateSummaryData);
     stack->addWidget(phasorPage);
     submenu->addItem("Phasor");
+
+    // Harmonics 페이지
+    AnalysisHarmonicPage* harmonicsPage = new AnalysisHarmonicPage(this);
+    stack->addWidget(harmonicsPage);
+    submenu->addItem("Harmonics");
 
     // Waveform 페이지
     AnalysisWaveformPage* waveformPage = new AnalysisWaveformPage(this);
