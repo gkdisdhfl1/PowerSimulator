@@ -1,11 +1,15 @@
 #include "analysis_harmonic_page.h"
 
 #include <QButtonGroup>
+#include <QChart>
+#include <QChartView>
 #include <QCheckBox>
 #include <QComboBox>
 #include <QFrame>
+#include <QGroupBox>
 #include <QLabel>
 #include <QPushButton>
+#include <QStackedWidget>
 #include <QVBoxLayout>
 #include <config.h>
 
@@ -37,7 +41,18 @@ void AnalysisHarmonicPage::setupUi()
     // 3. 컨트롤 바 설정
     setupControlBar(mainLayout);
 
-    mainLayout->addStretch(); // 임시 스트레치
+    // 4. 컨텐츠 스택 위젯
+    m_contentStack = new QStackedWidget();
+    mainLayout->addWidget(m_contentStack, 1); // 남은 공간을 모두 차지
+
+    // Graph 뷰와 Text 뷰 생성 및 추가
+    QWidget* graphView = createGraphView();
+    QWidget* textView = createTextView(); // 지금은 빈 위젯으로 생성
+    m_contentStack->addWidget(graphView);
+    m_contentStack->addWidget(textView);
+
+    // 뷰 타입 콤보박스와 스택 위젯 연결
+    connect(m_viewTypeComboBox, &QComboBox::currentIndexChanged, m_contentStack, &QStackedWidget::setCurrentIndex);
 }
 
 void AnalysisHarmonicPage::setupTopBar(QVBoxLayout* mainLayout)
@@ -116,6 +131,93 @@ void AnalysisHarmonicPage::setupControlBar(QVBoxLayout* mainLayout)
 
         controlBarLayout->addWidget(m_phaseCheckBoxes[i]);
     }
+}
+
+QWidget* AnalysisHarmonicPage::createGraphView()
+{
+    auto graphViewWidget = new QWidget();
+    auto mainLayout = new QHBoxLayout(graphViewWidget);
+    mainLayout->setContentsMargins(0, 10, 0, 0); // 컨트롤 바와의 간격
+
+    // 1. 왼쪽 스케일 패널
+    auto scaleBox = new QGroupBox("Scale");
+    scaleBox->setObjectName("scaleBox");
+    scaleBox->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
+    auto scaleLayout = new QVBoxLayout(scaleBox);
+    scaleLayout->setContentsMargins(2, 2, 2, 2);
+
+    auto autoButton = new QPushButton("Auto");
+    auto plusButton = new QPushButton("+");
+    auto minusButton = new QPushButton("-");
+    scaleLayout->addWidget(autoButton);
+    scaleLayout->addWidget(plusButton);
+    scaleLayout->addWidget(minusButton);
+    // scaleLayout->addStretch();
+
+    mainLayout->addWidget(scaleBox);
+
+    // 2. 오른쪽 그래프 및 정보 패널
+    auto rightPanel = new QWidget();
+    auto rightLayout = new QVBoxLayout(rightPanel);
+    rightLayout->setContentsMargins(10, 0, 0, 0);
+
+    // 2-1. 상단 정보 영역 (THD, Fund.)
+    auto infoContainer = new QWidget();
+    auto infoLayout = new QGridLayout(infoContainer);
+    infoLayout->setContentsMargins(0, 0, 0, 0);
+    // infoLayout->setSpacing(5);
+
+    const QStringList phaseNames = {"A", "B", "C"};
+
+    // THD 라인
+    QLabel* thdLabel = new QLabel("THD");
+    thdLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    infoLayout->addWidget(thdLabel, 0, 0);
+    for(int i{0}; i < 3; ++i) {
+        int col = 1 + (i * 3); // A, B, C 각 그룹의 시작 컬럼
+        infoLayout->addWidget(new QLabel(phaseNames[i]), 0, col);
+        m_thdValueLabels[i] = new QLabel("0.00");
+        infoLayout->addWidget(m_thdValueLabels[i], 0, col + 1);
+        infoLayout->addWidget(new QLabel("%"), 0, col + 2);
+    }
+
+    // Fund. 라인
+    QLabel* fundLabel = new QLabel("Fund.");
+    fundLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    infoLayout->addWidget(fundLabel, 1, 0);
+    for(int i{0}; i < 3; ++i) {
+        int col = 1 + (i * 3); // A, B, C 각 그룹의 시작 컬럼
+        infoLayout->addWidget(new QLabel(phaseNames[i]), 1, col);
+        m_fundValueLabels[i] = new QLabel("0.00");
+        infoLayout->addWidget(m_fundValueLabels[i], 1, col + 1);
+        infoLayout->addWidget(new QLabel("V"), 1, col + 2);
+    }
+
+    infoLayout->setColumnStretch(0, 1);
+
+    rightLayout->addWidget(infoContainer);
+
+    // 2-2. 하단 막대 그래프
+    auto chart = new QChart();
+    chart->setTitle("Harmonic Spectrum");
+    chart->legend()->hide();
+    auto chartView = new QChartView(chart);
+    chartView->setRenderHint(QPainter::Antialiasing);
+
+    rightLayout->addWidget(chartView, 1);
+
+    mainLayout->addWidget(rightPanel, 1); // 오른쪽 패널이 남은 공간 모두 차지
+
+    return graphViewWidget;
+}
+
+QWidget* AnalysisHarmonicPage::createTextView()
+{
+    // 지금은 빈 위젯을 반환. 나중에 구현
+    auto textViewWidget = new QWidget();
+    auto layout = new QVBoxLayout(textViewWidget);
+    layout->addWidget(new QLabel("Text View (구현 예정)"));
+    return textViewWidget;
 }
 
 //-------------------------
