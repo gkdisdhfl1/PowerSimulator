@@ -1,6 +1,7 @@
 #ifndef ANALYSIS_WAVEFORM_PAGE_H
 #define ANALYSIS_WAVEFORM_PAGE_H
 
+#include "config.h"
 #include "measured_data.h"
 
 #include <QWidget>
@@ -15,13 +16,6 @@ class QCheckBox;
 class QButtonGroup;
 class QLabel;
 class QVBoxLayout;
-
-static const std::vector<double> RANGE_TABLE = {
-    0.004, 0.008, 0.020, 0.040, 0.080,
-    0.200, 0.400, 0.800,
-    2.0, 4.0, 8.0, 20.0 , 40.0, 80.0,
-    200.0, 400.0, 800.0, 2000.0
-};
 
 class AnalysisWaveformPage : public QWidget
 {
@@ -40,7 +34,6 @@ private slots:
     void onScaleOutClicked();
 
 private:
-    enum class ScaleUnit { Milli, Base, Kilo };
     ScaleUnit m_voltageUnit;
     ScaleUnit m_currentUnit;
 
@@ -51,8 +44,6 @@ private:
     void setupChart();
 
     void applyScaleStep(bool zoomIn, bool voltage);
-    void updateScaleUnit(double range, bool voltage);
-    double scaleValue(double value, ScaleUnit unit);
     void updateAxis(bool isVoltageAxis);
     void updatePage();
 

@@ -9,6 +9,8 @@
 #include <QPointF>
 #include <data_point.h>
 
+enum class ScaleUnit { Milli, Base, Kilo };
+
 namespace config {
     // std::string_view를 QString으로 변환하는 헬퍼 함수
     inline QString sv_to_q(std::string_view sv) {
@@ -121,6 +123,14 @@ namespace config {
                 QColor(255, 165, 0),  // orange
                 QColor(135, 206, 235)   // sky blue
             };
+        };
+
+        // harmonics, waveform y축 범위
+        constexpr static const std::array<double, 18> RANGE_TABLE = {
+            0.004, 0.008, 0.020, 0.040, 0.080,
+            0.200, 0.400, 0.800,
+            2.0, 4.0, 8.0, 20.0 , 40.0, 80.0,
+            200.0, 400.0, 800.0, 2000.0
         };
     };
 

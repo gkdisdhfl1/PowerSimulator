@@ -1,6 +1,7 @@
 #ifndef ANALYSIS_UTILS_H
 #define ANALYSIS_UTILS_H
 
+#include "config.h"
 #include "data_point.h"
 #include "measured_data.h"
 #include "kiss_fftr.h"
@@ -10,6 +11,8 @@
 #include <QString>
 #include <map>
 
+class QValueAxis;
+class QLabel;
 
 class AnalysisUtils {
 public:
@@ -71,6 +74,11 @@ public:
     static double calculateResidualRms(const std::vector<DataPoint>& samples, DataType type);
 
     static SymmetricalComponents calculateSymmetricalComponents(const std::array<HarmonicAnalysisResult, 3>& fundamentals);
+
+    // 스케일링 유틸리티 함수
+    static ScaleUnit updateScaleUnit(double range);
+    static double scaleValue(double value, ScaleUnit unit);
+    static ScaleUnit updateAxis(QValueAxis* axis, QLabel* label, int scaleIndex, bool isVoltage);
 private:
     static std::map<int, kiss_fftr_cfg> m_fftConfigCache;
 };

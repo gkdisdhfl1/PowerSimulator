@@ -1,5 +1,5 @@
+#include "analysis_utils.h"
 #include "analysis_waveform_page.h"
-#include "config.h"
 #include <QButtonGroup>
 #include <QChart>
 #include <QChartView>
@@ -289,8 +289,8 @@ void AnalysisWaveformPage::updatePage()
         }
 
         // voltage auto scaling
-        for(size_t i{0}; i < RANGE_TABLE.size(); ++i) {
-            if(v_abs_max <= RANGE_TABLE[i]) {
+        for(size_t i{0}; i < config::View::RANGE_TABLE.size(); ++i) {
+            if(v_abs_max <= config::View::RANGE_TABLE[i]) {
                 if(i != m_voltageScaleIndex) {
                     m_voltageScaleIndex = i;
                     updateAxis(true);
@@ -300,8 +300,8 @@ void AnalysisWaveformPage::updatePage()
         }
 
         // current auto scaling
-        for(size_t i{0}; i < RANGE_TABLE.size(); ++i) {
-            if(a_abs_max <= RANGE_TABLE[i]) {
+        for(size_t i{0}; i < config::View::RANGE_TABLE.size(); ++i) {
+            if(a_abs_max <= config::View::RANGE_TABLE[i]) {
                 if(i != m_currentScaleIndex) {
                     m_currentScaleIndex=  i;
                     updateAxis(false);
@@ -332,18 +332,18 @@ void AnalysisWaveformPage::updatePage()
         const auto& v = point.voltage;
         const auto& i = point.current;
 
-        vPoints[0].append(QPointF(timeSec, scaleValue(v.a, m_voltageUnit)));
-        vPoints[1].append(QPointF(timeSec, scaleValue(v.b, m_voltageUnit)));
-        vPoints[2].append(QPointF(timeSec, scaleValue(v.c, m_voltageUnit)));
+        vPoints[0].append(QPointF(timeSec, AnalysisUtils::scaleValue(v.a, m_voltageUnit)));
+        vPoints[1].append(QPointF(timeSec, AnalysisUtils::scaleValue(v.b, m_voltageUnit)));
+        vPoints[2].append(QPointF(timeSec, AnalysisUtils::scaleValue(v.c, m_voltageUnit)));
 
-        iPoints[0].append(QPointF(timeSec, scaleValue(i.a, m_currentUnit)));
-        iPoints[1].append(QPointF(timeSec, scaleValue(i.b, m_currentUnit)));
-        iPoints[2].append(QPointF(timeSec, scaleValue(i.c, m_currentUnit)));
+        iPoints[0].append(QPointF(timeSec, AnalysisUtils::scaleValue(i.a, m_currentUnit)));
+        iPoints[1].append(QPointF(timeSec, AnalysisUtils::scaleValue(i.b, m_currentUnit)));
+        iPoints[2].append(QPointF(timeSec, AnalysisUtils::scaleValue(i.c, m_currentUnit)));
 
-        minV = std::min({minV, scaleValue(v.a, m_voltageUnit), scaleValue(v.b, m_voltageUnit), scaleValue(v.c, m_voltageUnit)});
-        maxV = std::max({maxV, scaleValue(v.a, m_voltageUnit), scaleValue(v.b, m_voltageUnit), scaleValue(v.c, m_voltageUnit)});
-        minA = std::min({minA, scaleValue(i.a, m_currentUnit), scaleValue(i.b, m_currentUnit), scaleValue(i.c, m_currentUnit)});
-        maxA = std::max({maxA, scaleValue(i.a, m_currentUnit), scaleValue(i.b, m_currentUnit), scaleValue(i.c, m_currentUnit)});
+        minV = std::min({minV, AnalysisUtils::scaleValue(v.a, m_voltageUnit), AnalysisUtils::scaleValue(v.b, m_voltageUnit), AnalysisUtils::scaleValue(v.c, m_voltageUnit)});
+        maxV = std::max({maxV, AnalysisUtils::scaleValue(v.a, m_voltageUnit), AnalysisUtils::scaleValue(v.b, m_voltageUnit), AnalysisUtils::scaleValue(v.c, m_voltageUnit)});
+        minA = std::min({minA, AnalysisUtils::scaleValue(i.a, m_currentUnit), AnalysisUtils::scaleValue(i.b, m_currentUnit), AnalysisUtils::scaleValue(i.c, m_currentUnit)});
+        maxA = std::max({maxA, AnalysisUtils::scaleValue(i.a, m_currentUnit), AnalysisUtils::scaleValue(i.b, m_currentUnit), AnalysisUtils::scaleValue(i.c, m_currentUnit)});
     }
 
     // 시리즈 및 축 업데이트
@@ -404,7 +404,7 @@ void AnalysisWaveformPage::applyScaleStep(bool zoomIn, bool isVoltage)
     qDebug() << "zoomIn: " << zoomIn;
     qDebug() << "before index: " << index;
 
-    if(zoomIn && index < (int)RANGE_TABLE.size() - 1)
+    if(zoomIn && index < (int)config::View::RANGE_TABLE.size() - 1)
         ++index;
     else if(!zoomIn && index > 0)
         --index;
@@ -414,62 +414,17 @@ void AnalysisWaveformPage::applyScaleStep(bool zoomIn, bool isVoltage)
     updatePage();
 }
 
-void AnalysisWaveformPage::updateScaleUnit(double range, bool voltage)
-{
-    ScaleUnit unit;
-
-    if(range < 1.0)             unit = ScaleUnit::Milli;
-    else if(range >= 1000.0)    unit = ScaleUnit::Kilo;
-    else                        unit = ScaleUnit::Base;
-
-    if(voltage) m_voltageUnit = unit;
-    else m_currentUnit = unit;
-}
-
-double AnalysisWaveformPage::scaleValue(double value, ScaleUnit unit)
-{
-    switch(unit)
-    {
-    case ScaleUnit::Milli:
-        return value * 1000.0;
-    case ScaleUnit::Kilo:
-        return value / 1000.0;
-    default:
-        return value;
-    }
-}
-
 void AnalysisWaveformPage::updateAxis(bool isVoltageAxis)
 {
     int& index = isVoltageAxis ? m_voltageScaleIndex : m_currentScaleIndex;
     ScaleUnit& unit = isVoltageAxis ? m_voltageUnit : m_currentUnit;
     QValueAxis* targetAxis = isVoltageAxis ? m_axisV : m_axisA;
     QLabel* targetLabel = isVoltageAxis ? m_voltageScaleLabel : m_currentScaleLabel;
-    const char* baseUnit = isVoltageAxis ? "V" : "A";
 
-    double newRange = RANGE_TABLE[index];
-    updateScaleUnit(newRange, isVoltageAxis);
-
-    double displayRange = newRange;
-    if(unit == ScaleUnit::Milli)
-        displayRange *= 1000.0;
-    else if(unit == ScaleUnit::Kilo)
-        displayRange /= 1000.0;
-
-    targetAxis->setRange(-displayRange, displayRange);
-
-    QString unitString;
-    if(unit == ScaleUnit::Milli)
-        unitString = QString("m%1").arg(baseUnit);
-    else if(unit == ScaleUnit::Kilo)
-        unitString = QString("k%1").arg(baseUnit);
-    else unitString = baseUnit;
-    targetLabel->setText(QString("[%1]").arg(unitString));
-
+    unit = AnalysisUtils::updateAxis(targetAxis, targetLabel, index, isVoltageAxis);
+    qDebug() << "index: " << index;
+    qDebug() << "targetLabel: " << targetLabel->text();;
     qDebug() << "isVoltageAxis: " << isVoltageAxis;
-    qDebug() << "newRange: " << newRange;
-    qDebug() << "displayRange: " << displayRange;
-    qDebug() << "unitString: " << unitString;
     qDebug() << "---------------------------";
 }
 
