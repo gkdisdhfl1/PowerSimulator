@@ -21,6 +21,7 @@ private slots:
 private:
     void setupUi();
     void setupTopBar(QVBoxLayout* mainLayout); // 상단 바
+    void setupControlBar(QVBoxLayout* mainLayout);
 
     // UI 멤버 변수
     QPushButton* m_voltageButton;

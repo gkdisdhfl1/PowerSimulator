@@ -34,44 +34,8 @@ void AnalysisHarmonicPage::setupUi()
     titleLine->setFixedHeight(2);
     mainLayout->addWidget(titleLine);
 
-    // 3. 컨트롤 바 추가
-    auto controlBarLayout = new QHBoxLayout();
-    mainLayout->addLayout(controlBarLayout);
-
-    // 데이터 종류 콤보박스
-    m_dataTypeComboBox = new QComboBox();
-    m_dataTypeComboBox->addItems({"Voltage", "[%]RMS", "[%]Fund"});
-    m_dataTypeComboBox->setObjectName("harmonicsCombobox");
-    controlBarLayout->addWidget(m_dataTypeComboBox);
-
-    // 표시 형식 콤보박스
-    m_viewTypeComboBox = new QComboBox();
-    m_viewTypeComboBox->addItems({"Graph", "Text"});
-    m_viewTypeComboBox->setObjectName("harmonicsCombobox");
-    controlBarLayout->addWidget(m_viewTypeComboBox);
-
-    controlBarLayout->addSpacing(30);
-
-    // Fund. 체크박스
-    m_fundCheckBox = new QCheckBox("Fund.");
-    m_fundCheckBox->setChecked(true);
-    m_fundCheckBox->setProperty("checkType", "fundCheck");
-
-    controlBarLayout->addWidget(m_fundCheckBox);
-    controlBarLayout->addStretch();
-
-    // A, B, C 상 체크박스
-    const QStringList phaseNames = {"A", "B", "C"};
-    for(int i{0}; i < 3; ++i) {
-        m_phaseCheckBoxes[i] = new QCheckBox(phaseNames[i]);
-        m_phaseCheckBoxes[i]->setChecked(true);
-        m_phaseCheckBoxes[i]->setProperty("checkType", "phaseCheck");
-        QString phaseStyle = QString("QCheckBox::checked { background-color: %1; }")
-                                 .arg(config::View::PhaseColors::Voltage[i].name());
-        m_phaseCheckBoxes[i]->setStyleSheet(phaseStyle);
-
-        controlBarLayout->addWidget(m_phaseCheckBoxes[i]);
-    }
+    // 3. 컨트롤 바 설정
+    setupControlBar(mainLayout);
 
     mainLayout->addStretch(); // 임시 스트레치
 }
@@ -111,6 +75,47 @@ void AnalysisHarmonicPage::setupTopBar(QVBoxLayout* mainLayout)
     connect(m_buttonGroup, &QButtonGroup::idClicked, this, &AnalysisHarmonicPage::onDisplayTypeChanged);
 
     mainLayout->addLayout(topLayout);
+}
+
+void AnalysisHarmonicPage::setupControlBar(QVBoxLayout* mainLayout)
+{
+    auto controlBarLayout = new QHBoxLayout();
+    mainLayout->addLayout(controlBarLayout);
+
+    // 데이터 종류 콤보박스
+    m_dataTypeComboBox = new QComboBox();
+    m_dataTypeComboBox->addItems({"Voltage", "[%]RMS", "[%]Fund"});
+    m_dataTypeComboBox->setObjectName("harmonicsCombobox");
+    controlBarLayout->addWidget(m_dataTypeComboBox);
+
+    // 표시 형식 콤보박스
+    m_viewTypeComboBox = new QComboBox();
+    m_viewTypeComboBox->addItems({"Graph", "Text"});
+    m_viewTypeComboBox->setObjectName("harmonicsCombobox");
+    controlBarLayout->addWidget(m_viewTypeComboBox);
+
+    controlBarLayout->addSpacing(30);
+
+    // Fund. 체크박스
+    m_fundCheckBox = new QCheckBox("Fund.");
+    m_fundCheckBox->setChecked(true);
+    m_fundCheckBox->setProperty("checkType", "fundCheck");
+
+    controlBarLayout->addWidget(m_fundCheckBox);
+    controlBarLayout->addStretch();
+
+    // A, B, C 상 체크박스
+    const QStringList phaseNames = {"A", "B", "C"};
+    for(int i{0}; i < 3; ++i) {
+        m_phaseCheckBoxes[i] = new QCheckBox(phaseNames[i]);
+        m_phaseCheckBoxes[i]->setChecked(true);
+        m_phaseCheckBoxes[i]->setProperty("checkType", "phaseCheck");
+        QString phaseStyle = QString("QCheckBox::checked { background-color: %1; }")
+                                 .arg(config::View::PhaseColors::Voltage[i].name());
+        m_phaseCheckBoxes[i]->setStyleSheet(phaseStyle);
+
+        controlBarLayout->addWidget(m_phaseCheckBoxes[i]);
+    }
 }
 
 //-------------------------
