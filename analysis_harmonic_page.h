@@ -6,12 +6,17 @@
 class QVBoxLayout;
 class QPushButton;
 class QButtonGroup;
+class QComboBox;
+class QCheckBox;
 
 class AnalysisHarmonicPage : public QWidget
 {
     Q_OBJECT
 public:
     explicit AnalysisHarmonicPage(QWidget *parent = nullptr);
+
+private slots:
+    void onDisplayTypeChanged(int id);
 
 private:
     void setupUi();
@@ -21,6 +26,10 @@ private:
     QPushButton* m_voltageButton;
     QPushButton* m_currentButton;
     QButtonGroup* m_buttonGroup; // 토글 버튼 그룹
+    QCheckBox* m_fundCheckBox;
+    QComboBox* m_dataTypeComboBox;
+    QComboBox* m_viewTypeComboBox;
+    std::array<QCheckBox*, 3> m_phaseCheckBoxes;
 };
 
 #endif // ANALYSIS_HARMONIC_PAGE_H

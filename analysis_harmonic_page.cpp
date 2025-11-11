@@ -1,6 +1,8 @@
 #include "analysis_harmonic_page.h"
 
 #include <QButtonGroup>
+#include <QCheckBox>
+#include <QComboBox>
 #include <QFrame>
 #include <QLabel>
 #include <QPushButton>
@@ -31,6 +33,38 @@ void AnalysisHarmonicPage::setupUi()
     titleLine->setFixedHeight(2);
     mainLayout->addWidget(titleLine);
 
+    // 3. 컨트롤 바 추가
+    auto controlBarLayout = new QHBoxLayout();
+    mainLayout->addLayout(controlBarLayout);
+
+    // 데이터 종류 콤보박스
+    m_dataTypeComboBox = new QComboBox();
+    m_dataTypeComboBox->addItems({"Voltage", "[%]RMS", "[%]Fund"});
+    controlBarLayout->addWidget(m_dataTypeComboBox);
+
+    // 표시 형식 콤보박스
+    m_viewTypeComboBox = new QComboBox();
+    m_viewTypeComboBox->addItems({"Graph", "Text"});
+    controlBarLayout->addWidget(m_viewTypeComboBox);
+
+    controlBarLayout->addSpacing(30);
+
+    // Fund. 체크박스
+    m_fundCheckBox = new QCheckBox("Fund.");
+    m_fundCheckBox->setChecked(true);
+
+    controlBarLayout->addWidget(m_fundCheckBox);
+    controlBarLayout->addStretch();
+
+    // A, B, C 상 체크박스
+    const QStringList phaseNames = {"A", "B", "C"};
+    for(int i{0}; i < 3; ++i) {
+        m_phaseCheckBoxes[i] = new QCheckBox(phaseNames[i]);
+        m_phaseCheckBoxes[i]->setChecked(true);
+
+        controlBarLayout->addWidget(m_phaseCheckBoxes[i]);
+    }
+
     mainLayout->addStretch(); // 임시 스트레치
 }
 
@@ -59,5 +93,18 @@ void AnalysisHarmonicPage::setupTopBar(QVBoxLayout* mainLayout)
     topLayout->addWidget(m_voltageButton);
     topLayout->addWidget(m_currentButton);
 
+    connect(m_buttonGroup, &QButtonGroup::idClicked, this, &AnalysisHarmonicPage::onDisplayTypeChanged);
+
     mainLayout->addLayout(topLayout);
+}
+
+//-------------------------
+
+void AnalysisHarmonicPage::onDisplayTypeChanged(int id)
+{
+    if(id == 0) { // Voltage 버튼 클릭
+        m_dataTypeComboBox->setItemText(0, "Voltage");
+    } else { // Current 버튼 클릭
+        m_dataTypeComboBox->setItemText(0, "Current");
+    }
 }
