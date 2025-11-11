@@ -4,6 +4,7 @@
 #include <QChart>
 #include <QChartView>
 #include <QCheckBox>
+#include <QGroupBox>
 #include <QLabel>
 #include <QLineSeries>
 #include <QPushButton>
@@ -45,6 +46,12 @@ void AnalysisWaveformPage::setupUi()
     middleLayout->addWidget(leftPanel);
     middleLayout->addWidget(rightPanel, 1);
 
+
+    for(int i{0}; i < 3; ++i) {
+        connect(m_voltagePhaseChecks[i], &QCheckBox::toggled, m_voltageSeries[i], &QLineSeries::setVisible);
+        connect(m_currentPhaseChecks[i], &QCheckBox::toggled, m_currentSeries[i], &QLineSeries::setVisible);
+    }
+
     // 시작/정지 버튼 연결
     connect(m_startButton, &QPushButton::toggled, this, &AnalysisWaveformPage::onStartStopToggled);
     connect(m_scaleButtons[0], &QPushButton::toggled, this, &AnalysisWaveformPage::onScaleAutoToggled);
@@ -66,15 +73,33 @@ void AnalysisWaveformPage::setupTopBar(QVBoxLayout* mainLayout)
     topLayout->addWidget(titleLabel);
     topLayout->addStretch();
 
-    auto* voltageAllCheck = new QCheckBox("Voltage");
-    auto* currentAllCheck = new QCheckBox("Current");
+    auto *voltageAllCheck = new QCheckBox("Voltage");
+    auto *currentAllCheck = new QCheckBox("Current");
     voltageAllCheck->setChecked(true);
     currentAllCheck->setChecked(true);
-    voltageAllCheck->setObjectName("check");
-    currentAllCheck->setObjectName("check");
+    voltageAllCheck->setProperty("checkType", "allCheck");
+    currentAllCheck->setProperty("checkType", "allCheck");
     topLayout->addWidget(voltageAllCheck);
     topLayout->addWidget(currentAllCheck);
     mainLayout->addLayout(topLayout);
+
+    // All체크박스와 Waveform 가시성 연결
+    connect(voltageAllCheck, &QCheckBox::toggled, this, [this](bool checked) {
+        qDebug() << "All voltage chckbox:: checked: " << checked;
+        for(int i{0}; i < 3; ++i) {
+            m_voltagePhaseChecks[i]->setChecked(checked);
+            m_voltagePhaseChecks[i]->setEnabled(checked);
+        }
+        !checked ? m_axisV->setLabelsColor(Qt::transparent) : m_axisV->setLabelsColor(Qt::black);
+    });
+    connect(currentAllCheck, &QCheckBox::toggled, this, [this](bool checked) {
+        qDebug() << "All current chckbox:: checked: " << checked;
+        for(int i{0}; i < 3; ++i) {
+            m_currentPhaseChecks[i]->setChecked(checked);
+            m_currentPhaseChecks[i]->setEnabled(checked);
+        }
+        !checked ? m_axisA->setLabelsColor(Qt::transparent) : m_axisA->setLabelsColor(Qt::black);
+    });
 }
 
 QWidget* AnalysisWaveformPage::setupLeftPanel()
@@ -82,7 +107,7 @@ QWidget* AnalysisWaveformPage::setupLeftPanel()
     auto leftButtonPanel = new QWidget();
     auto leftButtonLayout = new QVBoxLayout(leftButtonPanel);
     leftButtonLayout->setContentsMargins(0, 0, 0, 0);
-    leftButtonLayout->setSpacing(10); // 버튼 사이 간격
+    // leftButtonLayout->setSpacing(10); // 버튼 사이 간격
 
     m_startButton = new QPushButton("❚❚");
     m_startButton->setCheckable(true);
@@ -90,11 +115,11 @@ QWidget* AnalysisWaveformPage::setupLeftPanel()
     m_startButton->setProperty("buttonType", "waveformToggle");
     leftButtonLayout->addWidget(m_startButton);
 
-    auto scaleButtonsContainer = new QWidget();
-    scaleButtonsContainer->setObjectName("scaleButtonsContainer");
-    // scaleButtonsContainer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
-    auto scaleButtonsLayout = new QVBoxLayout(scaleButtonsContainer);
-    scaleButtonsLayout->setContentsMargins(0, 0, 0, 0);
+    auto scaleBox = new QGroupBox("Scale");
+    scaleBox->setObjectName("scaleBox");
+    scaleBox->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
+    auto scaleButtonsLayout = new QVBoxLayout(scaleBox);
+    scaleButtonsLayout->setContentsMargins(2, 2, 2, 2);
 
     m_scaleButtonGroup = new QButtonGroup(this);
     m_scaleButtonGroup->setExclusive(false);
@@ -102,6 +127,7 @@ QWidget* AnalysisWaveformPage::setupLeftPanel()
     const QStringList scaleButtonNames = {"Auto", "V/A", "+", "-"};
     for(int i{0}; i < 4; ++i) {
         m_scaleButtons[i] = new QPushButton(scaleButtonNames[i]);
+        m_scaleButtons[i]->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
         if(i < 2) {
             m_scaleButtons[i]->setCheckable(true);
             m_scaleButtons[i]->setProperty("buttonType", "waveformToggle");
@@ -117,8 +143,7 @@ QWidget* AnalysisWaveformPage::setupLeftPanel()
     }
     m_scaleButtons[0]->setChecked(true); // Auto
     m_scaleButtons[1]->setChecked(true); // V가 기본
-    leftButtonLayout->addWidget(scaleButtonsContainer);
-    scaleButtonsLayout->addStretch();
+    leftButtonLayout->addWidget(scaleBox);
 
     return leftButtonPanel;
 }
@@ -130,7 +155,7 @@ QWidget* AnalysisWaveformPage::setupRightPanel()
     rightContentLayout->setContentsMargins(10, 0, 0, 0);
 
     auto controlBarLayout = new QHBoxLayout();
-    controlBarLayout->setContentsMargins(0, 0, 0, 0);
+    controlBarLayout->setContentsMargins(0, 5, 0, 0);
     controlBarLayout->setSpacing(2);
 
     QLabel* voltageLabel = new QLabel("Volt");
@@ -142,19 +167,28 @@ QWidget* AnalysisWaveformPage::setupRightPanel()
     for(int i{0}; i < 3; ++i) {
         m_voltagePhaseChecks[i] = new QCheckBox(QString(QChar('A' + i)));
         m_voltagePhaseChecks[i]->setChecked(true);
+
+        m_voltagePhaseChecks[i]->setProperty("checkType", "phaseCheck");
+        QString voltageStyle = QString("QCheckBox:checked { background-color: %1; }").arg(config::View::PhaseColors::Voltage[i].name());
+        m_voltagePhaseChecks[i]->setStyleSheet(voltageStyle);
+
         controlBarLayout->addWidget(m_voltagePhaseChecks[i]);
     }
-    controlBarLayout->addSpacing(20);
+    controlBarLayout->addStretch(); // Volt와 Curr 사이에 최대한 공간을 만듦
 
     controlBarLayout->addWidget(currentLabel);
     for(int i{0}; i < 3; ++i) {
         m_currentPhaseChecks[i] = new QCheckBox(QString(QChar('A' + i)));
         m_currentPhaseChecks[i]->setChecked(true);
+
+        m_currentPhaseChecks[i]->setProperty("checkType", "phaseCheck");
+        QString currentStyle = QString("QCheckBox:checked { background-color: %1; }").arg(config::View::PhaseColors::Current[i].name());
+        m_currentPhaseChecks[i]->setStyleSheet(currentStyle);
+
         controlBarLayout->addWidget(m_currentPhaseChecks[i]);
     }
-    controlBarLayout->addStretch();
     rightContentLayout->addLayout(controlBarLayout);
-    rightContentLayout->addSpacing(20);
+    // rightContentLayout->addSpacing();
 
     setupChart();
     rightContentLayout->addWidget(m_chartView, 1);
@@ -191,7 +225,7 @@ void AnalysisWaveformPage::setupChart()
 
     // 차트 및 축 설정
     m_chart->legend()->hide();
-    m_chart->setPlotArea(QRect(25, 25, 295, 180));
+    m_chart->setPlotArea(QRect(25, 25, 325, 180));
     m_chart->setContentsMargins(-20, -10, -20, -10); // 여백 최소화
 
     m_axisX = new QValueAxis();
@@ -214,21 +248,22 @@ void AnalysisWaveformPage::setupChart()
     m_chart->addAxis(m_axisA, Qt::AlignRight);
 
     // 시리즈 생성 및 연결
-
     for(int i{0}; i < 3; ++i) {
         m_voltageSeries[i] = new QLineSeries();
+        QPen voltagePen(config::View::PhaseColors::Voltage[i]);
+        voltagePen.setWidth(1);
+        m_voltageSeries[i]->setPen(voltagePen);
         m_chart->addSeries(m_voltageSeries[i]);
-        m_voltageSeries[i]->setColor(config::View::PhaseColors::Voltage[i]);
         m_voltageSeries[i]->attachAxis(m_axisX);
         m_voltageSeries[i]->attachAxis(m_axisV);
-        connect(m_voltagePhaseChecks[i], &QCheckBox::toggled, m_voltageSeries[i], &QLineSeries::setVisible);
 
         m_currentSeries[i] = new QLineSeries();
+        QPen currentPen(config::View::PhaseColors::Current[i]);
+        currentPen.setWidth(1);
+        m_currentSeries[i]->setPen(currentPen);
         m_chart->addSeries(m_currentSeries[i]);
-        m_currentSeries[i]->setColor(config::View::PhaseColors::Current[i]);
         m_currentSeries[i]->attachAxis(m_axisX);
         m_currentSeries[i]->attachAxis(m_axisA);
-        connect(m_currentPhaseChecks[i], &QCheckBox::toggled, m_currentSeries[i], &QLineSeries::setVisible);
     }
 }
 

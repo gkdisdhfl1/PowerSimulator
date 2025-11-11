@@ -70,7 +70,7 @@ QLabel#phasorTitleLabel {
     font-family: "Montserrat";
     font-size: 10px;
     font-weight: 900;
-    color: #808080; /* gray */
+    color: black;
 }
 
 QLabel#phasorValueLabel {
@@ -87,6 +87,14 @@ QLabel#phasorUnitLabel {
 QLabel#phasorNameLabel {
 
 }
+
+QLabel#waveformLabel{
+    font-family: "Montserrat";
+    font-size: 10px;
+    font-weight: 900;
+    color: black;
+}
+
 /* -------------------------------------- */
 
 /* --- Frame --- */
@@ -130,7 +138,7 @@ QTabBar::tab:selected#mainTabBar {
 /* -------------------------------------- */
 
 /* --- checkbox --- */
-QCheckBox#check {
+QCheckBox[checkType="allCheck"] {
     background-color: #808080;
     color: white;
     font-weight: bold;
@@ -139,10 +147,11 @@ QCheckBox#check {
     spacing: 3px;
 }
 
-QCheckBox:checked#check {
+QCheckBox[checkType="allCheck"]:checked {
     background-color: #008CFF;
 }
-QCheckBox::indicator#check {
+QCheckBox[checkType="phaseCheck"]:indicator,
+QCheckBox[checkType="allCheck"]:indicator{
     width: 10px;
     height: 10px;
     border: 1px solid gray;
@@ -152,9 +161,21 @@ QCheckBox::indicator#check {
     margin-left: -4px;
 }
 
-QCheckBox::indicator:checked#check {
+QCheckBox[checkType="phaseCheck"]:indicator:checked,
+QCheckBox[checkType="allCheck"]:indicator:checked {
     image: url(:/image/check.png);
 }
+
+QCheckBox[checkType="phaseCheck"] {
+    background-color: #c0c0c0;
+    color: white;
+    font: bold 11px;
+    padding: 4px 6px;
+    spacing: 3px;
+    width: 15px;
+    height: 8px;
+}
+
 /* -------------------------------------- */
 
 /* === QPushButton === */
@@ -182,4 +203,20 @@ QPushButton[buttonType="waveformToggle"][toggleType="VA"]:checked {
 /* +, - 버튼 스타일 */
 QPushButton[buttonType="waveformControl"] {
     font: bold 15px;
+}
+
+/* -------------------------------------- */
+/* --- GroupBox --- */
+QGroupBox#scaleBox {
+    border: 2px solid #0056b3 /* 진한 파란색 */
+}
+
+QGroupBox#scaleBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top center;
+    padding-left: 13px;
+    padding-right: 13px;
+    background-color: #0056b3;
+    color: white;
+    font-weight: bold;
 }

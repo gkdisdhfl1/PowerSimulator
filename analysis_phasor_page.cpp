@@ -23,8 +23,8 @@ AnalysisPhasorPage::AnalysisPhasorPage(QWidget *parent)
     auto* currentCheck = new QCheckBox("Current");
     voltageCheck->setChecked(true);
     currentCheck->setChecked(true);
-    voltageCheck->setObjectName("check");
-    currentCheck->setObjectName("check");
+    voltageCheck->setProperty("checkType", "allCheck");
+    currentCheck->setProperty("checkType", "allCheck");
     topLayout->addWidget(voltageCheck);
     topLayout->addWidget(currentCheck);
     mainLayout->addLayout(topLayout);
