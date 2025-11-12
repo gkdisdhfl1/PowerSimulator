@@ -40,6 +40,7 @@ private:
     void setupTopBar(QVBoxLayout* mainLayout); // 상단 바
     void setupControlBar(QVBoxLayout* mainLayout);
     void updateChartAxis();
+    void updateGraph();
 
     QWidget* createGraphView();
     QWidget* createTextView();
@@ -70,6 +71,9 @@ private:
     QLabel* m_unitLabel;
     QBarSeries* m_barSeries;
     std::array<QBarSet*, 3> m_barSets; // A B C상
+
+    OneSecondSummaryData m_lastSummaryData;
+    bool m_hasData = false;
 };
 
 #endif // ANALYSIS_HARMONIC_PAGE_H

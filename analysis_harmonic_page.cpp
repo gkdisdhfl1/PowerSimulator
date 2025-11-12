@@ -31,17 +31,60 @@ AnalysisHarmonicPage::AnalysisHarmonicPage(QWidget *parent)
 
 void AnalysisHarmonicPage::onOneSecondDataUpdated(const OneSecondSummaryData& data)
 {
+    m_lastSummaryData = data;
+    m_hasData = true;
+    updateGraph();
+}
+
+// private
+void AnalysisHarmonicPage::setupUi()
+{
+    auto mainLayout = new QVBoxLayout(this);
+    mainLayout->setContentsMargins(15, 10, 15, 10);
+    mainLayout->setSpacing(2);
+
+    // 1. 상단 바 설정 (제목, Voltage/Current 버튼)
+    setupTopBar(mainLayout);
+
+    // 2. 구분선
+    QFrame* titleLine = new QFrame(this);
+    titleLine->setFrameShape(QFrame::HLine);
+    titleLine->setObjectName("titleLine");
+    titleLine->setFixedHeight(2);
+    mainLayout->addWidget(titleLine);
+
+    // 3. 컨트롤 바 설정
+    setupControlBar(mainLayout);
+
+    // 4. 컨텐츠 스택 위젯
+    m_contentStack = new QStackedWidget();
+    mainLayout->addWidget(m_contentStack, 1); // 남은 공간을 모두 차지
+
+    // Graph 뷰와 Text 뷰 생성 및 추가
+    QWidget* graphView = createGraphView();
+    QWidget* textView = createTextView(); // 지금은 빈 위젯으로 생성
+    m_contentStack->addWidget(graphView);
+    m_contentStack->addWidget(textView);
+
+    connect(m_viewTypeComboBox, &QComboBox::currentIndexChanged, m_contentStack, &QStackedWidget::setCurrentIndex);
+    connect(m_dataTypeComboBox, &QComboBox::currentIndexChanged, this, &AnalysisHarmonicPage::updateChartAxis);
+}
+
+void AnalysisHarmonicPage::updateGraph()
+{
+    if(!m_hasData) return;
+
     const auto* fullHarmonicsData = m_voltageButton->isChecked() ?
-                                        &data.lastCycleFullVoltageHarmonics :
-                                        &data.lastCycleFullCurrentHarmonics;
+                                        &m_lastSummaryData.lastCycleFullVoltageHarmonics :
+                                        &m_lastSummaryData.lastCycleFullCurrentHarmonics;
 
     const auto* thdData = m_voltageButton->isChecked() ?
-                              &data.voltageThd :
-                              &data.currentThd;
+                              &m_lastSummaryData.voltageThd :
+                              &m_lastSummaryData.currentThd;
 
     const auto* fundData = m_voltageButton->isChecked() ?
-                               &data.fundamentalVoltage :
-                               &data.fundamentalCurrent;
+                               &m_lastSummaryData.fundamentalVoltage :
+                               &m_lastSummaryData.fundamentalCurrent;
 
     // 데이터 타입 콤보박스 선택에 따라 값 계산 및 그래프 업데이트
     int dataTypeIndex = m_dataTypeComboBox->currentIndex();
@@ -104,40 +147,6 @@ void AnalysisHarmonicPage::onOneSecondDataUpdated(const OneSecondSummaryData& da
             updateChartAxis();
         }
     }
-}
-
-// private
-void AnalysisHarmonicPage::setupUi()
-{
-    auto mainLayout = new QVBoxLayout(this);
-    mainLayout->setContentsMargins(15, 10, 15, 10);
-    mainLayout->setSpacing(2);
-
-    // 1. 상단 바 설정 (제목, Voltage/Current 버튼)
-    setupTopBar(mainLayout);
-
-    // 2. 구분선
-    QFrame* titleLine = new QFrame(this);
-    titleLine->setFrameShape(QFrame::HLine);
-    titleLine->setObjectName("titleLine");
-    titleLine->setFixedHeight(2);
-    mainLayout->addWidget(titleLine);
-
-    // 3. 컨트롤 바 설정
-    setupControlBar(mainLayout);
-
-    // 4. 컨텐츠 스택 위젯
-    m_contentStack = new QStackedWidget();
-    mainLayout->addWidget(m_contentStack, 1); // 남은 공간을 모두 차지
-
-    // Graph 뷰와 Text 뷰 생성 및 추가
-    QWidget* graphView = createGraphView();
-    QWidget* textView = createTextView(); // 지금은 빈 위젯으로 생성
-    m_contentStack->addWidget(graphView);
-    m_contentStack->addWidget(textView);
-
-    connect(m_viewTypeComboBox, &QComboBox::currentIndexChanged, m_contentStack, &QStackedWidget::setCurrentIndex);
-    connect(m_dataTypeComboBox, &QComboBox::currentIndexChanged, this, &AnalysisHarmonicPage::updateChartAxis);
 }
 
 void AnalysisHarmonicPage::setupTopBar(QVBoxLayout* mainLayout)
@@ -216,6 +225,8 @@ void AnalysisHarmonicPage::setupControlBar(QVBoxLayout* mainLayout)
 
         controlBarLayout->addWidget(m_phaseCheckBoxes[i]);
     }
+
+
 }
 
 QWidget* AnalysisHarmonicPage::createGraphView()
@@ -373,12 +384,13 @@ void AnalysisHarmonicPage::onDisplayTypeChanged(int id)
         m_dataTypeComboBox->setItemText(0, "Current");
     }
     updateChartAxis();
+    updateGraph();
 }
 
 void AnalysisHarmonicPage::onScaleAutoToggled(bool checked)
 {
     m_isAutoScaling = checked;
-    updateChartAxis();
+    updateGraph();
 }
 
 void AnalysisHarmonicPage::onScaleInClicked()
@@ -387,6 +399,7 @@ void AnalysisHarmonicPage::onScaleInClicked()
         ++m_scaleIndex;
         m_autoScaleButton->setChecked(false);
         updateChartAxis();
+        updateGraph();
     }
 }
 
@@ -396,6 +409,7 @@ void AnalysisHarmonicPage::onScaleOutClicked()
         --m_scaleIndex;
         m_autoScaleButton->setChecked(false);
         updateChartAxis();
+        updateGraph();
     }
 }
 
@@ -450,6 +464,7 @@ void AnalysisHarmonicPage::updateChartAxis()
     double displayRange = AnalysisUtils::scaleValue(currentRange, m_scaleUnit);
     // qDebug() << "displayRange: " << displayRange;
     m_axisY->setRange(0, displayRange);
+    updateGraph();
     qDebug() << "-----------------------------------";
 
 }
