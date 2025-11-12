@@ -63,6 +63,9 @@ public:
 
     static std::vector<HarmonicAnalysisResult> findSignificantHarmonics(const std::vector<std::complex<double>>& spectrum);
 
+    // 스펙트럼을 HarmonicAnalysisResult 벡터로 변환하는 함수
+    static std::vector<HarmonicAnalysisResult> convertSpectrumToHarmonics(const std::vector<std::complex<double>>& spectrum);
+
     static PhaseData calculateActivePower(const std::vector<DataPoint>& samples);
 
     static PhaseData calculateTotalRms(const std::vector<DataPoint>&samples, DataType type);

@@ -18,7 +18,7 @@ A3700N_Window::A3700N_Window(QWidget *parent)
     : QWidget{parent}
 {
     setupUi();
-    setFixedSize(600, 325);
+    // setFixedSize(600, 325);
 }
 
 void A3700N_Window::setupUi()
@@ -229,6 +229,8 @@ void A3700N_Window::createAnalysisPage(QListWidget* submenu, QStackedWidget* sta
 
     // Harmonics 페이지
     AnalysisHarmonicPage* harmonicsPage = new AnalysisHarmonicPage(this);
+
+    connect(this, &A3700N_Window::summaryDataUpdated, harmonicsPage, &AnalysisHarmonicPage::onOneSecondDataUpdated);
     stack->addWidget(harmonicsPage);
     submenu->addItem("Harmonics");
 

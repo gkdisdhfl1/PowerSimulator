@@ -38,6 +38,15 @@ struct MeasuredData {
     std::vector<HarmonicAnalysisResult> currentHarmonicsB;
     std::vector<HarmonicAnalysisResult> currentHarmonicsC;
 
+    // 전체 고조파 (DC 포함)
+    std::vector<HarmonicAnalysisResult> fullVoltageHarmonics;
+    std::vector<HarmonicAnalysisResult> fullVoltageHarmonicsB;
+    std::vector<HarmonicAnalysisResult> fullVoltageHarmonicsC;
+
+    std::vector<HarmonicAnalysisResult> fullCurrentHarmonics;
+    std::vector<HarmonicAnalysisResult> fullCurrentHarmonicsB;
+    std::vector<HarmonicAnalysisResult> fullCurrentHarmonicsC;
+
     // 잔류 RMS 멤버
     double residualVoltageRms = 0.0;
     double residualCurrentRms = 0.0;
@@ -106,6 +115,9 @@ struct OneSecondSummaryData {
     // 마지막 사이클의 전체 고조파 정보
     std::vector<HarmonicAnalysisResult> lastCycleVoltageHarmonics;
     std::vector<HarmonicAnalysisResult> lastCycleCurrentHarmonics;
+
+    std::array<std::vector<HarmonicAnalysisResult>,3> lastCycleFullVoltageHarmonics;
+    std::array<std::vector<HarmonicAnalysisResult>, 3> lastCycleFullCurrentHarmonics;
 
     // Waveform Page를 위한 데이터
     std::vector<DataPoint> lastTwoCycleData;

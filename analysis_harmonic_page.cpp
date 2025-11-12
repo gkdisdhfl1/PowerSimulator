@@ -1,5 +1,9 @@
 #include "analysis_harmonic_page.h"
+#include "analysis_utils.h"
 
+#include <QBarCategoryAxis>
+#include <QBarSeries>
+#include <QBarSet>
 #include <QButtonGroup>
 #include <QChart>
 #include <QChartView>
@@ -11,6 +15,7 @@
 #include <QPushButton>
 #include <QStackedWidget>
 #include <QVBoxLayout>
+#include <QValueAxis>
 #include <config.h>
 
 AnalysisHarmonicPage::AnalysisHarmonicPage(QWidget *parent)
@@ -21,7 +26,83 @@ AnalysisHarmonicPage::AnalysisHarmonicPage(QWidget *parent)
 {
     setupUi();
 }
+// public
 
+void AnalysisHarmonicPage::onOneSecondDataUpdated(const OneSecondSummaryData& data)
+{
+    const auto* fullHarmonicsData = m_voltageButton->isChecked() ?
+                                        &data.lastCycleFullVoltageHarmonics :
+                                        &data.lastCycleFullCurrentHarmonics;
+
+    const auto* thdData = m_voltageButton->isChecked() ?
+                              &data.voltageThd :
+                              &data.currentThd;
+
+    const auto* fundData = m_voltageButton->isChecked() ?
+                               &data.fundamentalVoltage :
+                               &data.fundamentalCurrent;
+
+    // 데이터 타입 콤보박스 선택에 따라 값 계산 및 그래프 업데이트
+    int dataTypeIndex = m_dataTypeComboBox->currentIndex();
+    double maxVal = 0.0; // 자동 스케일링을 위한 최대값
+
+    for(int i{0}; i < 3; ++i) { // A상, B상, C상
+        const auto& harmonics = (*fullHarmonicsData)[i];
+
+        if(i == 0) m_thdValueLabels[i]->setText(QString::number(thdData->a, 'f', 1));
+        else if(i == 1) m_thdValueLabels[i]->setText(QString::number(thdData->b, 'f', 1));
+        else m_thdValueLabels[i]->setText(QString::number(thdData->c, 'f', 1));
+
+        m_fundValueLabels[i]->setText(QString::number((*fundData)[i].rms, 'f', 1));
+
+        // 막대 그래프 데이터 업데이트
+        // 0차부터 50차까지 데이터 준비
+        for(int order{0}; order <= 50; ++order) {
+            double value = 0.0;
+            auto it = std::find_if(harmonics.begin(), harmonics.end(), [order](const HarmonicAnalysisResult& h) {
+                return h.order == order;
+            });
+
+            if(it != harmonics.end()) {
+                const auto& harmonic = *it;
+                if(dataTypeIndex == 0) { // voltage or current
+                    value = harmonic.rms;
+                } else if(dataTypeIndex == 1) { // %RMS
+                    value = 0.0; // 임시
+                } else { // Fund
+                    const auto& fundamental = (*fundData)[i];
+                    if(fundamental.rms > 1e-9) {
+                        value = (harmonic.rms / fundamental.rms) * 100.0;
+                    }
+                }
+            }
+
+            if(order < m_barSets[i]->count()) {
+                m_barSets[i]->replace(order, value);
+            }
+            if(order > 0) { // DC 성분은 자동 스케일링에서 제외
+                maxVal = std::max(maxVal, value);
+            }
+        }
+    }
+
+    // 자동 스케일링
+    if(m_isAutoScaling) {
+        int newScaleIndex = m_scaleIndex;
+        for(size_t i{0}; i < config::View::RANGE_TABLE.size(); ++i) {
+            if(maxVal <= config::View::RANGE_TABLE[i]) {
+                newScaleIndex = i;
+                break;
+            }
+        }
+        if(newScaleIndex != m_scaleIndex) {
+            m_scaleIndex = newScaleIndex;
+            updateChartAxis();
+        }
+    }
+}
+
+// private
 void AnalysisHarmonicPage::setupUi()
 {
     auto mainLayout = new QVBoxLayout(this);
@@ -51,8 +132,8 @@ void AnalysisHarmonicPage::setupUi()
     m_contentStack->addWidget(graphView);
     m_contentStack->addWidget(textView);
 
-    // 뷰 타입 콤보박스와 스택 위젯 연결
     connect(m_viewTypeComboBox, &QComboBox::currentIndexChanged, m_contentStack, &QStackedWidget::setCurrentIndex);
+    connect(m_dataTypeComboBox, &QComboBox::currentIndexChanged, this, &AnalysisHarmonicPage::updateChartAxis);
 }
 
 void AnalysisHarmonicPage::setupTopBar(QVBoxLayout* mainLayout)
@@ -146,13 +227,20 @@ QWidget* AnalysisHarmonicPage::createGraphView()
     auto scaleLayout = new QVBoxLayout(scaleBox);
     scaleLayout->setContentsMargins(2, 2, 2, 2);
 
-    auto autoButton = new QPushButton("Auto");
+    m_autoScaleButton = new QPushButton("Auto");
     auto plusButton = new QPushButton("+");
     auto minusButton = new QPushButton("-");
-    scaleLayout->addWidget(autoButton);
+
+    m_autoScaleButton->setCheckable(true);
+    m_autoScaleButton->setChecked(m_isAutoScaling);
+    scaleLayout->addWidget(m_autoScaleButton);
     scaleLayout->addWidget(plusButton);
     scaleLayout->addWidget(minusButton);
-    // scaleLayout->addStretch();
+    scaleLayout->addStretch();
+
+    connect(m_autoScaleButton, &QPushButton::toggled, this, &AnalysisHarmonicPage::onScaleAutoToggled);
+    connect(plusButton, &QPushButton::clicked, this, &AnalysisHarmonicPage::onScaleInClicked);
+    connect(minusButton, &QPushButton::clicked, this, &AnalysisHarmonicPage::onScaleOutClicked);
 
     mainLayout->addWidget(scaleBox);
 
@@ -198,16 +286,70 @@ QWidget* AnalysisHarmonicPage::createGraphView()
     rightLayout->addWidget(infoContainer);
 
     // 2-2. 하단 막대 그래프
-    auto chart = new QChart();
-    chart->setTitle("Harmonic Spectrum");
-    chart->legend()->hide();
-    auto chartView = new QChartView(chart);
-    chartView->setRenderHint(QPainter::Antialiasing);
+    m_chart = new QChart();
+    m_chart->setTitle("Harmonic Spectrum");
+    m_chart->legend()->hide();
+    m_chartView = new QChartView(m_chart);
+    m_chartView->setRenderHint(QPainter::Antialiasing);
 
-    rightLayout->addWidget(chartView, 1);
+    // Y축 단위 라벨 추가
+    auto* internalVLayout = new QVBoxLayout(m_chartView);
+    auto* chartHeaderLayout = new QHBoxLayout();
+    internalVLayout->addLayout(chartHeaderLayout);
+    internalVLayout->addStretch();
+
+    m_unitLabel = new QLabel("[V]"); // 초기 단위는 Voltage
+    QFont axisFont;
+    axisFont.setPixelSize(8);
+    m_unitLabel->setFont(axisFont);
+    m_unitLabel->setObjectName("axisUnitLabel");
+
+    // chartHeaderLayout->addStretch();
+    chartHeaderLayout->addWidget(m_unitLabel);
+    chartHeaderLayout->setContentsMargins(15, 0, 15, 0);
+
+    // Y축 생성
+    m_axisY = new QValueAxis();
+    m_axisY->setRange(0, config::View::RANGE_TABLE[m_scaleIndex]);
+    m_chart->addAxis(m_axisY, Qt::AlignLeft);
+
+    // X축 생성
+    m_axisX = new QBarCategoryAxis();
+    QStringList categories;
+    const QSet<int> visibleLabels = {0, 8, 16, 24, 32, 40, 50};
+    for(int i{1}; i <= 50; ++i) {
+        if(visibleLabels.contains(i)) {
+            categories << QString::number(i);
+        } else {
+            categories << "";
+        }
+    }
+
+    m_axisX->append(categories);
+    // m_axisX->setLabelsAngle(-90);
+    m_axisX->setLineVisible(false);
+    m_chart->addAxis(m_axisX, Qt::AlignBottom);
+
+    // 막대 시리즈 및 세트 생성
+    m_barSeries = new QBarSeries();
+    for(int i{0}; i < 3; ++i) {
+        m_barSets[i] = new QBarSet(QString(QChar('A' + i)));
+        // 초기 데이터는 모두 0으로 채움
+        for(int j{0}; j < 50; ++j) {
+            *m_barSets[i] << 0.0;
+        }
+        m_barSets[i]->setColor(config::View::PhaseColors::Voltage[i]);
+        m_barSeries->append(m_barSets[i]);
+    }
+    m_chart->addSeries(m_barSeries);
+    m_barSeries->attachAxis(m_axisX);
+    m_barSeries->attachAxis(m_axisY);
+
+    rightLayout->addWidget(m_chartView, 1);
 
     mainLayout->addWidget(rightPanel, 1); // 오른쪽 패널이 남은 공간 모두 차지
 
+    updateChartAxis(); // 생성 시 한번 호출
     return graphViewWidget;
 }
 
@@ -229,4 +371,74 @@ void AnalysisHarmonicPage::onDisplayTypeChanged(int id)
     } else { // Current 버튼 클릭
         m_dataTypeComboBox->setItemText(0, "Current");
     }
+    updateChartAxis();
+}
+
+void AnalysisHarmonicPage::onScaleAutoToggled(bool checked)
+{
+    m_isAutoScaling = checked;
+    updateChartAxis();
+}
+
+void AnalysisHarmonicPage::onScaleInClicked()
+{
+    if(m_scaleIndex < (int)config::View::RANGE_TABLE.size() - 1) {
+        ++m_scaleIndex;
+        m_autoScaleButton->setChecked(false);
+        updateChartAxis();
+    }
+}
+
+void AnalysisHarmonicPage::onScaleOutClicked()
+{
+    if(m_scaleIndex > 0) {
+        --m_scaleIndex;
+        m_autoScaleButton->setChecked(false);
+        updateChartAxis();
+    }
+}
+
+void AnalysisHarmonicPage::updateChartAxis()
+{
+    if(!m_axisY || !m_unitLabel) return;
+
+    // Y축 단위 결정
+    QString unitText;
+    QString baseUnit;
+    bool isVoltage = m_voltageButton->isChecked();
+    int dataTypeIndex = m_dataTypeComboBox->currentIndex();
+
+    if(dataTypeIndex == 0) { // Voltage or Current
+        baseUnit = isVoltage ? "V" : "A";
+    } else if(dataTypeIndex == 1) { // [%]RMS
+        baseUnit = "%RMS";
+    } else { // [%]Fund
+        baseUnit = "%Fund";
+    }
+
+    // y축 범위 및 단위 라벨 업데이트
+    // Harmonics는 항상 0부터 시작하므로, isVoltage 인자는 Y축 단위 결정에만 사용
+    m_scaleUnit = AnalysisUtils::updateAxis(m_axisY, m_unitLabel, m_scaleIndex, isVoltage);
+
+    // y축 범위는 0부터 시작하도록 강제
+    double currentRange = config::View::RANGE_TABLE[m_scaleIndex];
+    double displayRange = AnalysisUtils::scaleValue(currentRange, m_scaleUnit);
+    m_axisY->setRange(0, displayRange); // 0부터 시작
+
+    // 단위 라벨 텍스트 최종 조정
+    // dataTypeIndex에 따라 단위 라벨을 다시 설정
+    if(dataTypeIndex == 0) { // Voltage or Current
+        if(m_scaleUnit == ScaleUnit::Milli)
+            unitText = QString("m%1").arg(baseUnit);
+        else if(m_scaleUnit == ScaleUnit::Kilo)
+            unitText = QString("k%1").arg(baseUnit);
+        else
+            unitText = baseUnit;
+    } else {
+        unitText = baseUnit;
+    }
+    qDebug() << "baseUnit: " << baseUnit;
+    qDebug() << "unitText: " << unitText;
+    m_unitLabel->setText(QString("[%1]").arg(unitText));
+    qDebug() << "m_unitLabel: " << m_unitLabel->text();
 }

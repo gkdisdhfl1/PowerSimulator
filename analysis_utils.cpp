@@ -228,6 +228,31 @@ std::vector<HarmonicAnalysisResult> AnalysisUtils::findSignificantHarmonics(cons
     return results;
 }
 
+std::vector<HarmonicAnalysisResult> AnalysisUtils::convertSpectrumToHarmonics(const std::vector<std::complex<double>>& spectrum)
+{
+    std::vector<HarmonicAnalysisResult> results;
+    if(spectrum.empty()) {
+        qWarning() << "AnalysisUtils::convertSpectrumToHarmonics() Spectrum is emtpy!!";
+        return results;
+    }
+
+    // 0차(DC) 성분 추가
+    HarmonicAnalysisResult dc_result;
+    dc_result.order = 0;
+    dc_result.rms = std::abs(spectrum[0].real());
+    dc_result.phase = 0.0;
+    dc_result.phasorX = spectrum[0].real();
+    dc_result.phasorY = 0.0;
+    results.push_back(dc_result);
+
+    // 1차부터 나머지 고조파 성분 추가
+    for(int order{1}; order < spectrum.size(); ++order) {
+        results.push_back(createHarmonicResult(spectrum, order));
+    }
+
+    return results;
+}
+
 PhaseData AnalysisUtils::calculateActivePower(const std::vector<DataPoint>& samples)
 {
     if(samples.empty())
@@ -470,6 +495,20 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     summary.lastCycleVoltageHarmonics = lastCycleData.voltageHarmonics;
     summary.lastCycleCurrentHarmonics = lastCycleData.currentHarmonics;
 
+    // 전체 고조파 정보 복사
+    for(int i{0}; i < 3; ++i) {
+        if(i == 0) {
+            summary.lastCycleFullVoltageHarmonics[i] = lastCycleData.fullVoltageHarmonics;
+            summary.lastCycleFullCurrentHarmonics[i] = lastCycleData.fullCurrentHarmonics;
+        } else if(i == 1) {
+            summary.lastCycleFullVoltageHarmonics[i] = lastCycleData.fullVoltageHarmonicsB;
+            summary.lastCycleFullCurrentHarmonics[i] = lastCycleData.fullCurrentHarmonicsB;
+        } else {
+            summary.lastCycleFullVoltageHarmonics[i] = lastCycleData.fullVoltageHarmonicsC;
+            summary.lastCycleFullCurrentHarmonics[i] = lastCycleData.fullCurrentHarmonicsC;
+        }
+    }
+
     return summary;
 }
 
@@ -564,7 +603,7 @@ ScaleUnit AnalysisUtils::updateAxis(QValueAxis* axis, QLabel* label, int scaleIn
 
     double displayRange = scaleValue(newRange, unit);
     qDebug() << "displayRange: " << displayRange;
-
+    qDebug() << "---------------------------------------";
     axis->setRange(-displayRange, displayRange);
 
     const char* baseUnit = isVoltage ? "V" : "A";

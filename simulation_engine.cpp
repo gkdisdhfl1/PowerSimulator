@@ -327,6 +327,13 @@ void SimulationEngine::calculateCycleData()
         // --- 전압 분석 ---
         auto voltageSpectrumResult = analyzeSpectrum(AnalysisUtils::DataType::Voltage, i);
         if(voltageSpectrumResult) {
+            // 전체 스펙트럼 변환 및 저장
+            auto fullHarmonics = AnalysisUtils::convertSpectrumToHarmonics(*voltageSpectrumResult);
+            if(i == 0) newData.fullVoltageHarmonics = fullHarmonics;
+            else if(i == 1) newData.fullVoltageHarmonicsB = fullHarmonics;
+            else newData.fullVoltageHarmonicsC = fullHarmonics;
+
+            // 특정 고조파 변호나 및 저장
             auto harmonics = AnalysisUtils::findSignificantHarmonics(*voltageSpectrumResult);
             if(i == 0) newData.voltageHarmonics = harmonics;
             else if(i == 1) newData.voltageHarmonicsB = harmonics;
@@ -345,6 +352,13 @@ void SimulationEngine::calculateCycleData()
         // --- 전류 분석 ---
         auto currentSpectrumResult = analyzeSpectrum(AnalysisUtils::DataType::Current, i);
         if(currentSpectrumResult) {
+            // 전체 스펙트럼 변환 및 저장
+            auto fullHarmonics = AnalysisUtils::convertSpectrumToHarmonics(*currentSpectrumResult);
+            if(i == 0) newData.fullCurrentHarmonics = fullHarmonics;
+            else if(i == 1) newData.fullCurrentHarmonicsB = fullHarmonics;
+            else newData.fullCurrentHarmonicsC = fullHarmonics;
+
+
             auto harmonics = AnalysisUtils::findSignificantHarmonics(*currentSpectrumResult);
             if(i == 0) newData.currentHarmonics = harmonics;
             else if(i == 1) newData.currentHarmonicsB = harmonics;
