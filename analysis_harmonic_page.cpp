@@ -5,6 +5,7 @@
 #include <QBarSeries>
 #include <QBarSet>
 #include <QButtonGroup>
+#include <QCategoryAxis>
 #include <QChart>
 #include <QChartView>
 #include <QCheckBox>
@@ -287,7 +288,6 @@ QWidget* AnalysisHarmonicPage::createGraphView()
 
     // 2-2. 하단 막대 그래프
     m_chart = new QChart();
-    m_chart->setTitle("Harmonic Spectrum");
     m_chart->legend()->hide();
     m_chartView = new QChartView(m_chart);
     m_chartView->setRenderHint(QPainter::Antialiasing);
@@ -310,24 +310,22 @@ QWidget* AnalysisHarmonicPage::createGraphView()
 
     // Y축 생성
     m_axisY = new QValueAxis();
+    m_axisY->setLabelsFont(axisFont);
     m_axisY->setRange(0, config::View::RANGE_TABLE[m_scaleIndex]);
     m_chart->addAxis(m_axisY, Qt::AlignLeft);
 
     // X축 생성
-    m_axisX = new QBarCategoryAxis();
-    QStringList categories;
-    const QSet<int> visibleLabels = {0, 8, 16, 24, 32, 40, 50};
-    for(int i{1}; i <= 50; ++i) {
-        if(visibleLabels.contains(i)) {
-            categories << QString::number(i);
-        } else {
-            categories << "";
-        }
-    }
+    m_axisX = new QCategoryAxis();
+    m_axisX->setRange(0, 50); // 0부터 50까지 모두 보이도록 설정
+    m_axisX->setLabelsPosition(QCategoryAxis::AxisLabelsPositionOnValue);
 
-    m_axisX->append(categories);
-    // m_axisX->setLabelsAngle(-90);
-    m_axisX->setLineVisible(false);
+    for(int i{1}; i <= 5; ++i)
+        m_axisX->append(QString("%1").arg(8 * i), 8 * i);
+    m_axisX->append("50", 50);
+
+    m_axisX->setGridLineVisible(false); // 세로 그리드 라인 숨기기
+    m_axisX->setTickCount(7);
+
     m_chart->addAxis(m_axisX, Qt::AlignBottom);
 
     // 막대 시리즈 및 세트 생성
@@ -335,7 +333,7 @@ QWidget* AnalysisHarmonicPage::createGraphView()
     for(int i{0}; i < 3; ++i) {
         m_barSets[i] = new QBarSet(QString(QChar('A' + i)));
         // 초기 데이터는 모두 0으로 채움
-        for(int j{0}; j < 50; ++j) {
+        for(int j{0}; j <= 50; ++j) {
             *m_barSets[i] << 0.0;
         }
         m_barSets[i]->setColor(config::View::PhaseColors::Voltage[i]);

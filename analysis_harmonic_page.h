@@ -14,11 +14,11 @@ class QStackedWidget;
 class QLabel;
 
 class QValueAxis;
-class QBarCategoryAxis;
 class QBarSeries;
 class QBarSet;
 class QChart;
 class QChartView;
+class QCategoryAxis;
 
 class AnalysisHarmonicPage : public QWidget
 {
@@ -66,7 +66,7 @@ private:
     QChart* m_chart;
     QChartView* m_chartView;
     QValueAxis* m_axisY;
-    QBarCategoryAxis* m_axisX;
+    QCategoryAxis* m_axisX;
     QLabel* m_unitLabel;
     QBarSeries* m_barSeries;
     std::array<QBarSet*, 3> m_barSets; // A B C상
