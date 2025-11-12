@@ -34,6 +34,8 @@ private slots:
     void onScaleAutoToggled(bool checked);
     void onScaleInClicked();
     void onScaleOutClicked();
+    void onFundVisibleChanged(bool checked);
+    void onPhaseVisibleChanged(int id, bool checked);
 
 private:
     void setupUi();
@@ -63,6 +65,8 @@ private:
     ScaleUnit m_scaleUnit;
     int m_scaleIndex = 0;
     bool m_isAutoScaling = true;
+    bool m_isFundVisible = true;
+    std::array<bool, 3> m_isPhaseVisible = {true, true, true};
 
     QChart* m_chart;
     QChartView* m_chartView;

@@ -86,6 +86,10 @@ void AnalysisHarmonicPage::updateGraph()
                                &m_lastSummaryData.fundamentalVoltage :
                                &m_lastSummaryData.fundamentalCurrent;
 
+    const auto* totalRmsData = m_voltageButton->isChecked() ?
+                                &m_lastSummaryData.totalVoltageRms :
+                                &m_lastSummaryData.totalCurrentRms;
+
     // 데이터 타입 콤보박스 선택에 따라 값 계산 및 그래프 업데이트
     int dataTypeIndex = m_dataTypeComboBox->currentIndex();
     double maxVal = 0.0; // 자동 스케일링을 위한 최대값
@@ -101,6 +105,17 @@ void AnalysisHarmonicPage::updateGraph()
 
         // 막대 그래프 데이터 업데이트
         // 0차부터 50차까지 데이터 준비
+
+        // Phase 체크박스 상태 확인
+        if(!m_isPhaseVisible[i]) {
+            for(int order{0}; order <= 50; ++order) {
+                if(order < m_barSets[i]->count()) {
+                    m_barSets[i]->replace(order, 0.0);
+                }
+            }
+            continue;
+        }
+
         for(int order{0}; order <= 50; ++order) {
             double rawValue = 0.0;
             double displayValue = 0.0;
@@ -113,7 +128,14 @@ void AnalysisHarmonicPage::updateGraph()
                 if(dataTypeIndex == 0) { // voltage or current
                     rawValue = harmonic.rms;
                 } else if(dataTypeIndex == 1) { // %RMS
-                    rawValue = 0.0; // 임시
+                    double totalRms = 0.0;
+                    if(i == 0) totalRms = totalRmsData->a;
+                    else if(i == 1) totalRms = totalRmsData->b;
+                    else totalRms = totalRmsData->c;
+
+                    if(totalRms > 1e-9) {
+                        rawValue = (harmonic.rms / totalRms) * 100.0;
+                    }
                 } else { // Fund
                     const auto& fundamental = (*fundData)[i];
                     if(fundamental.rms > 1e-9) {
@@ -124,12 +146,17 @@ void AnalysisHarmonicPage::updateGraph()
 
             displayValue = (dataTypeIndex == 0) ? AnalysisUtils::scaleValue(rawValue, m_scaleUnit) : rawValue;
 
+            if(order == 1 && !m_isFundVisible) {
+                displayValue = 0.0;
+            }
+
             if(order < m_barSets[i]->count()) {
                 m_barSets[i]->replace(order, displayValue);
             }
-            if(order > 0) { // DC 성분은 자동 스케일링에서 제외
+
+            if(order == 1 && !m_isFundVisible) continue;
+            if(order > 0)
                 maxVal = std::max(maxVal, rawValue);
-            }
         }
     }
 
@@ -215,6 +242,9 @@ void AnalysisHarmonicPage::setupControlBar(QVBoxLayout* mainLayout)
 
     // A, B, C 상 체크박스
     const QStringList phaseNames = {"A", "B", "C"};
+    auto phaseButtonGroup = new QButtonGroup(this);
+    phaseButtonGroup->setExclusive(false);
+
     for(int i{0}; i < 3; ++i) {
         m_phaseCheckBoxes[i] = new QCheckBox(phaseNames[i]);
         m_phaseCheckBoxes[i]->setChecked(true);
@@ -223,10 +253,12 @@ void AnalysisHarmonicPage::setupControlBar(QVBoxLayout* mainLayout)
                                  .arg(config::View::PhaseColors::Voltage[i].name());
         m_phaseCheckBoxes[i]->setStyleSheet(phaseStyle);
 
+        phaseButtonGroup->addButton(m_phaseCheckBoxes[i], i);
         controlBarLayout->addWidget(m_phaseCheckBoxes[i]);
     }
 
-
+    connect(m_fundCheckBox, &QCheckBox::checkStateChanged, this, &AnalysisHarmonicPage::onFundVisibleChanged);
+    connect(phaseButtonGroup, &QButtonGroup::idToggled, this, &AnalysisHarmonicPage::onPhaseVisibleChanged);
 }
 
 QWidget* AnalysisHarmonicPage::createGraphView()
@@ -374,45 +406,6 @@ QWidget* AnalysisHarmonicPage::createTextView()
     return textViewWidget;
 }
 
-//-------------------------
-
-void AnalysisHarmonicPage::onDisplayTypeChanged(int id)
-{
-    if(id == 0) { // Voltage 버튼 클릭
-        m_dataTypeComboBox->setItemText(0, "Voltage");
-    } else { // Current 버튼 클릭
-        m_dataTypeComboBox->setItemText(0, "Current");
-    }
-    updateChartAxis();
-    updateGraph();
-}
-
-void AnalysisHarmonicPage::onScaleAutoToggled(bool checked)
-{
-    m_isAutoScaling = checked;
-    updateGraph();
-}
-
-void AnalysisHarmonicPage::onScaleInClicked()
-{
-    if(m_scaleIndex < (int)config::View::RANGE_TABLE.size() - 1) {
-        ++m_scaleIndex;
-        m_autoScaleButton->setChecked(false);
-        updateChartAxis();
-        updateGraph();
-    }
-}
-
-void AnalysisHarmonicPage::onScaleOutClicked()
-{
-    if(m_scaleIndex > 0) {
-        --m_scaleIndex;
-        m_autoScaleButton->setChecked(false);
-        updateChartAxis();
-        updateGraph();
-    }
-}
-
 void AnalysisHarmonicPage::updateChartAxis()
 {
     if(!m_axisY || !m_unitLabel) return;
@@ -467,4 +460,57 @@ void AnalysisHarmonicPage::updateChartAxis()
     updateGraph();
     qDebug() << "-----------------------------------";
 
+}
+
+//-------------------------
+
+void AnalysisHarmonicPage::onDisplayTypeChanged(int id)
+{
+    if(id == 0) { // Voltage 버튼 클릭
+        m_dataTypeComboBox->setItemText(0, "Voltage");
+    } else { // Current 버튼 클릭
+        m_dataTypeComboBox->setItemText(0, "Current");
+    }
+    updateChartAxis();
+    updateGraph();
+}
+
+void AnalysisHarmonicPage::onScaleAutoToggled(bool checked)
+{
+    m_isAutoScaling = checked;
+    updateGraph();
+}
+
+void AnalysisHarmonicPage::onScaleInClicked()
+{
+    if(m_scaleIndex < (int)config::View::RANGE_TABLE.size() - 1) {
+        ++m_scaleIndex;
+        m_autoScaleButton->setChecked(false);
+        updateChartAxis();
+        updateGraph();
+    }
+}
+
+void AnalysisHarmonicPage::onScaleOutClicked()
+{
+    if(m_scaleIndex > 0) {
+        --m_scaleIndex;
+        m_autoScaleButton->setChecked(false);
+        updateChartAxis();
+        updateGraph();
+    }
+}
+
+void AnalysisHarmonicPage::onFundVisibleChanged(bool checked)
+{
+    m_isFundVisible = checked;
+    updateGraph();
+}
+
+void AnalysisHarmonicPage::onPhaseVisibleChanged(int id, bool checked)
+{
+    if(id >= 0 && id < 3) {
+        m_isPhaseVisible[id] = checked;
+        updateGraph();
+    }
 }
