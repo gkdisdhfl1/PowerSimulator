@@ -59,7 +59,8 @@ void AnalysisHarmonicPage::onOneSecondDataUpdated(const OneSecondSummaryData& da
         // 막대 그래프 데이터 업데이트
         // 0차부터 50차까지 데이터 준비
         for(int order{0}; order <= 50; ++order) {
-            double value = 0.0;
+            double rawValue = 0.0;
+            double displayValue = 0.0;
             auto it = std::find_if(harmonics.begin(), harmonics.end(), [order](const HarmonicAnalysisResult& h) {
                 return h.order == order;
             });
@@ -67,22 +68,24 @@ void AnalysisHarmonicPage::onOneSecondDataUpdated(const OneSecondSummaryData& da
             if(it != harmonics.end()) {
                 const auto& harmonic = *it;
                 if(dataTypeIndex == 0) { // voltage or current
-                    value = harmonic.rms;
+                    rawValue = harmonic.rms;
                 } else if(dataTypeIndex == 1) { // %RMS
-                    value = 0.0; // 임시
+                    rawValue = 0.0; // 임시
                 } else { // Fund
                     const auto& fundamental = (*fundData)[i];
                     if(fundamental.rms > 1e-9) {
-                        value = (harmonic.rms / fundamental.rms) * 100.0;
+                        rawValue = (harmonic.rms / fundamental.rms) * 100.0;
                     }
                 }
             }
 
+            displayValue = (dataTypeIndex == 0) ? AnalysisUtils::scaleValue(rawValue, m_scaleUnit) : rawValue;
+
             if(order < m_barSets[i]->count()) {
-                m_barSets[i]->replace(order, value);
+                m_barSets[i]->replace(order, displayValue);
             }
             if(order > 0) { // DC 성분은 자동 스케일링에서 제외
-                maxVal = std::max(maxVal, value);
+                maxVal = std::max(maxVal, rawValue);
             }
         }
     }
@@ -402,41 +405,51 @@ void AnalysisHarmonicPage::updateChartAxis()
 
     // Y축 단위 결정
     QString unitText;
-    QString baseUnit;
     bool isVoltage = m_voltageButton->isChecked();
+    qDebug() << "isVoltage: " << isVoltage;
+
     int dataTypeIndex = m_dataTypeComboBox->currentIndex();
+    qDebug() << "dataTypeIndex: " << dataTypeIndex;
 
-    if(dataTypeIndex == 0) { // Voltage or Current
-        baseUnit = isVoltage ? "V" : "A";
-    } else if(dataTypeIndex == 1) { // [%]RMS
-        baseUnit = "%RMS";
-    } else { // [%]Fund
-        baseUnit = "%Fund";
-    }
 
-    // y축 범위 및 단위 라벨 업데이트
-    // Harmonics는 항상 0부터 시작하므로, isVoltage 인자는 Y축 단위 결정에만 사용
-    m_scaleUnit = AnalysisUtils::updateAxis(m_axisY, m_unitLabel, m_scaleIndex, isVoltage);
-
-    // y축 범위는 0부터 시작하도록 강제
+    // 2. 현재 범위와 단위를 계산
     double currentRange = config::View::RANGE_TABLE[m_scaleIndex];
-    double displayRange = AnalysisUtils::scaleValue(currentRange, m_scaleUnit);
-    m_axisY->setRange(0, displayRange); // 0부터 시작
+    m_scaleUnit = AnalysisUtils::updateScaleUnit(currentRange);
 
-    // 단위 라벨 텍스트 최종 조정
-    // dataTypeIndex에 따라 단위 라벨을 다시 설정
+    qDebug() << "m_scaleIndex; " << m_scaleIndex;
+    qDebug() << "currentRange: " << currentRange;
+
+
+    // 3. 단위 텍스트 설정
     if(dataTypeIndex == 0) { // Voltage or Current
-        if(m_scaleUnit == ScaleUnit::Milli)
+        QString baseUnit = isVoltage ? "V" : "A";
+        // qDebug() << "baseUnit: " << baseUnit;
+        if(m_scaleUnit == ScaleUnit::Milli) {
+            // qDebug() << "m_scaleUnit: Milli";
             unitText = QString("m%1").arg(baseUnit);
-        else if(m_scaleUnit == ScaleUnit::Kilo)
+        }
+        else if(m_scaleUnit == ScaleUnit::Kilo) {
+            // qDebug() << "m_scaleUnit: Kilo";
             unitText = QString("k%1").arg(baseUnit);
-        else
+        }
+        else {
+            // qDebug() << "m_scaleUnit: normal";
             unitText = baseUnit;
+        }
+    } else if(dataTypeIndex == 1){
+        unitText = "%RMS";
     } else {
-        unitText = baseUnit;
+        unitText = "%Fund";
     }
-    qDebug() << "baseUnit: " << baseUnit;
-    qDebug() << "unitText: " << unitText;
+
+    // qDebug() << "unitText: " << unitText;
     m_unitLabel->setText(QString("[%1]").arg(unitText));
-    qDebug() << "m_unitLabel: " << m_unitLabel->text();
+    // qDebug() << "m_unitLabel: " << m_unitLabel->text();
+
+    // 4. Y축 범위 설정
+    double displayRange = AnalysisUtils::scaleValue(currentRange, m_scaleUnit);
+    // qDebug() << "displayRange: " << displayRange;
+    m_axisY->setRange(0, displayRange);
+    qDebug() << "-----------------------------------";
+
 }
