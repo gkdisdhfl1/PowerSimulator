@@ -74,6 +74,13 @@ void AnalysisHarmonicPage::updateGraph()
 {
     if(!m_hasData) return;
 
+    const bool isVoltage = m_voltageButton->isChecked();
+
+    const QString fundUnit = isVoltage ? "V" : "A";
+    for(auto& label : m_fundUnitLabels) {
+        label->setText(fundUnit);
+    }
+
     const auto* fullHarmonicsData = m_voltageButton->isChecked() ?
                                         &m_lastSummaryData.lastCycleFullVoltageHarmonics :
                                         &m_lastSummaryData.lastCycleFullCurrentHarmonics;
@@ -265,31 +272,45 @@ QWidget* AnalysisHarmonicPage::createGraphView()
 {
     auto graphViewWidget = new QWidget();
     auto mainLayout = new QHBoxLayout(graphViewWidget);
-    mainLayout->setContentsMargins(0, 10, 0, 0); // 컨트롤 바와의 간격
+    mainLayout->setContentsMargins(0, 5, 0, 0); // 컨트롤 바와의 간격
+
+    auto leftPanelLayout = new QVBoxLayout();
+    leftPanelLayout->addSpacing(40);
 
     // 1. 왼쪽 스케일 패널
     auto scaleBox = new QGroupBox("Scale");
     scaleBox->setObjectName("scaleBox");
-    scaleBox->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
+    // scaleBox->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
+    scaleBox->setMaximumWidth(55);
+
     auto scaleLayout = new QVBoxLayout(scaleBox);
-    scaleLayout->setContentsMargins(2, 2, 2, 2);
+    scaleLayout->setContentsMargins(2, 15, 2, 2);
 
-    m_autoScaleButton = new QPushButton("Auto");
-    auto plusButton = new QPushButton("+");
-    auto minusButton = new QPushButton("-");
+    m_scaleButtonGroup = new QButtonGroup(this);
+    m_scaleButtonGroup->setExclusive(false);
 
-    m_autoScaleButton->setCheckable(true);
-    m_autoScaleButton->setChecked(m_isAutoScaling);
-    scaleLayout->addWidget(m_autoScaleButton);
-    scaleLayout->addWidget(plusButton);
-    scaleLayout->addWidget(minusButton);
-    scaleLayout->addStretch();
+    const QStringList scaleButtonNames = {"Auto", "+", "-"};
+    for(int i{0}; i < 3; ++i) {
+        m_scaleButtons[i] = new QPushButton(scaleButtonNames[i]);
+        m_scaleButtons[i]->setSizePolicy(QSizePolicy::MinimumExpanding, QSizePolicy::Preferred);
+        if(i > 0) {
+            m_scaleButtons[i]->setProperty("buttonType", "waveformControl");
+        }
+        scaleLayout->addWidget(m_scaleButtons[i]);
+        m_scaleButtonGroup->addButton(m_scaleButtons[i], 1);
+    }
 
-    connect(m_autoScaleButton, &QPushButton::toggled, this, &AnalysisHarmonicPage::onScaleAutoToggled);
-    connect(plusButton, &QPushButton::clicked, this, &AnalysisHarmonicPage::onScaleInClicked);
-    connect(minusButton, &QPushButton::clicked, this, &AnalysisHarmonicPage::onScaleOutClicked);
+    m_scaleButtons[0]->setCheckable(true);
+    m_scaleButtons[0]->setChecked(m_isAutoScaling);
+    m_scaleButtons[0]->setProperty("buttonType", "waveformToggle");
 
-    mainLayout->addWidget(scaleBox);
+    connect(m_scaleButtons[0], &QPushButton::toggled, this, &AnalysisHarmonicPage::onScaleAutoToggled);
+    connect(m_scaleButtons[1], &QPushButton::clicked, this, &AnalysisHarmonicPage::onScaleInClicked);
+    connect(m_scaleButtons[2], &QPushButton::clicked, this, &AnalysisHarmonicPage::onScaleOutClicked);
+
+    leftPanelLayout->addWidget(scaleBox);
+
+    mainLayout->addLayout(leftPanelLayout);
 
     // 2. 오른쪽 그래프 및 정보 패널
     auto rightPanel = new QWidget();
@@ -300,32 +321,56 @@ QWidget* AnalysisHarmonicPage::createGraphView()
     auto infoContainer = new QWidget();
     auto infoLayout = new QGridLayout(infoContainer);
     infoLayout->setContentsMargins(0, 0, 0, 0);
+    infoLayout->setVerticalSpacing(0);
     // infoLayout->setSpacing(5);
 
     const QStringList phaseNames = {"A", "B", "C"};
 
     // THD 라인
     QLabel* thdLabel = new QLabel("THD");
+    thdLabel->setProperty("harmonicLabelType", "title");
     thdLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     infoLayout->addWidget(thdLabel, 0, 0);
     for(int i{0}; i < 3; ++i) {
         int col = 1 + (i * 3); // A, B, C 각 그룹의 시작 컬럼
-        infoLayout->addWidget(new QLabel(phaseNames[i]), 0, col);
+        auto phaseLabel = new QLabel(phaseNames[i]);
+        phaseLabel->setProperty("harmonicLabelType", "phase");
+        QString phaseStyle = QString("color: %1;").arg(config::View::PhaseColors::Voltage[i].name());
+        phaseLabel->setStyleSheet(phaseStyle);
+        infoLayout->addWidget(phaseLabel, 0, col);
+
         m_thdValueLabels[i] = new QLabel("0.00");
+        m_thdValueLabels[i]->setProperty("harmonicLabelType", "value");
+        m_thdValueLabels[i]->setFixedWidth(30);
         infoLayout->addWidget(m_thdValueLabels[i], 0, col + 1);
-        infoLayout->addWidget(new QLabel("%"), 0, col + 2);
+
+        auto unitLabel = new QLabel("%");
+        unitLabel->setProperty("harmonicLabelType", "unit");
+        infoLayout->addWidget(unitLabel, 0, col + 2);
     }
 
     // Fund. 라인
     QLabel* fundLabel = new QLabel("Fund.");
+    fundLabel->setProperty("harmonicLabelType", "title");
     fundLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     infoLayout->addWidget(fundLabel, 1, 0);
     for(int i{0}; i < 3; ++i) {
         int col = 1 + (i * 3); // A, B, C 각 그룹의 시작 컬럼
-        infoLayout->addWidget(new QLabel(phaseNames[i]), 1, col);
+
+        auto phaseLabel = new QLabel(phaseNames[i]);
+        phaseLabel->setProperty("harmonicLabelType", "phase");
+        QString phaseStyle = QString("color: %1;").arg(config::View::PhaseColors::Voltage[i].name());
+        phaseLabel->setStyleSheet(phaseStyle);
+        infoLayout->addWidget(phaseLabel, 1, col);
+
         m_fundValueLabels[i] = new QLabel("0.00");
+        m_fundValueLabels[i]->setProperty("harmonicLabelType", "value");
+        m_fundValueLabels[i]->setFixedWidth(30);
         infoLayout->addWidget(m_fundValueLabels[i], 1, col + 1);
-        infoLayout->addWidget(new QLabel("V"), 1, col + 2);
+
+        m_fundUnitLabels[i] = new QLabel("V");
+        m_fundUnitLabels[i]->setProperty("harmonicLabelType", "unit");
+        infoLayout->addWidget(m_fundUnitLabels[i], 1, col + 2);
     }
 
     infoLayout->setColumnStretch(0, 1);
@@ -335,8 +380,12 @@ QWidget* AnalysisHarmonicPage::createGraphView()
     // 2-2. 하단 막대 그래프
     m_chart = new QChart();
     m_chart->legend()->hide();
+    m_chart->setPlotArea(QRect(25, 25, 335, 130));
+    m_chart->setContentsMargins(-20, -10, -20, -10);
+
     m_chartView = new QChartView(m_chart);
     m_chartView->setRenderHint(QPainter::Antialiasing);
+    m_chartView->setBackgroundBrush(QBrush(Qt::white));
 
     // Y축 단위 라벨 추가
     auto* internalVLayout = new QVBoxLayout(m_chartView);
@@ -362,9 +411,10 @@ QWidget* AnalysisHarmonicPage::createGraphView()
 
     // X축 생성
     m_axisX = new QCategoryAxis();
-    m_axisX->setRange(0, 50); // 0부터 50까지 모두 보이도록 설정
+    m_axisX->setRange(-0.5, 50.5); // 0부터 50까지 모두 보이도록 설정
     m_axisX->setLabelsPosition(QCategoryAxis::AxisLabelsPositionOnValue);
 
+    m_axisX->append("0", 0);
     for(int i{1}; i <= 5; ++i)
         m_axisX->append(QString("%1").arg(8 * i), 8 * i);
     m_axisX->append("50", 50);
@@ -376,6 +426,7 @@ QWidget* AnalysisHarmonicPage::createGraphView()
 
     // 막대 시리즈 및 세트 생성
     m_barSeries = new QBarSeries();
+    m_barSeries->setBarWidth(1.0);
     for(int i{0}; i < 3; ++i) {
         m_barSets[i] = new QBarSet(QString(QChar('A' + i)));
         // 초기 데이터는 모두 0으로 채움
@@ -485,7 +536,7 @@ void AnalysisHarmonicPage::onScaleInClicked()
 {
     if(m_scaleIndex < (int)config::View::RANGE_TABLE.size() - 1) {
         ++m_scaleIndex;
-        m_autoScaleButton->setChecked(false);
+        m_scaleButtons[0]->setChecked(false);
         updateChartAxis();
         updateGraph();
     }
@@ -495,7 +546,7 @@ void AnalysisHarmonicPage::onScaleOutClicked()
 {
     if(m_scaleIndex > 0) {
         --m_scaleIndex;
-        m_autoScaleButton->setChecked(false);
+        m_scaleButtons[0]->setChecked(false);
         updateChartAxis();
         updateGraph();
     }

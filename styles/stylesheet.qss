@@ -95,6 +95,21 @@ QLabel#waveformLabel{
     color: black;
 }
 
+QLabel[harmonicLabelType="title"],
+QLabel[harmonicLabelType="phase"],
+QLabel[harmonicLabelType="value"],
+QLabel[harmonicLabelType="unit"] {
+    font-size: 9px;
+}
+
+QLabel[harmonicLabelType="phase"] {
+    font-weight: bold;
+}
+QLabel[harmonicLabelType="value"] {
+    color: #008CFF;
+    font: bold 11px;
+}
+
 /* -------------------------------------- */
 
 /* --- Frame --- */

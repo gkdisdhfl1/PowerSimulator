@@ -49,10 +49,10 @@ private:
 
 
     // UI 멤버 변수
+    QButtonGroup* m_buttonGroup; // 토글 버튼 그룹
+    QButtonGroup* m_scaleButtonGroup;
     QPushButton* m_voltageButton;
     QPushButton* m_currentButton;
-    QPushButton* m_autoScaleButton;
-    QButtonGroup* m_buttonGroup; // 토글 버튼 그룹
     QCheckBox* m_fundCheckBox;
     QComboBox* m_dataTypeComboBox;
     QComboBox* m_viewTypeComboBox;
@@ -60,6 +60,8 @@ private:
     QStackedWidget* m_contentStack;
     std::array<QLabel*, 3> m_thdValueLabels;
     std::array<QLabel*, 3> m_fundValueLabels;
+    std::array<QLabel*, 3> m_fundUnitLabels;
+    std::array<QPushButton*, 3> m_scaleButtons;
 
     // 스케일링 및 그래프 관련 멤버 변수
     ScaleUnit m_scaleUnit;

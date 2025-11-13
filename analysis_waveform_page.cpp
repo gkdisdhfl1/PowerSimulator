@@ -201,6 +201,7 @@ void AnalysisWaveformPage::setupChart()
     m_chart = new QChart();
     m_chartView = new QChartView(m_chart);
     m_chartView->setRenderHint(QPainter::Antialiasing);
+    m_chartView->setBackgroundBrush(QBrush(Qt::white));
 
     QFont axisFont;
     axisFont.setPixelSize(8);
