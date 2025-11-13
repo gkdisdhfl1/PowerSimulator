@@ -36,6 +36,7 @@ private slots:
     void onScaleOutClicked();
     void onFundVisibleChanged(bool checked);
     void onPhaseVisibleChanged(int id, bool checked);
+    void onViewTypeChanged(int index);
 
 private:
     void setupUi();
@@ -51,6 +52,7 @@ private:
     // UI 멤버 변수
     QButtonGroup* m_buttonGroup; // 토글 버튼 그룹
     QButtonGroup* m_scaleButtonGroup;
+    QButtonGroup* m_phaseButtonGroup;
     QPushButton* m_voltageButton;
     QPushButton* m_currentButton;
     QCheckBox* m_fundCheckBox;

@@ -66,6 +66,7 @@ void AnalysisHarmonicPage::setupUi()
     m_contentStack->addWidget(graphView);
     m_contentStack->addWidget(textView);
 
+    connect(m_viewTypeComboBox, &QComboBox::currentIndexChanged, this, &AnalysisHarmonicPage::onViewTypeChanged);
     connect(m_viewTypeComboBox, &QComboBox::currentIndexChanged, m_contentStack, &QStackedWidget::setCurrentIndex);
     connect(m_dataTypeComboBox, &QComboBox::currentIndexChanged, this, &AnalysisHarmonicPage::updateChartAxis);
 }
@@ -249,8 +250,8 @@ void AnalysisHarmonicPage::setupControlBar(QVBoxLayout* mainLayout)
 
     // A, B, C 상 체크박스
     const QStringList phaseNames = {"A", "B", "C"};
-    auto phaseButtonGroup = new QButtonGroup(this);
-    phaseButtonGroup->setExclusive(false);
+    m_phaseButtonGroup = new QButtonGroup(this);
+    m_phaseButtonGroup->setExclusive(false);
 
     for(int i{0}; i < 3; ++i) {
         m_phaseCheckBoxes[i] = new QCheckBox(phaseNames[i]);
@@ -260,12 +261,12 @@ void AnalysisHarmonicPage::setupControlBar(QVBoxLayout* mainLayout)
                                  .arg(config::View::PhaseColors::Voltage[i].name());
         m_phaseCheckBoxes[i]->setStyleSheet(phaseStyle);
 
-        phaseButtonGroup->addButton(m_phaseCheckBoxes[i], i);
+        m_phaseButtonGroup->addButton(m_phaseCheckBoxes[i], i);
         controlBarLayout->addWidget(m_phaseCheckBoxes[i]);
     }
 
     connect(m_fundCheckBox, &QCheckBox::checkStateChanged, this, &AnalysisHarmonicPage::onFundVisibleChanged);
-    connect(phaseButtonGroup, &QButtonGroup::idToggled, this, &AnalysisHarmonicPage::onPhaseVisibleChanged);
+    connect(m_phaseButtonGroup, &QButtonGroup::idToggled, this, &AnalysisHarmonicPage::onPhaseVisibleChanged);
 }
 
 QWidget* AnalysisHarmonicPage::createGraphView()
@@ -563,5 +564,24 @@ void AnalysisHarmonicPage::onPhaseVisibleChanged(int id, bool checked)
     if(id >= 0 && id < 3) {
         m_isPhaseVisible[id] = checked;
         updateGraph();
+    }
+}
+
+void AnalysisHarmonicPage::onViewTypeChanged(int index)
+{
+    if(index == 1) {
+        m_fundCheckBox->setVisible(false);
+        m_phaseCheckBoxes[0]->setChecked(false);
+        m_phaseCheckBoxes[1]->setChecked(false);
+        m_phaseCheckBoxes[2]->setChecked(false);
+        m_phaseButtonGroup->setExclusive(true);
+
+        // 상호 배타적이 되면, 첫 번째 버튼을 선택
+        if(m_phaseButtonGroup->checkedButton() == nullptr) {
+            m_phaseCheckBoxes[0]->setChecked(true);
+        }
+    } else { // Graph 모드
+        m_fundCheckBox->setVisible(true);
+        m_phaseButtonGroup->setExclusive(false);
     }
 }
