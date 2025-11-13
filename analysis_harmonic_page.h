@@ -3,6 +3,7 @@
 
 #include "config.h"
 #include "measured_data.h"
+#include <QStyledItemDelegate>
 #include <QWidget>
 
 class QVBoxLayout;
@@ -12,6 +13,7 @@ class QComboBox;
 class QCheckBox;
 class QStackedWidget;
 class QLabel;
+class QTableWidget;
 
 class QValueAxis;
 class QBarSeries;
@@ -19,6 +21,15 @@ class QBarSet;
 class QChart;
 class QChartView;
 class QCategoryAxis;
+
+class HarmonicTextDelegate : public QStyledItemDelegate
+{
+    Q_OBJECT
+public:
+    explicit HarmonicTextDelegate(QObject* parent = nullptr);
+    void paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const override;
+
+};
 
 class AnalysisHarmonicPage : public QWidget
 {
@@ -60,6 +71,7 @@ private:
     QComboBox* m_viewTypeComboBox;
     std::array<QCheckBox*, 3> m_phaseCheckBoxes;
     QStackedWidget* m_contentStack;
+    QTableWidget* m_textTable;
     std::array<QLabel*, 3> m_thdValueLabels;
     std::array<QLabel*, 3> m_fundValueLabels;
     std::array<QLabel*, 3> m_fundUnitLabels;

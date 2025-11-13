@@ -15,9 +15,13 @@
 #include <QLabel>
 #include <QPushButton>
 #include <QStackedWidget>
+#include <QTableWidget>
 #include <QVBoxLayout>
 #include <QValueAxis>
 #include <config.h>
+#include <QHeaderView>
+#include <QTimer>
+
 
 AnalysisHarmonicPage::AnalysisHarmonicPage(QWidget *parent)
     : QWidget{parent}
@@ -451,11 +455,59 @@ QWidget* AnalysisHarmonicPage::createGraphView()
 
 QWidget* AnalysisHarmonicPage::createTextView()
 {
-    // 지금은 빈 위젯을 반환. 나중에 구현
-    auto textViewWidget = new QWidget();
-    auto layout = new QVBoxLayout(textViewWidget);
-    layout->addWidget(new QLabel("Text View (구현 예정)"));
-    return textViewWidget;
+    m_textTable = new QTableWidget();
+    m_textTable->setObjectName("harmonicsTextTable");
+    m_textTable->setRowCount(9);
+    m_textTable->setColumnCount(12);
+
+    m_textTable->horizontalHeader()->hide();
+    m_textTable->verticalHeader()->hide();
+    m_textTable->setEditTriggers(QAbstractItemView::NoEditTriggers);
+    m_textTable->setFocusPolicy(Qt::NoFocus);
+    m_textTable->setAlternatingRowColors(false); // 기본 교차색상 끄기
+    m_textTable->setShowGrid(true);
+    m_textTable->setContentsMargins(0, 0, 0, 0);
+    m_textTable->setItemDelegate(new HarmonicTextDelegate(m_textTable));
+    m_textTable->setSelectionMode(QAbstractItemView::ExtendedSelection);
+
+    const QColor orderBackgroundColor = QColor(211, 211, 211);
+    const QFont textFont("Arial", 8);
+    const QFont textFontBold("Arial", 8, QFont::Bold);
+
+    for(int row{0}; row < 9; ++row) {
+        for(int col{0}; col < 6; ++col) {
+            int order = col * 9 + row;
+
+            if(order > 50) {
+                continue;
+            }
+
+            // 번호 칸(짝수 열)
+            QTableWidgetItem* orderItem = new QTableWidgetItem(QString::number(order));
+            orderItem->setTextAlignment(Qt::AlignCenter);
+            orderItem->setFont(textFontBold);
+            m_textTable->setItem(row, col * 2, orderItem);
+
+            // 값 칸(홀수 열)
+            QTableWidgetItem* valueItem = new QTableWidgetItem("0.000");
+            valueItem->setTextAlignment(Qt::AlignCenter);
+            valueItem->setFont(textFont);
+            m_textTable->setItem(row, col * 2 + 1, valueItem);
+        }
+    }
+
+    for (int col = 0; col < m_textTable->columnCount(); ++col) {
+        if (col % 2 == 0)
+            m_textTable->setColumnWidth(col, 20); // 번호
+        else
+            m_textTable->setColumnWidth(col, 50); // 값
+    }
+
+    // m_textTable->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_textTable->verticalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    m_textTable->setContentsMargins(0, 0, 0, 0);
+
+    return m_textTable;
 }
 
 void AnalysisHarmonicPage::updateChartAxis()
@@ -585,3 +637,37 @@ void AnalysisHarmonicPage::onViewTypeChanged(int index)
         m_phaseButtonGroup->setExclusive(false);
     }
 }
+
+// =====================================================
+HarmonicTextDelegate::HarmonicTextDelegate(QObject *parent)
+    : QStyledItemDelegate(parent)
+{
+
+}
+
+void HarmonicTextDelegate::paint(QPainter *painter, const QStyleOptionViewItem &option, const QModelIndex &index) const
+{
+    painter->save();
+
+    QString text = index.model()->data(index, Qt::DisplayRole).toString();
+    bool isSelected = option.state & QStyle::State_Selected;
+    bool isOrderColumn = index.column() % 2 == 0;
+
+    // 배경색 및 텍스트 설정
+    if(isSelected) {
+        painter->fillRect(option.rect, option.palette.highlight());
+        painter->setPen(option.palette.highlightedText().color());
+    } else if(isOrderColumn) {
+        painter->fillRect(option.rect, QColor(211, 211, 211));
+        painter->setPen(Qt::black);
+    } else {
+        painter->fillRect(option.rect, Qt::white);
+        painter->setPen(Qt::black);
+    }
+
+    // 텍스트 그리기
+    painter->drawText(option.rect, Qt::AlignCenter, text);
+
+    painter->restore();
+}
+
