@@ -38,6 +38,7 @@ void AnalysisHarmonicPage::onOneSecondDataUpdated(const OneSecondSummaryData& da
     m_lastSummaryData = data;
     m_hasData = true;
     updateGraph();
+    updateText();
 }
 
 // private
@@ -184,6 +185,85 @@ void AnalysisHarmonicPage::updateGraph()
         if(newScaleIndex != m_scaleIndex) {
             m_scaleIndex = newScaleIndex;
             updateChartAxis();
+        }
+    }
+}
+
+void AnalysisHarmonicPage::updateText()
+{
+    if(!m_hasData) return;
+
+    // 1. 어떤 상(A,B,C)의 데이터를 보여줄 지 결정
+    int phaseIndex = 0;
+    auto checkedButton = m_phaseButtonGroup->checkedButton();
+    if(checkedButton) {
+        phaseIndex = m_phaseButtonGroup->id(checkedButton);
+    }
+
+    // 2. 어떤 종류(VorA, %RMS, %Fund)의 데이터를 보여줄지 결정
+    const auto* fullHarmonicsData = m_voltageButton->isChecked() ?
+                                        &m_lastSummaryData.lastCycleFullVoltageHarmonics :
+                                        &m_lastSummaryData.lastCycleFullCurrentHarmonics;
+
+    const auto* fundData = m_voltageButton->isChecked() ?
+                               &m_lastSummaryData.fundamentalVoltage :
+                               &m_lastSummaryData.fundamentalCurrent;
+
+    const auto* totalRmsData = m_voltageButton->isChecked() ?
+                                   &m_lastSummaryData.totalVoltageRms :
+                                   &m_lastSummaryData.totalCurrentRms;
+
+    const auto& harmonics = (*fullHarmonicsData)[phaseIndex];
+    int dataTypeIndex = m_dataTypeComboBox->currentIndex();
+
+    // 3. 0차부터 50차까지 루프돌며 테이블 업데이트
+    for(int order{0}; order <= 50; ++order) {
+        double rawValue = 0.0;
+        auto it = std::find_if(harmonics.begin(), harmonics.end(), [order](const HarmonicAnalysisResult& h) {
+            return h.order == order;
+        });
+
+        if(it != harmonics.end()) {
+            const auto& harmonic = *it;
+            if(dataTypeIndex == 0) { // voltage or current
+                rawValue = harmonic.rms;
+            } else if(dataTypeIndex == 1) { // %RMS
+                double totalRms = (phaseIndex == 0) ? totalRmsData->a  : (phaseIndex == 1) ? totalRmsData->b : totalRmsData->c;
+
+                if(totalRms > 1e-9) {
+                    rawValue = (harmonic.rms / totalRms) * 100.0;
+                }
+            } else { // [%]Fund
+                const auto& fundamental = (*fundData)[phaseIndex];
+                if(fundamental.rms > 1e-9) {
+                    rawValue = (harmonic.rms / fundamental.rms) * 100.0;
+                }
+            }
+        }
+
+        // 4. rawValue를 포맷에 맞게 QString으로 변환
+        QString formattedValue;
+        if(rawValue >= 100.0) {
+            formattedValue = QString::number(rawValue, 'f', 0);
+        } else if(rawValue >= 10.0) {
+            formattedValue = QString::number(rawValue, 'f', 1);
+        } else if(rawValue >= 1.0) {
+            formattedValue = QString::number(rawValue, 'f', 2);
+        } else {
+            formattedValue = QString::number(rawValue, 'f', 3);
+        }
+
+        // 전체 4자리 넘지 안도록 자르기
+        if(formattedValue.length() > 4 && formattedValue.contains('.')) {
+            formattedValue = formattedValue.left(4);
+        }
+
+        // 5. 테이블의 해당 셀에 값 업데이트
+        int row = order % 9;
+        int col = order / 9;
+        QTableWidgetItem* item = m_textTable->item(row, col * 2 + 1);
+        if(item) {
+            item->setText(formattedValue);
         }
     }
 }
@@ -562,6 +642,7 @@ void AnalysisHarmonicPage::updateChartAxis()
     // qDebug() << "displayRange: " << displayRange;
     m_axisY->setRange(0, displayRange);
     updateGraph();
+    updateText();
     qDebug() << "-----------------------------------";
 
 }
@@ -577,6 +658,7 @@ void AnalysisHarmonicPage::onDisplayTypeChanged(int id)
     }
     updateChartAxis();
     updateGraph();
+    updateText();
 }
 
 void AnalysisHarmonicPage::onScaleAutoToggled(bool checked)
@@ -616,6 +698,7 @@ void AnalysisHarmonicPage::onPhaseVisibleChanged(int id, bool checked)
     if(id >= 0 && id < 3) {
         m_isPhaseVisible[id] = checked;
         updateGraph();
+        updateText();
     }
 }
 

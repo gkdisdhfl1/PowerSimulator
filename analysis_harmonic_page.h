@@ -55,6 +55,7 @@ private:
     void setupControlBar(QVBoxLayout* mainLayout);
     void updateChartAxis();
     void updateGraph();
+    void updateText();
 
     QWidget* createGraphView();
     QWidget* createTextView();
