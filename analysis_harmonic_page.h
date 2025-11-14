@@ -63,6 +63,7 @@ private:
     void updateChartAxis();
     void updateGraph();
     void updateText();
+    void updateInfoLabels();
     HarmonicDataSources getCurrentDataSources(int phaseIndex) const;
     double calculateRawValue(const HarmonicDataSources& sources, int order, int phaseIndex) const;
     QString formatValue(double value) const;

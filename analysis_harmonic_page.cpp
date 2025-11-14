@@ -37,6 +37,7 @@ void AnalysisHarmonicPage::onOneSecondDataUpdated(const OneSecondSummaryData& da
 {
     m_lastSummaryData = data;
     m_hasData = true;
+    updateInfoLabels();
     updateGraph();
     updateText();
 }
@@ -103,23 +104,23 @@ double AnalysisHarmonicPage::calculateRawValue(const HarmonicDataSources& source
 
     if(it != sources.harmonics->end()) {
         const auto& harmonic = *it;
-        if(sources.dataTypeIndex == 0) { // voltage or current
-            rawValue = harmonic.rms;
-        } else if(sources.dataTypeIndex == 1) { // %RMS
-            double totalRms = (phaseIndex == 0) ? sources.totalRms->a : (phaseIndex == 1) ?
-                                                                        sources.totalRms->b : sources.totalRms->c;
 
-            if(totalRms > 1e-9) {
-                rawValue = (harmonic.rms / totalRms) * 100.0;
+        switch(sources.dataTypeIndex) {
+            case 0: // voltage or current
+                return harmonic.rms;
+            case 1: {// %RMS
+                double totalRms = (phaseIndex == 0) ?
+                                      sources.totalRms->a : (phaseIndex == 1) ?
+                                                          sources.totalRms->b : sources.totalRms->c;
+                return (totalRms > 1e-9) ? (harmonic.rms / totalRms) * 100.0 : 0.0;
             }
-        } else { // Fund
-            const auto& fundamental = (*sources.fundamental)[phaseIndex];
-            if(fundamental.rms > 1e-9) {
-                rawValue = (harmonic.rms / fundamental.rms) * 100.0;
+            case 2: {// %Fund
+                const auto& fundamental = (*sources.fundamental)[phaseIndex];
+                return (fundamental.rms > 1e-9) ? (harmonic.rms / fundamental.rms) * 100.0 : 0.0;
             }
         }
     }
-    return rawValue;
+    return 0.0;
 }
 
 QString AnalysisHarmonicPage::formatValue(double value) const
@@ -148,31 +149,11 @@ void AnalysisHarmonicPage::updateGraph()
 {
     if(!m_hasData) return;
 
-    const bool isVoltage = m_voltageButton->isChecked();
-
-    const QString fundUnit = isVoltage ? "V" : "A";
-    for(auto& label : m_fundUnitLabels) {
-        label->setText(fundUnit);
-    }
-
-    const auto* thdData = isVoltage ? &m_lastSummaryData.voltageThd : &m_lastSummaryData.currentThd;
-    const auto* fundData = isVoltage ? &m_lastSummaryData.fundamentalVoltage : &m_lastSummaryData.fundamentalCurrent;
-
-
     // 데이터 타입 콤보박스 선택에 따라 값 계산 및 그래프 업데이트
     double maxVal = 0.0; // 자동 스케일링을 위한 최대값
 
     for(int i{0}; i < 3; ++i) { // A상, B상, C상
-        if(i == 0)
-            m_thdValueLabels[i]->setText(QString::number(thdData->a, 'f', 1));
-        else if(i == 1)
-            m_thdValueLabels[i]->setText(QString::number(thdData->b, 'f', 1));
-        else
-            m_thdValueLabels[i]->setText(QString::number(thdData->c, 'f', 1));
 
-        m_fundValueLabels[i]->setText(QString::number((*fundData)[i].rms, 'f', 1));
-
-        
         // 막대 그래프 데이터 업데이트
         // Phase 체크박스 상태 확인
         if(!m_isPhaseVisible[i]) {
@@ -250,6 +231,28 @@ void AnalysisHarmonicPage::updateText()
             item->setText(formattedValue);
         }
     }
+}
+
+void AnalysisHarmonicPage::updateInfoLabels()
+{
+    if(!m_hasData) return;
+
+    const bool isVoltage = m_voltageButton->isChecked();
+    const QString fundUnit = isVoltage ? "V" : "A";
+    for(auto& label : m_fundUnitLabels) {
+        label->setText(fundUnit);
+    }
+
+    const auto* thdData = isVoltage ? &m_lastSummaryData.voltageThd : &m_lastSummaryData.currentThd;
+    const auto* fundData = isVoltage ? &m_lastSummaryData.fundamentalVoltage : &m_lastSummaryData.fundamentalCurrent;
+
+    m_thdValueLabels[0]->setText(QString::number(thdData->a, 'f', 1));
+    m_thdValueLabels[1]->setText(QString::number(thdData->a, 'f', 1));
+    m_thdValueLabels[2]->setText(QString::number(thdData->a, 'f', 1));
+
+    m_fundValueLabels[0]->setText(QString::number((*fundData)[0].rms, 'f', 1));
+    m_fundValueLabels[1]->setText(QString::number((*fundData)[1].rms, 'f', 1));
+    m_fundValueLabels[2]->setText(QString::number((*fundData)[2].rms, 'f', 1));
 }
 
 void AnalysisHarmonicPage::setupTopBar(QVBoxLayout* mainLayout)
