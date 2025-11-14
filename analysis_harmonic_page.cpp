@@ -250,9 +250,9 @@ void AnalysisHarmonicPage::updateInfoLabels()
     m_thdValueLabels[1]->setText(QString::number(thdData->a, 'f', 1));
     m_thdValueLabels[2]->setText(QString::number(thdData->a, 'f', 1));
 
-    m_fundValueLabels[0]->setText(QString::number((*fundData)[0].rms, 'f', 1));
-    m_fundValueLabels[1]->setText(QString::number((*fundData)[1].rms, 'f', 1));
-    m_fundValueLabels[2]->setText(QString::number((*fundData)[2].rms, 'f', 1));
+    m_fundValueLabels[0]->setText(formatValue((*fundData)[0].rms));
+    m_fundValueLabels[1]->setText(formatValue((*fundData)[1].rms));
+    m_fundValueLabels[2]->setText(formatValue((*fundData)[2].rms));
 }
 
 void AnalysisHarmonicPage::setupTopBar(QVBoxLayout* mainLayout)
@@ -414,6 +414,7 @@ QWidget* AnalysisHarmonicPage::createGraphView()
         m_thdValueLabels[i] = new QLabel("0.00");
         m_thdValueLabels[i]->setProperty("harmonicLabelType", "value");
         m_thdValueLabels[i]->setFixedWidth(30);
+        m_thdValueLabels[i]->setAlignment(Qt::AlignRight);
         infoLayout->addWidget(m_thdValueLabels[i], 0, col + 1);
 
         auto unitLabel = new QLabel("%");
@@ -435,9 +436,10 @@ QWidget* AnalysisHarmonicPage::createGraphView()
         phaseLabel->setStyleSheet(phaseStyle);
         infoLayout->addWidget(phaseLabel, 1, col);
 
-        m_fundValueLabels[i] = new QLabel("0.00");
+        m_fundValueLabels[i] = new QLabel("0.000");
         m_fundValueLabels[i]->setProperty("harmonicLabelType", "value");
         m_fundValueLabels[i]->setFixedWidth(30);
+        m_fundValueLabels[i]->setAlignment(Qt::AlignRight);
         infoLayout->addWidget(m_fundValueLabels[i], 1, col + 1);
 
         m_fundUnitLabels[i] = new QLabel("V");
