@@ -76,6 +76,74 @@ void AnalysisHarmonicPage::setupUi()
     connect(m_dataTypeComboBox, &QComboBox::currentIndexChanged, this, &AnalysisHarmonicPage::updateChartAxis);
 }
 
+HarmonicDataSources AnalysisHarmonicPage::getCurrentDataSources(int phaseIndex) const
+{
+    HarmonicDataSources sources;
+    bool isVoltage = m_voltageButton->isChecked();
+
+    const auto& fullHarmonics = isVoltage ?
+                                        m_lastSummaryData.lastCycleFullVoltageHarmonics :
+                                        m_lastSummaryData.lastCycleFullCurrentHarmonics;
+
+    sources.harmonics = &fullHarmonics[phaseIndex];
+    sources.totalRms = isVoltage ? &m_lastSummaryData.totalVoltageRms : &m_lastSummaryData.totalCurrentRms;
+    sources.fundamental = isVoltage ? &m_lastSummaryData.fundamentalVoltage : &m_lastSummaryData.fundamentalCurrent;
+    sources.dataTypeIndex = m_dataTypeComboBox->currentIndex();
+
+    return sources;
+}
+
+double AnalysisHarmonicPage::calculateRawValue(const HarmonicDataSources& sources, int order, int phaseIndex) const
+{
+    double rawValue = 0.0;
+
+    auto it = std::find_if(sources.harmonics->begin(), sources.harmonics->end(), [order](const HarmonicAnalysisResult& h) {
+        return h.order == order;
+    });
+
+    if(it != sources.harmonics->end()) {
+        const auto& harmonic = *it;
+        if(sources.dataTypeIndex == 0) { // voltage or current
+            rawValue = harmonic.rms;
+        } else if(sources.dataTypeIndex == 1) { // %RMS
+            double totalRms = (phaseIndex == 0) ? sources.totalRms->a : (phaseIndex == 1) ?
+                                                                        sources.totalRms->b : sources.totalRms->c;
+
+            if(totalRms > 1e-9) {
+                rawValue = (harmonic.rms / totalRms) * 100.0;
+            }
+        } else { // Fund
+            const auto& fundamental = (*sources.fundamental)[phaseIndex];
+            if(fundamental.rms > 1e-9) {
+                rawValue = (harmonic.rms / fundamental.rms) * 100.0;
+            }
+        }
+    }
+    return rawValue;
+}
+
+QString AnalysisHarmonicPage::formatValue(double value) const
+{
+    QString formattedValue;
+
+    if(value >= 100.0) {
+        formattedValue = QString::number(value, 'f', 1);
+    } else if(value >= 10.0) {
+        formattedValue = QString::number(value, 'f', 2);
+    } else if(value >= 1.0) {
+        formattedValue = QString::number(value, 'f', 3);
+    } else {
+        formattedValue = QString::number(value, 'f', 4);
+    }
+
+    // 전체 4자리 넘지 안도록 자르기
+    if(formattedValue.length() > 4 && formattedValue.contains('.')) {
+        formattedValue = formattedValue.left(5);
+    }
+
+    return formattedValue;
+}
+
 void AnalysisHarmonicPage::updateGraph()
 {
     if(!m_hasData) return;
@@ -87,38 +155,25 @@ void AnalysisHarmonicPage::updateGraph()
         label->setText(fundUnit);
     }
 
-    const auto* fullHarmonicsData = m_voltageButton->isChecked() ?
-                                        &m_lastSummaryData.lastCycleFullVoltageHarmonics :
-                                        &m_lastSummaryData.lastCycleFullCurrentHarmonics;
+    const auto* thdData = isVoltage ? &m_lastSummaryData.voltageThd : &m_lastSummaryData.currentThd;
+    const auto* fundData = isVoltage ? &m_lastSummaryData.fundamentalVoltage : &m_lastSummaryData.fundamentalCurrent;
 
-    const auto* thdData = m_voltageButton->isChecked() ?
-                              &m_lastSummaryData.voltageThd :
-                              &m_lastSummaryData.currentThd;
-
-    const auto* fundData = m_voltageButton->isChecked() ?
-                               &m_lastSummaryData.fundamentalVoltage :
-                               &m_lastSummaryData.fundamentalCurrent;
-
-    const auto* totalRmsData = m_voltageButton->isChecked() ?
-                                &m_lastSummaryData.totalVoltageRms :
-                                &m_lastSummaryData.totalCurrentRms;
 
     // 데이터 타입 콤보박스 선택에 따라 값 계산 및 그래프 업데이트
-    int dataTypeIndex = m_dataTypeComboBox->currentIndex();
     double maxVal = 0.0; // 자동 스케일링을 위한 최대값
 
     for(int i{0}; i < 3; ++i) { // A상, B상, C상
-        const auto& harmonics = (*fullHarmonicsData)[i];
-
-        if(i == 0) m_thdValueLabels[i]->setText(QString::number(thdData->a, 'f', 1));
-        else if(i == 1) m_thdValueLabels[i]->setText(QString::number(thdData->b, 'f', 1));
-        else m_thdValueLabels[i]->setText(QString::number(thdData->c, 'f', 1));
+        if(i == 0)
+            m_thdValueLabels[i]->setText(QString::number(thdData->a, 'f', 1));
+        else if(i == 1)
+            m_thdValueLabels[i]->setText(QString::number(thdData->b, 'f', 1));
+        else
+            m_thdValueLabels[i]->setText(QString::number(thdData->c, 'f', 1));
 
         m_fundValueLabels[i]->setText(QString::number((*fundData)[i].rms, 'f', 1));
 
+        
         // 막대 그래프 데이터 업데이트
-        // 0차부터 50차까지 데이터 준비
-
         // Phase 체크박스 상태 확인
         if(!m_isPhaseVisible[i]) {
             for(int order{0}; order <= 50; ++order) {
@@ -129,37 +184,13 @@ void AnalysisHarmonicPage::updateGraph()
             continue;
         }
 
+        HarmonicDataSources sources = getCurrentDataSources(i);
         for(int order{0}; order <= 50; ++order) {
-            double rawValue = 0.0;
-            double displayValue = 0.0;
-            auto it = std::find_if(harmonics.begin(), harmonics.end(), [order](const HarmonicAnalysisResult& h) {
-                return h.order == order;
-            });
+            double rawValue = calculateRawValue(sources, order, i);
+            double displayValue = (sources.dataTypeIndex == 0) ?
+                                      AnalysisUtils::scaleValue(rawValue, m_scaleUnit) : rawValue;
 
-            if(it != harmonics.end()) {
-                const auto& harmonic = *it;
-                if(dataTypeIndex == 0) { // voltage or current
-                    rawValue = harmonic.rms;
-                } else if(dataTypeIndex == 1) { // %RMS
-                    double totalRms = 0.0;
-                    if(i == 0) totalRms = totalRmsData->a;
-                    else if(i == 1) totalRms = totalRmsData->b;
-                    else totalRms = totalRmsData->c;
-
-                    if(totalRms > 1e-9) {
-                        rawValue = (harmonic.rms / totalRms) * 100.0;
-                    }
-                } else { // Fund
-                    const auto& fundamental = (*fundData)[i];
-                    if(fundamental.rms > 1e-9) {
-                        rawValue = (harmonic.rms / fundamental.rms) * 100.0;
-                    }
-                }
-            }
-
-            displayValue = (dataTypeIndex == 0) ? AnalysisUtils::scaleValue(rawValue, m_scaleUnit) : rawValue;
-
-            if(order == 1 && !m_isFundVisible) {
+            if(order == 1  && !m_isFundVisible) {
                 displayValue = 0.0;
             }
 
@@ -168,8 +199,9 @@ void AnalysisHarmonicPage::updateGraph()
             }
 
             if(order == 1 && !m_isFundVisible) continue;
-            if(order > 0)
+            if(order > 0) {
                 maxVal = std::max(maxVal, rawValue);
+            }
         }
     }
 
@@ -201,63 +233,15 @@ void AnalysisHarmonicPage::updateText()
     }
 
     // 2. 어떤 종류(VorA, %RMS, %Fund)의 데이터를 보여줄지 결정
-    const auto* fullHarmonicsData = m_voltageButton->isChecked() ?
-                                        &m_lastSummaryData.lastCycleFullVoltageHarmonics :
-                                        &m_lastSummaryData.lastCycleFullCurrentHarmonics;
-
-    const auto* fundData = m_voltageButton->isChecked() ?
-                               &m_lastSummaryData.fundamentalVoltage :
-                               &m_lastSummaryData.fundamentalCurrent;
-
-    const auto* totalRmsData = m_voltageButton->isChecked() ?
-                                   &m_lastSummaryData.totalVoltageRms :
-                                   &m_lastSummaryData.totalCurrentRms;
-
-    const auto& harmonics = (*fullHarmonicsData)[phaseIndex];
-    int dataTypeIndex = m_dataTypeComboBox->currentIndex();
+    HarmonicDataSources sources = getCurrentDataSources(phaseIndex);
 
     // 3. 0차부터 50차까지 루프돌며 테이블 업데이트
     for(int order{0}; order <= 50; ++order) {
-        double rawValue = 0.0;
-        auto it = std::find_if(harmonics.begin(), harmonics.end(), [order](const HarmonicAnalysisResult& h) {
-            return h.order == order;
-        });
-
-        if(it != harmonics.end()) {
-            const auto& harmonic = *it;
-            if(dataTypeIndex == 0) { // voltage or current
-                rawValue = harmonic.rms;
-            } else if(dataTypeIndex == 1) { // %RMS
-                double totalRms = (phaseIndex == 0) ? totalRmsData->a  : (phaseIndex == 1) ? totalRmsData->b : totalRmsData->c;
-
-                if(totalRms > 1e-9) {
-                    rawValue = (harmonic.rms / totalRms) * 100.0;
-                }
-            } else { // [%]Fund
-                const auto& fundamental = (*fundData)[phaseIndex];
-                if(fundamental.rms > 1e-9) {
-                    rawValue = (harmonic.rms / fundamental.rms) * 100.0;
-                }
-            }
-        }
+        double rawValue = calculateRawValue(sources, order, phaseIndex);
 
         // 4. rawValue를 포맷에 맞게 QString으로 변환
-        QString formattedValue;
-        if(rawValue >= 100.0) {
-            formattedValue = QString::number(rawValue, 'f', 0);
-        } else if(rawValue >= 10.0) {
-            formattedValue = QString::number(rawValue, 'f', 1);
-        } else if(rawValue >= 1.0) {
-            formattedValue = QString::number(rawValue, 'f', 2);
-        } else {
-            formattedValue = QString::number(rawValue, 'f', 3);
-        }
-
-        // 전체 4자리 넘지 안도록 자르기
-        if(formattedValue.length() > 4 && formattedValue.contains('.')) {
-            formattedValue = formattedValue.left(4);
-        }
-
+        QString formattedValue = formatValue(rawValue);
+        qDebug() << "formattedValue: " << formattedValue;
         // 5. 테이블의 해당 셀에 값 업데이트
         int row = order % 9;
         int col = order / 9;
@@ -646,6 +630,7 @@ void AnalysisHarmonicPage::updateChartAxis()
     qDebug() << "-----------------------------------";
 
 }
+
 
 //-------------------------
 

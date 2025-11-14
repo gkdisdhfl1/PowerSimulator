@@ -31,6 +31,13 @@ public:
 
 };
 
+struct HarmonicDataSources {
+    const std::vector<HarmonicAnalysisResult>* harmonics = nullptr;
+    const PhaseData* totalRms = nullptr;
+    const std::array<HarmonicAnalysisResult, 3>* fundamental = nullptr;
+    int dataTypeIndex = 0;
+};
+
 class AnalysisHarmonicPage : public QWidget
 {
     Q_OBJECT
@@ -56,6 +63,9 @@ private:
     void updateChartAxis();
     void updateGraph();
     void updateText();
+    HarmonicDataSources getCurrentDataSources(int phaseIndex) const;
+    double calculateRawValue(const HarmonicDataSources& sources, int order, int phaseIndex) const;
+    QString formatValue(double value) const;
 
     QWidget* createGraphView();
     QWidget* createTextView();
