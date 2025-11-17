@@ -29,6 +29,13 @@ struct PhaseData {
     double c = 0.0;
 };
 
+// 선간 전압 데이터를 담는 구조체
+struct LineToLineData {
+    double ab = 0.0;
+    double bc = 0.0;
+    double ca = 0.0;
+};
+
 inline QDebug operator<<(QDebug dbg, const HarmonicComponent& hc)
 {
     // QDebugStateSaver를 사용해 스트림 상태를 안전하게 관리

@@ -21,12 +21,17 @@ struct MeasuredData {
     PhaseData voltageRms; // 전압 RMS
     PhaseData currentRms; // 전류 RMS
     PhaseData activePower; // 유효 전력
+    LineToLineData voltageRms_ll; // 선간 전압 RMS
 
     // 3상 분석 결과
     std::array<HarmonicAnalysisResult, 3> fundamentalVoltage; // [0]:A [1]:B [2]:C
     std::array<HarmonicAnalysisResult, 3> fundamentalCurrent;
     std::array<HarmonicAnalysisResult, 3> dominantVoltage;
     std::array<HarmonicAnalysisResult, 3> dominantCurrent;
+
+    // 선간 전압 분석 결과
+    std::array<HarmonicAnalysisResult, 3> fundamentalVoltage_ll; // [0]:AB [1]:BC [2]:CA
+    std::array<HarmonicAnalysisResult, 3> dominantVoltage_ll;
 
     // 전압의 주파수 성분 분석 결과 (harmonics[0]: 기본파)
     std::vector<HarmonicAnalysisResult> voltageHarmonics;
@@ -50,6 +55,7 @@ struct MeasuredData {
     // 잔류 RMS 멤버
     double residualVoltageRms = 0.0;
     double residualCurrentRms = 0.0;
+
 };
 
 // 단일 시퀀스 성분
@@ -75,6 +81,8 @@ struct OneSecondSummaryData {
     PhaseData powerFactor;
     PhaseData voltageThd;
     PhaseData currentThd;
+    LineToLineData totalVoltageRms_ll;
+    LineToLineData voltageThd_ll;
 
     std::array<HarmonicAnalysisResult, 3> fundamentalVoltage;
     std::array<HarmonicAnalysisResult, 3> fundamentalCurrent;
@@ -98,6 +106,7 @@ struct OneSecondSummaryData {
 
     SymmetricalComponents voltageSymmetricalComponents;
     SymmetricalComponents currentSymmetricalComponents;
+    SymmetricalComponents voltageSymmetricalcomponents_ll;
 
     double residualVoltageRms = 0.0; // 1초 평균 잔류 전압
     double residualCurrentRms = 0.0; // 1초 평균 잔류 전류
@@ -106,6 +115,7 @@ struct OneSecondSummaryData {
 
     double nemaVoltageUnbalance = 0.0;
     double nemaCurrentUnbalance = 0.0;
+    double nemaVoltageUnbalance_ll = 0.0;
 
     double voltageU0Unbalance = 0.0;
     double voltageU2Unbalance = 0.0;

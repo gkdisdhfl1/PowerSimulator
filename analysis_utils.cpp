@@ -21,6 +21,7 @@ HarmonicAnalysisResult createHarmonicResult(const std::vector<std::complex<doubl
         .phasorY = phasorRms.imag()
     };
 }
+
 }
 
 std::map<int, kiss_fftr_cfg> AnalysisUtils::m_fftConfigCache;
@@ -306,6 +307,29 @@ PhaseData AnalysisUtils::calculateTotalRms(const std::vector<DataPoint>& samples
 
 }
 
+LineToLineData AnalysisUtils::calculateTotalRms_ll(const std::vector<DataPoint>& samples)
+{
+    if(samples.empty())
+        return {};
+
+    double sumSq_ab = 0.0;
+    double sumSq_bc = 0.0;
+    double sumSq_ca = 0.0;
+
+    for(const auto& sample : samples) {
+        sumSq_ab += sample.voltage_ll.ab * sample.voltage_ll.ab;
+        sumSq_bc += sample.voltage_ll.bc * sample.voltage_ll.bc;
+        sumSq_ca += sample.voltage_ll.ca * sample.voltage_ll.ca;
+    }
+
+    const double n = static_cast<double>(samples.size());
+    return {
+        std::sqrt(sumSq_ab / n),
+        std::sqrt(sumSq_bc / n),
+        std::sqrt(sumSq_ca / n)
+    };
+}
+
 OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<MeasuredData>& cycleBuffer)
 {
     if(cycleBuffer.empty()) {
@@ -510,6 +534,51 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     }
 
     return summary;
+}
+
+void AnalysisUtils::buildOneSecondSummary_ll(OneSecondSummaryData& summary, const std::vector<MeasuredData>& cycleBuffer)
+{
+    if(cycleBuffer.empty()) return;
+
+    const size_t N = cycleBuffer.size();
+
+    std::array<double, 3> totalVoltageRmsSumSq_ll = {0.0}; // [0]:ab [1]:bc [2]:ca
+    std::array<double, 3> fundVoltageRmsSumSq_ll = {0.0};
+
+    // 모든 3상 값 누적
+    for(const auto& data : cycleBuffer) {
+        totalVoltageRmsSumSq_ll[0] += data.voltageRms_ll.ab * data.voltageRms_ll.ab;
+        totalVoltageRmsSumSq_ll[1] += data.voltageRms_ll.bc * data.voltageRms_ll.bc;
+        totalVoltageRmsSumSq_ll[2] += data.voltageRms_ll.ca * data.voltageRms_ll.ca;
+
+        fundVoltageRmsSumSq_ll[0] += data.fundamentalVoltage_ll[0].rms * data.fundamentalVoltage_ll[0].rms;
+        fundVoltageRmsSumSq_ll[1] += data.fundamentalVoltage_ll[1].rms * data.fundamentalVoltage_ll[1].rms;
+        fundVoltageRmsSumSq_ll[2] += data.fundamentalVoltage_ll[2].rms * data.fundamentalVoltage_ll[2].rms;
+
+    }
+
+    // 최종 계산
+    std::array<double, 3> voltageRms_ll, voltageThd_ll;
+
+    for(int i{0}; i < 3; ++i) {
+        voltageRms_ll[i] = std::sqrt(totalVoltageRmsSumSq_ll[i] / N);
+
+        // THD 계산 (THD = harmonicRMS / fundamentalRMS)
+        const double fundVoltageRms_ll = std::sqrt(fundVoltageRmsSumSq_ll[i] / N);
+
+        if(fundVoltageRms_ll > 1e-9) {
+            double harmonicVoltageRmsSq_ll = (voltageRms_ll[i] * voltageRms_ll[i]) - (fundVoltageRms_ll * fundVoltageRms_ll);
+            voltageThd_ll[i] = (harmonicVoltageRmsSq_ll > 1e-9) ? (std::sqrt(harmonicVoltageRmsSq_ll) / fundVoltageRms_ll) * 100.0 : 0.0;
+        } else {
+            // 전압값이 0이라면 THD 값은 의미 없음
+            voltageThd_ll[i] = (voltageRms_ll[i] > 1e-9) ? std::numeric_limits<double>::infinity() : 0.0;
+        }
+    }
+
+    // 구조체 할당
+    summary.totalVoltageRms_ll = {voltageRms_ll[0], voltageRms_ll[1], voltageRms_ll[2]};
+    summary.voltageThd_ll = {voltageThd_ll[0], voltageThd_ll[1], voltageThd_ll[2]};
+
 }
 
 double AnalysisUtils::calculateResidualRms(const std::vector<DataPoint>& samples, AnalysisUtils::DataType type)

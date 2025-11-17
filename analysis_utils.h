@@ -70,7 +70,11 @@ public:
 
     static PhaseData calculateTotalRms(const std::vector<DataPoint>&samples, DataType type);
 
+    static LineToLineData calculateTotalRms_ll(const std::vector<DataPoint>& samples);
+
     static OneSecondSummaryData buildOneSecondSummary(const std::vector<MeasuredData>& cycleBuffer);
+
+    static void buildOneSecondSummary_ll(OneSecondSummaryData& summary, const std::vector<MeasuredData>& cycleBuffer);
 
     static double calculateResidualRms(const std::vector<DataPoint>& samples, DataType type);
 
@@ -80,8 +84,11 @@ public:
     static ScaleUnit updateScaleUnit(double range);
     static double scaleValue(double value, ScaleUnit unit);
     static ScaleUnit updateAxis(QValueAxis* axis, QLabel* label, int scaleIndex, bool isVoltage);
+
 private:
     static std::map<int, kiss_fftr_cfg> m_fftConfigCache;
+
+
 };
 
 #endif // ANALYSIS_UTILS_H

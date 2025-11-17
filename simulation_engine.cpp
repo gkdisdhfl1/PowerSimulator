@@ -304,7 +304,12 @@ void SimulationEngine::addNewDataPoint(PhaseData voltage, PhaseData current)
     // qDebug() << "m_simulationTimeNs: " << m_simulationTimeNs;
     // qDebug() << "voltage: " << voltage;
     // qDebug() << "current: " << current;
-    m_data.push_back({m_simulationTimeNs, voltage, current});
+    LineToLineData voltage_ll;
+    voltage_ll.ab = voltage.a - voltage.b;
+    voltage_ll.bc = voltage.b - voltage.c;
+    voltage_ll.ca = voltage.c - voltage.a;
+
+    m_data.push_back({m_simulationTimeNs, voltage, current, voltage_ll});
 
     // 최대 개수 관리
     if(m_data.size() > static_cast<size_t>(m_maxDataSize.value())) {
@@ -381,6 +386,7 @@ void SimulationEngine::calculateCycleData()
     newData.activePower = AnalysisUtils::calculateActivePower(m_cycleSampleBuffer);
     newData.residualVoltageRms = AnalysisUtils::calculateResidualRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Voltage);
     newData.residualCurrentRms = AnalysisUtils::calculateResidualRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Current);
+    newData.voltageRms_ll = AnalysisUtils::calculateTotalRms_ll(m_cycleSampleBuffer);
 
 
     // 3. 완성된 데이터를 컨테이너에 추가
@@ -458,12 +464,13 @@ void SimulationEngine::processOneSecondData(const MeasuredData& latestCycleDta)
 
     // 1초 데이터 가공 시작
     OneSecondSummaryData summary = AnalysisUtils::buildOneSecondSummary(m_oneSecondCycleBuffer);
+    AnalysisUtils::buildOneSecondSummary_ll(summary, m_oneSecondCycleBuffer);
 
     // 마지막 2사이클 데이터 복사
-    if(!m_data.empty()) {
-        double freq = summary.frequency;
-        if(freq < 0.1) freq = 0.1;
-    }
+    // if(!m_data.empty()) {
+    //     double freq = summary.frequency;
+    //     if(freq < 0.1) freq = 0.1;
+    // }
     int samplesToTake = static_cast<int>(m_samplesPerCycle.value() * 2.0);
 
     if(samplesToTake < 2) samplesToTake = 2;
