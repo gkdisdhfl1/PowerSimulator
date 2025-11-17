@@ -68,7 +68,7 @@ void AnalysisHarmonicPage::setupUi()
 
     // Graph 뷰와 Text 뷰 생성 및 추가
     QWidget* graphView = createGraphView();
-    QWidget* textView = createTextView(); // 지금은 빈 위젯으로 생성
+    QWidget* textView = createTextView();
     m_contentStack->addWidget(graphView);
     m_contentStack->addWidget(textView);
 
@@ -222,7 +222,6 @@ void AnalysisHarmonicPage::updateText()
 
         // 4. rawValue를 포맷에 맞게 QString으로 변환
         QString formattedValue = formatValue(rawValue);
-        qDebug() << "formattedValue: " << formattedValue;
         // 5. 테이블의 해당 셀에 값 업데이트
         int row = order % 9;
         int col = order / 9;
@@ -525,7 +524,6 @@ QWidget* AnalysisHarmonicPage::createGraphView()
 QWidget* AnalysisHarmonicPage::createTextView()
 {
     m_textTable = new QTableWidget();
-    m_textTable->setObjectName("harmonicsTextTable");
     m_textTable->setRowCount(9);
     m_textTable->setColumnCount(12);
 

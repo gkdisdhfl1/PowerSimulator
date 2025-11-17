@@ -271,11 +271,4 @@ QComboBox#harmonicsCombobox {
 
 /* -------------------------------------- */
 
-QTableWidget::item#harmonicsTextTable {
-    padding: 0px;
-}
-QTableWidgetselected#harmonicsTextTable::item:selected {
-    background-color: #4682b4 /* steel blue */
-    color: white;
-}
 
