@@ -74,8 +74,6 @@ public:
 
     static OneSecondSummaryData buildOneSecondSummary(const std::vector<MeasuredData>& cycleBuffer);
 
-    static void buildOneSecondSummary_ll(OneSecondSummaryData& summary, const std::vector<MeasuredData>& cycleBuffer);
-
     static double calculateResidualRms(const std::vector<DataPoint>& samples, DataType type);
 
     static SymmetricalComponents calculateSymmetricalComponents(const std::array<HarmonicAnalysisResult, 3>& fundamentals);

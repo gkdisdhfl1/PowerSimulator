@@ -464,7 +464,6 @@ void SimulationEngine::processOneSecondData(const MeasuredData& latestCycleDta)
 
     // 1초 데이터 가공 시작
     OneSecondSummaryData summary = AnalysisUtils::buildOneSecondSummary(m_oneSecondCycleBuffer);
-    AnalysisUtils::buildOneSecondSummary_ll(summary, m_oneSecondCycleBuffer);
 
     // 마지막 2사이클 데이터 복사
     // if(!m_data.empty()) {
