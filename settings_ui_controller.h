@@ -61,9 +61,10 @@ private:
     using EngineSetter = std::function<void(const SettingValue&)>;
 
     struct SettingInfo {
-        EngineGetter getter;
-        EngineSetter setter;
-        SettingValue defaultValue; // DB에 값이 없을 때 사용할 기본값
+        PropertySignals* property;
+        QVariant defaultValue; // DB에 값이 없을 때 사용할 기본값
+        QString displayName; // UI에 표시될 이름
+        // QMetaType::Type typeId; // 필요하다면 타입 ID 저장
     };
 
     ControlPanel* m_controlPanel;
@@ -73,11 +74,19 @@ private:
     std::unique_ptr<SettingsDialog> m_settingsDialog; // SettingsDialog 소유권 이전
 
     std::unordered_map<std::string, SettingInfo> m_settingsMap;
-    QMap<QString, QString> m_keyNameMap;
+
+    // 어뎁터 멤버 변수
+    PropertyMemberAdapter<HarmonicComponent, int> m_voltageHarmonicOrderAdapter;
+    PropertyMemberAdapter<HarmonicComponent, double> m_voltageHarmonicMagnitudeAdapter;
+    PropertyMemberAdapter<HarmonicComponent, double> m_voltageHarmonicPhaseAdapter;
+    PropertyMemberAdapter<HarmonicComponent, int> m_currentHarmonicOrderAdapter;
+    PropertyMemberAdapter<HarmonicComponent, double> m_currentHarmonicMagnitudeAdapter;
+    PropertyMemberAdapter<HarmonicComponent, double> m_currentHarmonicPhaseAdapter;
+
 
     // 헬퍼 함수들
     void initializeSettingsMap();
-    void initializeKeyNameMap();
+    // void initializeKeyNameMap();
     void requestMaxSizeChange(int newSize);
     std::expected<void, std::string> applySettingsToEngine(std::string_view presetName); // 특정 프리셋을 UI에 적용하는 함수
     std::expected<void, std::string> saveEngineToSettings(std::string_view presetName); // 현재 UI 상태를 특정 프리셋으로 저장하는 함수
