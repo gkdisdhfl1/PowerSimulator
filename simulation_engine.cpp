@@ -380,7 +380,20 @@ void SimulationEngine::calculateCycleData()
         }
     }
 
-    // 2. --- 전체 cycle data 계산 ---
+    // 2. --- 선간 전압 기본파 계산 ---
+    const std::complex<double> Va_fund(newData.fundamentalVoltage[0].phasorX, newData.fundamentalVoltage[0].phasorY);
+    const std::complex<double> Vb_fund(newData.fundamentalVoltage[1].phasorX, newData.fundamentalVoltage[1].phasorY);
+    const std::complex<double> Vc_fund(newData.fundamentalVoltage[2].phasorX, newData.fundamentalVoltage[2].phasorY);
+
+    const std::complex<double> Vab_fund = Va_fund - Vb_fund;
+    const std::complex<double> Vbc_fund = Vb_fund - Vc_fund;
+    const std::complex<double> Vca_fund = Vc_fund - Va_fund;
+
+    newData.fundamentalVoltage_ll[0] = {1, std::abs(Vab_fund), std::arg(Vab_fund), Vab_fund.real(), Vab_fund.imag()};
+    newData.fundamentalVoltage_ll[1] = {1, std::abs(Vbc_fund), std::arg(Vbc_fund), Vbc_fund.real(), Vbc_fund.imag()};
+    newData.fundamentalVoltage_ll[2] = {1, std::abs(Vca_fund), std::arg(Vca_fund), Vca_fund.real(), Vca_fund.imag()};
+
+    // 3. --- 전체 cycle data 계산 ---
     newData.voltageRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Voltage);
     newData.currentRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Current);
     newData.activePower = AnalysisUtils::calculateActivePower(m_cycleSampleBuffer);
@@ -389,20 +402,20 @@ void SimulationEngine::calculateCycleData()
     newData.voltageRms_ll = AnalysisUtils::calculateTotalRms_ll(m_cycleSampleBuffer);
 
 
-    // 3. 완성된 데이터를 컨테이너에 추가
+    // 4. 완성된 데이터를 컨테이너에 추가
     m_measuredData.push_back(newData);
 
-    // 4. 1초 데이터 처리 로직 호출
+    // 5. 1초 데이터 처리 로직 호출
     processOneSecondData(m_measuredData.back());
 
-    // 5. UI에 업데이트 알림
+    // 6. UI에 업데이트 알림
     emit measuredDataUpdated(m_measuredData);
     emit phasorUpdated(newData.fundamentalVoltage,
                        newData.fundamentalCurrent,
                        newData.voltageHarmonics,
                        newData.currentHarmonics);
 
-    // 6. 버퍼 비우기
+    // 7. 버퍼 비우기
     m_cycleSampleBuffer.clear();
 }
 

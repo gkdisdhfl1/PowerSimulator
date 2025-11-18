@@ -85,6 +85,7 @@ struct OneSecondSummaryData {
     LineToLineData voltageThd_ll;
 
     std::array<HarmonicAnalysisResult, 3> fundamentalVoltage;
+    std::array<HarmonicAnalysisResult, 3> fundamentalVoltage_ll;
     std::array<HarmonicAnalysisResult, 3> fundamentalCurrent;
     double dominantHarmonicVoltagePhase;
     double dominantHarmonicCurrentPhase;

@@ -87,7 +87,7 @@ namespace {
 
         for(int i{0}; i < 3; ++i) {
             voltageRms[i] = std::sqrt(acc.totalVoltageRmsSumSq[i] / N);
-            voltageRms_ll[i] = std::sqrt(acc.fundVoltageRmsSumSq_ll[i] / N);
+            voltageRms_ll[i] = std::sqrt(acc.totalVoltageRmsSumSq_ll[i] / N);
             currentRms[i] = std::sqrt(acc.totalCurrentRmsSumSq[i] / N);
             pActive[i] = acc.activePowerSum[i] / N;
 
@@ -100,7 +100,7 @@ namespace {
 
             // THD (THD = harmonicRMS / fundamentalRMS)
             const double fundVoltageRms = std::sqrt(acc.fundVoltageRmsSumSq[i] / N);
-            const double fundVoltageRms_ll = std::sqrt(acc.fundVoltageRmsSumSq[i] / N);
+            const double fundVoltageRms_ll = std::sqrt(acc.fundVoltageRmsSumSq_ll[i] / N);
             const double fundCurrentRms = std::sqrt(acc.fundCurrentRmsSumSq[i] / N);
 
             if(fundVoltageRms > 1e-9) {
@@ -169,6 +169,14 @@ namespace {
         const double max_dev = std::max({std::abs(rms.a - avg),
                                          std::abs(rms.b - avg),
                                          std::abs(rms.c - avg)});
+        return (max_dev / avg) * 100.0;
+    }
+    double calculateNemaUnbalance(const LineToLineData& rms) {
+        const double avg = (rms.ab + rms.bc + rms.ca) / 3.0;
+        if(avg < 1e-9) return 0.0;
+        const double max_dev = std::max({std::abs(rms.ab - avg),
+                                         std::abs(rms.bc - avg),
+                                         std::abs(rms.ca - avg)});
         return (max_dev / avg) * 100.0;
     }
 }
@@ -495,6 +503,7 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     summary.dominantHarmonicVoltagePhase = utils::radiansToDegrees(lastCycleData.dominantVoltage[0].phase);
     summary.dominantHarmonicCurrentPhase = utils::radiansToDegrees(lastCycleData.dominantCurrent[0].order);
     summary.fundamentalVoltage = lastCycleData.fundamentalVoltage;
+    summary.fundamentalVoltage_ll = lastCycleData.fundamentalVoltage_ll;
     summary.fundamentalCurrent = lastCycleData.fundamentalCurrent;
 
     // 2. 데이터 누적
@@ -510,10 +519,12 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
 
     // 5. 불평형률 계산 (NEMA)
     summary.nemaVoltageUnbalance = calculateNemaUnbalance(summary.totalVoltageRms);
+    summary.nemaVoltageUnbalance_ll = calculateNemaUnbalance(summary.totalVoltageRms_ll);
     summary.nemaCurrentUnbalance = calculateNemaUnbalance(summary.totalCurrentRms);
 
     // 6. 대칭 성분 및 불평형률 (U0, U2)
     summary.voltageSymmetricalComponents = calculateSymmetricalComponents(lastCycleData.fundamentalVoltage);
+    summary.voltageSymmetricalcomponents_ll = calculateSymmetricalComponents(lastCycleData.fundamentalVoltage_ll);
     summary.currentSymmetricalComponents = calculateSymmetricalComponents(lastCycleData.fundamentalCurrent);
 
     auto calculateSymUnbalance = [](const SymmetricalComponents& sym, double& u0, double& u2) {
