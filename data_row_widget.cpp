@@ -13,9 +13,9 @@ DataRowWidget::DataRowWidget(const QString& name, const QString& unit, bool hasL
     // 1. 이름 - 값 - 단위를 담을 box
     auto rowLayout = new QHBoxLayout();
 
-    QLabel* nameLabel = new QLabel(name, this);
-    nameLabel->setMinimumWidth(60); // 이름 영역 너비 고정
-    nameLabel->setObjectName("nameLabel");
+    m_nameLabel = new QLabel(name, this);
+    m_nameLabel->setMinimumWidth(60); // 이름 영역 너비 고정
+    m_nameLabel->setObjectName("nameLabel");
 
     m_valueLabel = new QLabel("0.000", this);
     m_valueLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
@@ -25,7 +25,7 @@ DataRowWidget::DataRowWidget(const QString& name, const QString& unit, bool hasL
     unitLabel->setMinimumWidth(20); // 단위 영역 너비 고정
     unitLabel->setObjectName("unitLabel");
 
-    rowLayout->addWidget(nameLabel);
+    rowLayout->addWidget(m_nameLabel);
     rowLayout->addWidget(m_valueLabel, 1); // 값 라벨이 남은 공간 모두 차지
     rowLayout->addWidget(unitLabel);
 
@@ -44,4 +44,9 @@ DataRowWidget::DataRowWidget(const QString& name, const QString& unit, bool hasL
 void DataRowWidget::setValue(double value)
 {
     m_valueLabel->setText(QString::number(value, 'f', 3));
+}
+
+void DataRowWidget::setLabel(const QString& label)
+{
+    m_nameLabel->setText(label);
 }

@@ -13,9 +13,11 @@ public:
 
 public slots:
     void setValue(double value);
+    void setLabel(const QString& label);
 
 private:
     QLabel* m_valueLabel;
+    QLabel* m_nameLabel;
 };
 
 #endif // DATA_ROW_WIDGET_H

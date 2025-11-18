@@ -10,6 +10,7 @@ class QLabel;
 class QTabWidget;
 
 class DataPage;
+class DataSource;
 class SimulationEngine;
 
 class A3700N_Window : public QWidget
@@ -32,9 +33,8 @@ private:
         QStackedWidget* stack,
         const QString& submenuName,
         const QString& title,
-        const QStringList& rowLabels,
         const QString& unit,
-        const std::vector<std::function<double(const OneSecondSummaryData&)>>& extractors);
+        const std::vector<DataSource>& dataSources);
 
     QTabWidget* m_mainTabs;
 
