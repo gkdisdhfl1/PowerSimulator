@@ -30,6 +30,7 @@ DataPage::DataPage(const QString& title,
         m_modeButtonGroup->setExclusive(true);
 
         for(int i{0}; i < m_dataSources.size(); ++i) {
+            topLayout->addSpacing(3);
             QPushButton* button = new QPushButton(m_dataSources[i].name);
             button->setCheckable(true);
             button->setObjectName("modeButton");

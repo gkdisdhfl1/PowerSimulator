@@ -239,8 +239,17 @@ QPushButton#harmonicsToggle {
     padding: 4px 6px;
     border-radius: 0px;
 }
-
 QPushButton#harmonicsToggle:checked {
+    background-color: #008CFF;
+}
+
+QPushButton#modeButton {
+    border-radius: 0px;
+    padding: 4px 16px;
+    color: white;
+    background-color: #808080;
+}
+QPushButton#modeButton:checked {
     background-color: #008CFF;
 }
 
