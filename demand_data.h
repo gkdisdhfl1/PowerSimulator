@@ -59,30 +59,30 @@ struct DemandData
 
     //  --- Max만 추가 ---
     // THD
-    GenericPhaseData<ValueWithTimestamp<double>> voltageThd;
-    GenericLinetoLineData<ValueWithTimestamp<double>> voltageThd_ll;
-    GenericPhaseData<ValueWithTimestamp<double>> currentThd;
+    GenericPhaseData<MaxTracker<double>> voltageThd;
+    GenericLinetoLineData<MaxTracker<double>> voltageThd_ll;
+    GenericPhaseData<MaxTracker<double>> currentThd;
 
     // 대칭 성분
-    ValueWithTimestamp<double> voltageSymmetricalPositive; // V1
-    ValueWithTimestamp<double> voltageSymmetricalNegative; // V2
-    ValueWithTimestamp<double> voltageSymmetricalZero; // V0
-    ValueWithTimestamp<double> currentSymmetricalPositive; // I1
-    ValueWithTimestamp<double> currentSymmetricalNegative; // I2
-    ValueWithTimestamp<double> currentSymmetricalZero; // I0
+    MaxTracker<double> voltageSymmetricalPositive; // V1
+    MaxTracker<double> voltageSymmetricalNegative; // V2
+    MaxTracker<double> voltageSymmetricalZero; // V0
+    MaxTracker<double> currentSymmetricalPositive; // I1
+    MaxTracker<double> currentSymmetricalNegative; // I2
+    MaxTracker<double> currentSymmetricalZero; // I0
 
-    ValueWithTimestamp<double> voltageSymmetricalPositive_ll; // V1_ll
-    ValueWithTimestamp<double> voltageSymmetricalNegative_ll; // V2_ll
+    MaxTracker<double> voltageSymmetricalPositive_ll; // V1_ll
+    MaxTracker<double> voltageSymmetricalNegative_ll; // V2_ll
 
     // 불평형률
-    ValueWithTimestamp<double> nemaVoltageUnbalance_ll;
-    ValueWithTimestamp<double> nemaVoltageUnbalance;
-    ValueWithTimestamp<double> voltageU2Unbalance; // Negative-Sequence
-    ValueWithTimestamp<double> voltageU0Unbalance; // Zero-Sequence
+    MaxTracker<double> nemaVoltageUnbalance_ll;
+    MaxTracker<double> nemaVoltageUnbalance;
+    MaxTracker<double> voltageU2Unbalance; // Negative-Sequence
+    MaxTracker<double> voltageU0Unbalance; // Zero-Sequence
 
-    ValueWithTimestamp<double> nemaCurrentUnbalance;
-    ValueWithTimestamp<double> currentU2Unbalance; // Negative-Sequence
-    ValueWithTimestamp<double> currentU0Unbalance; // Zero-Sequence
+    MaxTracker<double> nemaCurrentUnbalance;
+    MaxTracker<double> currentU2Unbalance; // Negative-Sequence
+    MaxTracker<double> currentU0Unbalance; // Zero-Sequence
 };
 
 #endif // DEMAND_DATA_H

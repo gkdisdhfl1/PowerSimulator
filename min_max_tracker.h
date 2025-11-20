@@ -6,28 +6,47 @@
 
 template<typename T>
 struct ValueWithTimestamp {
-    T value = std::numeric_limits<T>::quiet_NaN();
+    T value;
     QDateTime timestamp;
 
-    void update(const T& newValue, const QDateTime& newTimestamp, bool findMax) {
-        if(std::isnan(value)) {
-            value = newValue;
-            timestamp = newTimestamp;
-        } else if ((findMax && newValue > value) || (!findMax && newValue < value)) {
-            value = newValue;
-            timestamp = newTimestamp;
+    ValueWithTimestamp(T v) : value(v) {}
+    ValueWithTimestamp() : value(std::numeric_limits<T>::quiet_NaN()) {}
+};
+
+// 최소값 추적
+template <typename T>
+struct MinTracker : public ValueWithTimestamp<T> {
+    MinTracker() : ValueWithTimestamp<T>(std::numeric_limits<T>::max()) {}
+
+    void update(const T& newValue, const QDateTime& newTimestamp) {
+        if(newValue < this->value) {
+            this->value = newValue;
+            this->timestamp = newTimestamp;
+        }
+    }
+};
+
+// 최대값 추적
+template <typename T>
+struct MaxTracker : public ValueWithTimestamp<T> {
+    MaxTracker() : ValueWithTimestamp<T>(std::numeric_limits<T>::lowest()) {}
+
+    void update(const T& newValue, const QDateTime& newTimestamp) {
+        if(newValue > this->value) {
+            this->value = newValue;
+            this->timestamp = newTimestamp;
         }
     }
 };
 
 template <typename T>
 struct MinMaxTracker {
-    ValueWithTimestamp<T> min;
-    ValueWithTimestamp<T> max;
+    MinTracker<T> min;
+    MaxTracker<T> max;
 
     void update(const T& newValue, const QDateTime& newTimestamp) {
-        min.update(newValue, newTimestamp, false); // 최소값 업데이트
-        max.update(newValue, newTimestamp, true); // 최대값 업데이트
+        min.update(newValue, newTimestamp);
+        max.update(newValue, newTimestamp);
     }
 };
 

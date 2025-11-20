@@ -38,11 +38,11 @@ private:
         });
     }
 
-    // ValueWithTimestamp<T> 타입의 단일 멤버를 위한 바인더(Max only)
+    // MaxTracker<T> 타입의 단일 멤버를 위한 바인더
     template <typename T>
-    void bindMaxOnly(ValueWithTimestamp<T> DemandData::* target, const T OneSecondSummaryData::* source) {
+    void bindMaxOnly(MaxTracker<T> DemandData::* target, const T OneSecondSummaryData::* source) {
         m_mappings.push_back([target, source](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
-            (d.*target).update(s.*source, t, true); // findMax = true
+            (d.*target).update(s.*source, t);
         });
     }
 
@@ -68,21 +68,21 @@ private:
 
     // 3상 + MaxOnly 그룹을 위한 바인더
     template <typename T>
-    void bindPhaseGroupMaxOnly(GenericPhaseData<ValueWithTimestamp<T>> DemandData::* targetGroup, const PhaseData OneSecondSummaryData::*sourceGroup) {
+    void bindPhaseGroupMaxOnly(GenericPhaseData<MaxTracker<T>> DemandData::* targetGroup, const PhaseData OneSecondSummaryData::*sourceGroup) {
         m_mappings.push_back([targetGroup, sourceGroup](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
-            (d.*targetGroup).a.update((s.*sourceGroup).a, t, true);
-            (d.*targetGroup).b.update((s.*sourceGroup).b, t, true);
-            (d.*targetGroup).c.update((s.*sourceGroup).c, t, true);
+            (d.*targetGroup).a.update((s.*sourceGroup).a, t);
+            (d.*targetGroup).b.update((s.*sourceGroup).b, t);
+            (d.*targetGroup).c.update((s.*sourceGroup).c, t);
         });
     }
 
     // 선간 전압을 위한 바인더
     template <typename T>
-    void bindLinetoLineGroupMaxOnly(GenericLinetoLineData<ValueWithTimestamp<T>> DemandData::* targetGroup, const LineToLineData OneSecondSummaryData::* sourceGroup) {
+    void bindLinetoLineGroupMaxOnly(GenericLinetoLineData<MaxTracker<T>> DemandData::* targetGroup, const LineToLineData OneSecondSummaryData::* sourceGroup) {
         m_mappings.push_back([targetGroup, sourceGroup](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
-            (d.*targetGroup).ab.update((s.*sourceGroup).ab, t, true);
-            (d.*targetGroup).bc.update((s.*sourceGroup).bc, t, true);
-            (d.*targetGroup).ca.update((s.*sourceGroup).ca, t, true);
+            (d.*targetGroup).ab.update((s.*sourceGroup).ab, t);
+            (d.*targetGroup).bc.update((s.*sourceGroup).bc, t);
+            (d.*targetGroup).ca.update((s.*sourceGroup).ca, t);
         });
     }
 };

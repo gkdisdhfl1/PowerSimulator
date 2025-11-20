@@ -54,7 +54,6 @@ void DemandCalculator::initializeMapping()
     });
 
     // 전류 기본파
-    // todo: 커스텀 바인더 구현
     m_mappings.push_back([](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
         d.fundamentalCurrentRMS.a.update(s.fundamentalCurrent[0].rms, t);
         d.fundamentalCurrentRMS.b.update(s.fundamentalCurrent[1].rms, t);
@@ -92,16 +91,16 @@ void DemandCalculator::initializeMapping()
 
     // 대칭 성분
     m_mappings.push_back([](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
-        d.voltageSymmetricalPositive.update(s.voltageSymmetricalComponents.positive.magnitude, t, true);
-        d.voltageSymmetricalNegative.update(s.voltageSymmetricalComponents.negative.magnitude, t, true);
-        d.voltageSymmetricalZero.update(s.voltageSymmetricalComponents.zero.magnitude, t, true);
+        d.voltageSymmetricalPositive.update(s.voltageSymmetricalComponents.positive.magnitude, t);
+        d.voltageSymmetricalNegative.update(s.voltageSymmetricalComponents.negative.magnitude, t);
+        d.voltageSymmetricalZero.update(s.voltageSymmetricalComponents.zero.magnitude, t);
 
-        d.currentSymmetricalPositive.update(s.currentSymmetricalComponents.positive.magnitude, t, true);
-        d.currentSymmetricalNegative.update(s.currentSymmetricalComponents.negative.magnitude, t, true);
-        d.currentSymmetricalZero.update(s.currentSymmetricalComponents.zero.magnitude, t, true);
+        d.currentSymmetricalPositive.update(s.currentSymmetricalComponents.positive.magnitude, t);
+        d.currentSymmetricalNegative.update(s.currentSymmetricalComponents.negative.magnitude, t);
+        d.currentSymmetricalZero.update(s.currentSymmetricalComponents.zero.magnitude, t);
 
-        d.voltageSymmetricalPositive.update(s.voltageSymmetricalComponents_ll.positive.magnitude, t, true);
-        d.voltageSymmetricalNegative.update(s.voltageSymmetricalComponents_ll.negative.magnitude, t, true);
+        d.voltageSymmetricalPositive.update(s.voltageSymmetricalComponents_ll.positive.magnitude, t);
+        d.voltageSymmetricalNegative.update(s.voltageSymmetricalComponents_ll.negative.magnitude, t);
     });
 
     // 불평형률
