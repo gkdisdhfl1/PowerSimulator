@@ -478,11 +478,6 @@ void SimulationEngine::processOneSecondData(const MeasuredData& latestCycleDta)
     // 1초 데이터 가공 시작
     OneSecondSummaryData summary = AnalysisUtils::buildOneSecondSummary(m_oneSecondCycleBuffer);
 
-    // 마지막 2사이클 데이터 복사
-    // if(!m_data.empty()) {
-    //     double freq = summary.frequency;
-    //     if(freq < 0.1) freq = 0.1;
-    // }
     int samplesToTake = static_cast<int>(m_samplesPerCycle.value() * 2.0);
 
     if(samplesToTake < 2) samplesToTake = 2;
