@@ -332,8 +332,8 @@ void A3700N_Window::createAnalysisPage(QListWidget* submenu, QStackedWidget* sta
         "L-L",
         {"Positive\nSequence", "Negative-\nSequence"},
         {
-            [](const OneSecondSummaryData& d) { return d.voltageSymmetricalcomponents_ll.positive.magnitude; },
-            [](const OneSecondSummaryData& d) { return d.voltageSymmetricalcomponents_ll.negative.magnitude;}
+            [](const OneSecondSummaryData& d) { return d.voltageSymmetricalComponents_ll.positive.magnitude; },
+            [](const OneSecondSummaryData& d) { return d.voltageSymmetricalComponents_ll.negative.magnitude;}
         }
     });
     voltSymSource.push_back({

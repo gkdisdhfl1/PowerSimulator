@@ -107,7 +107,7 @@ struct OneSecondSummaryData {
 
     SymmetricalComponents voltageSymmetricalComponents;
     SymmetricalComponents currentSymmetricalComponents;
-    SymmetricalComponents voltageSymmetricalcomponents_ll;
+    SymmetricalComponents voltageSymmetricalComponents_ll;
 
     double residualVoltageRms = 0.0; // 1초 평균 잔류 전압
     double residualCurrentRms = 0.0; // 1초 평균 잔류 전류

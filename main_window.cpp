@@ -14,6 +14,7 @@
 #include "three_phase_dialog.h"
 #include "additional_metrics_window.h"
 #include "a3700n_window.h"
+#include "demand_calculator.h"
 
 #include <QDockWidget>
 #include <QStatusBar>
@@ -30,6 +31,8 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     , m_fpsTimer(new QTimer(this))
     , m_frameCount(0)
 {
+    m_demandCalculator = std::make_unique<DemandCalculator>(this);
+
     // 메뉴바 생성
     createMenus();
 
@@ -261,6 +264,7 @@ void MainWindow::createSignalSlotConnections()
     connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_oneSecondSummaryWindow, &OneSecondSummaryWindow::updateData);
     connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_additionalMetricsWindow, &AdditionalMetricsWindow::updateData);
     connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_a3700nWindow.get(), &A3700N_Window::updateSummaryData);
+    connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_demandCalculator.get(), &DemandCalculator::processOneSecondData);
 
     // ---- GraphWindow 시그널 -> UI 슬롯 ----
     connect(m_graphWindow, &GraphWindow::pointHovered, this, [this](const DataPoint& point) {

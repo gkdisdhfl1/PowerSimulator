@@ -27,9 +27,7 @@ struct DemandData
     MinMaxTracker<double> averageTotalVoltageRms_ll;
 
     GenericPhaseData<MinMaxTracker<double>> totalCurrentRms;
-    GenericLinetoLineData<MinMaxTracker<double>> totalCurrentRms_ll;
     MinMaxTracker<double> averageTotalCurrentRms;
-    MinMaxTracker<double> averageTotalCurrentRms_ll;
 
     // Fund
     GenericPhaseData<MinMaxTracker<double>> fundamentalVoltageRMS;
@@ -38,9 +36,7 @@ struct DemandData
     MinMaxTracker<double> averageFundamentalVoltageRms_ll;
 
     GenericPhaseData<MinMaxTracker<double>> fundamentalCurrentRMS;
-    GenericLinetoLineData<MinMaxTracker<double>> fundamentalCurrentRMS_ll;
     MinMaxTracker<double> averageFundamentalCurrentRms;
-    MinMaxTracker<double> averageFundamentalCurrentRms_ll;
 
     // 주파수
     MinMaxTracker<double> frequency;

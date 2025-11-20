@@ -524,7 +524,7 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
 
     // 6. 대칭 성분 및 불평형률 (U0, U2)
     summary.voltageSymmetricalComponents = calculateSymmetricalComponents(lastCycleData.fundamentalVoltage);
-    summary.voltageSymmetricalcomponents_ll = calculateSymmetricalComponents(lastCycleData.fundamentalVoltage_ll);
+    summary.voltageSymmetricalComponents_ll = calculateSymmetricalComponents(lastCycleData.fundamentalVoltage_ll);
     summary.currentSymmetricalComponents = calculateSymmetricalComponents(lastCycleData.fundamentalCurrent);
 
     auto calculateSymUnbalance = [](const SymmetricalComponents& sym, double& u0, double& u2) {

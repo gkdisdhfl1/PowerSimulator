@@ -21,6 +21,7 @@ class AdditionalMetricsWindow;
 class ThreePhaseDialog;
 class PidTuningDialog;
 class A3700N_Window;
+class DemandCalculator;
 
 class MainWindow : public QMainWindow
 {
@@ -63,6 +64,7 @@ private:
     std::unique_ptr<SettingsManager> m_settingsManager;
     std::unique_ptr<SettingsUiController> m_settingsUiController;
     std::unique_ptr<A3700N_Window> m_a3700nWindow;
+    std::unique_ptr<DemandCalculator> m_demandCalculator;
 
     // Dialog
     std::unique_ptr<ThreePhaseDialog> m_threePhaseDialog;

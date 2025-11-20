@@ -6,11 +6,6 @@ DemandCalculator::DemandCalculator(QObject *parent)
     initializeMapping();
 }
 
-void DemandCalculator::reset()
-{
-    m_demandData = DemandData{};
-}
-
 void DemandCalculator::processOneSecondData(const OneSecondSummaryData& summary)
 {
     const QDateTime now = QDateTime::currentDateTime();
@@ -28,18 +23,45 @@ void DemandCalculator::initializeMapping()
     // 전압 RMS
     bindPhaseGroup(&DemandData::totalVoltageRms, &OneSecondSummaryData::totalVoltageRms);
     bindLinetoLineGroup(&DemandData::totalVoltageRms_ll, &OneSecondSummaryData::totalVoltageRms_ll);
-    // todo: average 값들은 별도 계산후 bindMinMax 처리 필요
+    m_mappings.push_back([](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
+        const double avg = (s.totalVoltageRms.a + s.totalVoltageRms.b + s.totalVoltageRms.c) / 3.0;
+        d.averageTotalVoltageRms.update(avg, t);
+        const double avg_ll = (s.totalVoltageRms_ll.ab + s.totalVoltageRms_ll.bc + s.totalVoltageRms_ll.ca) / 3.0;
+        d.averageTotalVoltageRms_ll.update(avg_ll, t);
+    });
 
     // 전압 기본파
-    // OneSecondSummaryData에 fundamentalVoltageRms가 없으므로, rms값을 추출하는 커스텀 바인더 필요
-    // todo: 커스텀 바인더 구현
+    m_mappings.push_back([](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
+        d.fundamentalVoltageRMS.a.update(s.fundamentalVoltage[0].rms, t);
+        d.fundamentalVoltageRMS.b.update(s.fundamentalVoltage[1].rms, t);
+        d.fundamentalVoltageRMS.c.update(s.fundamentalVoltage[2].rms, t);
+        const double avg = (s.fundamentalVoltage[0].rms + s.fundamentalVoltage[1].rms + s.fundamentalVoltage[2].rms) / 3.0;
+        d.averageFundamentalVoltageRms.update(avg, t);
+    });
+    m_mappings.push_back([](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
+        d.fundamentalVoltageRMS_ll.ab.update(s.fundamentalVoltage_ll[0].rms, t);
+        d.fundamentalVoltageRMS_ll.bc.update(s.fundamentalVoltage_ll[1].rms, t);
+        d.fundamentalVoltageRMS_ll.ca.update(s.fundamentalVoltage_ll[2].rms, t);
+        const double avg = (s.fundamentalVoltage_ll[0].rms + s.fundamentalVoltage_ll[1].rms + s.fundamentalVoltage_ll[2].rms) / 3.0;
+        d.averageFundamentalVoltageRms.update(avg, t);
+    });
 
     // 전류 RMS
     bindPhaseGroup(&DemandData::totalCurrentRms, &OneSecondSummaryData::totalCurrentRms);
-    // todo: average 값들은 별도 계산후 bindMinMax 처리 필요
+    m_mappings.push_back([](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
+        const double avg = (s.totalCurrentRms.a + s.totalCurrentRms.b + s.totalCurrentRms.c) / 3.0;
+        d.averageTotalCurrentRms.update(avg, t);
+    });
 
     // 전류 기본파
     // todo: 커스텀 바인더 구현
+    m_mappings.push_back([](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
+        d.fundamentalCurrentRMS.a.update(s.fundamentalCurrent[0].rms, t);
+        d.fundamentalCurrentRMS.b.update(s.fundamentalCurrent[1].rms, t);
+        d.fundamentalCurrentRMS.c.update(s.fundamentalCurrent[2].rms, t);
+        const double avg = (s.fundamentalCurrent[0].rms + s.fundamentalCurrent[1].rms + s.fundamentalCurrent[2].rms) / 3.0;
+        d.averageFundamentalCurrentRms.update(avg, t);
+    });
 
     // 주파수
     bindMinMax(&DemandData::frequency, &OneSecondSummaryData::frequency);
@@ -69,7 +91,18 @@ void DemandCalculator::initializeMapping()
     bindPhaseGroupMaxOnly(&DemandData::currentThd, &OneSecondSummaryData::currentThd);
 
     // 대칭 성분
-    // todo: SymmetricalComponents 구조체 멤버에 접근하는 커스텀 바인더 필요
+    m_mappings.push_back([](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
+        d.voltageSymmetricalPositive.update(s.voltageSymmetricalComponents.positive.magnitude, t, true);
+        d.voltageSymmetricalNegative.update(s.voltageSymmetricalComponents.negative.magnitude, t, true);
+        d.voltageSymmetricalZero.update(s.voltageSymmetricalComponents.zero.magnitude, t, true);
+
+        d.currentSymmetricalPositive.update(s.currentSymmetricalComponents.positive.magnitude, t, true);
+        d.currentSymmetricalNegative.update(s.currentSymmetricalComponents.negative.magnitude, t, true);
+        d.currentSymmetricalZero.update(s.currentSymmetricalComponents.zero.magnitude, t, true);
+
+        d.voltageSymmetricalPositive.update(s.voltageSymmetricalComponents_ll.positive.magnitude, t, true);
+        d.voltageSymmetricalNegative.update(s.voltageSymmetricalComponents_ll.negative.magnitude, t, true);
+    });
 
     // 불평형률
     bindMaxOnly(&DemandData::nemaVoltageUnbalance_ll, &OneSecondSummaryData::nemaVoltageUnbalance_ll);

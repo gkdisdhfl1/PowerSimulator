@@ -18,7 +18,6 @@ public:
 
 public slots:
     void processOneSecondData(const OneSecondSummaryData& summary);
-    void reset(); // Min/Max 데이터 초기화
 
 private:
     void initializeMapping();
