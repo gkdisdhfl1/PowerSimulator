@@ -13,7 +13,31 @@ void DemandCalculator::processOneSecondData(const OneSecondSummaryData& summary)
     // 등록된 모든 매핑에 대해 업데이트 실시
     for(const auto& updater : m_mappings) {
         updater(m_demandData, summary, now);
+        // qDebug() << " === update m_demandData ===";
+        // qDebug() << " --- totalVoltage MAX--- ";
+        // qDebug() << " -A-";
+        // qDebug() << "value: " << m_demandData.totalVoltageRms.a.max.value;
+        // qDebug() << "timestamp: " << m_demandData.totalVoltageRms.a.max.timestamp;
+        // qDebug() << " -B-";
+        // qDebug() << "value: " << m_demandData.totalVoltageRms.b.max.value;
+        // qDebug() << "timestamp: " << m_demandData.totalVoltageRms.b.max.timestamp;
+        // qDebug() << " -C-";
+        // qDebug() << "value: " << m_demandData.totalVoltageRms.c.max.value;
+        // qDebug() << "timestamp: " << m_demandData.totalVoltageRms.c.max.timestamp;
+        // qDebug() << " --- totalVoltage MIN--- ";
+        // qDebug() << " -A-";
+        // qDebug() << "value: " << m_demandData.totalVoltageRms.a.min.value;
+        // qDebug() << "timestamp: " << m_demandData.totalVoltageRms.a.min.timestamp;
+        // qDebug() << " -B-";
+        // qDebug() << "value: " << m_demandData.totalVoltageRms.b.min.value;
+        // qDebug() << "timestamp: " << m_demandData.totalVoltageRms.b.min.timestamp;
+        // qDebug() << " -C-";
+        // qDebug() << "value: " << m_demandData.totalVoltageRms.c.min.value;
+        // qDebug() << "timestamp: " << m_demandData.totalVoltageRms.c.min.timestamp;
+        // qDebug() << " ===========================";
     }
+
+    emit demandDataUpdated(m_demandData);
 }
 
 void DemandCalculator::initializeMapping()
@@ -43,7 +67,7 @@ void DemandCalculator::initializeMapping()
         d.fundamentalVoltageRMS_ll.bc.update(s.fundamentalVoltage_ll[1].rms, t);
         d.fundamentalVoltageRMS_ll.ca.update(s.fundamentalVoltage_ll[2].rms, t);
         const double avg = (s.fundamentalVoltage_ll[0].rms + s.fundamentalVoltage_ll[1].rms + s.fundamentalVoltage_ll[2].rms) / 3.0;
-        d.averageFundamentalVoltageRms.update(avg, t);
+        d.averageFundamentalVoltageRms_ll.update(avg, t);
     });
 
     // 전류 RMS

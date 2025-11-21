@@ -2,6 +2,7 @@
 #define A37__N_WINDOW_H
 
 #include <QWidget>
+#include "demand_data.h"
 #include "measured_data.h"
 
 class QListWidget;
@@ -21,9 +22,11 @@ public:
 
 public slots:
     void updateSummaryData(const OneSecondSummaryData& data);
+    void updateDemandData(const DemandData& data);
 
 signals:
     void summaryDataUpdated(const OneSecondSummaryData& data);
+    void demandDataUpdated(const DemandData& data);
 
 private:
     void setupUi();

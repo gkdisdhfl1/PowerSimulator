@@ -19,6 +19,9 @@ public:
 public slots:
     void processOneSecondData(const OneSecondSummaryData& summary);
 
+signals:
+    void demandDataUpdated(const DemandData& data);
+
 private:
     void initializeMapping();
 

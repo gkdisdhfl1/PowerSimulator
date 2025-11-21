@@ -2,6 +2,7 @@
 
 #include <QLabel>
 #include <QVBoxLayout>
+#include <QDateTime>
 
 DataRowWidget::DataRowWidget(const QString& name, const QString& unit, bool hasLine, QWidget* parent)
     : QWidget{parent}
@@ -17,6 +18,11 @@ DataRowWidget::DataRowWidget(const QString& name, const QString& unit, bool hasL
     m_nameLabel->setMinimumWidth(60); // 이름 영역 너비 고정
     m_nameLabel->setObjectName("nameLabel");
 
+    m_timestampLabel = new QLabel("", this);
+    m_timestampLabel->setObjectName("timestampLabel");
+    m_timestampLabel->setAlignment(Qt::AlignCenter);
+    m_timestampLabel->hide(); // 기본적으로 숨김
+
     m_valueLabel = new QLabel("0.000", this);
     m_valueLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
     m_valueLabel->setObjectName("valueLabel");
@@ -26,6 +32,7 @@ DataRowWidget::DataRowWidget(const QString& name, const QString& unit, bool hasL
     unitLabel->setObjectName("unitLabel");
 
     rowLayout->addWidget(m_nameLabel);
+    rowLayout->addWidget(m_timestampLabel);
     rowLayout->addWidget(m_valueLabel, 1); // 값 라벨이 남은 공간 모두 차지
     rowLayout->addWidget(unitLabel);
 
@@ -44,6 +51,21 @@ DataRowWidget::DataRowWidget(const QString& name, const QString& unit, bool hasL
 void DataRowWidget::setValue(double value)
 {
     m_valueLabel->setText(QString::number(value, 'f', 3));
+    m_timestampLabel->hide();
+}
+
+void DataRowWidget::setValue(double value, const QDateTime& timestamp)
+{
+    m_valueLabel->setText(QString::number(value, 'f', 3));
+    if(timestamp.isValid()) {
+        m_timestampLabel->setText(timestamp.toString("yyyy-MM-dd HH:mm:ss"));
+        m_timestampLabel->show();
+    } else {
+        m_timestampLabel->hide();
+    }
+    // qDebug() << "value label: " << m_valueLabel->text();
+    // qDebug() << "value: " << value;
+    // qDebug() << "timestamp: " << timestamp;
 }
 
 void DataRowWidget::setLabel(const QString& label)

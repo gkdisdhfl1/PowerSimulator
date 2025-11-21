@@ -41,6 +41,23 @@ DataPage::DataPage(const QString& title,
 
         m_modeButtonGroup->button(0)->setChecked(true); // 첫 번째 버튼을 기본값으로 선택
         connect(m_modeButtonGroup, QOverload<int>::of(&QButtonGroup::idClicked), this, &DataPage::onModeChanged);
+
+        // Min/Max 버튼 생성
+        m_minMaxButtonGroup = new QButtonGroup(this);
+        m_minMaxButtonGroup->setExclusive(false); // 둘다 꺼질 수 있음
+
+        auto maxButton = new QPushButton("Max");
+        maxButton->setCheckable(true);
+        m_minMaxButtonGroup->addButton(maxButton, 0);
+
+        auto minButton = new QPushButton("Min");
+        minButton->setCheckable(true);
+        m_minMaxButtonGroup->addButton(minButton, 1);
+
+        connect(m_minMaxButtonGroup, &QButtonGroup::idClicked, this, &DataPage::onMinMaxModeChanged);
+
+        topLayout->addWidget(maxButton);
+        topLayout->addWidget(minButton);
     }
 
     mainlayout->addLayout(topLayout);
@@ -93,6 +110,27 @@ void DataPage::onModeChanged(int id)
     }
 }
 
+void DataPage::onDemandDataUpdated(const DemandData& data)
+{
+    m_lastDemandData = data;
+    updateDisplay();
+}
+
+void DataPage::onMinMaxModeChanged(int id)
+{
+    auto button = m_minMaxButtonGroup->button(id);
+    if(button->isChecked()) {
+        // 켜진 경우 다른 버튼 끄기
+        int otherId = (id == 0) ? 1 : 0;
+        if(auto otherButton = m_minMaxButtonGroup->button(otherId)) {
+            bool wasBlocked = otherButton->blockSignals(true);
+            otherButton->setChecked(false);
+            otherButton->blockSignals(wasBlocked);
+        }
+    }
+    updateDisplay();
+}
+
 void DataPage::updateDisplay()
 {
     if(m_dataSources.empty()) return;
@@ -101,14 +139,18 @@ void DataPage::updateDisplay()
     const auto& currentLabels = currentSource.rowLabels;
     const auto& currentExtractors = currentSource.extractors;
 
-    // 현재 선택된 데이터 소스의 extractors를 가져옴
-    // const auto& currentExtractors = m_dataSources[m_currentSourceIndex].extractors;
-    // for(size_t i{0}; i < currentExtractors.size(); ++i) {
-    //     if(i < m_rowWidgets.size()) {
-    //         double value = currentExtractors[i](m_lastData);
-    //         m_rowWidgets[i]->setValue(value); // 각 행 위젯의 슬롯 호출
-    //     }
-    // }
+    // 현재 모드 확인
+    bool showMax = false;
+    bool showMin = false;
+
+    if(m_minMaxButtonGroup) {
+        if(auto btnMax = m_minMaxButtonGroup->button(0)) {
+            showMax = btnMax->isChecked();
+        }
+        if(auto btnMin = m_minMaxButtonGroup->button(1)) {
+            showMin = btnMin->isChecked();
+        }
+    }
 
     // 모든 행 위젯을 순회
     for(int i{0}; i < m_rowWidgets.size(); ++i) {
@@ -117,10 +159,20 @@ void DataPage::updateDisplay()
             m_rowWidgets[i]->setVisible(true);
             m_rowWidgets[i]->setLabel(currentLabels[i]);
 
-            if(i < currentExtractors.size()) {
+            if(showMax && i < currentSource.maxExtractors.size()) {
+                // qDebug() << i << ". -- MAX -- ";
+                auto valWithTime = currentSource.maxExtractors[i](m_lastDemandData);
+                m_rowWidgets[i]->setValue(valWithTime.value, valWithTime.timestamp);
+            } else if(showMin && i < currentSource.minExtractors.size()) {
+                // qDebug() << i << ". -- MIN -- ";
+                auto valWithTime = currentSource.minExtractors[i](m_lastDemandData);
+                m_rowWidgets[i]->setValue(valWithTime.value, valWithTime.timestamp);
+            } else if(i < currentExtractors.size()) {
+                // qDebug() << i << ".  -- Default -- ";
                 double value = currentExtractors[i](m_lastData);
                 m_rowWidgets[i]->setValue(value);
             }
+            // qDebug() << " ------------- ";
         } else {
             // 해당하지 않는 행이면 숨김
             m_rowWidgets[i]->setVisible(false);
