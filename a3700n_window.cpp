@@ -203,7 +203,7 @@ void A3700N_Window::createVoltagePage(QListWidget* submenu, QStackedWidget* cont
             [](const OneSecondSummaryData& d) { return d.fundamentalVoltage[0].rms; },
             [](const OneSecondSummaryData& d) { return d.fundamentalVoltage[1].rms; },
             [](const OneSecondSummaryData& d) { return d.fundamentalVoltage[2].rms; },
-            [](const OneSecondSummaryData& d) { return (d.totalVoltageRms.a + d.totalVoltageRms.b + d.totalVoltageRms.c) / 3.0; }
+            [](const OneSecondSummaryData& d) { return (d.fundamentalVoltage[0].rms + d.fundamentalVoltage[1].rms + d.fundamentalVoltage[2].rms) / 3.0; }
         },
         // Max Extractor
         {

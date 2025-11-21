@@ -50,8 +50,7 @@ DataRowWidget::DataRowWidget(const QString& name, const QString& unit, bool hasL
 
 void DataRowWidget::setValue(double value)
 {
-    m_valueLabel->setText(QString::number(value, 'f', 3));
-    m_timestampLabel->hide();
+    setValue(value, QDateTime());
 }
 
 void DataRowWidget::setValue(double value, const QDateTime& timestamp)
@@ -63,9 +62,6 @@ void DataRowWidget::setValue(double value, const QDateTime& timestamp)
     } else {
         m_timestampLabel->hide();
     }
-    // qDebug() << "value label: " << m_valueLabel->text();
-    // qDebug() << "value: " << value;
-    // qDebug() << "timestamp: " << timestamp;
 }
 
 void DataRowWidget::setLabel(const QString& label)

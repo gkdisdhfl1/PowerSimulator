@@ -118,14 +118,15 @@ void DataPage::onDemandDataUpdated(const DemandData& data)
 
 void DataPage::onMinMaxModeChanged(int id)
 {
-    auto button = m_minMaxButtonGroup->button(id);
-    if(button->isChecked()) {
-        // 켜진 경우 다른 버튼 끄기
-        int otherId = (id == 0) ? 1 : 0;
-        if(auto otherButton = m_minMaxButtonGroup->button(otherId)) {
-            bool wasBlocked = otherButton->blockSignals(true);
-            otherButton->setChecked(false);
-            otherButton->blockSignals(wasBlocked);
+    auto* clickedButton = m_minMaxButtonGroup->button(id);
+    if(clickedButton && clickedButton->isChecked()) {
+        // 버튼이 선택되면 그룹 내 다른 버튼들은 선택 해제
+        for(auto* button : m_minMaxButtonGroup->buttons()) {
+            if(button != clickedButton) {
+                bool wasBlocked = button->blockSignals(true);
+                button->setChecked(false);
+                button->blockSignals(wasBlocked);
+            }
         }
     }
     updateDisplay();
@@ -160,19 +161,15 @@ void DataPage::updateDisplay()
             m_rowWidgets[i]->setLabel(currentLabels[i]);
 
             if(showMax && i < currentSource.maxExtractors.size()) {
-                // qDebug() << i << ". -- MAX -- ";
                 auto valWithTime = currentSource.maxExtractors[i](m_lastDemandData);
                 m_rowWidgets[i]->setValue(valWithTime.value, valWithTime.timestamp);
             } else if(showMin && i < currentSource.minExtractors.size()) {
-                // qDebug() << i << ". -- MIN -- ";
                 auto valWithTime = currentSource.minExtractors[i](m_lastDemandData);
                 m_rowWidgets[i]->setValue(valWithTime.value, valWithTime.timestamp);
             } else if(i < currentExtractors.size()) {
-                // qDebug() << i << ".  -- Default -- ";
                 double value = currentExtractors[i](m_lastData);
                 m_rowWidgets[i]->setValue(value);
             }
-            // qDebug() << " ------------- ";
         } else {
             // 해당하지 않는 행이면 숨김
             m_rowWidgets[i]->setVisible(false);
