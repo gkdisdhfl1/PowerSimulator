@@ -84,3 +84,4 @@ build/
 CMakeLists.txt.user
 .gemini/
 
+test/build/

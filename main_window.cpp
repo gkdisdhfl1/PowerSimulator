@@ -266,6 +266,8 @@ void MainWindow::createSignalSlotConnections()
     connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_a3700nWindow.get(), &A3700N_Window::updateSummaryData);
     connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_demandCalculator.get(), &DemandCalculator::processOneSecondData);
 
+    connect(m_demandCalculator.get(), &DemandCalculator::demandDataUpdated, m_a3700nWindow.get(), &A3700N_Window::updateDemandData);
+
     // ---- GraphWindow 시그널 -> UI 슬롯 ----
     connect(m_graphWindow, &GraphWindow::pointHovered, this, [this](const DataPoint& point) {
         const double timeSec = std::chrono::duration<double>(point.timestamp).count();
