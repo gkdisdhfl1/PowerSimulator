@@ -150,33 +150,22 @@ void DataPage::updateDisplay()
         QPushButton* maxButton = qobject_cast<QPushButton*>(m_minMaxButtonGroup->button(0));
         QPushButton* minButton = qobject_cast<QPushButton*>(m_minMaxButtonGroup->button(1));
 
-        // Max or Min 데이터 존재 여부에 따라 버튼 가시성 및 상태 제어
-        bool hasMaxData = !currentSource.maxExtractors.empty();
-        bool hasMinData = !currentSource.minExtractors.empty();
+        // 버튼 가시성/상태 제어 및 현재 활성화 여부 반환 람다
+        auto manageButtonState = [](QPushButton* button, bool hasData) -> bool {
+            if(!button) return false;
 
-        if(maxButton) {
-            maxButton->setVisible(hasMaxData);
-            if(!hasMaxData && maxButton->isChecked()) {
-                maxButton->setChecked(false);
+            button->setVisible(hasData);
+            if(!hasData && button->isChecked()) {
+                button->setChecked(false);
             }
-        }
 
-        if(minButton) {
-            minButton->setVisible(hasMinData);
+            // 버튼이 보이고(데이터가 있고) 체크가 되어있어야 활성화 된 것
+            return hasData && button->isChecked();
+        };
 
-            // 만약 Min 모드인데 Min 버튼이 사라져야 한다면, 선택 해제 및 모드 초기화
-            if(!hasMinData && minButton->isChecked()) {
-                minButton->setChecked(false);
-            }
-        }
-
-        // 현재 모드 확인
-        if(maxButton && maxButton->isVisible()) { // MAX 버튼이 보이는 경우
-            showMax = maxButton->isChecked();
-        }
-        if(minButton && minButton->isVisible()) { // Min 버튼이 보이는 경우
-            showMin = minButton->isChecked();
-        }
+        // 데이터 존재 여부에 따라 버튼 상태를 갱신하고, 표시 여부를 결정
+        showMax = manageButtonState(maxButton, !currentSource.maxExtractors.empty());
+        showMin = manageButtonState(minButton, !currentSource.minExtractors.empty());
 
     }
 
