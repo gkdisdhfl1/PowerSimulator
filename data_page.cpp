@@ -163,13 +163,8 @@ void DataPage::updateDisplay()
         }
 
         // 만약 전체 Max/Min 버튼 그룹이 숨겨져야 하는데, 둘 중 하나라도 체크되어 있다면 해제
-        if(!hasAnyMinMaxExtractor) {
-            if(maxButton && maxButton->isChecked()) {
+        if(!hasAnyMinMaxExtractor && maxButton && maxButton->isChecked()) {
                 maxButton->setChecked(false);
-            }
-            if(minButton && minButton->isChecked()) {
-                minButton->setChecked(false);
-            }
         }
     }
 
@@ -178,11 +173,11 @@ void DataPage::updateDisplay()
     bool showMin = false;
 
     if(m_minMaxButtonGroup) {
-        if(auto btnMax = m_minMaxButtonGroup->button(0); btnMax && btnMax->isVisible()) { // // MAX 버튼이 보이는 경우
+        if(auto btnMax = m_minMaxButtonGroup->button(0); btnMax && btnMax->isVisible()) { // MAX 버튼이 보이는 경우
             showMax = btnMax->isChecked();
-            if(auto btnMin = m_minMaxButtonGroup->button(1)) { // Min 버튼이 보이는 경우
-                showMin = btnMin->isChecked();
-            }
+        }
+        if(auto btnMin = m_minMaxButtonGroup->button(1); btnMin && btnMin->isVisible()) { // Min 버튼이 보이는 경우
+            showMin = btnMin->isChecked();
         }
     }
 
