@@ -45,6 +45,13 @@ private:
     void createCurrentPage(QListWidget* submenu, QStackedWidget* stack);
     void createPowerPage(QListWidget* submenu, QStackedWidget* stack);
     void createAnalysisPage(QListWidget* submenu, QStackedWidget* stack);
+
+    struct PageConfig {
+        QString submenuName;
+        QString title;
+        QString unit;
+        std::vector<DataSource> dataSources;
+    };
 };
 
 #endif // A37__N_WINDOW_H

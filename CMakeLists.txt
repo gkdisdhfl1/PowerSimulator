@@ -102,6 +102,7 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
         min_max_tracker.h
         demand_data.h
         demand_calculator.h demand_calculator.cpp
+        a3700n_datasource_factory.h a3700n_datasource_factory.cpp
 
     )
 # Define target properties for Android with Qt 6 as:
