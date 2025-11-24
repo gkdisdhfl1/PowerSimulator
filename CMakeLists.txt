@@ -13,6 +13,7 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Charts)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Test)
 
 # =================================================
 # 외부 라이브러리 (SQLite, sqplite_modern_cpp)
@@ -167,4 +168,10 @@ endif()
 add_executable(test_min_max test/test_min_max.cpp)
 target_include_directories(test_min_max PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 target_link_libraries(test_min_max PRIVATE Qt${QT_VERSION_MAJOR}::Core)
+target_link_libraries(test_min_max PRIVATE Qt${QT_VERSION_MAJOR}::Test)
 
+# CTest 활성화
+enable_testing()
+
+# 테스트 등록
+add_test(NAME MinMaxTest COMMAND test_min_max)
