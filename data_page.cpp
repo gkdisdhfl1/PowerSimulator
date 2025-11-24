@@ -44,7 +44,7 @@ DataPage::DataPage(const QString& title,
 
         // Min/Max 버튼 생성
         m_minMaxButtonGroup = new QButtonGroup(this);
-        m_minMaxButtonGroup->setExclusive(false); // 둘다 꺼질 수 있음
+        m_minMaxButtonGroup->setExclusive(false); // 하나만 선택되거나 모두 선택 해제될 수 있음
 
         auto maxButton = new QPushButton("Max");
         maxButton->setCheckable(true);
