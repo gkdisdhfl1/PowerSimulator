@@ -24,7 +24,7 @@ DataPage::DataPage(const QString& title,
     topLayout->addWidget(titleLabel);
     topLayout->addStretch();
 
-    // 버튼 동적 생성
+    // 1. 모드 전환 버튼 (L-L, L-N)
     if(m_dataSources.size() > 1) {
         m_modeButtonGroup = new QButtonGroup(this);
         m_modeButtonGroup->setExclusive(true);
@@ -41,8 +41,11 @@ DataPage::DataPage(const QString& title,
 
         m_modeButtonGroup->button(0)->setChecked(true); // 첫 번째 버튼을 기본값으로 선택
         connect(m_modeButtonGroup, QOverload<int>::of(&QButtonGroup::idClicked), this, &DataPage::onModeChanged);
+    }
 
-        // Min/Max 버튼 생성
+    // 2. Min/Max 버튼 생성
+    if(!m_dataSources.empty()) {
+
         m_minMaxButtonGroup = new QButtonGroup(this);
         m_minMaxButtonGroup->setExclusive(false); // 하나만 선택되거나 모두 선택 해제될 수 있음
 
@@ -140,15 +143,43 @@ void DataPage::updateDisplay()
     const auto& currentLabels = currentSource.rowLabels;
     const auto& currentExtractors = currentSource.extractors;
 
+    // Min 버튼 가시성 제어
+    if(m_minMaxButtonGroup) {
+        QPushButton* maxButton = qobject_cast<QPushButton*>(m_minMaxButtonGroup->button(0));
+        QPushButton* minButton = qobject_cast<QPushButton*>(m_minMaxButtonGroup->button(1));
+
+        // Max or Min Extractor가 하나라도 있으면 버튼 그룹을 보여줌
+        bool hasAnyMinMaxExtractor = !currentSource.maxExtractors.empty() || !currentSource.minExtractors.empty();
+
+        if(maxButton) maxButton->setVisible(hasAnyMinMaxExtractor);
+        if(minButton) {
+            bool hasMinData = !currentSource.minExtractors.empty();
+            minButton->setVisible(hasMinData); // Min 버튼은 Min 데이터가 있고, 전체 MinMax 버튼이 필요할 때만
+
+            // 만약 Min 모드인데 Min 버튼이 사라져야 한다면, 선택 해제 및 모드 초기화
+            if(!hasMinData && minButton->isChecked()) {
+                minButton->setChecked(false);
+            }
+        }
+
+        // 만약 전체 Max/Min 버튼 그룹이 숨겨져야 하는데, 둘 중 하나라도 체크되어 있다면 해제
+        if(!hasAnyMinMaxExtractor && (maxButton->isChecked() || minButton->isChecked())) {
+            m_minMaxButtonGroup->setExclusive(false); // 잠시 해제하여 모두 체크 가능하게
+            if(maxButton->isChecked()) maxButton->setChecked(false);
+            if(minButton->isChecked()) minButton->setChecked(false);
+            m_minMaxButtonGroup->setExclusive(true); // 다시 복구
+        }
+    }
+
     // 현재 모드 확인
     bool showMax = false;
     bool showMin = false;
 
-    if(m_minMaxButtonGroup) {
+    if(m_minMaxButtonGroup && m_minMaxButtonGroup->button(0)->isVisible()) { // MAX 버튼이 보이는 경우
         if(auto btnMax = m_minMaxButtonGroup->button(0)) {
             showMax = btnMax->isChecked();
         }
-        if(auto btnMin = m_minMaxButtonGroup->button(1)) {
+        if(auto btnMin = m_minMaxButtonGroup->button(1)) { // Min 버튼이 보이는 경우
             showMin = btnMin->isChecked();
         }
     }
