@@ -387,7 +387,7 @@ DataSource DataSourceFactory::createVoltageSymmetricalLLSource()
 {
     DataSource ds;
     ds.name = "L-L";
-    ds.rowLabels = {"Positive\nSequence", "Negative-\nSequence"};
+    ds.rowLabels = {"Positive-\nSequence", "Negative-\nSequence"};
 
     // Default Extractor
     ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.voltageSymmetricalComponents_ll.positive.magnitude; });
