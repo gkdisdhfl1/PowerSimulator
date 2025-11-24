@@ -48,7 +48,7 @@ void test_max_tracker() {
     assert(tracker.timestamp == t1);
     
     // Update with a larger value (should change)
-    tracker.update(20.0, t1);
+    tracker.update(20.0, t2);
     assert(tracker.value == 20.0);
     assert(tracker.timestamp == t2);
     

@@ -376,7 +376,7 @@ DataSource DataSourceFactory::createPowerEnergySource()
 {
     DataSource ds;
     ds.name = "";
-    ds.rowLabels = {"A", "B", "C", "Total"};
+    ds.rowLabels = {"Net"};
 
     ds.extractors.push_back([](const OneSecondSummaryData& d) { return d.totalEnergyWh / 1e3; } );
 
