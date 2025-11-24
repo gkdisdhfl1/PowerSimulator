@@ -14,6 +14,8 @@ void DemandCalculator::processOneSecondData(const OneSecondSummaryData& summary)
     for(const auto& updater : m_mappings) {
         updater(m_demandData, summary, now);
     }
+
+    emit demandDataUpdated(m_demandData);
 }
 
 void DemandCalculator::initializeMapping()
@@ -43,7 +45,7 @@ void DemandCalculator::initializeMapping()
         d.fundamentalVoltageRMS_ll.bc.update(s.fundamentalVoltage_ll[1].rms, t);
         d.fundamentalVoltageRMS_ll.ca.update(s.fundamentalVoltage_ll[2].rms, t);
         const double avg = (s.fundamentalVoltage_ll[0].rms + s.fundamentalVoltage_ll[1].rms + s.fundamentalVoltage_ll[2].rms) / 3.0;
-        d.averageFundamentalVoltageRms.update(avg, t);
+        d.averageFundamentalVoltageRms_ll.update(avg, t);
     });
 
     // 전류 RMS

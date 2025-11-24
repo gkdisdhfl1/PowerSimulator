@@ -13,6 +13,7 @@ find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Charts)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets)
 find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Core)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Test)
 
 # =================================================
 # 외부 라이브러리 (SQLite, sqplite_modern_cpp)
@@ -53,11 +54,6 @@ if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
     find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Widgets)
 find_package(Qt6 REQUIRED COMPONENTS Core)
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
-find_package(Qt6 REQUIRED COMPONENTS Widgets)
 
     qt_add_executable(PowerSimulator
         MANUAL_FINALIZATION
@@ -102,6 +98,7 @@ find_package(Qt6 REQUIRED COMPONENTS Widgets)
         min_max_tracker.h
         demand_data.h
         demand_calculator.h demand_calculator.cpp
+        a3700n_datasource_factory.h a3700n_datasource_factory.cpp
 
     )
 # Define target properties for Android with Qt 6 as:
@@ -137,11 +134,6 @@ target_link_libraries(PowerSimulator PRIVATE
 )
 target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt6::Core)
-target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
-target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
-target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
-target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
-target_link_libraries(PowerSimulator PRIVATE Qt6::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
 target_link_libraries(PowerSimulator PRIVATE Qt${QT_VERSION_MAJOR}::Core)
 
@@ -167,6 +159,19 @@ install(TARGETS PowerSimulator
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
+
 if(QT_VERSION_MAJOR EQUAL 6)
     qt_finalize_executable(PowerSimulator)
 endif()
+
+# Test executable
+add_executable(test_min_max test/test_min_max.cpp)
+target_include_directories(test_min_max PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(test_min_max PRIVATE Qt${QT_VERSION_MAJOR}::Core)
+target_link_libraries(test_min_max PRIVATE Qt${QT_VERSION_MAJOR}::Test)
+
+# CTest 활성화
+enable_testing()
+
+# 테스트 등록
+add_test(NAME MinMaxTest COMMAND test_min_max)

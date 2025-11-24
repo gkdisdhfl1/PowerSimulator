@@ -13,11 +13,13 @@ public:
 
 public slots:
     void setValue(double value);
+    void setValue(double value, const QDateTime& timestamp);
     void setLabel(const QString& label);
 
 private:
     QLabel* m_valueLabel;
     QLabel* m_nameLabel;
+    QLabel* m_timestampLabel;
 };
 
 #endif // DATA_ROW_WIDGET_H

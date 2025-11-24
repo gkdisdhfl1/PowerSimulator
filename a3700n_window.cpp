@@ -3,6 +3,7 @@
 #include "analysis_waveform_page.h"
 #include "analysis_phasor_page.h"
 #include "analysis_harmonic_page.h"
+#include "a3700n_datasource_factory.h"
 #include <QHBoxLayout>
 #include <QListWidget>
 #include <QStackedWidget>
@@ -99,6 +100,7 @@ void A3700N_Window::createAndAddPage(
     DataPage* page = new DataPage(title, unit, dataSources);
 
     connect(this, &A3700N_Window::summaryDataUpdated, page, &DataPage::onDataUpdated);
+    connect(this, &A3700N_Window::demandDataUpdated, page, &DataPage::onDemandDataUpdated);
     stack->addWidget(page);
     submenu->addItem(submenuName); // 메뉴 이름 설정
 }
@@ -108,197 +110,126 @@ void A3700N_Window::updateSummaryData(const OneSecondSummaryData& data)
     emit summaryDataUpdated(data);
 }
 
+void A3700N_Window::updateDemandData(const DemandData& data)
+{
+    emit demandDataUpdated(data);
+}
+
 void A3700N_Window::createVoltagePage(QListWidget* submenu, QStackedWidget* contentsStack)
 {
-    // RMS 페이지
-    std::vector<DataSource> rmsSources;
-    rmsSources.push_back({
-        "L-L",
-        {"AB", "BC", "CA", "Average"},
+    const std::vector<PageConfig> pageConfigs = {
         {
-            [](const auto& d) { return d.totalVoltageRms_ll.ab; },
-            [](const auto& d) { return d.totalVoltageRms_ll.bc; },
-            [](const auto& d) { return d.totalVoltageRms_ll.ca; },
-            [](const auto& d) { return (d.totalVoltageRms_ll.ab + d.totalVoltageRms_ll.bc+ d.totalVoltageRms_ll.ca) / 3.0; }
-        }
-    });
-
-    rmsSources.push_back({
-        "L-N",
-        {"A", "B", "C", "Average"},
+            "RMS", "RMS Voltage", "V",
+            {
+                DataSourceFactory::createVoltageRmsLLSource(),
+                DataSourceFactory::createVoltageRmsLNSource()
+            }
+        },
         {
-            [](const auto& d) { return d.totalVoltageRms.a; },
-            [](const auto& d) { return d.totalVoltageRms.b; },
-            [](const auto& d) { return d.totalVoltageRms.c; },
-            [](const auto& d) { return (d.totalVoltageRms.a + d.totalVoltageRms.b + d.totalVoltageRms.c) / 3.0; }
-        }
-    });
-
-    createAndAddPage(submenu, contentsStack, "RMS", "RMS Voltage", "V", rmsSources);
-
-    // Fundamental 페이지
-    std::vector<DataSource> fundamentalSources;
-    fundamentalSources.push_back({
-        "L-L",
-        {"AB", "BC", "CA", "Average"},
+            "Fundamental", "Fund. Volt.", "V",
+            {
+                DataSourceFactory::createVoltageFundamentalLLSource(),
+                DataSourceFactory::createVoltageFundamentalLNSource()
+            }
+        },
         {
-            [](const auto& d) { return d.fundamentalVoltage_ll[0].rms; },
-            [](const auto& d) { return d.fundamentalVoltage_ll[1].rms; },
-            [](const auto& d) { return d.fundamentalVoltage_ll[2].rms; },
-            [](const auto& d) { return (d.fundamentalVoltage_ll[0].rms + d.fundamentalVoltage_ll[1].rms + d.fundamentalVoltage_ll[2].rms) / 3.0; }
-        }
-    });
-    fundamentalSources.push_back({
-        "L-N",
-        {"A", "B", "C", "Average"},
+            "THD %", "Total Harmonic Distortion", "%",
+            {
+                DataSourceFactory::createVoltageThdLLSource(),
+                DataSourceFactory::createVoltageThdLNSource()
+            },
+        },
         {
-            [](const auto& d) { return d.fundamentalVoltage[0].rms; },
-            [](const auto& d) { return d.fundamentalVoltage[1].rms; },
-            [](const auto& d) { return d.fundamentalVoltage[2].rms; },
-            [](const auto& d) { return (d.totalVoltageRms.a + d.totalVoltageRms.b + d.totalVoltageRms.c) / 3.0; }
-        }
-    });
-
-    createAndAddPage(submenu, contentsStack, "Fundamental", "Fund. Volt.", "V", fundamentalSources);
-
-    // THD 페이지
-    std::vector<DataSource> thdSources;
-    thdSources.push_back({
-        "L-L",
-        {"AB", "BC", "CA"},
+            "Frequency", "Frequency", "Hz",
+            {
+                DataSourceFactory::createVoltageFrequencySource()
+            }
+        },
         {
-            [](const auto& d) { return d.voltageThd_ll.ab; },
-            [](const auto& d) { return d.voltageThd_ll.bc; },
-            [](const auto& d) { return d.voltageThd_ll.ca; },
+            "Residual", "Residual Voltage", "V",
+            {
+                DataSourceFactory::createVoltageResidualSource()
+            }
         }
-    });
-    thdSources.push_back({
-        "L-N",
-        {"A", "B", "C"},
-        {
-            [](const auto& d) { return d.voltageThd.a; },
-            [](const auto& d) { return d.voltageThd.b; },
-            [](const auto& d) { return d.voltageThd.c; },
-        }
-    });
-    createAndAddPage(submenu, contentsStack, "THD %", "Total Harmonic Distortion", "%", thdSources);
+    };
 
-
-    createAndAddPage(submenu, contentsStack, "Frequency", "Frequency", "Hz",
-                    {{ "",
-                       {"Frequency"},
-                        {
-                           [](const auto& d) { return d.frequency; }
-                        }
-                    }});
-
-    createAndAddPage(submenu, contentsStack, "Residual", "Residual Voltage", "V",
-                    {{ "",
-                        {"RMS", "Fund."},
-                        {
-                            [](const auto& d) { return d.residualVoltageRms; },
-                            [](const auto& d) { return d.residualVoltageFundamental; }
-                        }
-                    }});
+    for(const auto& config : pageConfigs) {
+        createAndAddPage(submenu, contentsStack, config.submenuName, config.title, config.unit, config.dataSources);
+    }
 }
 
 void A3700N_Window::createCurrentPage(QListWidget* submenu, QStackedWidget* contentsStack)
 {
-    createAndAddPage(submenu, contentsStack, "RMS", "RMS Current", "A",
-                     {{ "",
-                         {"A", "B", "C", "Average"},
-                         {
-                             [](const auto& d) { return d.totalCurrentRms.a; },
-                             [](const auto& d) { return d.totalCurrentRms.b; },
-                             [](const auto& d) { return d.totalCurrentRms.c; },
-                             [](const auto& d) { return (d.totalCurrentRms.a + d.totalCurrentRms.b + d.totalCurrentRms.c) / 3.0; }
-                         }
-                     }});
+    const std::vector<PageConfig> pageConfigs = {
+        {
+            "RMS", "RMS Current", "A",
+            {
+                DataSourceFactory::createCurrentRmsSource()
+            }
+        },
+        {
+            "Fundamental", "Fundamental Current.", "A",
+            {
+                DataSourceFactory::createCurrentFundamentalSource()
+            }
+        },
+        {
+            "THD %", "Total Harmonic Distortion", "%",
+            {
+                DataSourceFactory::createCurrentThdSource()
+            }
+        },
+        {
+            "Residual", "Residual Current", "A",
+            {
+                DataSourceFactory::createCurrentResidualSource()
+            }
+        }
+    };
 
-    createAndAddPage(submenu, contentsStack, "Fundamental", "Fundamental Current.", "A",
-                     {{ "",
-                         {"A", "B", "C", "Average"},
-                         {
-                             [](const auto& d) { return d.fundamentalCurrent[0].rms; },
-                             [](const auto& d) { return d.fundamentalCurrent[1].rms; },
-                             [](const auto& d) { return d.fundamentalCurrent[2].rms; },
-                             [](const auto& d) { return (d.fundamentalCurrent[0].rms + d.fundamentalCurrent[1].rms + d.fundamentalCurrent[2].rms) / 3.0; }
-                         }
-                     }});
-
-    createAndAddPage(submenu, contentsStack, "THD %", "Total Harmonic Distortion", "%",
-                     {{ "",
-                         {"A", "B", "C"},
-                         {
-                             [](const auto& d) { return d.currentThd.a; },
-                             [](const auto& d) { return d.currentThd.b; },
-                             [](const auto& d) { return d.currentThd.c; }
-                         }
-                     }});
-
-    createAndAddPage(submenu, contentsStack, "Residual", "Residual Current", "A",
-                     {{ "",
-                         {"RMS", "Fund."},
-                         {
-                             [](const auto& d) { return d.residualCurrentRms; },
-                             [](const auto& d) { return d.residualCurrentFundamental; }
-                         }
-                     }});
+    for(const auto& config : pageConfigs) {
+        createAndAddPage(submenu, contentsStack, config.submenuName, config.title, config.unit, config.dataSources);
+    }
 }
 
 void A3700N_Window::createPowerPage(QListWidget* submenu, QStackedWidget* stack)
 {
-    createAndAddPage(submenu, stack, "Active(P)", "Active Power", "kW",
-                     {{ "",
-                         {"A", "B", "C", "Total"},
-                         {
-                             [](const OneSecondSummaryData& d) { return d.activePower.a / 1e3; },
-                             [](const OneSecondSummaryData& d) { return d.activePower.b / 1e3; },
-                             [](const OneSecondSummaryData& d) { return d.activePower.c / 1e3; },
-                             [](const OneSecondSummaryData& d) { return d.totalActivePower / 1e3; }
-                         }
-                     }});
+    const std::vector<PageConfig> pageConfigs = {
+        {
+            "Active(P)", "Active Power", "kW",
+            {
+                DataSourceFactory::createPowerActiveSource()
+            }
+        },
+        {
+            "Reactive(Q)", "Reactive Power", "kVAR",
+            {
+                DataSourceFactory::createPowerReactiveSource()
+            }
+        },
+        {
+            "Apparent(S)", "Apparent Power", "kVA",
+            {
+                DataSourceFactory::createPowerApparentSource()
+            }
+        },
+        {
+            "PF", "Power Factor", "",
+            {
+                DataSourceFactory::createPowerFactorSource()
+            }
+        },
+        {
+            "Energy", "Energy", "kWh",
+            {
+                DataSourceFactory::createPowerEnergySource()
+            }
+        }
+    };
 
-    createAndAddPage(submenu, stack, "Reactive(Q)", "Reactive Power", "kVAR",
-                     {{ "",
-                         {"A", "B", "C", "Total"},
-                         {
-                             [](const OneSecondSummaryData& d) { return d.reactivePower.a / 1e3; },
-                             [](const OneSecondSummaryData& d) { return d.reactivePower.b / 1e3; },
-                             [](const OneSecondSummaryData& d) { return d.reactivePower.c / 1e3; },
-                             [](const OneSecondSummaryData& d) { return d.totalReactivePower / 1e3; }
-                         }
-                     }});
-
-    createAndAddPage(submenu, stack, "Apparent(S)", "Apparent Power", "kVA",
-                     {{ "",
-                         {"A", "B", "C", "Total"},
-                         {
-                             [](const OneSecondSummaryData& d) { return d.apparentPower.a / 1e3; },
-                             [](const OneSecondSummaryData& d) { return d.apparentPower.b / 1e3; },
-                             [](const OneSecondSummaryData& d) { return d.apparentPower.c / 1e3; },
-                             [](const OneSecondSummaryData& d) { return d.totalApparentPower / 1e3; }
-                         }
-                     }});
-
-    createAndAddPage(submenu, stack, "PF", "Power Factor", "",
-                     {{ "",
-                         {"A", "B", "C", "Total"},
-                         {
-                             [](const OneSecondSummaryData& d) { return d.powerFactor.a; },
-                             [](const OneSecondSummaryData& d) { return d.powerFactor.b; },
-                             [](const OneSecondSummaryData& d) { return d.powerFactor.c; },
-                             [](const OneSecondSummaryData& d) { return d.totalPowerFactor; }
-                         }
-                     }});
-
-    createAndAddPage(submenu, stack, "Energy", "Energy", "kWh",
-                     {{ "",
-                         {"A", "B", "C", "Total"},
-                         {
-                             [](const OneSecondSummaryData& d) { return d.totalEnergyWh / 1e3; }
-                         }
-                     }});
+    for(const auto& config : pageConfigs) {
+        createAndAddPage(submenu, stack, config.submenuName, config.title, config.unit, config.dataSources);
+    }
 }
 
 void A3700N_Window::createAnalysisPage(QListWidget* submenu, QStackedWidget* stack)
@@ -325,57 +256,36 @@ void A3700N_Window::createAnalysisPage(QListWidget* submenu, QStackedWidget* sta
     submenu->addItem("Waveform");
 
     // 나머지
-
-    // Volt. Symm 페이지
-    std::vector<DataSource> voltSymSource;
-    voltSymSource.push_back({
-        "L-L",
-        {"Positive\nSequence", "Negative-\nSequence"},
+    const std::vector<PageConfig> pageConfigs = {
         {
-            [](const OneSecondSummaryData& d) { return d.voltageSymmetricalComponents_ll.positive.magnitude; },
-            [](const OneSecondSummaryData& d) { return d.voltageSymmetricalComponents_ll.negative.magnitude;}
-        }
-    });
-    voltSymSource.push_back({
-        "L-N",
-        {"Positive-\nSequence", "Negative-\nSequence", "Zero-\nSequence"},
+            "Volt. Symm.", "Symmetrical Component", "V",
+            {
+                DataSourceFactory::createVoltageSymmetricalLLSource(),
+                DataSourceFactory::createVoltageSymmetricalLNSource()
+            }
+        },
         {
-            [](const OneSecondSummaryData& d) { return d.voltageSymmetricalComponents.positive.magnitude; },
-            [](const OneSecondSummaryData& d) { return d.voltageSymmetricalComponents.negative.magnitude; },
-            [](const OneSecondSummaryData& d) { return d.voltageSymmetricalComponents.zero.magnitude; }
+            "Volt. Unbal. %", "Voltage Unbalance", "%",
+            {
+                DataSourceFactory::createVoltageUnbalanceSource()
+            }
+        },
+        {
+            "Curr. Symm.", "Curr. Symm. Component", "A",
+            {
+                DataSourceFactory::createCurrentSymmetricalSource()
+            }
+        },
+        {
+            "Curr. Unbal. %", "Current Unbalance", "%",
+            {
+                DataSourceFactory::createCurrentUnbalanceSource()
+            }
         }
-    });
-    createAndAddPage(submenu, stack, "Volt. Symm.", "Symmetrical Component", "V", voltSymSource);
+    };
 
-    createAndAddPage(submenu, stack, "Volt. Unbal. %", "Voltage Unbalance", "%",
-                     {{ "",
-                         {"NEMA", "NEMA", "Negative-\nSequence", "Zero-\nSequence"},
-                         {
-                             [](const OneSecondSummaryData& d) { return d.nemaVoltageUnbalance_ll; },
-                             [](const OneSecondSummaryData& d) { return d.nemaVoltageUnbalance; },
-                             [](const OneSecondSummaryData& d) { return d.voltageU2Unbalance; },
-                             [](const OneSecondSummaryData& d) { return d.voltageU0Unbalance; }
-                         }
-                     }});
-
-    createAndAddPage(submenu, stack, "Curr. Symm.", "Curr. Symm. Component", "A",
-                     {{ "",
-                         {"Positive-\nSequence", "Negative-\nSequence", "Zero-\nSequence"},
-                         {
-                          [](const OneSecondSummaryData& d) { return d.currentSymmetricalComponents.positive.magnitude; },
-                          [](const OneSecondSummaryData& d) { return d.currentSymmetricalComponents.negative.magnitude; },
-                          [](const OneSecondSummaryData& d) { return d.currentSymmetricalComponents.zero.magnitude; },
-                          }
-                     }});
-
-    createAndAddPage(submenu, stack, "Curr. Unbal. %", "Current Unbalance", "%",
-                     {{ "",
-                         {"NEMA", "Negative-\nSequence", "Zero-\nSequence"},
-                         {
-                             [](const OneSecondSummaryData& d) { return d.nemaCurrentUnbalance; },
-                             [](const OneSecondSummaryData& d) { return d.currentU2Unbalance; },
-                             [](const OneSecondSummaryData& d) { return d.currentU0Unbalance; }
-                         }
-                     }});
+    for(const auto& config : pageConfigs) {
+        createAndAddPage(submenu, stack, config.submenuName, config.title, config.unit, config.dataSources);
+    }
 }
 
