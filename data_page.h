@@ -8,6 +8,7 @@
 class OneSecondSummaryData;
 class DataRowWidget;
 class QButtonGroup;
+class QPushButton;
 
 
 using Extractor = std::function<double(const OneSecondSummaryData&)>;
@@ -42,6 +43,8 @@ private slots:
 
 private:
     void updateDisplay();
+    // 버튼 상태 관리 헬퍼 함수 (static 함수로 만들면 this 포인터가 필요 없어 깔끔)
+    static bool updateButtonState(QPushButton* button, bool hasData);
 
     std::vector<DataRowWidget*> m_rowWidgets;
     std::vector<DataSource> m_dataSources;

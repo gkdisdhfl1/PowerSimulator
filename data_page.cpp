@@ -150,22 +150,9 @@ void DataPage::updateDisplay()
         QPushButton* maxButton = qobject_cast<QPushButton*>(m_minMaxButtonGroup->button(0));
         QPushButton* minButton = qobject_cast<QPushButton*>(m_minMaxButtonGroup->button(1));
 
-        // 버튼 가시성/상태 제어 및 현재 활성화 여부 반환 람다
-        auto manageButtonState = [](QPushButton* button, bool hasData) -> bool {
-            if(!button) return false;
-
-            button->setVisible(hasData);
-            if(!hasData && button->isChecked()) {
-                button->setChecked(false);
-            }
-
-            // 버튼이 보이고(데이터가 있고) 체크가 되어있어야 활성화 된 것
-            return hasData && button->isChecked();
-        };
-
         // 데이터 존재 여부에 따라 버튼 상태를 갱신하고, 표시 여부를 결정
-        showMax = manageButtonState(maxButton, !currentSource.maxExtractors.empty());
-        showMin = manageButtonState(minButton, !currentSource.minExtractors.empty());
+        showMax = updateButtonState(maxButton, !currentSource.maxExtractors.empty());
+        showMin = updateButtonState(minButton, !currentSource.minExtractors.empty());
 
     }
 
@@ -191,4 +178,19 @@ void DataPage::updateDisplay()
             m_rowWidgets[i]->setVisible(false);
         }
     }
+}
+
+bool DataPage::updateButtonState(QPushButton* button, bool hasData)
+{
+    if(!button) return false;
+
+    button->setVisible(hasData);
+
+    // 데이터가 없어서 숨겨지는데 체크되어 있다면 체크 해제
+    if(!hasData && button->isChecked()) {
+        button->setChecked(false);
+    }
+
+    // 버튼이 보이고(데이터가 있고) 체크가 되어있어야 활성화 된 것
+    return hasData && button->isChecked();
 }
