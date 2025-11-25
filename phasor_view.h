@@ -26,8 +26,8 @@ public:
     explicit PhasorView(QWidget *parent = nullptr);
 
 public slots:
-    void updateData(const std::array<HarmonicAnalysisResult, 3>& fundamentalVoltage,
-                    const std::array<HarmonicAnalysisResult, 3>& fundamentalCurrent,
+    void updateData(const GenericPhaseData<HarmonicAnalysisResult>& fundamentalVoltage,
+                    const GenericPhaseData<HarmonicAnalysisResult>& fundamentalCurrent,
                     const std::vector<HarmonicAnalysisResult>& voltageHarmonics,
                     const std::vector<HarmonicAnalysisResult>& currentHarmonics);
     void onVisibilityChanged(int type, bool isVisible);

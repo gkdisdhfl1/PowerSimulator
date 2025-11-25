@@ -2,20 +2,21 @@
 #define DEMAND_DATA_H
 
 #include "min_max_tracker.h"
+#include "shared_data_types.h"
 
-template <typename T>
-struct GenericPhaseData {
-    T a;
-    T b;
-    T c;
-};
+// template <typename T>
+// struct GenericPhaseData {
+//     T a;
+//     T b;
+//     T c;
+// };
 
-template <typename T>
-struct GenericLinetoLineData {
-    T ab;
-    T bc;
-    T ca;
-};
+// template <typename T>
+// struct GenericLinetoLineData {
+//     T ab;
+//     T bc;
+//     T ca;
+// };
 
 // Max/Min 추적 대상이 되는 모든 계측 항목들
 struct DemandData

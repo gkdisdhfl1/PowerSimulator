@@ -24,14 +24,14 @@ struct MeasuredData {
     LineToLineData voltageRms_ll; // 선간 전압 RMS
 
     // 3상 분석 결과
-    std::array<HarmonicAnalysisResult, 3> fundamentalVoltage; // [0]:A [1]:B [2]:C
-    std::array<HarmonicAnalysisResult, 3> fundamentalCurrent;
-    std::array<HarmonicAnalysisResult, 3> dominantVoltage;
-    std::array<HarmonicAnalysisResult, 3> dominantCurrent;
+    GenericPhaseData<HarmonicAnalysisResult> fundamentalVoltage; // [0]:A [1]:B [2]:C
+    GenericPhaseData<HarmonicAnalysisResult> fundamentalCurrent;
+    GenericPhaseData<HarmonicAnalysisResult> dominantVoltage;
+    GenericPhaseData<HarmonicAnalysisResult> dominantCurrent;
 
     // 선간 전압 분석 결과
-    std::array<HarmonicAnalysisResult, 3> fundamentalVoltage_ll; // [0]:AB [1]:BC [2]:CA
-    std::array<HarmonicAnalysisResult, 3> dominantVoltage_ll;
+    GenericLinetoLineData<HarmonicAnalysisResult> fundamentalVoltage_ll; // [0]:AB [1]:BC [2]:CA
+    GenericLinetoLineData<HarmonicAnalysisResult> dominantVoltage_ll;
 
     // 전압의 주파수 성분 분석 결과 (harmonics[0]: 기본파)
     std::vector<HarmonicAnalysisResult> voltageHarmonics;
@@ -64,9 +64,14 @@ struct SymmetricalComponent {
     double phase_deg = 0.0;
 };
 
-// 영상/정상/역상분 집합
+// 3상 대칭 성분(Zero, Positive, Negative)
 struct SymmetricalComponents {
     SymmetricalComponent zero;
+    SymmetricalComponent positive;
+    SymmetricalComponent negative;
+};
+// 선간용 대칭 성분(Positive, Negative)
+struct SymmetricalComponents_ll {
     SymmetricalComponent positive;
     SymmetricalComponent negative;
 };
@@ -84,9 +89,9 @@ struct OneSecondSummaryData {
     LineToLineData totalVoltageRms_ll;
     LineToLineData voltageThd_ll;
 
-    std::array<HarmonicAnalysisResult, 3> fundamentalVoltage;
-    std::array<HarmonicAnalysisResult, 3> fundamentalVoltage_ll;
-    std::array<HarmonicAnalysisResult, 3> fundamentalCurrent;
+    GenericPhaseData<HarmonicAnalysisResult> fundamentalVoltage;
+    GenericLinetoLineData<HarmonicAnalysisResult> fundamentalVoltage_ll;
+    GenericPhaseData<HarmonicAnalysisResult> fundamentalCurrent;
     double dominantHarmonicVoltagePhase;
     double dominantHarmonicCurrentPhase;
 
@@ -134,5 +139,4 @@ struct OneSecondSummaryData {
     std::vector<DataPoint> lastTwoCycleData;
 };
 
-// Q_DECLARE_METATYPE(MeasuredData)
 #endif // MEASURED_DATA_H

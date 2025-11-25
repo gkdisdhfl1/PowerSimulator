@@ -162,11 +162,11 @@ DataSource DataSourceFactory::createVoltageFundamentalLLSource()
     llSource.rowLabels = {"AB", "BC", "CA", "Average"};
 
     // --- 기본 Extractor ---
-    llSource.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalVoltage_ll[0].rms; });
-    llSource.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalVoltage_ll[1].rms; });
-    llSource.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalVoltage_ll[2].rms; });
+    llSource.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalVoltage_ll.ab.rms; });
+    llSource.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalVoltage_ll.bc.rms; });
+    llSource.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalVoltage_ll.ca.rms; });
     llSource.extractors.push_back([](const OneSecondSummaryData& s) {
-        return (s.fundamentalVoltage_ll[0].rms + s.fundamentalVoltage_ll[1].rms + s.fundamentalVoltage_ll[2].rms) / 3.0;
+        return (s.fundamentalVoltage_ll.ab.rms + s.fundamentalVoltage_ll.bc.rms + s.fundamentalVoltage_ll.ca.rms) / 3.0;
     });
 
     // --- Max Extractor ---
@@ -191,11 +191,11 @@ DataSource DataSourceFactory::createVoltageFundamentalLNSource()
     lnSource.rowLabels = {"A", "B", "C", "Average"};
 
     // --- 기본 Extractor ---
-    lnSource.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalVoltage[0].rms; });
-    lnSource.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalVoltage[1].rms; });
-    lnSource.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalVoltage[2].rms; });
+    lnSource.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalVoltage.a.rms; });
+    lnSource.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalVoltage.b.rms; });
+    lnSource.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalVoltage.c.rms; });
     lnSource.extractors.push_back([](const OneSecondSummaryData& s) {
-        return (s.fundamentalVoltage[0].rms + s.fundamentalVoltage[1].rms + s.fundamentalVoltage[2].rms) / 3.0;
+        return (s.fundamentalVoltage.a.rms + s.fundamentalVoltage.b.rms + s.fundamentalVoltage.c.rms) / 3.0;
     });
 
     // --- Max Extractor ---
@@ -279,11 +279,11 @@ DataSource DataSourceFactory::createCurrentFundamentalSource()
     ds.rowLabels = {"AB", "BC", "CA", "Average"};
 
     // --- 기본 Extractor ---
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalCurrent[0].rms; });
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalCurrent[1].rms; });
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalCurrent[2].rms; });
+    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalCurrent.a.rms; });
+    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalCurrent.b.rms; });
+    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalCurrent.c.rms; });
     ds.extractors.push_back([](const OneSecondSummaryData& s) {
-        return (s.fundamentalCurrent[0].rms + s.fundamentalCurrent[1].rms + s.fundamentalCurrent[2].rms) / 3.0;
+        return (s.fundamentalCurrent.a.rms + s.fundamentalCurrent.b.rms + s.fundamentalCurrent.c.rms) / 3.0;
     });
 
     // --- Max Extractor ---

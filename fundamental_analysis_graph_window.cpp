@@ -116,16 +116,16 @@ void FundamentalAnalysisGraphWindow::updateVisiblePoints(const std::deque<Measur
     // LTTB 다운샘플링을 위한 데이터 추출기 정의
     std::vector<std::function<double(const MeasuredData&)>> extractors {
         [](const MeasuredData& d) {
-            const auto& v = d.fundamentalVoltage[0];
+            const auto& v = d.fundamentalVoltage.a;
             return (v.order > 0) ? v.rms : 0.0;
         },
         [](const MeasuredData& d) {
-            const auto& i = d.fundamentalCurrent[0];
+            const auto& i = d.fundamentalCurrent.a;
             return (i.order > 0) ? i.rms : 0.0;
         },
         [](const MeasuredData& d) {
-            const auto& v = d.fundamentalVoltage[0];
-            const auto& i = d.fundamentalCurrent[0];
+            const auto& v = d.fundamentalVoltage.a;
+            const auto& i = d.fundamentalCurrent.a;
             return AnalysisUtils::calculateActivePower(&v, &i);
         }
 
@@ -142,8 +142,8 @@ void FundamentalAnalysisGraphWindow::updateVisiblePoints(const std::deque<Measur
         auto sample_data = downsampleLTTB(first, last, threshold, extractors);
         for(const auto& d : sample_data) {
             const double timeSec = FpSeconds(d.timestamp).count();
-            const auto& v_fund = d.fundamentalVoltage[0];
-            const auto& i_fund = d.fundamentalCurrent[0];
+            const auto& v_fund = d.fundamentalVoltage.a;
+            const auto& i_fund = d.fundamentalCurrent.a;
 
             m_voltagePoints.append(QPointF(timeSec, v_fund.order > 0 ? v_fund.rms : 0.0));
             m_currentPoints.append(QPointF(timeSec, i_fund.order > 0 ? i_fund.rms : 0.0));
@@ -153,8 +153,8 @@ void FundamentalAnalysisGraphWindow::updateVisiblePoints(const std::deque<Measur
         // 다운샘플링 안할 때도 동일한 로직으로 데이터 추출
         for(auto it = first; it != last; ++it) {
             const double timeSec = FpSeconds(it->timestamp).count();
-            const auto& v_fund = it->fundamentalVoltage[0];
-            const auto& i_fund = it->fundamentalCurrent[0];
+            const auto& v_fund = it->fundamentalVoltage.a;
+            const auto& i_fund = it->fundamentalCurrent.a;
 
             m_voltagePoints.append(QPointF(timeSec, v_fund.order > 0 ? v_fund.rms : 0.0));
             m_currentPoints.append(QPointF(timeSec, i_fund.order > 0 ? i_fund.rms : 0.0));

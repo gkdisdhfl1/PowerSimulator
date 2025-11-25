@@ -34,17 +34,17 @@ void DemandCalculator::initializeMapping()
 
     // 전압 기본파
     m_mappings.push_back([](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
-        d.fundamentalVoltageRMS.a.update(s.fundamentalVoltage[0].rms, t);
-        d.fundamentalVoltageRMS.b.update(s.fundamentalVoltage[1].rms, t);
-        d.fundamentalVoltageRMS.c.update(s.fundamentalVoltage[2].rms, t);
-        const double avg = (s.fundamentalVoltage[0].rms + s.fundamentalVoltage[1].rms + s.fundamentalVoltage[2].rms) / 3.0;
+        d.fundamentalVoltageRMS.a.update(s.fundamentalVoltage.a.rms, t);
+        d.fundamentalVoltageRMS.b.update(s.fundamentalVoltage.b.rms, t);
+        d.fundamentalVoltageRMS.c.update(s.fundamentalVoltage.c.rms, t);
+        const double avg = (s.fundamentalVoltage.a.rms + s.fundamentalVoltage.b.rms + s.fundamentalVoltage.c.rms) / 3.0;
         d.averageFundamentalVoltageRms.update(avg, t);
     });
     m_mappings.push_back([](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
-        d.fundamentalVoltageRMS_ll.ab.update(s.fundamentalVoltage_ll[0].rms, t);
-        d.fundamentalVoltageRMS_ll.bc.update(s.fundamentalVoltage_ll[1].rms, t);
-        d.fundamentalVoltageRMS_ll.ca.update(s.fundamentalVoltage_ll[2].rms, t);
-        const double avg = (s.fundamentalVoltage_ll[0].rms + s.fundamentalVoltage_ll[1].rms + s.fundamentalVoltage_ll[2].rms) / 3.0;
+        d.fundamentalVoltageRMS_ll.ab.update(s.fundamentalVoltage_ll.ab.rms, t);
+        d.fundamentalVoltageRMS_ll.bc.update(s.fundamentalVoltage_ll.bc.rms, t);
+        d.fundamentalVoltageRMS_ll.ca.update(s.fundamentalVoltage_ll.ca.rms, t);
+        const double avg = (s.fundamentalVoltage_ll.ab.rms + s.fundamentalVoltage_ll.bc.rms + s.fundamentalVoltage_ll.ca.rms) / 3.0;
         d.averageFundamentalVoltageRms_ll.update(avg, t);
     });
 
@@ -57,10 +57,10 @@ void DemandCalculator::initializeMapping()
 
     // 전류 기본파
     m_mappings.push_back([](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
-        d.fundamentalCurrentRMS.a.update(s.fundamentalCurrent[0].rms, t);
-        d.fundamentalCurrentRMS.b.update(s.fundamentalCurrent[1].rms, t);
-        d.fundamentalCurrentRMS.c.update(s.fundamentalCurrent[2].rms, t);
-        const double avg = (s.fundamentalCurrent[0].rms + s.fundamentalCurrent[1].rms + s.fundamentalCurrent[2].rms) / 3.0;
+        d.fundamentalCurrentRMS.a.update(s.fundamentalCurrent.a.rms, t);
+        d.fundamentalCurrentRMS.b.update(s.fundamentalCurrent.b.rms, t);
+        d.fundamentalCurrentRMS.c.update(s.fundamentalCurrent.c.rms, t);
+        const double avg = (s.fundamentalCurrent.a.rms + s.fundamentalCurrent.b.rms + s.fundamentalCurrent.c.rms) / 3.0;
         d.averageFundamentalCurrentRms.update(avg, t);
     });
 

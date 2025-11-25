@@ -76,7 +76,7 @@ public:
 
     static double calculateResidualRms(const std::vector<DataPoint>& samples, DataType type);
 
-    static SymmetricalComponents calculateSymmetricalComponents(const std::array<HarmonicAnalysisResult, 3>& fundamentals);
+    static SymmetricalComponents calculateSymmetricalComponents(const HarmonicAnalysisResult& p1, const HarmonicAnalysisResult& p2, const HarmonicAnalysisResult& p3);
 
     // 스케일링 유틸리티 함수
     static ScaleUnit updateScaleUnit(double range);

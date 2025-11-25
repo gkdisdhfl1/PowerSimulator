@@ -115,7 +115,9 @@ double AnalysisHarmonicPage::calculateRawValue(const HarmonicDataSources& source
                 return (totalRms > 1e-9) ? (harmonic.rms / totalRms) * 100.0 : 0.0;
             }
             case 2: {// %Fund
-                const auto& fundamental = (*sources.fundamental)[phaseIndex];
+                const auto& fundamental = (phaseIndex == 0) ?
+                                              (*sources.fundamental).a : (phaseIndex == 1) ?
+                                                                  (*sources.fundamental).b : (*sources.fundamental).c;
                 return (fundamental.rms > 1e-9) ? (harmonic.rms / fundamental.rms) * 100.0 : 0.0;
             }
         }
@@ -249,9 +251,9 @@ void AnalysisHarmonicPage::updateInfoLabels()
     m_thdValueLabels[1]->setText(QString::number(thdData->a, 'f', 1));
     m_thdValueLabels[2]->setText(QString::number(thdData->a, 'f', 1));
 
-    m_fundValueLabels[0]->setText(formatValue((*fundData)[0].rms));
-    m_fundValueLabels[1]->setText(formatValue((*fundData)[1].rms));
-    m_fundValueLabels[2]->setText(formatValue((*fundData)[2].rms));
+    m_fundValueLabels[0]->setText(formatValue((*fundData).a.rms));
+    m_fundValueLabels[1]->setText(formatValue((*fundData).b.rms));
+    m_fundValueLabels[2]->setText(formatValue((*fundData).c.rms));
 }
 
 void AnalysisHarmonicPage::setupTopBar(QVBoxLayout* mainLayout)

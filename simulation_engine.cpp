@@ -345,10 +345,14 @@ void SimulationEngine::calculateCycleData()
             else newData.voltageHarmonicsC = harmonics;
 
             if(const auto* fund = AnalysisUtils::getHarmonicComponent(harmonics, 1)) {
-                newData.fundamentalVoltage[i] = *fund;
+                if(i == 0) newData.fundamentalVoltage.a = *fund;
+                if(i == 1) newData.fundamentalVoltage.b = *fund;
+                else newData.fundamentalVoltage.c = *fund;
             }
             if(const auto* dom = AnalysisUtils::getDominantHarmonic(harmonics)) {
-                newData.dominantVoltage[i] = *dom;
+                if(i == 0) newData.dominantVoltage.a = *dom;
+                if(i == 1) newData.dominantVoltage.b = *dom;
+                else newData.dominantVoltage.c = *dom;
             }
         } else {
             qWarning() << "Voltage Spectrum Analyze Failed !!!";
@@ -370,10 +374,14 @@ void SimulationEngine::calculateCycleData()
             else newData.currentHarmonicsC = harmonics;
 
             if(const auto* fund = AnalysisUtils::getHarmonicComponent(harmonics, 1)) {
-                newData.fundamentalCurrent[i] = *fund;
+                if(i == 0) newData.fundamentalCurrent.a = *fund;
+                if(i == 1) newData.fundamentalCurrent.b = *fund;
+                else newData.fundamentalCurrent.c = *fund;
             }
             if(const auto* dom = AnalysisUtils::getDominantHarmonic(harmonics)) {
-                newData.dominantCurrent[i] = *dom;
+                if(i == 0) newData.dominantCurrent.a = *dom;
+                if(i == 1) newData.dominantCurrent.b = *dom;
+                else newData.dominantCurrent.c = *dom;
             }
         } else {
             qWarning() << "Current Spectrum Analyze Failed !!!";
@@ -381,17 +389,17 @@ void SimulationEngine::calculateCycleData()
     }
 
     // 2. --- 선간 전압 기본파 계산 ---
-    const std::complex<double> Va_fund(newData.fundamentalVoltage[0].phasorX, newData.fundamentalVoltage[0].phasorY);
-    const std::complex<double> Vb_fund(newData.fundamentalVoltage[1].phasorX, newData.fundamentalVoltage[1].phasorY);
-    const std::complex<double> Vc_fund(newData.fundamentalVoltage[2].phasorX, newData.fundamentalVoltage[2].phasorY);
+    const std::complex<double> Va_fund(newData.fundamentalVoltage.a.phasorX, newData.fundamentalVoltage.a.phasorY);
+    const std::complex<double> Vb_fund(newData.fundamentalVoltage.b.phasorX, newData.fundamentalVoltage.b.phasorY);
+    const std::complex<double> Vc_fund(newData.fundamentalVoltage.c.phasorX, newData.fundamentalVoltage.c.phasorY);
 
     const std::complex<double> Vab_fund = Va_fund - Vb_fund;
     const std::complex<double> Vbc_fund = Vb_fund - Vc_fund;
     const std::complex<double> Vca_fund = Vc_fund - Va_fund;
 
-    newData.fundamentalVoltage_ll[0] = {1, std::abs(Vab_fund), std::arg(Vab_fund), Vab_fund.real(), Vab_fund.imag()};
-    newData.fundamentalVoltage_ll[1] = {1, std::abs(Vbc_fund), std::arg(Vbc_fund), Vbc_fund.real(), Vbc_fund.imag()};
-    newData.fundamentalVoltage_ll[2] = {1, std::abs(Vca_fund), std::arg(Vca_fund), Vca_fund.real(), Vca_fund.imag()};
+    newData.fundamentalVoltage_ll.ab = {1, std::abs(Vab_fund), std::arg(Vab_fund), Vab_fund.real(), Vab_fund.imag()};
+    newData.fundamentalVoltage_ll.bc = {1, std::abs(Vbc_fund), std::arg(Vbc_fund), Vbc_fund.real(), Vbc_fund.imag()};
+    newData.fundamentalVoltage_ll.ca = {1, std::abs(Vca_fund), std::arg(Vca_fund), Vca_fund.real(), Vca_fund.imag()};
 
     // 3. --- 전체 cycle data 계산 ---
     newData.voltageRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Voltage);

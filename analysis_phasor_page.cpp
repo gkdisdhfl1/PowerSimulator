@@ -122,16 +122,24 @@ void AnalysisPhasorPage::updateSummaryData(const OneSecondSummaryData& data)
     m_phasorView->updateData(data.fundamentalVoltage, data.fundamentalCurrent, data.lastCycleVoltageHarmonics, data.lastCycleCurrentHarmonics);
 
     // Voltage
-    for(int i{0}; i < 3; ++i) {
-        m_voltageTable[i * 2 + 0]->setText(QString::number(data.fundamentalVoltage[i].rms, 'f', 3));
-        m_voltageTable[i * 2 + 1]->setText(QString::number(utils::radiansToDegrees(data.fundamentalVoltage[i].phase), 'f', 1) + "°");
-    }
+    m_voltageTable[0]->setText(QString::number(data.fundamentalVoltage.a.rms, 'f', 3));
+    m_voltageTable[1]->setText(QString::number(utils::radiansToDegrees(data.fundamentalVoltage.a.phase), 'f', 1) + "°");
+
+    m_voltageTable[2]->setText(QString::number(data.fundamentalVoltage.b.rms, 'f', 3));
+    m_voltageTable[3]->setText(QString::number(utils::radiansToDegrees(data.fundamentalVoltage.b.phase), 'f', 1) + "°");
+
+    m_voltageTable[4]->setText(QString::number(data.fundamentalVoltage.c.rms, 'f', 3));
+    m_voltageTable[5]->setText(QString::number(utils::radiansToDegrees(data.fundamentalVoltage.c.phase), 'f', 1) + "°");
 
     // Current
-    for(int i{0}; i < 3; ++i) {
-        m_currentTable[i * 2 + 0]->setText(QString::number(data.fundamentalCurrent[i].rms, 'f', 3));
-        m_currentTable[i * 2 + 1]->setText(QString::number(utils::radiansToDegrees(data.fundamentalCurrent[i].phase), 'f', 1) + "°");
-    }
+    m_currentTable[0]->setText(QString::number(data.fundamentalCurrent.a.rms, 'f', 3));
+    m_currentTable[1]->setText(QString::number(utils::radiansToDegrees(data.fundamentalCurrent.a.phase), 'f', 1) + "°");
+
+    m_currentTable[2]->setText(QString::number(data.fundamentalCurrent.b.rms, 'f', 3));
+    m_currentTable[3]->setText(QString::number(utils::radiansToDegrees(data.fundamentalCurrent.b.phase), 'f', 1) + "°");
+
+    m_currentTable[4]->setText(QString::number(data.fundamentalCurrent.c.rms, 'f', 3));
+    m_currentTable[5]->setText(QString::number(utils::radiansToDegrees(data.fundamentalCurrent.c.phase), 'f', 1) + "°");
 }
 
 std::pair<std::array<QLabel*, 3>, std::array<QLabel*, 6>> AnalysisPhasorPage::createPhasorTable(QVBoxLayout* layout, const QString& title, const QStringList& labels, const QString& unit)

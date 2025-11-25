@@ -54,9 +54,19 @@ namespace {
                 acc.totalCurrentRmsSumSq[i] += currentRms * currentRms;
                 acc.activePowerSum[i] += activePower;
 
-                acc.fundVoltageRmsSumSq[i] += data.fundamentalVoltage[i].rms * data.fundamentalVoltage[i].rms;
-                acc.fundVoltageRmsSumSq_ll[i] += data.fundamentalVoltage_ll[i].rms * data.fundamentalVoltage_ll[i].rms;
-                acc.fundCurrentRmsSumSq[i] += data.fundamentalCurrent[i].rms * data.fundamentalCurrent[i].rms;
+                if(i == 0) {
+                    acc.fundVoltageRmsSumSq[i] += data.fundamentalVoltage.a.rms * data.fundamentalVoltage.a.rms;
+                    acc.fundVoltageRmsSumSq_ll[i] += data.fundamentalVoltage_ll.ab.rms * data.fundamentalVoltage_ll.ab.rms;
+                    acc.fundCurrentRmsSumSq[i] += data.fundamentalCurrent.a.rms * data.fundamentalCurrent.a.rms;
+                } else if(i == 1) {
+                    acc.fundVoltageRmsSumSq[i] += data.fundamentalVoltage.b.rms * data.fundamentalVoltage.b.rms;
+                    acc.fundVoltageRmsSumSq_ll[i] += data.fundamentalVoltage_ll.bc.rms * data.fundamentalVoltage_ll.bc.rms;
+                    acc.fundCurrentRmsSumSq[i] += data.fundamentalCurrent.b.rms * data.fundamentalCurrent.b.rms;
+                } else {
+                    acc.fundVoltageRmsSumSq[i] += data.fundamentalVoltage.c.rms * data.fundamentalVoltage.c.rms;
+                    acc.fundVoltageRmsSumSq_ll[i] += data.fundamentalVoltage_ll.ca.rms * data.fundamentalVoltage_ll.ca.rms;
+                    acc.fundCurrentRmsSumSq[i] += data.fundamentalCurrent.c.rms * data.fundamentalCurrent.c.rms;
+                }
             }
 
             acc.residualVoltageRmsSum += data.residualVoltageRms;
@@ -64,18 +74,23 @@ namespace {
 
             // 복소수 합의 절대값 계산 (잔류 기본파)
             std::complex<double> residualVoltageFundamentalSum(0, 0), residualCurrentFundamentalSum(0, 0);
-            for(int k{0}; k < 3; ++k) {
-                residualVoltageFundamentalSum += std::complex<double>(data.fundamentalVoltage[k].phasorX, data.fundamentalVoltage[k].phasorY);
-                residualCurrentFundamentalSum += std::complex<double>(data.fundamentalCurrent[k].phasorX, data.fundamentalCurrent[k].phasorY);
-            }
-            acc.residualVoltageFundamentalSum += std::abs(residualVoltageFundamentalSum);
+
+            residualVoltageFundamentalSum += std::complex<double>(data.fundamentalVoltage.a.phasorX, data.fundamentalVoltage.a.phasorY);
+            residualVoltageFundamentalSum += std::complex<double>(data.fundamentalVoltage.b.phasorX, data.fundamentalVoltage.b.phasorY);
+            residualVoltageFundamentalSum += std::complex<double>(data.fundamentalVoltage.c.phasorX, data.fundamentalVoltage.c.phasorY);
+            residualCurrentFundamentalSum += std::complex<double>(data.fundamentalCurrent.a.phasorX, data.fundamentalCurrent.a.phasorY);
+            residualCurrentFundamentalSum += std::complex<double>(data.fundamentalCurrent.b.phasorX, data.fundamentalCurrent.b.phasorY);
+            residualCurrentFundamentalSum += std::complex<double>(data.fundamentalCurrent.c.phasorX, data.fundamentalCurrent.c.phasorY);
+
+
+                acc.residualVoltageFundamentalSum += std::abs(residualVoltageFundamentalSum);
             acc.residualCurrentFundamentalSum += std::abs(residualCurrentFundamentalSum);
 
-            if(dominantVoltageOrder > 1 && data.dominantVoltage[0].order == dominantVoltageOrder) {
-                acc.dominantVoltageRmsSumSq += data.dominantVoltage[0].rms * data.dominantVoltage[0].rms;
+            if(dominantVoltageOrder > 1 && data.dominantVoltage.a.order == dominantVoltageOrder) {
+                acc.dominantVoltageRmsSumSq += data.dominantVoltage.a.rms * data.dominantVoltage.a.rms;
             }
-            if(dominantCurrentOrder > 1 && data.dominantCurrent[0].order == dominantCurrentOrder) {
-                acc.dominantCurrentRmsSumSq += data.dominantCurrent[0].rms * data.dominantCurrent[0].rms;
+            if(dominantCurrentOrder > 1 && data.dominantCurrent.a.order == dominantCurrentOrder) {
+                acc.dominantCurrentRmsSumSq += data.dominantCurrent.a.rms * data.dominantCurrent.a.rms;
             }
         }
         return acc;
@@ -149,7 +164,7 @@ namespace {
         if(cycleBuffer.size() >= 2) {
             double duration = std::chrono::duration<double>(
                                   cycleBuffer.back().timestamp - (cycleBuffer.end() - 2)->timestamp).count();
-            summary.frequency = cycleBuffer.back().fundamentalVoltage[0].order * (1.0 / duration);
+            summary.frequency = cycleBuffer.back().fundamentalVoltage.a.order * (1.0 / duration);
         } else {
             summary.frequency = 0.0;
         }
@@ -498,10 +513,10 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     const size_t N = cycleBuffer.size();
 
     // 1. 기본 정보 설정
-    summary.dominantHarmonicVoltageOrder = lastCycleData.dominantVoltage[0].order;
-    summary.dominantHarmonicCurrentOrder = lastCycleData.dominantCurrent[0].order;
-    summary.dominantHarmonicVoltagePhase = utils::radiansToDegrees(lastCycleData.dominantVoltage[0].phase);
-    summary.dominantHarmonicCurrentPhase = utils::radiansToDegrees(lastCycleData.dominantCurrent[0].order);
+    summary.dominantHarmonicVoltageOrder = lastCycleData.dominantVoltage.a.order;
+    summary.dominantHarmonicCurrentOrder = lastCycleData.dominantCurrent.a.order;
+    summary.dominantHarmonicVoltagePhase = utils::radiansToDegrees(lastCycleData.dominantVoltage.a.phase);
+    summary.dominantHarmonicCurrentPhase = utils::radiansToDegrees(lastCycleData.dominantCurrent.a.order);
     summary.fundamentalVoltage = lastCycleData.fundamentalVoltage;
     summary.fundamentalVoltage_ll = lastCycleData.fundamentalVoltage_ll;
     summary.fundamentalCurrent = lastCycleData.fundamentalCurrent;
@@ -523,9 +538,13 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     summary.nemaCurrentUnbalance = calculateNemaUnbalance(summary.totalCurrentRms);
 
     // 6. 대칭 성분 및 불평형률 (U0, U2)
-    summary.voltageSymmetricalComponents = calculateSymmetricalComponents(lastCycleData.fundamentalVoltage);
-    summary.voltageSymmetricalComponents_ll = calculateSymmetricalComponents(lastCycleData.fundamentalVoltage_ll);
-    summary.currentSymmetricalComponents = calculateSymmetricalComponents(lastCycleData.fundamentalCurrent);
+    auto LN_voltageData = lastCycleData.fundamentalVoltage;
+    auto LL_voltageData = lastCycleData.fundamentalVoltage_ll;
+    auto currentData = lastCycleData.fundamentalCurrent;
+
+    summary.voltageSymmetricalComponents = calculateSymmetricalComponents(LN_voltageData.a, LN_voltageData.b, LN_voltageData.c);
+    summary.voltageSymmetricalComponents_ll = calculateSymmetricalComponents(LL_voltageData.ab, LL_voltageData.bc, LL_voltageData.ca);
+    summary.currentSymmetricalComponents = calculateSymmetricalComponents(currentData.a, currentData.b, currentData.c);
 
     auto calculateSymUnbalance = [](const SymmetricalComponents& sym, double& u0, double& u2) {
         if(sym.positive.magnitude > 1e-9) {
@@ -578,14 +597,14 @@ double AnalysisUtils::calculateResidualRms(const std::vector<DataPoint>& samples
     return std::sqrt(sum_sq / samples.size());
 }
 
-SymmetricalComponents AnalysisUtils::calculateSymmetricalComponents(const std::array<HarmonicAnalysisResult, 3>& fundamentals)
+SymmetricalComponents AnalysisUtils::calculateSymmetricalComponents(const HarmonicAnalysisResult& p1, const HarmonicAnalysisResult& p2, const HarmonicAnalysisResult& p3)
 {
     SymmetricalComponents result;
 
     // 1. 3상 기본파 페이저를 복소수로 변환
-    const std::complex<double> V_a(fundamentals[0].phasorX, fundamentals[0].phasorY);
-    const std::complex<double> V_b(fundamentals[1].phasorX, fundamentals[1].phasorY);
-    const std::complex<double> V_c(fundamentals[2].phasorX, fundamentals[2].phasorY);
+    const std::complex<double> V_a(p1.phasorX, p1.phasorY);
+    const std::complex<double> V_b(p2.phasorX, p2.phasorY);
+    const std::complex<double> V_c(p3.phasorX, p3.phasorY);
 
     // 2. 회전 연산자 'a' 정의(a = 120도)
     const std::complex<double> a = std::polar(1.0, utils::degreesToRadians((120.0)));

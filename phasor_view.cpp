@@ -57,30 +57,33 @@ PhasorView::PhasorView(QWidget *parent)
     setInfoLabelVisibility(true);
 }
 
-void PhasorView::updateData(const std::array<HarmonicAnalysisResult, 3>& fundamentalVoltage,
-                            const std::array<HarmonicAnalysisResult, 3>& fundamentalCurrent,
+void PhasorView::updateData(const GenericPhaseData<HarmonicAnalysisResult>& fundamentalVoltage,
+                            const GenericPhaseData<HarmonicAnalysisResult>& fundamentalCurrent,
                             const std::vector<HarmonicAnalysisResult>& voltageHarmonics,
                             const std::vector<HarmonicAnalysisResult>& currentHarmonics)
 {
     // --- 기본파 정보 계산 ---
 
-    for(int i{0}; i < 3; ++i) {
-        // 전압
-        const auto& v_fund = fundamentalVoltage[i];
-        if (v_fund.order > 0) {
-            m_fundVoltage[i].components = QPointF(v_fund.phasorX, v_fund.phasorY);
-            m_fundVoltage[i].magnitude = v_fund.rms;
-            m_fundVoltage[i].phaseDegrees = utils::radiansToDegrees(v_fund.phase);
-        } else { m_fundVoltage[i] = PhasorInfo(); }
+    // 공통 처리 로직을 람다로 정의
+    auto processPhasor = [](const HarmonicAnalysisResult& src, PhasorInfo& dest) {
+        if(src.order > 0) {
+            dest.components = QPointF(src.phasorX, src.phasorY);
+            dest.magnitude = src.rms;
+            dest.phaseDegrees = utils::radiansToDegrees(src.phase);
+        } else {
+            dest = PhasorInfo();
+        }
+    };
 
-        // 전류
-        const auto& i_fund = fundamentalCurrent[i];
-        if (i_fund.order > 0) {
-            m_fundCurrent[i].components = QPointF(i_fund.phasorX, i_fund.phasorY);
-            m_fundCurrent[i].magnitude = i_fund.rms;
-            m_fundCurrent[i].phaseDegrees = utils::radiansToDegrees(i_fund.phase);
-        } else { m_fundCurrent[i] = PhasorInfo(); }
-    }
+    // 전압
+    processPhasor(fundamentalVoltage.a , m_fundVoltage[0]);
+    processPhasor(fundamentalVoltage.b , m_fundVoltage[1]);
+    processPhasor(fundamentalVoltage.c , m_fundVoltage[2]);
+
+    // 전류
+    processPhasor(fundamentalCurrent.a , m_fundCurrent[0]);
+    processPhasor(fundamentalCurrent.b , m_fundCurrent[1]);
+    processPhasor(fundamentalCurrent.c , m_fundCurrent[2]);
 
     // --- 고조파 정보 계산 ---
     const auto* v_harm = AnalysisUtils::getDominantHarmonic(voltageHarmonics);
