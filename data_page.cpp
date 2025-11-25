@@ -24,7 +24,7 @@ DataPage::DataPage(const QString& title,
     topLayout->addWidget(titleLabel);
     topLayout->addStretch();
 
-    // 버튼 동적 생성
+    // 1. 모드 전환 버튼 (L-L, L-N)
     if(m_dataSources.size() > 1) {
         m_modeButtonGroup = new QButtonGroup(this);
         m_modeButtonGroup->setExclusive(true);
@@ -41,8 +41,11 @@ DataPage::DataPage(const QString& title,
 
         m_modeButtonGroup->button(0)->setChecked(true); // 첫 번째 버튼을 기본값으로 선택
         connect(m_modeButtonGroup, QOverload<int>::of(&QButtonGroup::idClicked), this, &DataPage::onModeChanged);
+    }
 
-        // Min/Max 버튼 생성
+    // 2. Min/Max 버튼 생성
+    if(!m_dataSources.empty()) {
+
         m_minMaxButtonGroup = new QButtonGroup(this);
         m_minMaxButtonGroup->setExclusive(false); // 하나만 선택되거나 모두 선택 해제될 수 있음
 
@@ -118,6 +121,7 @@ void DataPage::onDemandDataUpdated(const DemandData& data)
 
 void DataPage::onMinMaxModeChanged(int id)
 {
+    qDebug() << "onMinMaxModeChanged called";
     auto* clickedButton = m_minMaxButtonGroup->button(id);
     if(clickedButton && clickedButton->isChecked()) {
         // 버튼이 선택되면 그룹 내 다른 버튼들은 선택 해제
@@ -140,17 +144,17 @@ void DataPage::updateDisplay()
     const auto& currentLabels = currentSource.rowLabels;
     const auto& currentExtractors = currentSource.extractors;
 
-    // 현재 모드 확인
     bool showMax = false;
     bool showMin = false;
 
     if(m_minMaxButtonGroup) {
-        if(auto btnMax = m_minMaxButtonGroup->button(0)) {
-            showMax = btnMax->isChecked();
-        }
-        if(auto btnMin = m_minMaxButtonGroup->button(1)) {
-            showMin = btnMin->isChecked();
-        }
+        QPushButton* maxButton = qobject_cast<QPushButton*>(m_minMaxButtonGroup->button(0));
+        QPushButton* minButton = qobject_cast<QPushButton*>(m_minMaxButtonGroup->button(1));
+
+        // 데이터 존재 여부에 따라 버튼 상태를 갱신하고, 표시 여부를 결정
+        showMax = updateButtonState(maxButton, !currentSource.maxExtractors.empty());
+        showMin = updateButtonState(minButton, !currentSource.minExtractors.empty());
+
     }
 
     // 모든 행 위젯을 순회
@@ -175,4 +179,22 @@ void DataPage::updateDisplay()
             m_rowWidgets[i]->setVisible(false);
         }
     }
+}
+
+bool DataPage::updateButtonState(QPushButton* button, bool hasData)
+{
+    if(!button) return false;
+
+    button->setVisible(hasData);
+
+    // 데이터가 없어서 숨겨지는데 체크되어 있다면 체크 해제
+    if(!hasData && button->isChecked()) {
+        // 안전하게 신호 차단 후 상태 변경
+        const bool wasBlocked = button->blockSignals(true);
+        button->setChecked(false);
+        button->blockSignals(wasBlocked);
+    }
+
+    // 버튼이 보이고(데이터가 있고) 체크가 되어있어야 활성화 된 것
+    return hasData && button->isChecked();
 }

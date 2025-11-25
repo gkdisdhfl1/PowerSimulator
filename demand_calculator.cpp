@@ -101,8 +101,8 @@ void DemandCalculator::initializeMapping()
         d.currentSymmetricalNegative.update(s.currentSymmetricalComponents.negative.magnitude, t);
         d.currentSymmetricalZero.update(s.currentSymmetricalComponents.zero.magnitude, t);
 
-        d.voltageSymmetricalPositive.update(s.voltageSymmetricalComponents_ll.positive.magnitude, t);
-        d.voltageSymmetricalNegative.update(s.voltageSymmetricalComponents_ll.negative.magnitude, t);
+        d.voltageSymmetricalPositive_ll.update(s.voltageSymmetricalComponents_ll.positive.magnitude, t);
+        d.voltageSymmetricalNegative_ll.update(s.voltageSymmetricalComponents_ll.negative.magnitude, t);
     });
 
     // 불평형률
