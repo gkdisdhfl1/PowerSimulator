@@ -9,6 +9,7 @@ class OneSecondSummaryData;
 class DataRowWidget;
 class QButtonGroup;
 class QPushButton;
+class QLabel;
 
 
 using Extractor = std::function<double(const OneSecondSummaryData&)>;
@@ -49,6 +50,9 @@ private:
     std::vector<DataRowWidget*> m_rowWidgets;
     std::vector<DataSource> m_dataSources;
     int m_currentSourceIndex = 0;
+
+    QString m_originalTitle;
+    QLabel* m_titleLabel = nullptr;
 
     QButtonGroup* m_modeButtonGroup = nullptr;
     QButtonGroup* m_minMaxButtonGroup = nullptr;

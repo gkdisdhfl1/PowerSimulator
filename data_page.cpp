@@ -12,6 +12,7 @@ DataPage::DataPage(const QString& title,
                    QWidget* parent)
     : QWidget{parent}
     , m_dataSources(dataSources)
+    , m_originalTitle(title)
 {   
     auto mainlayout = new QVBoxLayout(this);
     mainlayout->setContentsMargins(15, 10, 15, 10);
@@ -19,9 +20,9 @@ DataPage::DataPage(const QString& title,
 
     // 상단 (제목 + 버튼)
     auto topLayout = new QHBoxLayout();
-    QLabel* titleLabel = new QLabel(title, this);
-    titleLabel->setObjectName("titleLabel");
-    topLayout->addWidget(titleLabel);
+    m_titleLabel = new QLabel(title, this);
+    m_titleLabel->setObjectName("titleLabel");
+    topLayout->addWidget(m_titleLabel);
     topLayout->addStretch();
 
     // 1. 모드 전환 버튼 (L-L, L-N)
@@ -30,12 +31,12 @@ DataPage::DataPage(const QString& title,
         m_modeButtonGroup->setExclusive(true);
 
         for(int i{0}; i < m_dataSources.size(); ++i) {
-            topLayout->addSpacing(3);
             QPushButton* button = new QPushButton(m_dataSources[i].name);
             button->setCheckable(true);
             button->setObjectName("modeButton");
 
             topLayout->addWidget(button);
+            topLayout->addSpacing(3);
             m_modeButtonGroup->addButton(button, i);
         }
 
@@ -51,15 +52,18 @@ DataPage::DataPage(const QString& title,
 
         auto maxButton = new QPushButton("Max");
         maxButton->setCheckable(true);
+        maxButton->setObjectName("modeButton");
         m_minMaxButtonGroup->addButton(maxButton, 0);
 
         auto minButton = new QPushButton("Min");
         minButton->setCheckable(true);
+        minButton->setObjectName("modeButton");
         m_minMaxButtonGroup->addButton(minButton, 1);
 
         connect(m_minMaxButtonGroup, &QButtonGroup::idClicked, this, &DataPage::onMinMaxModeChanged);
 
         topLayout->addWidget(maxButton);
+        topLayout->addSpacing(3);
         topLayout->addWidget(minButton);
     }
 
@@ -121,7 +125,6 @@ void DataPage::onDemandDataUpdated(const DemandData& data)
 
 void DataPage::onMinMaxModeChanged(int id)
 {
-    qDebug() << "onMinMaxModeChanged called";
     auto* clickedButton = m_minMaxButtonGroup->button(id);
     if(clickedButton && clickedButton->isChecked()) {
         // 버튼이 선택되면 그룹 내 다른 버튼들은 선택 해제
@@ -155,6 +158,17 @@ void DataPage::updateDisplay()
         showMax = updateButtonState(maxButton, !currentSource.maxExtractors.empty());
         showMin = updateButtonState(minButton, !currentSource.minExtractors.empty());
 
+    }
+
+    // 제목 라벨 업데이트
+    if(m_titleLabel) {
+        QString displayTitle = m_originalTitle;
+        if(showMax) {
+            displayTitle = displayTitle + " Max.";
+        } else if(showMin) {
+            displayTitle = displayTitle + " Min.";
+        }
+        m_titleLabel->setText(displayTitle);
     }
 
     // 모든 행 위젯을 순회

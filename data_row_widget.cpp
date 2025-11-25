@@ -32,8 +32,10 @@ DataRowWidget::DataRowWidget(const QString& name, const QString& unit, bool hasL
     unitLabel->setObjectName("unitLabel");
 
     rowLayout->addWidget(m_nameLabel);
+    rowLayout->addStretch(1);
     rowLayout->addWidget(m_timestampLabel);
-    rowLayout->addWidget(m_valueLabel, 1); // 값 라벨이 남은 공간 모두 차지
+    rowLayout->addStretch(1);
+    rowLayout->addWidget(m_valueLabel);
     rowLayout->addWidget(unitLabel);
 
     mainLayout->addLayout(rowLayout);
