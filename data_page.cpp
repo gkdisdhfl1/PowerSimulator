@@ -121,6 +121,7 @@ void DataPage::onDemandDataUpdated(const DemandData& data)
 
 void DataPage::onMinMaxModeChanged(int id)
 {
+    qDebug() << "onMinMaxModeChanged called";
     auto* clickedButton = m_minMaxButtonGroup->button(id);
     if(clickedButton && clickedButton->isChecked()) {
         // 버튼이 선택되면 그룹 내 다른 버튼들은 선택 해제
@@ -188,7 +189,10 @@ bool DataPage::updateButtonState(QPushButton* button, bool hasData)
 
     // 데이터가 없어서 숨겨지는데 체크되어 있다면 체크 해제
     if(!hasData && button->isChecked()) {
+        // 안전하게 신호 차단 후 상태 변경
+        const bool wasBlocked = button->blockSignals(true);
         button->setChecked(false);
+        button->blockSignals(wasBlocked);
     }
 
     // 버튼이 보이고(데이터가 있고) 체크가 되어있어야 활성화 된 것
