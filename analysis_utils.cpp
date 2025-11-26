@@ -43,31 +43,34 @@ namespace {
     CycleAccumulators accumulateCycleData(const std::vector<MeasuredData>& cycleBuffer, int dominantVoltageOrder, int dominantCurrentOrder) {
         CycleAccumulators acc;
         for(const auto& data : cycleBuffer) {
-            for(int i{0}; i < 3; ++i) {
-                double voltageRms = (i == 0) ? data.voltageRms.a : (i == 1) ? data.voltageRms.b : data.voltageRms.c;
-                double voltageRms_ll = (i == 0) ? data.voltageRms_ll.ab : (i == 1) ? data.voltageRms_ll.bc : data.voltageRms_ll.ca;
-                double currentRms = (i == 0) ? data.currentRms.a : (i == 1) ? data.currentRms.b : data.currentRms.c;
-                double activePower = (i == 0) ? data.activePower.a : (i == 1) ? data.activePower.b : data.activePower.c;
+            
+            // Phase A / AB
+            acc.totalVoltageRmsSumSq[0] += data.voltageRms.a * data.voltageRms.a;
+            acc.totalVoltageRmsSumSq_ll[0] += data.voltageRms_ll.ab * data.voltageRms_ll.ab;
+            acc.totalCurrentRmsSumSq[0] += data.currentRms.a * data.currentRms.a;
+            acc.activePowerSum[0] += data.activePower.a;
+            acc.fundVoltageRmsSumSq[0] += data.fundamentalVoltage.a.rms * data.fundamentalVoltage.a.rms;
+            acc.fundVoltageRmsSumSq_ll[0] += data.fundamentalVoltage_ll.ab.rms * data.fundamentalVoltage_ll.ab.rms;
+            acc.fundCurrentRmsSumSq[0] += data.fundamentalCurrent.a.rms * data.fundamentalCurrent.a.rms;
 
-                acc.totalVoltageRmsSumSq[i] += voltageRms * voltageRms;
-                acc.totalVoltageRmsSumSq_ll[i] += voltageRms_ll * voltageRms_ll;
-                acc.totalCurrentRmsSumSq[i] += currentRms * currentRms;
-                acc.activePowerSum[i] += activePower;
+            // Phase B / BC
+            acc.totalVoltageRmsSumSq[1] += data.voltageRms.b * data.voltageRms.b;
+            acc.totalVoltageRmsSumSq_ll[1] += data.voltageRms_ll.bc * data.voltageRms_ll.bc;
+            acc.totalCurrentRmsSumSq[1] += data.currentRms.b * data.currentRms.b;
+            acc.activePowerSum[1] += data.activePower.b;
+            acc.fundVoltageRmsSumSq[1] += data.fundamentalVoltage.b.rms * data.fundamentalVoltage.b.rms;
+            acc.fundVoltageRmsSumSq_ll[1] += data.fundamentalVoltage_ll.bc.rms * data.fundamentalVoltage_ll.bc.rms;
+            acc.fundCurrentRmsSumSq[1] += data.fundamentalCurrent.b.rms * data.fundamentalCurrent.b.rms;
 
-                if(i == 0) {
-                    acc.fundVoltageRmsSumSq[i] += data.fundamentalVoltage.a.rms * data.fundamentalVoltage.a.rms;
-                    acc.fundVoltageRmsSumSq_ll[i] += data.fundamentalVoltage_ll.ab.rms * data.fundamentalVoltage_ll.ab.rms;
-                    acc.fundCurrentRmsSumSq[i] += data.fundamentalCurrent.a.rms * data.fundamentalCurrent.a.rms;
-                } else if(i == 1) {
-                    acc.fundVoltageRmsSumSq[i] += data.fundamentalVoltage.b.rms * data.fundamentalVoltage.b.rms;
-                    acc.fundVoltageRmsSumSq_ll[i] += data.fundamentalVoltage_ll.bc.rms * data.fundamentalVoltage_ll.bc.rms;
-                    acc.fundCurrentRmsSumSq[i] += data.fundamentalCurrent.b.rms * data.fundamentalCurrent.b.rms;
-                } else {
-                    acc.fundVoltageRmsSumSq[i] += data.fundamentalVoltage.c.rms * data.fundamentalVoltage.c.rms;
-                    acc.fundVoltageRmsSumSq_ll[i] += data.fundamentalVoltage_ll.ca.rms * data.fundamentalVoltage_ll.ca.rms;
-                    acc.fundCurrentRmsSumSq[i] += data.fundamentalCurrent.c.rms * data.fundamentalCurrent.c.rms;
-                }
-            }
+            // Phase C / CA
+            acc.totalVoltageRmsSumSq[2] += data.voltageRms.c * data.voltageRms.c;
+            acc.totalVoltageRmsSumSq_ll[2] += data.voltageRms_ll.ca * data.voltageRms_ll.ca;
+            acc.totalCurrentRmsSumSq[2] += data.currentRms.c * data.currentRms.c;
+            acc.activePowerSum[2] += data.activePower.c;
+            acc.fundVoltageRmsSumSq[2] += data.fundamentalVoltage.c.rms * data.fundamentalVoltage.c.rms;
+            acc.fundVoltageRmsSumSq_ll[2] += data.fundamentalVoltage_ll.ca.rms * data.fundamentalVoltage_ll.ca.rms;
+            acc.fundCurrentRmsSumSq[2] += data.fundamentalCurrent.c.rms * data.fundamentalCurrent.c.rms;
+
 
             acc.residualVoltageRmsSum += data.residualVoltageRms;
             acc.residualCurrentRmsSum += data.residualCurrentRms;

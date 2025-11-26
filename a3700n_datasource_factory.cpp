@@ -137,22 +137,6 @@ void DataSourceFactory::addAverageExtractors(
 }
 
 template <typename SourceGroupPtr, typename DemandGroupPtr>
-void DataSourceFactory::addSymmetricalGroupExtractors(
-    DataSource& ds, SourceGroupPtr sourceGroup, DemandGroupPtr demandGroup)
-{
-    // Positive
-    ds.extractors.push_back([=](const auto& s) { return (s.*sourceGroup).positive.magnitude; });
-    ds.maxExtractors.push_back([=](const auto& d) { return (d.*demandGroup).positive; });
-
-    // Negative
-    ds.extractors.push_back([=](const auto& s) { return (s.*sourceGroup).negative.magnitude; });
-    ds.maxExtractors.push_back([=](const auto& d) { return (d.*demandGroup).negative; });
-
-    // Zero
-    ds.extractors.push_back([=](const auto& s) { return (s.*sourceGroup).zero.magnitude; });
-    ds.maxExtractors.push_back([=](const auto& d) { return (d.*demandGroup).zero; });
-}
-template <typename SourceGroupPtr, typename DemandGroupPtr>
 void DataSourceFactory::addSymmetricalGroupExtractors_ll(
     DataSource& ds, SourceGroupPtr sourceGroup, DemandGroupPtr demandGroup)
 {
@@ -163,6 +147,16 @@ void DataSourceFactory::addSymmetricalGroupExtractors_ll(
     // Negative
     ds.extractors.push_back([=](const auto& s) { return (s.*sourceGroup).negative.magnitude; });
     ds.maxExtractors.push_back([=](const auto& d) { return (d.*demandGroup).negative; });
+}
+template <typename SourceGroupPtr, typename DemandGroupPtr>
+void DataSourceFactory::addSymmetricalGroupExtractors(
+    DataSource& ds, SourceGroupPtr sourceGroup, DemandGroupPtr demandGroup)
+{
+    addSymmetricalGroupExtractors_ll(ds, sourceGroup, demandGroup);
+
+    // Zero
+    ds.extractors.push_back([=](const auto& s) { return (s.*sourceGroup).zero.magnitude; });
+    ds.maxExtractors.push_back([=](const auto& d) { return (d.*demandGroup).zero; });
 }
 
 // ==================================

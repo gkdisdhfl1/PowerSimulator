@@ -102,7 +102,6 @@ private:
     template <typename SourceGroupPtr, typename DemandGroupPtr>
     static void addSymmetricalGroupExtractors(
         DataSource& ds, SourceGroupPtr sourceGroup, DemandGroupPtr demandGroup);
-    \
     template <typename SourceGroupPtr, typename DemandGroupPtr>
     static void addSymmetricalGroupExtractors_ll(
         DataSource& ds, SourceGroupPtr sourceGroup, DemandGroupPtr demandGroup);
