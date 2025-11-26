@@ -516,7 +516,7 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     summary.dominantHarmonicVoltageOrder = lastCycleData.dominantVoltage.a.order;
     summary.dominantHarmonicCurrentOrder = lastCycleData.dominantCurrent.a.order;
     summary.dominantHarmonicVoltagePhase = utils::radiansToDegrees(lastCycleData.dominantVoltage.a.phase);
-    summary.dominantHarmonicCurrentPhase = utils::radiansToDegrees(lastCycleData.dominantCurrent.a.order);
+    summary.dominantHarmonicCurrentPhase = utils::radiansToDegrees(lastCycleData.dominantCurrent.a.phase);
     summary.fundamentalVoltage = lastCycleData.fundamentalVoltage;
     summary.fundamentalVoltage_ll = lastCycleData.fundamentalVoltage_ll;
     summary.fundamentalCurrent = lastCycleData.fundamentalCurrent;

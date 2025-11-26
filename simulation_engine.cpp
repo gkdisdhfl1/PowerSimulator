@@ -334,25 +334,35 @@ void SimulationEngine::calculateCycleData()
         if(voltageSpectrumResult) {
             // 전체 스펙트럼 변환 및 저장
             auto fullHarmonics = AnalysisUtils::convertSpectrumToHarmonics(*voltageSpectrumResult);
-            if(i == 0) newData.fullVoltageHarmonics = fullHarmonics;
-            else if(i == 1) newData.fullVoltageHarmonicsB = fullHarmonics;
-            else newData.fullVoltageHarmonicsC = fullHarmonics;
+            switch(i)
+            {
+                case 0: newData.fullVoltageHarmonics = fullHarmonics;  break;
+                case 1: newData.fullVoltageHarmonicsB = fullHarmonics;  break;
+                case 2: newData.fullVoltageHarmonicsC = fullHarmonics;  break;
+            }
 
             // 특정 고조파 변호나 및 저장
             auto harmonics = AnalysisUtils::findSignificantHarmonics(*voltageSpectrumResult);
-            if(i == 0) newData.voltageHarmonics = harmonics;
-            else if(i == 1) newData.voltageHarmonicsB = harmonics;
-            else newData.voltageHarmonicsC = harmonics;
+            switch(i)
+            {
+            case 0: newData.voltageHarmonics = harmonics; break;
+            case 1: newData.voltageHarmonicsB = harmonics; break;
+            case 2: newData.voltageHarmonicsC = harmonics; break;
+            }
 
             if(const auto* fund = AnalysisUtils::getHarmonicComponent(harmonics, 1)) {
-                if(i == 0) newData.fundamentalVoltage.a = *fund;
-                if(i == 1) newData.fundamentalVoltage.b = *fund;
-                else newData.fundamentalVoltage.c = *fund;
+                switch(i) {
+                    case 0: newData.fundamentalVoltage.a = *fund; break;
+                    case 1: newData.fundamentalVoltage.b = *fund; break;
+                    case 2: newData.fundamentalVoltage.c = *fund; break;
+                }
             }
             if(const auto* dom = AnalysisUtils::getDominantHarmonic(harmonics)) {
-                if(i == 0) newData.dominantVoltage.a = *dom;
-                if(i == 1) newData.dominantVoltage.b = *dom;
-                else newData.dominantVoltage.c = *dom;
+                switch(i) {
+                case 0: newData.dominantVoltage.a = *dom; break;
+                case 1: newData.dominantVoltage.b = *dom; break;
+                case 2: newData.dominantVoltage.c = *dom; break;
+                }
             }
         } else {
             qWarning() << "Voltage Spectrum Analyze Failed !!!";
@@ -363,25 +373,34 @@ void SimulationEngine::calculateCycleData()
         if(currentSpectrumResult) {
             // 전체 스펙트럼 변환 및 저장
             auto fullHarmonics = AnalysisUtils::convertSpectrumToHarmonics(*currentSpectrumResult);
-            if(i == 0) newData.fullCurrentHarmonics = fullHarmonics;
-            else if(i == 1) newData.fullCurrentHarmonicsB = fullHarmonics;
-            else newData.fullCurrentHarmonicsC = fullHarmonics;
-
+            switch(i)
+            {
+                case 0: newData.fullCurrentHarmonics = fullHarmonics; break;
+                case 1: newData.fullCurrentHarmonicsB = fullHarmonics; break;
+                case 2: newData.fullCurrentHarmonicsC = fullHarmonics; break;
+            }
 
             auto harmonics = AnalysisUtils::findSignificantHarmonics(*currentSpectrumResult);
-            if(i == 0) newData.currentHarmonics = harmonics;
-            else if(i == 1) newData.currentHarmonicsB = harmonics;
-            else newData.currentHarmonicsC = harmonics;
+            switch(i)
+            {
+                case 0: newData.currentHarmonics = harmonics; break;
+                case 1: newData.currentHarmonicsB = harmonics; break;
+                case 2: newData.currentHarmonicsC = harmonics; break;
+            }
 
             if(const auto* fund = AnalysisUtils::getHarmonicComponent(harmonics, 1)) {
-                if(i == 0) newData.fundamentalCurrent.a = *fund;
-                if(i == 1) newData.fundamentalCurrent.b = *fund;
-                else newData.fundamentalCurrent.c = *fund;
+                switch(i) {
+                case 0: newData.fundamentalCurrent.a = *fund; break;
+                case 1: newData.fundamentalCurrent.b = *fund; break;
+                case 2: newData.fundamentalCurrent.c = *fund; break;
+                }
             }
             if(const auto* dom = AnalysisUtils::getDominantHarmonic(harmonics)) {
-                if(i == 0) newData.dominantCurrent.a = *dom;
-                if(i == 1) newData.dominantCurrent.b = *dom;
-                else newData.dominantCurrent.c = *dom;
+                switch(i) {
+                case 0: newData.dominantCurrent.a = *dom; break;
+                case 1: newData.dominantCurrent.b = *dom; break;
+                case 2: newData.dominantCurrent.c = *dom; break;
+                }
             }
         } else {
             qWarning() << "Current Spectrum Analyze Failed !!!";

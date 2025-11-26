@@ -101,8 +101,11 @@ private:
     // Symmetrical Components 항목에 대한 Extractor 생성 헬퍼
     template <typename SourceGroupPtr, typename DemandGroupPtr>
     static void addSymmetricalGroupExtractors(
-        DataSource& ds, SourceGroupPtr sourceGroup, DemandGroupPtr demandGroup, bool hasZero);
-
+        DataSource& ds, SourceGroupPtr sourceGroup, DemandGroupPtr demandGroup);
+    \
+    template <typename SourceGroupPtr, typename DemandGroupPtr>
+    static void addSymmetricalGroupExtractors_ll(
+        DataSource& ds, SourceGroupPtr sourceGroup, DemandGroupPtr demandGroup);
 };
 
 #endif // A37__N_DATASOURCE_FACTORY_H

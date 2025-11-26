@@ -138,7 +138,7 @@ void DataSourceFactory::addAverageExtractors(
 
 template <typename SourceGroupPtr, typename DemandGroupPtr>
 void DataSourceFactory::addSymmetricalGroupExtractors(
-    DataSource& ds, SourceGroupPtr sourceGroup, DemandGroupPtr demandGroup, bool hasZero)
+    DataSource& ds, SourceGroupPtr sourceGroup, DemandGroupPtr demandGroup)
 {
     // Positive
     ds.extractors.push_back([=](const auto& s) { return (s.*sourceGroup).positive.magnitude; });
@@ -149,10 +149,20 @@ void DataSourceFactory::addSymmetricalGroupExtractors(
     ds.maxExtractors.push_back([=](const auto& d) { return (d.*demandGroup).negative; });
 
     // Zero
-    if(hasZero) {
-        ds.extractors.push_back([=](const auto& s) { return (s.*sourceGroup).zero.magnitude; });
-        ds.maxExtractors.push_back([=](const auto& d) { return (d.*demandGroup).zero; });
-    }
+    ds.extractors.push_back([=](const auto& s) { return (s.*sourceGroup).zero.magnitude; });
+    ds.maxExtractors.push_back([=](const auto& d) { return (d.*demandGroup).zero; });
+}
+template <typename SourceGroupPtr, typename DemandGroupPtr>
+void DataSourceFactory::addSymmetricalGroupExtractors_ll(
+    DataSource& ds, SourceGroupPtr sourceGroup, DemandGroupPtr demandGroup)
+{
+    // Positive
+    ds.extractors.push_back([=](const auto& s) { return (s.*sourceGroup).positive.magnitude; });
+    ds.maxExtractors.push_back([=](const auto& d) { return (d.*demandGroup).positive; });
+
+    // Negative
+    ds.extractors.push_back([=](const auto& s) { return (s.*sourceGroup).negative.magnitude; });
+    ds.maxExtractors.push_back([=](const auto& d) { return (d.*demandGroup).negative; });
 }
 
 // ==================================
@@ -393,10 +403,9 @@ DataSource DataSourceFactory::createVoltageSymmetricalLLSource()
     ds.name = "L-L";
     ds.rowLabels = {"Positive-\nSequence", "Negative-\nSequence"};
 
-    addSymmetricalGroupExtractors(ds,
-                                  &OneSecondSummaryData::voltageSymmetricalComponents,
-                                  &DemandData::voltageSymmetricalComponents,
-                                  false);
+    addSymmetricalGroupExtractors_ll(ds,
+                                  &OneSecondSummaryData::voltageSymmetricalComponents_ll,
+                                  &DemandData::voltageSymmetricalComponents_ll);
 
     return ds;
 }
@@ -409,8 +418,7 @@ DataSource DataSourceFactory::createVoltageSymmetricalLNSource()
 
     addSymmetricalGroupExtractors(ds,
                                   &OneSecondSummaryData::voltageSymmetricalComponents,
-                                  &DemandData::voltageSymmetricalComponents,
-                                  true);
+                                  &DemandData::voltageSymmetricalComponents);
 
     return ds;
 }
@@ -438,8 +446,7 @@ DataSource DataSourceFactory::createCurrentSymmetricalSource()
 
     addSymmetricalGroupExtractors(ds,
                                   &OneSecondSummaryData::currentSymmetricalComponents,
-                                  &DemandData::currentSymmetricalComponents,
-                                  false);
+                                  &DemandData::currentSymmetricalComponents);
 
     return ds;
 }
