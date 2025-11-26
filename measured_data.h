@@ -67,19 +67,6 @@ struct SymmetricalComponent {
 struct SymmetricalComponents : public GenericPhaseSymmetricalComponents<SymmetricalComponent> {};
 struct SymmetricalComponents_ll  : public GenericLinetoLineSymmetricalComponents<SymmetricalComponent> {};
 
-// // 3상 대칭 성분(Zero, Positive, Negative)
-// struct SymmetricalComponents {
-//     SymmetricalComponent zero;
-//     SymmetricalComponent positive;
-//     SymmetricalComponent negative;
-// };
-// // 선간용 대칭 성분(Positive, Negative)
-// struct SymmetricalComponents_ll {
-//     SymmetricalComponent positive;
-//     SymmetricalComponent negative;
-// };
-
-
 // 1초 단위로 가공된 분석 데이터를 담는 구조체
 struct OneSecondSummaryData {
 

@@ -42,52 +42,36 @@ namespace {
 
     CycleAccumulators accumulateCycleData(const std::vector<MeasuredData>& cycleBuffer, int dominantVoltageOrder, int dominantCurrentOrder) {
         CycleAccumulators acc;
+
+        // Phasor 3개의 복소수 합을 계산하는 헬퍼 함수
+        auto accumulatePhase = [&](int index, double v_rms, double v_ll_rms, double i_rms, double p_active, const auto& fv, const auto& fv_ll, const auto& fi) {
+            acc.totalVoltageRmsSumSq[index] += v_rms * v_rms;
+            acc.totalVoltageRmsSumSq_ll[index] += v_ll_rms * v_ll_rms;
+            acc.totalCurrentRmsSumSq[index] += i_rms * i_rms;
+            acc.activePowerSum[index] += p_active;
+            acc.fundVoltageRmsSumSq[index] += fv.rms * fv.rms;
+            acc.fundVoltageRmsSumSq_ll[index] += fv_ll.rms * fv_ll.rms;
+            acc.fundCurrentRmsSumSq[index] += fi.rms * fi.rms;
+        };
+        auto sumPhasor = [&](const GenericPhaseData<HarmonicAnalysisResult>& phasePhasors) {
+            std::complex<double> sum(0, 0);
+            sum += std::complex<double>(phasePhasors.a.phasorX, phasePhasors.a.phasorY);
+            sum += std::complex<double>(phasePhasors.b.phasorX, phasePhasors.b.phasorY);
+            sum += std::complex<double>(phasePhasors.c.phasorX, phasePhasors.c.phasorY);
+            return sum;
+        };
+
         for(const auto& data : cycleBuffer) {
-            
-            // Phase A / AB
-            acc.totalVoltageRmsSumSq[0] += data.voltageRms.a * data.voltageRms.a;
-            acc.totalVoltageRmsSumSq_ll[0] += data.voltageRms_ll.ab * data.voltageRms_ll.ab;
-            acc.totalCurrentRmsSumSq[0] += data.currentRms.a * data.currentRms.a;
-            acc.activePowerSum[0] += data.activePower.a;
-            acc.fundVoltageRmsSumSq[0] += data.fundamentalVoltage.a.rms * data.fundamentalVoltage.a.rms;
-            acc.fundVoltageRmsSumSq_ll[0] += data.fundamentalVoltage_ll.ab.rms * data.fundamentalVoltage_ll.ab.rms;
-            acc.fundCurrentRmsSumSq[0] += data.fundamentalCurrent.a.rms * data.fundamentalCurrent.a.rms;
-
-            // Phase B / BC
-            acc.totalVoltageRmsSumSq[1] += data.voltageRms.b * data.voltageRms.b;
-            acc.totalVoltageRmsSumSq_ll[1] += data.voltageRms_ll.bc * data.voltageRms_ll.bc;
-            acc.totalCurrentRmsSumSq[1] += data.currentRms.b * data.currentRms.b;
-            acc.activePowerSum[1] += data.activePower.b;
-            acc.fundVoltageRmsSumSq[1] += data.fundamentalVoltage.b.rms * data.fundamentalVoltage.b.rms;
-            acc.fundVoltageRmsSumSq_ll[1] += data.fundamentalVoltage_ll.bc.rms * data.fundamentalVoltage_ll.bc.rms;
-            acc.fundCurrentRmsSumSq[1] += data.fundamentalCurrent.b.rms * data.fundamentalCurrent.b.rms;
-
-            // Phase C / CA
-            acc.totalVoltageRmsSumSq[2] += data.voltageRms.c * data.voltageRms.c;
-            acc.totalVoltageRmsSumSq_ll[2] += data.voltageRms_ll.ca * data.voltageRms_ll.ca;
-            acc.totalCurrentRmsSumSq[2] += data.currentRms.c * data.currentRms.c;
-            acc.activePowerSum[2] += data.activePower.c;
-            acc.fundVoltageRmsSumSq[2] += data.fundamentalVoltage.c.rms * data.fundamentalVoltage.c.rms;
-            acc.fundVoltageRmsSumSq_ll[2] += data.fundamentalVoltage_ll.ca.rms * data.fundamentalVoltage_ll.ca.rms;
-            acc.fundCurrentRmsSumSq[2] += data.fundamentalCurrent.c.rms * data.fundamentalCurrent.c.rms;
-
+            accumulatePhase(0, data.voltageRms.a, data.voltageRms_ll.ab, data.currentRms.a, data.activePower.a, data.fundamentalVoltage.a, data.fundamentalVoltage_ll.ab, data.fundamentalCurrent.a);
+            accumulatePhase(1, data.voltageRms.b, data.voltageRms_ll.bc, data.currentRms.b, data.activePower.b, data.fundamentalVoltage.b, data.fundamentalVoltage_ll.bc, data.fundamentalCurrent.b);
+            accumulatePhase(2, data.voltageRms.c, data.voltageRms_ll.ca, data.currentRms.c, data.activePower.c, data.fundamentalVoltage.c, data.fundamentalVoltage_ll.ca, data.fundamentalCurrent.c);
 
             acc.residualVoltageRmsSum += data.residualVoltageRms;
             acc.residualCurrentRmsSum += data.residualCurrentRms;
 
             // 복소수 합의 절대값 계산 (잔류 기본파)
-            std::complex<double> residualVoltageFundamentalSum(0, 0), residualCurrentFundamentalSum(0, 0);
-
-            residualVoltageFundamentalSum += std::complex<double>(data.fundamentalVoltage.a.phasorX, data.fundamentalVoltage.a.phasorY);
-            residualVoltageFundamentalSum += std::complex<double>(data.fundamentalVoltage.b.phasorX, data.fundamentalVoltage.b.phasorY);
-            residualVoltageFundamentalSum += std::complex<double>(data.fundamentalVoltage.c.phasorX, data.fundamentalVoltage.c.phasorY);
-            residualCurrentFundamentalSum += std::complex<double>(data.fundamentalCurrent.a.phasorX, data.fundamentalCurrent.a.phasorY);
-            residualCurrentFundamentalSum += std::complex<double>(data.fundamentalCurrent.b.phasorX, data.fundamentalCurrent.b.phasorY);
-            residualCurrentFundamentalSum += std::complex<double>(data.fundamentalCurrent.c.phasorX, data.fundamentalCurrent.c.phasorY);
-
-
-                acc.residualVoltageFundamentalSum += std::abs(residualVoltageFundamentalSum);
-            acc.residualCurrentFundamentalSum += std::abs(residualCurrentFundamentalSum);
+            acc.residualVoltageFundamentalSum += std::abs(sumPhasor(data.fundamentalVoltage));
+            acc.residualCurrentFundamentalSum += std::abs(sumPhasor(data.fundamentalCurrent));
 
             if(dominantVoltageOrder > 1 && data.dominantVoltage.a.order == dominantVoltageOrder) {
                 acc.dominantVoltageRmsSumSq += data.dominantVoltage.a.rms * data.dominantVoltage.a.rms;

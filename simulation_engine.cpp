@@ -327,6 +327,27 @@ void SimulationEngine::calculateCycleData()
     MeasuredData newData;
     newData.timestamp = m_simulationTimeNs;
 
+    // MeasuredData의 낱개 vector<HarmonicAnalysisResult> 필드를 업데이트하는 헬퍼 람다
+    auto updateHarmonicsField = [&](
+                                    int phaseIndex,
+                                    std::vector<HarmonicAnalysisResult>& fieldA,
+                                    std::vector<HarmonicAnalysisResult>& fieldB,
+                                    std::vector<HarmonicAnalysisResult>& fieldC,
+                                    const std::vector<HarmonicAnalysisResult>& sourceHarmonics)
+    {
+        switch (phaseIndex) {
+        case 0: fieldA = sourceHarmonics; break;
+        case 1: fieldB = sourceHarmonics; break;
+        case 2: fieldC = sourceHarmonics; break;
+        }
+    };
+    // GenericPhaseData 멤버에 대한 참조 헬퍼
+    auto getPhaseRef = [&](int index, auto& phaseData) -> auto& {
+        if(index == 0) return phaseData.a;
+        if(index == 1) return phaseData.b;
+        return phaseData.c;
+    };
+
     // 1. for 루프를 사용하여 3상에 대한 스펙트럼과 고조파 분석 수행
     for(int i{0}; i < 3; ++i) {
         // --- 전압 분석 ---
@@ -334,35 +355,17 @@ void SimulationEngine::calculateCycleData()
         if(voltageSpectrumResult) {
             // 전체 스펙트럼 변환 및 저장
             auto fullHarmonics = AnalysisUtils::convertSpectrumToHarmonics(*voltageSpectrumResult);
-            switch(i)
-            {
-                case 0: newData.fullVoltageHarmonics = fullHarmonics;  break;
-                case 1: newData.fullVoltageHarmonicsB = fullHarmonics;  break;
-                case 2: newData.fullVoltageHarmonicsC = fullHarmonics;  break;
-            }
+            updateHarmonicsField(i,newData.fullVoltageHarmonics, newData.fullVoltageHarmonicsB, newData.fullVoltageHarmonicsC, fullHarmonics);
 
             // 특정 고조파 변호나 및 저장
             auto harmonics = AnalysisUtils::findSignificantHarmonics(*voltageSpectrumResult);
-            switch(i)
-            {
-            case 0: newData.voltageHarmonics = harmonics; break;
-            case 1: newData.voltageHarmonicsB = harmonics; break;
-            case 2: newData.voltageHarmonicsC = harmonics; break;
-            }
+            updateHarmonicsField(i, newData.voltageHarmonics, newData.voltageHarmonicsB, newData.voltageHarmonicsC, harmonics);
 
             if(const auto* fund = AnalysisUtils::getHarmonicComponent(harmonics, 1)) {
-                switch(i) {
-                    case 0: newData.fundamentalVoltage.a = *fund; break;
-                    case 1: newData.fundamentalVoltage.b = *fund; break;
-                    case 2: newData.fundamentalVoltage.c = *fund; break;
-                }
+                getPhaseRef(i, newData.fundamentalVoltage) = *fund;
             }
             if(const auto* dom = AnalysisUtils::getDominantHarmonic(harmonics)) {
-                switch(i) {
-                case 0: newData.dominantVoltage.a = *dom; break;
-                case 1: newData.dominantVoltage.b = *dom; break;
-                case 2: newData.dominantVoltage.c = *dom; break;
-                }
+                getPhaseRef(i, newData.dominantVoltage) = *dom;
             }
         } else {
             qWarning() << "Voltage Spectrum Analyze Failed !!!";
@@ -373,34 +376,16 @@ void SimulationEngine::calculateCycleData()
         if(currentSpectrumResult) {
             // 전체 스펙트럼 변환 및 저장
             auto fullHarmonics = AnalysisUtils::convertSpectrumToHarmonics(*currentSpectrumResult);
-            switch(i)
-            {
-                case 0: newData.fullCurrentHarmonics = fullHarmonics; break;
-                case 1: newData.fullCurrentHarmonicsB = fullHarmonics; break;
-                case 2: newData.fullCurrentHarmonicsC = fullHarmonics; break;
-            }
+            updateHarmonicsField(i, newData.fullCurrentHarmonics, newData.fullCurrentHarmonicsB, newData.fullCurrentHarmonicsC, fullHarmonics);
 
             auto harmonics = AnalysisUtils::findSignificantHarmonics(*currentSpectrumResult);
-            switch(i)
-            {
-                case 0: newData.currentHarmonics = harmonics; break;
-                case 1: newData.currentHarmonicsB = harmonics; break;
-                case 2: newData.currentHarmonicsC = harmonics; break;
-            }
+            updateHarmonicsField(i, newData.currentHarmonics, newData.currentHarmonicsB, newData.currentHarmonicsC, harmonics);
 
             if(const auto* fund = AnalysisUtils::getHarmonicComponent(harmonics, 1)) {
-                switch(i) {
-                case 0: newData.fundamentalCurrent.a = *fund; break;
-                case 1: newData.fundamentalCurrent.b = *fund; break;
-                case 2: newData.fundamentalCurrent.c = *fund; break;
-                }
+                getPhaseRef(i, newData.fundamentalCurrent) = *fund;
             }
             if(const auto* dom = AnalysisUtils::getDominantHarmonic(harmonics)) {
-                switch(i) {
-                case 0: newData.dominantCurrent.a = *dom; break;
-                case 1: newData.dominantCurrent.b = *dom; break;
-                case 2: newData.dominantCurrent.c = *dom; break;
-                }
+                getPhaseRef(i, newData.dominantCurrent) = *dom;
             }
         } else {
             qWarning() << "Current Spectrum Analyze Failed !!!";
