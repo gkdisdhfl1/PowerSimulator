@@ -41,6 +41,22 @@ struct GenericLinetoLineData {
 struct PhaseData : public GenericPhaseData<double> {};
 struct LineToLineData : public GenericLinetoLineData<double>{};
 
+// 3상 대칭 성분 템플릿
+template <typename T>
+struct GenericPhaseSymmetricalComponents {
+    T zero = T{};
+    T positive = T{};
+    T negative = T{};
+};
+
+// 선간 전압 성분 템플릿
+template <typename T>
+struct GenericLinetoLineSymmetricalComponents {
+    T positive = T{};
+    T negative = T{};
+};
+
+
 inline QDebug operator<<(QDebug dbg, const HarmonicComponent& hc)
 {
     // QDebugStateSaver를 사용해 스트림 상태를 안전하게 관리

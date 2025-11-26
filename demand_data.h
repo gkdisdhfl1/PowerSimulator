@@ -4,20 +4,6 @@
 #include "min_max_tracker.h"
 #include "shared_data_types.h"
 
-// template <typename T>
-// struct GenericPhaseData {
-//     T a;
-//     T b;
-//     T c;
-// };
-
-// template <typename T>
-// struct GenericLinetoLineData {
-//     T ab;
-//     T bc;
-//     T ca;
-// };
-
 // Max/Min 추적 대상이 되는 모든 계측 항목들
 struct DemandData
 {
@@ -65,15 +51,19 @@ struct DemandData
     GenericPhaseData<MaxTracker<double>> currentThd;
 
     // 대칭 성분
-    MaxTracker<double> voltageSymmetricalPositive; // V1
-    MaxTracker<double> voltageSymmetricalNegative; // V2
-    MaxTracker<double> voltageSymmetricalZero; // V0
-    MaxTracker<double> currentSymmetricalPositive; // I1
-    MaxTracker<double> currentSymmetricalNegative; // I2
-    MaxTracker<double> currentSymmetricalZero; // I0
+    GenericPhaseSymmetricalComponents<MaxTracker<double>> voltageSymmetricalComponents;
+    GenericPhaseSymmetricalComponents<MaxTracker<double>> currentSymmetricalComponents;
+    GenericLinetoLineSymmetricalComponents<MaxTracker<double>> voltageSymmetricalComponents_ll;
 
-    MaxTracker<double> voltageSymmetricalPositive_ll; // V1_ll
-    MaxTracker<double> voltageSymmetricalNegative_ll; // V2_ll
+    // MaxTracker<double> voltageSymmetricalPositive; // V1
+    // MaxTracker<double> voltageSymmetricalNegative; // V2
+    // MaxTracker<double> voltageSymmetricalZero; // V0
+    // MaxTracker<double> currentSymmetricalPositive; // I1
+    // MaxTracker<double> currentSymmetricalNegative; // I2
+    // MaxTracker<double> currentSymmetricalZero; // I0
+
+    // MaxTracker<double> voltageSymmetricalPositive_ll; // V1_ll
+    // MaxTracker<double> voltageSymmetricalNegative_ll; // V2_ll
 
     // 불평형률
     MaxTracker<double> nemaVoltageUnbalance_ll;

@@ -99,7 +99,6 @@ find_package(Qt6 REQUIRED COMPONENTS Core)
         demand_data.h
         demand_calculator.h demand_calculator.cpp
         a3700n_datasource_factory.h a3700n_datasource_factory.cpp
-
     )
 # Define target properties for Android with Qt 6 as:
 #    set_property(TARGET PowerSimulator APPEND PROPERTY QT_ANDROID_PACKAGE_SOURCE_DIR

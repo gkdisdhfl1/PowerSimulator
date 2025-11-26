@@ -24,45 +24,27 @@ void DemandCalculator::initializeMapping()
 
     // 전압 RMS
     bindPhaseGroup(&DemandData::totalVoltageRms, &OneSecondSummaryData::totalVoltageRms);
+    bindPhaseAverage(&DemandData::averageTotalVoltageRms, &OneSecondSummaryData::totalVoltageRms);
+
     bindLinetoLineGroup(&DemandData::totalVoltageRms_ll, &OneSecondSummaryData::totalVoltageRms_ll);
-    m_mappings.push_back([](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
-        const double avg = (s.totalVoltageRms.a + s.totalVoltageRms.b + s.totalVoltageRms.c) / 3.0;
-        d.averageTotalVoltageRms.update(avg, t);
-        const double avg_ll = (s.totalVoltageRms_ll.ab + s.totalVoltageRms_ll.bc + s.totalVoltageRms_ll.ca) / 3.0;
-        d.averageTotalVoltageRms_ll.update(avg_ll, t);
-    });
+    bindLinetoLineAverage(&DemandData::averageTotalVoltageRms_ll, &OneSecondSummaryData::totalVoltageRms_ll);
 
     // 전압 기본파
-    m_mappings.push_back([](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
-        d.fundamentalVoltageRMS.a.update(s.fundamentalVoltage.a.rms, t);
-        d.fundamentalVoltageRMS.b.update(s.fundamentalVoltage.b.rms, t);
-        d.fundamentalVoltageRMS.c.update(s.fundamentalVoltage.c.rms, t);
-        const double avg = (s.fundamentalVoltage.a.rms + s.fundamentalVoltage.b.rms + s.fundamentalVoltage.c.rms) / 3.0;
-        d.averageFundamentalVoltageRms.update(avg, t);
-    });
-    m_mappings.push_back([](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
-        d.fundamentalVoltageRMS_ll.ab.update(s.fundamentalVoltage_ll.ab.rms, t);
-        d.fundamentalVoltageRMS_ll.bc.update(s.fundamentalVoltage_ll.bc.rms, t);
-        d.fundamentalVoltageRMS_ll.ca.update(s.fundamentalVoltage_ll.ca.rms, t);
-        const double avg = (s.fundamentalVoltage_ll.ab.rms + s.fundamentalVoltage_ll.bc.rms + s.fundamentalVoltage_ll.ca.rms) / 3.0;
-        d.averageFundamentalVoltageRms_ll.update(avg, t);
-    });
+    auto extractRms = [](const HarmonicAnalysisResult& h) { return h.rms; };
+
+    bindPhaseGroup(&DemandData::fundamentalVoltageRMS, &OneSecondSummaryData::fundamentalVoltage, extractRms);
+    bindPhaseAverage(&DemandData::averageFundamentalVoltageRms, &OneSecondSummaryData::fundamentalVoltage, extractRms);
+
+    bindLinetoLineGroup(&DemandData::fundamentalVoltageRMS_ll, &OneSecondSummaryData::fundamentalVoltage_ll, extractRms);
+    bindLinetoLineAverage(&DemandData::averageFundamentalVoltageRms_ll, &OneSecondSummaryData::fundamentalVoltage_ll, extractRms);
 
     // 전류 RMS
     bindPhaseGroup(&DemandData::totalCurrentRms, &OneSecondSummaryData::totalCurrentRms);
-    m_mappings.push_back([](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
-        const double avg = (s.totalCurrentRms.a + s.totalCurrentRms.b + s.totalCurrentRms.c) / 3.0;
-        d.averageTotalCurrentRms.update(avg, t);
-    });
+    bindPhaseAverage(&DemandData::averageTotalCurrentRms, &OneSecondSummaryData::totalCurrentRms);
 
     // 전류 기본파
-    m_mappings.push_back([](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
-        d.fundamentalCurrentRMS.a.update(s.fundamentalCurrent.a.rms, t);
-        d.fundamentalCurrentRMS.b.update(s.fundamentalCurrent.b.rms, t);
-        d.fundamentalCurrentRMS.c.update(s.fundamentalCurrent.c.rms, t);
-        const double avg = (s.fundamentalCurrent.a.rms + s.fundamentalCurrent.b.rms + s.fundamentalCurrent.c.rms) / 3.0;
-        d.averageFundamentalCurrentRms.update(avg, t);
-    });
+    bindPhaseGroup(&DemandData::fundamentalCurrentRMS, &OneSecondSummaryData::fundamentalCurrent, extractRms);
+    bindPhaseAverage(&DemandData::averageFundamentalCurrentRms, &OneSecondSummaryData::fundamentalCurrent, extractRms);
 
     // 주파수
     bindMinMax(&DemandData::frequency, &OneSecondSummaryData::frequency);
@@ -92,18 +74,11 @@ void DemandCalculator::initializeMapping()
     bindPhaseGroupMaxOnly(&DemandData::currentThd, &OneSecondSummaryData::currentThd);
 
     // 대칭 성분
-    m_mappings.push_back([](DemandData& d, const OneSecondSummaryData& s, const QDateTime& t) {
-        d.voltageSymmetricalPositive.update(s.voltageSymmetricalComponents.positive.magnitude, t);
-        d.voltageSymmetricalNegative.update(s.voltageSymmetricalComponents.negative.magnitude, t);
-        d.voltageSymmetricalZero.update(s.voltageSymmetricalComponents.zero.magnitude, t);
+    bindPhaseSymmetricalGroup(&DemandData::voltageSymmetricalComponents, &OneSecondSummaryData::voltageSymmetricalComponents);
+    bindLineToLineSymmetricalGroup(&DemandData::voltageSymmetricalComponents_ll, &OneSecondSummaryData::voltageSymmetricalComponents_ll);
 
-        d.currentSymmetricalPositive.update(s.currentSymmetricalComponents.positive.magnitude, t);
-        d.currentSymmetricalNegative.update(s.currentSymmetricalComponents.negative.magnitude, t);
-        d.currentSymmetricalZero.update(s.currentSymmetricalComponents.zero.magnitude, t);
+    bindPhaseSymmetricalGroup(&DemandData::currentSymmetricalComponents, &OneSecondSummaryData::currentSymmetricalComponents);
 
-        d.voltageSymmetricalPositive_ll.update(s.voltageSymmetricalComponents_ll.positive.magnitude, t);
-        d.voltageSymmetricalNegative_ll.update(s.voltageSymmetricalComponents_ll.negative.magnitude, t);
-    });
 
     // 불평형률
     bindMaxOnly(&DemandData::nemaVoltageUnbalance_ll, &OneSecondSummaryData::nemaVoltageUnbalance_ll);

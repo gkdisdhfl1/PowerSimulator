@@ -37,46 +37,59 @@ private:
     // --- Extractor 생성 헬퍼 ---
 
     // 단일 필드에 대한 Extractor 3종(기본, Max, Min)을 생성하는 헬퍼
-    template <typename SourceType, typename DemandType>
+    template <typename SourcePtr, typename DemandPtr>
     static void addExtractors(
         DataSource& dataSource,
-        SourceType OneSecondSummaryData::* source,
-        MinMaxTracker<DemandType> DemandData::* demand);
+        SourcePtr source,
+        DemandPtr demand);
 
     // Max-Only 단일 항목
-    template <typename SourceType, typename DemandType>
+    template <typename SourcePtr, typename DemandPtr>
     static void addMaxOnlyExtractors(
         DataSource& dataSource,
-        SourceType OneSecondSummaryData::* source,
-        MinMaxTracker<DemandType> DemandData::* demand);
+        SourcePtr source,
+        DemandPtr demand);
 
     // 3상 그룹에 대한 Extractor 3종을 생성하는 헬퍼
-    template <typename T>
+    template <typename SourceGroupPtr, typename DemandGroupPtr, typename ValueExtractor>
     static void addPhaseGroupExtractors(
-        DataSource& dataSource,
-        const PhaseData OneSecondSummaryData::* sourceGroup,
-        const GenericPhaseData<MinMaxTracker<T>> DemandData::* demandGroup);
+            DataSource& dataSource,
+            SourceGroupPtr sourceGroup,
+            DemandGroupPtr demandGroup,
+            ValueExtractor extractor);
+    template <typename SourceGroupPtr, typename DemandGroupPtr>
+         static void addPhaseGroupExtractors(
+            DataSource& dataSource,
+            SourceGroupPtr sourceGroup,
+            DemandGroupPtr demandGroup);
 
     // 3상 그룹 (MaxTracker)
-    template <typename T>
+    template <typename SourceGroupPtr, typename DemandGroupPtr>
     static void addPhaseGroupMaxOnlyExtractors(
         DataSource& dataSource,
-        const PhaseData OneSecondSummaryData::* sourceGroup,
-        const GenericPhaseData<MaxTracker<T>> DemandData::* demandGroup);
+        SourceGroupPtr sourceGroup,
+        DemandGroupPtr demandGroup);
 
     // LL 그룹에 대한 Extractor 3종을 생성하는 헬퍼
-    template <typename T>
+    template <typename SourceGroupPtr, typename DemandGroupPtr, typename ValueExtractor>
     static void addLinetoLineGroupExtractors(
         DataSource& dataSource,
-        const LineToLineData OneSecondSummaryData::* sourceGroup,
-        const GenericLinetoLineData<MinMaxTracker<T>> DemandData::* demandGroup);
+        SourceGroupPtr sourceGroup,
+        DemandGroupPtr demandGroup,
+        ValueExtractor extractor);
+    template <typename SourceGroupPtr, typename DemandGroupPtr>
+    static void addLinetoLineGroupExtractors(
+        DataSource& dataSource,
+        SourceGroupPtr sourceGroup,
+        DemandGroupPtr demandGroup);
+
 
     // LL 그룹 (MaxTracker)
-    template <typename T>
+    template <typename SourceGroupPtr, typename DemandGroupPtr>
     static void addLinetoLineGroupMaxOnlyExtractors(
         DataSource& dataSource,
-        const LineToLineData OneSecondSummaryData::* sourceGroup,
-        const GenericLinetoLineData<MaxTracker<T>> DemandData::* demandGroup);
+        SourceGroupPtr sourceGroup,
+        DemandGroupPtr demandGroup);
 
     // Average 항목에 대한 Extractor 3종 생성 헬퍼
     template <typename T>
@@ -84,6 +97,11 @@ private:
         DataSource& ds,
         std::function<T(const OneSecondSummaryData&)> avgCalculator,
         const MinMaxTracker<T> DemandData::* demandMember);
+
+    // Symmetrical Components 항목에 대한 Extractor 생성 헬퍼
+    template <typename SourceGroupPtr, typename DemandGroupPtr>
+    static void addSymmetricalGroupExtractors(
+        DataSource& ds, SourceGroupPtr sourceGroup, DemandGroupPtr demandGroup, bool hasZero);
 
 };
 

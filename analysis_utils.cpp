@@ -543,8 +543,10 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     auto currentData = lastCycleData.fundamentalCurrent;
 
     summary.voltageSymmetricalComponents = calculateSymmetricalComponents(LN_voltageData.a, LN_voltageData.b, LN_voltageData.c);
-    summary.voltageSymmetricalComponents_ll = calculateSymmetricalComponents(LL_voltageData.ab, LL_voltageData.bc, LL_voltageData.ca);
     summary.currentSymmetricalComponents = calculateSymmetricalComponents(currentData.a, currentData.b, currentData.c);
+    auto sym_ll_temp = calculateSymmetricalComponents(LL_voltageData.ab, LL_voltageData.bc, LL_voltageData.ca);
+    summary.voltageSymmetricalComponents_ll.positive = sym_ll_temp.positive;
+    summary.voltageSymmetricalComponents_ll.negative = sym_ll_temp.negative;
 
     auto calculateSymUnbalance = [](const SymmetricalComponents& sym, double& u0, double& u2) {
         if(sym.positive.magnitude > 1e-9) {

@@ -64,20 +64,25 @@ struct SymmetricalComponent {
     double phase_deg = 0.0;
 };
 
-// 3상 대칭 성분(Zero, Positive, Negative)
-struct SymmetricalComponents {
-    SymmetricalComponent zero;
-    SymmetricalComponent positive;
-    SymmetricalComponent negative;
-};
-// 선간용 대칭 성분(Positive, Negative)
-struct SymmetricalComponents_ll {
-    SymmetricalComponent positive;
-    SymmetricalComponent negative;
-};
+struct SymmetricalComponents : public GenericPhaseSymmetricalComponents<SymmetricalComponent> {};
+struct SymmetricalComponents_ll  : public GenericLinetoLineSymmetricalComponents<SymmetricalComponent> {};
+
+// // 3상 대칭 성분(Zero, Positive, Negative)
+// struct SymmetricalComponents {
+//     SymmetricalComponent zero;
+//     SymmetricalComponent positive;
+//     SymmetricalComponent negative;
+// };
+// // 선간용 대칭 성분(Positive, Negative)
+// struct SymmetricalComponents_ll {
+//     SymmetricalComponent positive;
+//     SymmetricalComponent negative;
+// };
+
 
 // 1초 단위로 가공된 분석 데이터를 담는 구조체
 struct OneSecondSummaryData {
+
     PhaseData totalVoltageRms;
     PhaseData totalCurrentRms;
     PhaseData activePower;
@@ -112,7 +117,7 @@ struct OneSecondSummaryData {
 
     SymmetricalComponents voltageSymmetricalComponents;
     SymmetricalComponents currentSymmetricalComponents;
-    SymmetricalComponents voltageSymmetricalComponents_ll;
+    SymmetricalComponents_ll voltageSymmetricalComponents_ll;
 
     double residualVoltageRms = 0.0; // 1초 평균 잔류 전압
     double residualCurrentRms = 0.0; // 1초 평균 잔류 전류
