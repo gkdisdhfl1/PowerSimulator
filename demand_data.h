@@ -55,16 +55,6 @@ struct DemandData
     GenericPhaseSymmetricalComponents<MaxTracker<double>> currentSymmetricalComponents;
     GenericLinetoLineSymmetricalComponents<MaxTracker<double>> voltageSymmetricalComponents_ll;
 
-    // MaxTracker<double> voltageSymmetricalPositive; // V1
-    // MaxTracker<double> voltageSymmetricalNegative; // V2
-    // MaxTracker<double> voltageSymmetricalZero; // V0
-    // MaxTracker<double> currentSymmetricalPositive; // I1
-    // MaxTracker<double> currentSymmetricalNegative; // I2
-    // MaxTracker<double> currentSymmetricalZero; // I0
-
-    // MaxTracker<double> voltageSymmetricalPositive_ll; // V1_ll
-    // MaxTracker<double> voltageSymmetricalNegative_ll; // V2_ll
-
     // 불평형률
     MaxTracker<double> nemaVoltageUnbalance_ll;
     MaxTracker<double> nemaVoltageUnbalance;

@@ -87,7 +87,7 @@ public:
         case 1: return phaseData.b;
         case 2: return phaseData.c;
         default:
-            throw std::out_of_range("InValid phase index");
+            throw std::out_of_range("Invalid phase index");
         }
     }
     template<typename T>
@@ -99,7 +99,7 @@ public:
         case 1: return phaseData.b;
         case 2: return phaseData.c;
         default:
-            throw std::out_of_range("InValid phase index");
+            throw std::out_of_range("Invalid phase index");
         }
     }
 
