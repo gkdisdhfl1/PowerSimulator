@@ -109,8 +109,11 @@ public:
     static ScaleUnit updateAxis(QValueAxis* axis, QLabel* label, int scaleIndex, bool isVoltage);
 
 private:
+    // 실수 FFT용 캐시 (짝수 N용)
     static std::map<int, kiss_fftr_cfg> m_fftConfigCache;
 
+    // 복소수 FFT용 캐시 (홀수 N용)
+    static std::map<int, kiss_fft_cfg> m_complexFFTConfigCache;
 
 };
 
