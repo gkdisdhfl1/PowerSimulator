@@ -183,8 +183,9 @@ namespace {
     }
 }
 
-std::map<int, kiss_fftr_cfg> AnalysisUtils::m_fftConfigCache;
-std::map<int, kiss_fft_cfg> AnalysisUtils::m_complexFFTConfigCache;
+std::mutex AnalysisUtils::m_cacheMutex;
+std::map<int, AnalysisUtils::KissFftrUniquePtr> AnalysisUtils::m_fftConfigCache;
+std::map<int, AnalysisUtils::KissFftUniquePtr> AnalysisUtils::m_complexFFTConfigCache;
 
 const HarmonicAnalysisResult* AnalysisUtils::getHarmonicComponent(const std::vector<HarmonicAnalysisResult>& harmonics, int order)
 {
@@ -254,11 +255,21 @@ std::expected<AnalysisUtils::Spectrum, AnalysisUtils::SpectrumError> AnalysisUti
 
     if(N % 2 == 0) {
         // 짝수
-        kiss_fftr_cfg& fft_cfg = m_fftConfigCache[N];
-        if(!fft_cfg) {
-            fft_cfg = kiss_fftr_alloc(N, 0, nullptr, nullptr);
+        kiss_fftr_cfg fft_cfg = nullptr;
+
+        {
+            // 락 범위 시작
+            std::lock_guard<std::mutex> lock(m_cacheMutex);
+            auto& fft_ptr = m_fftConfigCache[N]; // unique_ptr&
+
+            if(!fft_ptr) {
+                fft_ptr.reset(kiss_fftr_alloc(N, 0, nullptr, nullptr));
+            }
+            if(!fft_ptr) return std::unexpected(SpectrumError::AllocationFailed);
+
+            fft_cfg = fft_ptr.get();
         }
-        if(!fft_cfg) return std::unexpected(SpectrumError::AllocationFailed);
+        // 락 해제됨
 
         std::vector<kiss_fft_cpx> fft_out(num_freq_bins);
         kiss_fftr(fft_cfg, fft_in.data(), fft_out.data());
@@ -275,11 +286,19 @@ std::expected<AnalysisUtils::Spectrum, AnalysisUtils::SpectrumError> AnalysisUti
         }
     } else {
         // 홀수
-        kiss_fft_cfg& fft_cfg = m_complexFFTConfigCache[N];
-        if(!fft_cfg) {
-            fft_cfg = kiss_fft_alloc(N, 0, nullptr, nullptr);
+        kiss_fft_cfg fft_cfg = nullptr;
+
+        {
+            std::lock_guard<std::mutex> lock(m_cacheMutex);
+            auto& fft_ptr = m_complexFFTConfigCache[N];
+
+            if(!fft_ptr) {
+                fft_ptr.reset(kiss_fft_alloc(N, 0, nullptr, nullptr));
+            }
+            if(!fft_ptr) return std::unexpected(SpectrumError::AllocationFailed);
+
+            fft_cfg = fft_ptr.get();
         }
-        if(!fft_cfg) return std::unexpected(SpectrumError::AllocationFailed);
 
         // 실수 -> 복소수 변환
         std::vector<kiss_fft_cpx> complex_in(N);

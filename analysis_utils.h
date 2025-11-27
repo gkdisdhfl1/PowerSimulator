@@ -14,9 +14,22 @@
 class QValueAxis;
 class QLabel;
 
+struct KissFftDeleter {
+    void operator()(kiss_fft_cfg cfg) const {
+        if(cfg) kiss_fft_free(cfg);
+    }
+};
+struct KissFftrDeleter {
+    void operator()(kiss_fftr_cfg cfg) const {
+        if(cfg) kiss_fftr_free(cfg);
+    }
+};
+
 class AnalysisUtils {
 public:
     using Spectrum = std::vector<std::complex<double>>;
+    using KissFftUniquePtr = std::unique_ptr<std::remove_pointer_t<kiss_fft_cfg>, KissFftDeleter>;
+    using KissFftrUniquePtr = std::unique_ptr<std::remove_pointer_t<kiss_fftr_cfg>, KissFftrDeleter>;
 
     enum class SpectrumError {
         InvalidInput,       // N=0 or N = odd
@@ -111,11 +124,13 @@ public:
     static ScaleUnit updateAxis(QValueAxis* axis, QLabel* label, int scaleIndex, bool isVoltage);
 
 private:
+    static std::mutex m_cacheMutex;
+
     // 실수 FFT용 캐시 (짝수 N용)
-    static std::map<int, kiss_fftr_cfg> m_fftConfigCache;
+    static std::map<int, KissFftrUniquePtr> m_fftConfigCache;
 
     // 복소수 FFT용 캐시 (홀수 N용)
-    static std::map<int, kiss_fft_cfg> m_complexFFTConfigCache;
+    static std::map<int, KissFftUniquePtr> m_complexFFTConfigCache;
 
 };
 
