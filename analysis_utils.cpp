@@ -253,10 +253,10 @@ std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> A
 
     if(N % 2 == 0) {
         // 짝수
-        if(m_fftConfigCache.find(N) == m_fftConfigCache.end()) {
+        kiss_fftr_cfg& fft_cfg = m_fftConfigCache[N];
+        if(!fft_cfg) {
             m_fftConfigCache[N] = kiss_fftr_alloc(N, 0, nullptr, nullptr);
         }
-        kiss_fftr_cfg fft_cfg = m_fftConfigCache[N];
         if(!fft_cfg) return std::unexpected(SpectrumError::AllocationFailed);
 
         std::vector<kiss_fft_cpx> fft_out(num_freq_bins);
@@ -270,10 +270,10 @@ std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> A
         }
     } else {
         // 홀수
-        if(m_complexFFTConfigCache.find(N) == m_complexFFTConfigCache.end()) {
+        kiss_fft_cfg& fft_cfg = m_complexFFTConfigCache[N];
+        if(!fft_cfg) {
             m_complexFFTConfigCache[N] = kiss_fft_alloc(N, 0, nullptr, nullptr);
         }
-        kiss_fft_cfg fft_cfg = m_complexFFTConfigCache[N];
         if(!fft_cfg) return std::unexpected(SpectrumError::AllocationFailed);
 
         // 실수 -> 복소수 변환
@@ -286,10 +286,11 @@ std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> A
 
         kiss_fft(fft_cfg, complex_in.data(), complex_out.data());
 
-        const double normFactor = 1.0 / N;
-        spectrum[0] = {complex_out[0].r * normFactor, 0.0};
+        // 정규화
+        const double normFactor = std::sqrt(2.0) / N;
+        spectrum[0] = {complex_out[0].r / static_cast<double>(N), 0.0};
         for(int k = 1; k < num_freq_bins; ++k) {
-            spectrum[k] = {2.0 * normFactor * complex_out[k].r, 2.0* normFactor * complex_out[k].i};
+            spectrum[k] = {normFactor * complex_out[k].r, normFactor * complex_out[k].i};
         }
     }
 
