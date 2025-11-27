@@ -551,12 +551,8 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     summary.lastCycleVoltageHarmonics = lastCycleData.voltageHarmonics;
     summary.lastCycleCurrentHarmonics = lastCycleData.currentHarmonics;
 
-    summary.lastCycleFullVoltageHarmonics[0] = lastCycleData.fullVoltageHarmonics;
-    summary.lastCycleFullVoltageHarmonics[1] = lastCycleData.fullVoltageHarmonicsB;
-    summary.lastCycleFullVoltageHarmonics[2] = lastCycleData.fullVoltageHarmonicsC;
-    summary.lastCycleFullCurrentHarmonics[0] = lastCycleData.fullCurrentHarmonics;
-    summary.lastCycleFullCurrentHarmonics[1] = lastCycleData.fullCurrentHarmonicsB;
-    summary.lastCycleFullCurrentHarmonics[2] = lastCycleData.fullCurrentHarmonicsC;
+    summary.lastCycleFullVoltageHarmonics = lastCycleData.fullVoltageHarmonics;
+    summary.lastCycleFullCurrentHarmonics = lastCycleData.fullCurrentHarmonics;
 
     return summary;
 }
@@ -615,6 +611,7 @@ SymmetricalComponents AnalysisUtils::calculateSymmetricalComponents(const Harmon
     result.negative.phase_deg = utils::radiansToDegrees(std::arg(V_negative));
     return result;
 }
+
 
 ScaleUnit AnalysisUtils::updateScaleUnit(double range)
 {

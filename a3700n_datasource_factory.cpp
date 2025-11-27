@@ -295,7 +295,7 @@ DataSource DataSourceFactory::createCurrentFundamentalSource()
 {
     DataSource ds;
     ds.name = "";
-    ds.rowLabels = {"AB", "BC", "CA", "Average"};
+    ds.rowLabels = {"A", "B", "C", "Average"};
 
     auto extractRms = [](const HarmonicAnalysisResult &h) { return h.rms; };
 

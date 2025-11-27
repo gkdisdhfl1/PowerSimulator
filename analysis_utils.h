@@ -78,6 +78,27 @@ public:
 
     static SymmetricalComponents calculateSymmetricalComponents(const HarmonicAnalysisResult& p1, const HarmonicAnalysisResult& p2, const HarmonicAnalysisResult& p3);
 
+    template<typename T>
+    static T& getPhaseComponent(int index, GenericPhaseData<T>& phaseData)
+    {
+        switch(index)
+        {
+        case 0: return phaseData.a;
+        case 1: return phaseData.b;
+        }
+        return phaseData.c;
+    }
+    template<typename T>
+    static const T& getPhaseComponent(int index, const GenericPhaseData<T>& phaseData)
+    {
+        switch(index)
+        {
+        case 0: return phaseData.a;
+        case 1: return phaseData.b;
+        }
+        return phaseData.c;
+    }
+
     // 스케일링 유틸리티 함수
     static ScaleUnit updateScaleUnit(double range);
     static double scaleValue(double value, ScaleUnit unit);

@@ -34,23 +34,14 @@ struct MeasuredData {
     GenericLinetoLineData<HarmonicAnalysisResult> dominantVoltage_ll;
 
     // 전압의 주파수 성분 분석 결과 (harmonics[0]: 기본파)
-    std::vector<HarmonicAnalysisResult> voltageHarmonics;
-    std::vector<HarmonicAnalysisResult> voltageHarmonicsB;
-    std::vector<HarmonicAnalysisResult> voltageHarmonicsC;
+    GenericPhaseData<std::vector<HarmonicAnalysisResult>> voltageHarmonics;
 
-    // 전압의 주파수 성분 분석 결과 (harmonics[0]: 기본파)
-    std::vector<HarmonicAnalysisResult> currentHarmonics;
-    std::vector<HarmonicAnalysisResult> currentHarmonicsB;
-    std::vector<HarmonicAnalysisResult> currentHarmonicsC;
+    // 전류의 주파수 성분 분석 결과 (harmonics[0]: 기본파)
+    GenericPhaseData<std::vector<HarmonicAnalysisResult>> currentHarmonics;
 
     // 전체 고조파 (DC 포함)
-    std::vector<HarmonicAnalysisResult> fullVoltageHarmonics;
-    std::vector<HarmonicAnalysisResult> fullVoltageHarmonicsB;
-    std::vector<HarmonicAnalysisResult> fullVoltageHarmonicsC;
-
-    std::vector<HarmonicAnalysisResult> fullCurrentHarmonics;
-    std::vector<HarmonicAnalysisResult> fullCurrentHarmonicsB;
-    std::vector<HarmonicAnalysisResult> fullCurrentHarmonicsC;
+    GenericPhaseData<std::vector<HarmonicAnalysisResult>> fullVoltageHarmonics;
+    GenericPhaseData<std::vector<HarmonicAnalysisResult>> fullCurrentHarmonics;
 
     // 잔류 RMS 멤버
     double residualVoltageRms = 0.0;
@@ -121,11 +112,11 @@ struct OneSecondSummaryData {
     double currentU2Unbalance = 0.0;
 
     // 마지막 사이클의 전체 고조파 정보
-    std::vector<HarmonicAnalysisResult> lastCycleVoltageHarmonics;
-    std::vector<HarmonicAnalysisResult> lastCycleCurrentHarmonics;
+    GenericPhaseData<std::vector<HarmonicAnalysisResult>> lastCycleVoltageHarmonics;
+    GenericPhaseData<std::vector<HarmonicAnalysisResult>> lastCycleCurrentHarmonics;
 
-    std::array<std::vector<HarmonicAnalysisResult>,3> lastCycleFullVoltageHarmonics;
-    std::array<std::vector<HarmonicAnalysisResult>, 3> lastCycleFullCurrentHarmonics;
+    GenericPhaseData<std::vector<HarmonicAnalysisResult>> lastCycleFullVoltageHarmonics;
+    GenericPhaseData<std::vector<HarmonicAnalysisResult>> lastCycleFullCurrentHarmonics;
 
     // Waveform Page를 위한 데이터
     std::vector<DataPoint> lastTwoCycleData;

@@ -327,27 +327,6 @@ void SimulationEngine::calculateCycleData()
     MeasuredData newData;
     newData.timestamp = m_simulationTimeNs;
 
-    // MeasuredData의 낱개 vector<HarmonicAnalysisResult> 필드를 업데이트하는 헬퍼 람다
-    auto updateHarmonicsField = [&](
-                                    int phaseIndex,
-                                    std::vector<HarmonicAnalysisResult>& fieldA,
-                                    std::vector<HarmonicAnalysisResult>& fieldB,
-                                    std::vector<HarmonicAnalysisResult>& fieldC,
-                                    const std::vector<HarmonicAnalysisResult>& sourceHarmonics)
-    {
-        switch (phaseIndex) {
-        case 0: fieldA = sourceHarmonics; break;
-        case 1: fieldB = sourceHarmonics; break;
-        case 2: fieldC = sourceHarmonics; break;
-        }
-    };
-    // GenericPhaseData 멤버에 대한 참조 헬퍼
-    auto getPhaseRef = [&](int index, auto& phaseData) -> auto& {
-        if(index == 0) return phaseData.a;
-        if(index == 1) return phaseData.b;
-        return phaseData.c;
-    };
-
     // 1. for 루프를 사용하여 3상에 대한 스펙트럼과 고조파 분석 수행
     for(int i{0}; i < 3; ++i) {
         // --- 전압 분석 ---
@@ -355,17 +334,17 @@ void SimulationEngine::calculateCycleData()
         if(voltageSpectrumResult) {
             // 전체 스펙트럼 변환 및 저장
             auto fullHarmonics = AnalysisUtils::convertSpectrumToHarmonics(*voltageSpectrumResult);
-            updateHarmonicsField(i,newData.fullVoltageHarmonics, newData.fullVoltageHarmonicsB, newData.fullVoltageHarmonicsC, fullHarmonics);
+            AnalysisUtils::getPhaseComponent(i, newData.fullVoltageHarmonics) = fullHarmonics;
 
             // 특정 고조파 변호나 및 저장
             auto harmonics = AnalysisUtils::findSignificantHarmonics(*voltageSpectrumResult);
-            updateHarmonicsField(i, newData.voltageHarmonics, newData.voltageHarmonicsB, newData.voltageHarmonicsC, harmonics);
+            AnalysisUtils::getPhaseComponent(i, newData.voltageHarmonics) = harmonics;
 
             if(const auto* fund = AnalysisUtils::getHarmonicComponent(harmonics, 1)) {
-                getPhaseRef(i, newData.fundamentalVoltage) = *fund;
+                AnalysisUtils::getPhaseComponent(i, newData.fundamentalVoltage) = *fund;
             }
             if(const auto* dom = AnalysisUtils::getDominantHarmonic(harmonics)) {
-                getPhaseRef(i, newData.dominantVoltage) = *dom;
+                AnalysisUtils::getPhaseComponent(i, newData.dominantVoltage) = *dom;
             }
         } else {
             qWarning() << "Voltage Spectrum Analyze Failed !!!";
@@ -376,16 +355,16 @@ void SimulationEngine::calculateCycleData()
         if(currentSpectrumResult) {
             // 전체 스펙트럼 변환 및 저장
             auto fullHarmonics = AnalysisUtils::convertSpectrumToHarmonics(*currentSpectrumResult);
-            updateHarmonicsField(i, newData.fullCurrentHarmonics, newData.fullCurrentHarmonicsB, newData.fullCurrentHarmonicsC, fullHarmonics);
+            AnalysisUtils::getPhaseComponent(i, newData.fullCurrentHarmonics) = fullHarmonics;
 
             auto harmonics = AnalysisUtils::findSignificantHarmonics(*currentSpectrumResult);
-            updateHarmonicsField(i, newData.currentHarmonics, newData.currentHarmonicsB, newData.currentHarmonicsC, harmonics);
+            AnalysisUtils::getPhaseComponent(i, newData.currentHarmonics) = harmonics;
 
             if(const auto* fund = AnalysisUtils::getHarmonicComponent(harmonics, 1)) {
-                getPhaseRef(i, newData.fundamentalCurrent) = *fund;
+                AnalysisUtils::getPhaseComponent(i, newData.fundamentalCurrent) = *fund;
             }
             if(const auto* dom = AnalysisUtils::getDominantHarmonic(harmonics)) {
-                getPhaseRef(i, newData.dominantCurrent) = *dom;
+                AnalysisUtils::getPhaseComponent(i, newData.dominantCurrent) = *dom;
             }
         } else {
             qWarning() << "Current Spectrum Analyze Failed !!!";
@@ -424,8 +403,8 @@ void SimulationEngine::calculateCycleData()
     emit measuredDataUpdated(m_measuredData);
     emit phasorUpdated(newData.fundamentalVoltage,
                        newData.fundamentalCurrent,
-                       newData.voltageHarmonics,
-                       newData.currentHarmonics);
+                       newData.voltageHarmonics.a,
+                       newData.currentHarmonics.a);
 
     // 7. 버퍼 비우기
     m_cycleSampleBuffer.clear();

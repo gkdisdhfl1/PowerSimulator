@@ -119,7 +119,7 @@ AnalysisPhasorPage::AnalysisPhasorPage(QWidget *parent)
 void AnalysisPhasorPage::updateSummaryData(const OneSecondSummaryData& data)
 {
     // PhasorView 업데이트
-    m_phasorView->updateData(data.fundamentalVoltage, data.fundamentalCurrent, data.lastCycleVoltageHarmonics, data.lastCycleCurrentHarmonics);
+    m_phasorView->updateData(data.fundamentalVoltage, data.fundamentalCurrent, data.lastCycleVoltageHarmonics.a, data.lastCycleCurrentHarmonics.a);
 
     auto updateTable = [](auto& table, const auto& phaseData) {
         auto updatePhase = [&](int index, const auto& data) {
