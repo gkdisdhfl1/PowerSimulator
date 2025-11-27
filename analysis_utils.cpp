@@ -525,9 +525,9 @@ OneSecondSummaryData AnalysisUtils::buildOneSecondSummary(const std::vector<Meas
     summary.nemaCurrentUnbalance = calculateNemaUnbalance(summary.totalCurrentRms);
 
     // 6. 대칭 성분 및 불평형률 (U0, U2)
-    auto LN_voltageData = lastCycleData.fundamentalVoltage;
-    auto LL_voltageData = lastCycleData.fundamentalVoltage_ll;
-    auto currentData = lastCycleData.fundamentalCurrent;
+    const auto& LN_voltageData = lastCycleData.fundamentalVoltage;
+    const auto& LL_voltageData = lastCycleData.fundamentalVoltage_ll;
+    const auto& currentData = lastCycleData.fundamentalCurrent;
 
     summary.voltageSymmetricalComponents = calculateSymmetricalComponents(LN_voltageData.a, LN_voltageData.b, LN_voltageData.c);
     summary.currentSymmetricalComponents = calculateSymmetricalComponents(currentData.a, currentData.b, currentData.c);

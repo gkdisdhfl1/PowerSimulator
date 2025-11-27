@@ -85,8 +85,10 @@ public:
         {
         case 0: return phaseData.a;
         case 1: return phaseData.b;
+        case 2: return phaseData.c;
+        default:
+            throw std::out_of_range("InValid phase index");
         }
-        return phaseData.c;
     }
     template<typename T>
     static const T& getPhaseComponent(int index, const GenericPhaseData<T>& phaseData)
@@ -95,8 +97,10 @@ public:
         {
         case 0: return phaseData.a;
         case 1: return phaseData.b;
+        case 2: return phaseData.c;
+        default:
+            throw std::out_of_range("InValid phase index");
         }
-        return phaseData.c;
     }
 
     // 스케일링 유틸리티 함수
