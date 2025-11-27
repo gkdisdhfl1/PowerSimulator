@@ -216,7 +216,7 @@ const HarmonicAnalysisResult* AnalysisUtils::getDominantHarmonic(const std::vect
     return dominant;
 }
 
-std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> AnalysisUtils::calculateSpectrum(const std::vector<DataPoint>& samples, DataType type, int phase, bool useWindow)
+std::expected<AnalysisUtils::Spectrum, AnalysisUtils::SpectrumError> AnalysisUtils::calculateSpectrum(const std::vector<DataPoint>& samples, DataType type, int phase, bool useWindow)
 {
     if(samples.size() == 0) {
         qWarning() << "Input Data is empty!!!";
@@ -249,13 +249,14 @@ std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> A
 
     // 2. FFT 실행
     const int num_freq_bins = N / 2 + 1;
-    std::vector<std::complex<double>> spectrum(num_freq_bins); // 최종 결과
+    const double normFactor = std::sqrt(2.0) / N;
+    Spectrum spectrum(num_freq_bins); // 최종 결과
 
     if(N % 2 == 0) {
         // 짝수
         kiss_fftr_cfg& fft_cfg = m_fftConfigCache[N];
         if(!fft_cfg) {
-            m_fftConfigCache[N] = kiss_fftr_alloc(N, 0, nullptr, nullptr);
+            fft_cfg = kiss_fftr_alloc(N, 0, nullptr, nullptr);
         }
         if(!fft_cfg) return std::unexpected(SpectrumError::AllocationFailed);
 
@@ -263,16 +264,20 @@ std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> A
         kiss_fftr(fft_cfg, fft_in.data(), fft_out.data());
 
         // 정규화
-        const double normFactor = std::sqrt(2.0) / N;
         spectrum[0] = {fft_out[0].r / static_cast<double>(N), 0.0}; // DC는 sqrt(2)로 나누지 않음
         for(int k = 1; k < num_freq_bins; ++k) {
-            spectrum[k] = {normFactor * fft_out[k].r, normFactor * fft_out[k].i};
+            // 짝수 N일 때 Nyquist 주파수 성분은 DC와 동일하게 1/N 스케일링 적용
+            if(k == num_freq_bins - 1) {
+                spectrum[k] = {fft_out[k].r / static_cast<double>(N), 0.0};
+            } else {
+                spectrum[k] = {normFactor * fft_out[k].r, normFactor * fft_out[k].i};
+            }
         }
     } else {
         // 홀수
         kiss_fft_cfg& fft_cfg = m_complexFFTConfigCache[N];
         if(!fft_cfg) {
-            m_complexFFTConfigCache[N] = kiss_fft_alloc(N, 0, nullptr, nullptr);
+            fft_cfg = kiss_fft_alloc(N, 0, nullptr, nullptr);
         }
         if(!fft_cfg) return std::unexpected(SpectrumError::AllocationFailed);
 
@@ -287,7 +292,6 @@ std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> A
         kiss_fft(fft_cfg, complex_in.data(), complex_out.data());
 
         // 정규화
-        const double normFactor = std::sqrt(2.0) / N;
         spectrum[0] = {complex_out[0].r / static_cast<double>(N), 0.0};
         for(int k = 1; k < num_freq_bins; ++k) {
             spectrum[k] = {normFactor * complex_out[k].r, normFactor * complex_out[k].i};
@@ -346,7 +350,7 @@ std::expected<std::vector<double>, AnalysisUtils::WaveGenerateError> AnalysisUti
     return clean_wave;
 }
 
-std::vector<HarmonicAnalysisResult> AnalysisUtils::findSignificantHarmonics(const std::vector<std::complex<double>>& spectrum) {
+std::vector<HarmonicAnalysisResult> AnalysisUtils::findSignificantHarmonics(const Spectrum& spectrum) {
     std::vector<HarmonicAnalysisResult> results;
     if(spectrum.size() < 2) return results;
 
@@ -393,7 +397,7 @@ std::vector<HarmonicAnalysisResult> AnalysisUtils::findSignificantHarmonics(cons
     return results;
 }
 
-std::vector<HarmonicAnalysisResult> AnalysisUtils::convertSpectrumToHarmonics(const std::vector<std::complex<double>>& spectrum)
+std::vector<HarmonicAnalysisResult> AnalysisUtils::convertSpectrumToHarmonics(const Spectrum& spectrum)
 {
     std::vector<HarmonicAnalysisResult> results;
     if(spectrum.empty()) {

@@ -16,6 +16,8 @@ class QLabel;
 
 class AnalysisUtils {
 public:
+    using Spectrum = std::vector<std::complex<double>>;
+
     enum class SpectrumError {
         InvalidInput,       // N=0 or N = odd
         AllocationFailed    // kiss_fftr_alloc 실패
@@ -57,14 +59,14 @@ public:
     // 가장 지배적인 고조파 성분을 찾고 반환 (없으면 nullptr)
     static const HarmonicAnalysisResult* getDominantHarmonic(const std::vector<HarmonicAnalysisResult>& harmonics);
 
-    static std::expected<std::vector<std::complex<double>>, SpectrumError> calculateSpectrum(const std::vector<DataPoint>& samples, DataType type, int phase, bool useWindow);
+    static std::expected<Spectrum, SpectrumError> calculateSpectrum(const std::vector<DataPoint>& samples, DataType type, int phase, bool useWindow);
 
     static std::expected<std::vector<double>, WaveGenerateError> generateFundamentalWave(const std::vector<DataPoint>& samples);
 
-    static std::vector<HarmonicAnalysisResult> findSignificantHarmonics(const std::vector<std::complex<double>>& spectrum);
+    static std::vector<HarmonicAnalysisResult> findSignificantHarmonics(const Spectrum& spectrum);
 
     // 스펙트럼을 HarmonicAnalysisResult 벡터로 변환하는 함수
-    static std::vector<HarmonicAnalysisResult> convertSpectrumToHarmonics(const std::vector<std::complex<double>>& spectrum);
+    static std::vector<HarmonicAnalysisResult> convertSpectrumToHarmonics(const Spectrum& spectrum);
 
     static PhaseData calculateActivePower(const std::vector<DataPoint>& samples);
 
