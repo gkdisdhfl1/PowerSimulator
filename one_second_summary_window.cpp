@@ -99,10 +99,10 @@ void OneSecondSummaryWindow::updateData(const OneSecondSummaryData& data)
     m_tableWidget->item(Row::TotalEnergy, Col::Voltage)->setText(QString::number(data.totalEnergyWh, 'f', 6));
 
     // 기본파 정보 표시
-    m_tableWidget->item(Row::FundamentalRms, Col::Voltage)->setText(QString::number(data.fundamentalVoltage[0].rms, 'f', 3));
-    m_tableWidget->item(Row::FundamentalRms, Col::Current)->setText(QString::number(data.fundamentalCurrent[0].rms, 'f', 3));
-    m_tableWidget->item(Row::FundamentalPhase, Col::Voltage)->setText(QString::number(utils::radiansToDegrees(data.fundamentalVoltage[0].phase), 'f', 2));
-    m_tableWidget->item(Row::FundamentalPhase, Col::Current)->setText(QString::number(utils::radiansToDegrees(data.fundamentalCurrent[0].phase), 'f', 2));
+    m_tableWidget->item(Row::FundamentalRms, Col::Voltage)->setText(QString::number(data.fundamentalVoltage.a.rms, 'f', 3));
+    m_tableWidget->item(Row::FundamentalRms, Col::Current)->setText(QString::number(data.fundamentalCurrent.a.rms, 'f', 3));
+    m_tableWidget->item(Row::FundamentalPhase, Col::Voltage)->setText(QString::number(utils::radiansToDegrees(data.fundamentalVoltage.a.phase), 'f', 2));
+    m_tableWidget->item(Row::FundamentalPhase, Col::Current)->setText(QString::number(utils::radiansToDegrees(data.fundamentalCurrent.a.phase), 'f', 2));
 
     // 고조파 정보 표시
     m_tableWidget->item(Row::DominantOrder, Col::Voltage)->setText(QString::number(data.dominantHarmonicVoltageOrder));

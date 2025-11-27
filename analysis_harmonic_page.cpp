@@ -86,7 +86,7 @@ HarmonicDataSources AnalysisHarmonicPage::getCurrentDataSources(int phaseIndex) 
                                         m_lastSummaryData.lastCycleFullVoltageHarmonics :
                                         m_lastSummaryData.lastCycleFullCurrentHarmonics;
 
-    sources.harmonics = &fullHarmonics[phaseIndex];
+    sources.harmonics = &AnalysisUtils::getPhaseComponent(phaseIndex, fullHarmonics);
     sources.totalRms = isVoltage ? &m_lastSummaryData.totalVoltageRms : &m_lastSummaryData.totalCurrentRms;
     sources.fundamental = isVoltage ? &m_lastSummaryData.fundamentalVoltage : &m_lastSummaryData.fundamentalCurrent;
     sources.dataTypeIndex = m_dataTypeComboBox->currentIndex();
@@ -109,13 +109,11 @@ double AnalysisHarmonicPage::calculateRawValue(const HarmonicDataSources& source
             case 0: // voltage or current
                 return harmonic.rms;
             case 1: {// %RMS
-                double totalRms = (phaseIndex == 0) ?
-                                      sources.totalRms->a : (phaseIndex == 1) ?
-                                                          sources.totalRms->b : sources.totalRms->c;
+                const auto& totalRms = AnalysisUtils::getPhaseComponent(phaseIndex, *sources.totalRms);
                 return (totalRms > 1e-9) ? (harmonic.rms / totalRms) * 100.0 : 0.0;
             }
             case 2: {// %Fund
-                const auto& fundamental = (*sources.fundamental)[phaseIndex];
+                const auto& fundamental = AnalysisUtils::getPhaseComponent(phaseIndex, *sources.fundamental);
                 return (fundamental.rms > 1e-9) ? (harmonic.rms / fundamental.rms) * 100.0 : 0.0;
             }
         }
@@ -249,9 +247,9 @@ void AnalysisHarmonicPage::updateInfoLabels()
     m_thdValueLabels[1]->setText(QString::number(thdData->a, 'f', 1));
     m_thdValueLabels[2]->setText(QString::number(thdData->a, 'f', 1));
 
-    m_fundValueLabels[0]->setText(formatValue((*fundData)[0].rms));
-    m_fundValueLabels[1]->setText(formatValue((*fundData)[1].rms));
-    m_fundValueLabels[2]->setText(formatValue((*fundData)[2].rms));
+    m_fundValueLabels[0]->setText(formatValue((*fundData).a.rms));
+    m_fundValueLabels[1]->setText(formatValue((*fundData).b.rms));
+    m_fundValueLabels[2]->setText(formatValue((*fundData).c.rms));
 }
 
 void AnalysisHarmonicPage::setupTopBar(QVBoxLayout* mainLayout)

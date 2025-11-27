@@ -23,18 +23,39 @@ enum class UpdateMode {
 };
 
 // 3상 데이터를 담는 구조체
-struct PhaseData {
-    double a = 0.0;
-    double b = 0.0;
-    double c = 0.0;
+template <typename T>
+struct GenericPhaseData {
+    T a = T{};
+    T b = T{};
+    T c = T{};
 };
 
 // 선간 전압 데이터를 담는 구조체
-struct LineToLineData {
-    double ab = 0.0;
-    double bc = 0.0;
-    double ca = 0.0;
+template <typename T>
+struct GenericLinetoLineData {
+    T ab = T{};
+    T bc = T{};
+    T ca = T{};
 };
+
+struct PhaseData : public GenericPhaseData<double> {};
+struct LineToLineData : public GenericLinetoLineData<double>{};
+
+// 3상 대칭 성분 템플릿
+template <typename T>
+struct GenericPhaseSymmetricalComponents {
+    T zero = T{};
+    T positive = T{};
+    T negative = T{};
+};
+
+// 선간 전압 성분 템플릿
+template <typename T>
+struct GenericLinetoLineSymmetricalComponents {
+    T positive = T{};
+    T negative = T{};
+};
+
 
 inline QDebug operator<<(QDebug dbg, const HarmonicComponent& hc)
 {

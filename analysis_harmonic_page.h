@@ -34,7 +34,7 @@ public:
 struct HarmonicDataSources {
     const std::vector<HarmonicAnalysisResult>* harmonics = nullptr;
     const PhaseData* totalRms = nullptr;
-    const std::array<HarmonicAnalysisResult, 3>* fundamental = nullptr;
+    const GenericPhaseData<HarmonicAnalysisResult>* fundamental = nullptr;
     int dataTypeIndex = 0;
 };
 

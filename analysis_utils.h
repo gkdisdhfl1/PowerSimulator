@@ -76,7 +76,32 @@ public:
 
     static double calculateResidualRms(const std::vector<DataPoint>& samples, DataType type);
 
-    static SymmetricalComponents calculateSymmetricalComponents(const std::array<HarmonicAnalysisResult, 3>& fundamentals);
+    static SymmetricalComponents calculateSymmetricalComponents(const HarmonicAnalysisResult& p1, const HarmonicAnalysisResult& p2, const HarmonicAnalysisResult& p3);
+
+    template<typename T>
+    static T& getPhaseComponent(int index, GenericPhaseData<T>& phaseData)
+    {
+        switch(index)
+        {
+        case 0: return phaseData.a;
+        case 1: return phaseData.b;
+        case 2: return phaseData.c;
+        default:
+            throw std::out_of_range("Invalid phase index");
+        }
+    }
+    template<typename T>
+    static const T& getPhaseComponent(int index, const GenericPhaseData<T>& phaseData)
+    {
+        switch(index)
+        {
+        case 0: return phaseData.a;
+        case 1: return phaseData.b;
+        case 2: return phaseData.c;
+        default:
+            throw std::out_of_range("Invalid phase index");
+        }
+    }
 
     // 스케일링 유틸리티 함수
     static ScaleUnit updateScaleUnit(double range);

@@ -119,19 +119,23 @@ AnalysisPhasorPage::AnalysisPhasorPage(QWidget *parent)
 void AnalysisPhasorPage::updateSummaryData(const OneSecondSummaryData& data)
 {
     // PhasorView 업데이트
-    m_phasorView->updateData(data.fundamentalVoltage, data.fundamentalCurrent, data.lastCycleVoltageHarmonics, data.lastCycleCurrentHarmonics);
+    m_phasorView->updateData(data.fundamentalVoltage, data.fundamentalCurrent, data.lastCycleVoltageHarmonics.a, data.lastCycleCurrentHarmonics.a);
+
+    auto updateTable = [](auto& table, const auto& phaseData) {
+        auto updatePhase = [&](int index, const auto& data) {
+            table[index * 2 + 0]->setText(QString::number(data.rms, 'f', 3));
+            table[index * 2 + 1]->setText(QString::number(utils::radiansToDegrees(data.phase), 'f', 1) + "°");
+        };
+        updatePhase(0, phaseData.a);
+        updatePhase(1, phaseData.b);
+        updatePhase(2, phaseData.c);
+    };
 
     // Voltage
-    for(int i{0}; i < 3; ++i) {
-        m_voltageTable[i * 2 + 0]->setText(QString::number(data.fundamentalVoltage[i].rms, 'f', 3));
-        m_voltageTable[i * 2 + 1]->setText(QString::number(utils::radiansToDegrees(data.fundamentalVoltage[i].phase), 'f', 1) + "°");
-    }
+    updateTable(m_voltageTable, data.fundamentalVoltage);
 
     // Current
-    for(int i{0}; i < 3; ++i) {
-        m_currentTable[i * 2 + 0]->setText(QString::number(data.fundamentalCurrent[i].rms, 'f', 3));
-        m_currentTable[i * 2 + 1]->setText(QString::number(utils::radiansToDegrees(data.fundamentalCurrent[i].phase), 'f', 1) + "°");
-    }
+    updateTable(m_currentTable, data.fundamentalCurrent);
 }
 
 std::pair<std::array<QLabel*, 3>, std::array<QLabel*, 6>> AnalysisPhasorPage::createPhasorTable(QVBoxLayout* layout, const QString& title, const QStringList& labels, const QString& unit)

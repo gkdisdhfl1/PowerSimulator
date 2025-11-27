@@ -445,7 +445,7 @@ void FrequencyTracker::startVerification()
 std::expected<FrequencyTracker::PhaseInfo, FrequencyTracker::PhaseErrorType> FrequencyTracker::calculatePhaseError(const MeasuredData& latestMeasuredData)
 {
     // 기본파 전압의 위상 정보를 가져옴
-    const auto& v_fund = latestMeasuredData.fundamentalVoltage[0];
+    const auto& v_fund = latestMeasuredData.fundamentalVoltage.a;
 
     // 데이터가 없으면 넘어감
     if(v_fund.order < 1 || v_fund.rms < 1e-9) {

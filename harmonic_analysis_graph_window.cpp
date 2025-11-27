@@ -118,16 +118,16 @@ void HarmonicAnalysisGraphWindow::updateVisiblePoints(const std::deque<MeasuredD
     // LTTB 다운샘플링을 위한 데이터 추출기 정의
     std::vector<std::function<double(const MeasuredData&)>> extractors {
         [](const MeasuredData& d) {
-            const auto* v = AnalysisUtils::getDominantHarmonic(d.voltageHarmonics);
+            const auto* v = AnalysisUtils::getDominantHarmonic(d.voltageHarmonics.a);
             return v ? v->rms : 0.0;
         },
         [](const MeasuredData& d) {
-            const auto* i = AnalysisUtils::getDominantHarmonic(d.currentHarmonics);
+            const auto* i = AnalysisUtils::getDominantHarmonic(d.currentHarmonics.a);
             return i ? i->rms : 0.0;
         },
         [](const MeasuredData& d) {
-            const auto* v = AnalysisUtils::getDominantHarmonic(d.voltageHarmonics);
-            const auto* i = AnalysisUtils::getDominantHarmonic(d.currentHarmonics);
+            const auto* v = AnalysisUtils::getDominantHarmonic(d.voltageHarmonics.a);
+            const auto* i = AnalysisUtils::getDominantHarmonic(d.currentHarmonics.a);
             return AnalysisUtils::calculateActivePower(v, i);
         }
     };
@@ -143,8 +143,8 @@ void HarmonicAnalysisGraphWindow::updateVisiblePoints(const std::deque<MeasuredD
         auto sample_data = downsampleLTTB(first, last, threshold, extractors);
         for(const auto& d : sample_data) {
             const double timeSec = FpSeconds(d.timestamp).count();
-            const auto* v_harm = AnalysisUtils::getDominantHarmonic(d.voltageHarmonics);
-            const auto* i_harm = AnalysisUtils::getDominantHarmonic(d.currentHarmonics);
+            const auto* v_harm = AnalysisUtils::getDominantHarmonic(d.voltageHarmonics.a);
+            const auto* i_harm = AnalysisUtils::getDominantHarmonic(d.currentHarmonics.a);
 
             m_voltagePoints.append(QPointF(timeSec, v_harm ? v_harm->rms : 0.0));
             m_currentPoints.append(QPointF(timeSec, i_harm ? i_harm->rms : 0.0));
@@ -154,8 +154,8 @@ void HarmonicAnalysisGraphWindow::updateVisiblePoints(const std::deque<MeasuredD
         // 다운샘플링 안할 때도 동일한 로직으로 데이터 추출
         for(auto it = first; it != last; ++it) {
             const double timeSec = FpSeconds(it->timestamp).count();
-            const auto* v_harm = AnalysisUtils::getDominantHarmonic(it->voltageHarmonics);
-            const auto* i_harm = AnalysisUtils::getDominantHarmonic(it->currentHarmonics);
+            const auto* v_harm = AnalysisUtils::getDominantHarmonic(it->voltageHarmonics.a);
+            const auto* i_harm = AnalysisUtils::getDominantHarmonic(it->currentHarmonics.a);
 
             m_voltagePoints.append(QPointF(timeSec, v_harm ? v_harm->rms : 0.0));
             m_currentPoints.append(QPointF(timeSec, i_harm ? i_harm->rms : 0.0));

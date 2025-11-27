@@ -4,10 +4,10 @@
 // Private Static 헬퍼 함수들
 // ==================================
 
-template <typename SourceType, typename DemandType>
+template <typename SourceGroupMemberPtr, typename DemandGroupMemberPtr>
 void DataSourceFactory::addExtractors(DataSource& dataSource,
-                                  SourceType OneSecondSummaryData::* source,
-                                  MinMaxTracker<DemandType> DemandData::* demand)
+                                  SourceGroupMemberPtr source,
+                                  DemandGroupMemberPtr demand)
 {
     // 기본 Extractor
     dataSource.extractors.push_back([source](const OneSecondSummaryData& s) { return s.*source; });
@@ -19,46 +19,55 @@ void DataSourceFactory::addExtractors(DataSource& dataSource,
     dataSource.minExtractors.push_back([demand](const DemandData& d) { return (d.*demand).min; });
 }
 
-template <typename SourceType, typename DemandType>
+template <typename SourcePtr, typename DemandPtr>
 void DataSourceFactory::addMaxOnlyExtractors(DataSource& dataSource,
-                                      SourceType OneSecondSummaryData::* source,
-                                      MinMaxTracker<DemandType> DemandData::* demand)
+                                      SourcePtr source,
+                                      DemandPtr demand)
 {
     // 기본 Extractor
     dataSource.extractors.push_back([source](const OneSecondSummaryData& s) { return s.*source; });
 
     // Max Extractor
-    dataSource.maxExtractors.push_back([demand](const DemandData& d) { return (d.*demand).max; });
+    dataSource.maxExtractors.push_back([demand](const DemandData& d) { return (d.*demand); });
 
 }
 
-template <typename T>
+template <typename SourceGroupPtr, typename DemandGroupPtr, typename ValueExtractor>
 void DataSourceFactory::addPhaseGroupExtractors(
     DataSource& dataSource,
-    const PhaseData OneSecondSummaryData::* sourceGroup,
-    const GenericPhaseData<MinMaxTracker<T>> DemandData::* demandGroup)
+    SourceGroupPtr sourceGroup,
+    DemandGroupPtr demandGroup,
+    ValueExtractor extractor)
 {
     // A
-    dataSource.extractors.push_back([sourceGroup](const OneSecondSummaryData& s) { return (s.*sourceGroup).a; });
+    dataSource.extractors.push_back([sourceGroup, extractor](const OneSecondSummaryData& s) { return extractor((s.*sourceGroup).a); });
     dataSource.maxExtractors.push_back([demandGroup](const DemandData& d) { return (d.*demandGroup).a.max; });
     dataSource.minExtractors.push_back([demandGroup](const DemandData& d) { return (d.*demandGroup).a.min; });
 
     // B
-    dataSource.extractors.push_back([sourceGroup](const OneSecondSummaryData& s) { return (s.*sourceGroup).b; });
+    dataSource.extractors.push_back([sourceGroup, extractor](const OneSecondSummaryData& s) { return extractor((s.*sourceGroup).b); });
     dataSource.maxExtractors.push_back([demandGroup](const DemandData& d) { return (d.*demandGroup).b.max; });
     dataSource.minExtractors.push_back([demandGroup](const DemandData& d) { return (d.*demandGroup).b.min; });
 
     // C
-    dataSource.extractors.push_back([sourceGroup](const OneSecondSummaryData& s) { return (s.*sourceGroup).c; });
+    dataSource.extractors.push_back([sourceGroup, extractor](const OneSecondSummaryData& s) { return extractor((s.*sourceGroup).c); });
     dataSource.maxExtractors.push_back([demandGroup](const DemandData& d) { return (d.*demandGroup).c.max; });
     dataSource.minExtractors.push_back([demandGroup](const DemandData& d) { return (d.*demandGroup).c.min; });
 }
+template <typename SourceGroupPtr, typename DemandGroupPtr>
+void DataSourceFactory::addPhaseGroupExtractors(
+    DataSource& dataSource,
+    SourceGroupPtr sourceGroup,
+    DemandGroupPtr demandGroup)
+{
+    addPhaseGroupExtractors(dataSource, sourceGroup, demandGroup, [](const auto& v){ return v; });
+}
 
-template <typename T>
+template <typename SourceGroupPtr, typename DemandGroupPtr>
 void DataSourceFactory::addPhaseGroupMaxOnlyExtractors(
     DataSource& dataSource,
-    const PhaseData OneSecondSummaryData::* sourceGroup,
-    const GenericPhaseData<MaxTracker<T>> DemandData::* demandGroup)
+    SourceGroupPtr sourceGroup,
+    DemandGroupPtr demandGroup)
 {
     dataSource.extractors.push_back([sourceGroup](const OneSecondSummaryData& s) { return (s.*sourceGroup).a; });
     dataSource.maxExtractors.push_back([demandGroup](const DemandData& d) { return (d.*demandGroup).a; });
@@ -72,30 +81,39 @@ void DataSourceFactory::addPhaseGroupMaxOnlyExtractors(
     dataSource.maxExtractors.push_back([demandGroup](const DemandData& d) { return (d.*demandGroup).c; });
 }
 
-template <typename T>
+template <typename SourceGroupPtr, typename DemandGroupPtr, typename ValueExtractor>
 void DataSourceFactory::addLinetoLineGroupExtractors(
     DataSource& dataSource,
-    const LineToLineData OneSecondSummaryData::* sourceGroup,
-    const GenericLinetoLineData<MinMaxTracker<T>> DemandData::* demandGroup)
+    SourceGroupPtr sourceGroup,
+    DemandGroupPtr demandGroup,
+    ValueExtractor extractor)
 {
-    dataSource.extractors.push_back([sourceGroup](const OneSecondSummaryData& s) { return (s.*sourceGroup).ab;});
+    dataSource.extractors.push_back([sourceGroup, extractor](const OneSecondSummaryData& s) { return extractor((s.*sourceGroup).ab);});
     dataSource.maxExtractors.push_back([demandGroup](const DemandData& d) { return (d.*demandGroup).ab.max; });
     dataSource.minExtractors.push_back([demandGroup](const DemandData& d) { return (d.*demandGroup).ab.min; });
 
-    dataSource.extractors.push_back([sourceGroup](const OneSecondSummaryData& s) { return (s.*sourceGroup).bc;});
+    dataSource.extractors.push_back([sourceGroup, extractor](const OneSecondSummaryData& s) { return extractor((s.*sourceGroup).bc);});
     dataSource.maxExtractors.push_back([demandGroup](const DemandData& d) { return (d.*demandGroup).bc.max; });
     dataSource.minExtractors.push_back([demandGroup](const DemandData& d) { return (d.*demandGroup).bc.min; });
 
-    dataSource.extractors.push_back([sourceGroup](const OneSecondSummaryData& s) { return (s.*sourceGroup).ca;});
+    dataSource.extractors.push_back([sourceGroup, extractor](const OneSecondSummaryData& s) { return extractor((s.*sourceGroup).ca);});
     dataSource.maxExtractors.push_back([demandGroup](const DemandData& d) { return (d.*demandGroup).ca.max; });
     dataSource.minExtractors.push_back([demandGroup](const DemandData& d) { return (d.*demandGroup).ca.min; });
 }
+template <typename SourceGroupPtr, typename DemandGroupPtr>
+void DataSourceFactory::addLinetoLineGroupExtractors(
+    DataSource& dataSource,
+    SourceGroupPtr sourceGroup,
+    DemandGroupPtr demandGroup)
+{
+    addLinetoLineGroupExtractors(dataSource, sourceGroup, demandGroup, [](const auto& v){ return v; });
+}
 
-template <typename T>
+template <typename SourceGroupPtr, typename DemandGroupPtr>
 void DataSourceFactory::addLinetoLineGroupMaxOnlyExtractors(
     DataSource& dataSource,
-    const LineToLineData OneSecondSummaryData::* sourceGroup,
-    const GenericLinetoLineData<MaxTracker<T>> DemandData::* demandGroup)
+    SourceGroupPtr sourceGroup,
+    DemandGroupPtr demandGroup)
 {
     dataSource.extractors.push_back([sourceGroup](const OneSecondSummaryData& s) { return (s.*sourceGroup).ab;});
     dataSource.maxExtractors.push_back([demandGroup](const DemandData& d) { return (d.*demandGroup).ab; });
@@ -116,6 +134,29 @@ void DataSourceFactory::addAverageExtractors(
     ds.extractors.push_back(avgCalculator);
     ds.maxExtractors.push_back([demandMember](const DemandData& d) { return (d.*demandMember).max; });
     ds.minExtractors.push_back([demandMember](const DemandData& d) { return (d.*demandMember).min; });
+}
+
+template <typename SourceGroupPtr, typename DemandGroupPtr>
+void DataSourceFactory::addSymmetricalGroupExtractors_ll(
+    DataSource& ds, SourceGroupPtr sourceGroup, DemandGroupPtr demandGroup)
+{
+    // Positive
+    ds.extractors.push_back([=](const auto& s) { return (s.*sourceGroup).positive.magnitude; });
+    ds.maxExtractors.push_back([=](const auto& d) { return (d.*demandGroup).positive; });
+
+    // Negative
+    ds.extractors.push_back([=](const auto& s) { return (s.*sourceGroup).negative.magnitude; });
+    ds.maxExtractors.push_back([=](const auto& d) { return (d.*demandGroup).negative; });
+}
+template <typename SourceGroupPtr, typename DemandGroupPtr>
+void DataSourceFactory::addSymmetricalGroupExtractors(
+    DataSource& ds, SourceGroupPtr sourceGroup, DemandGroupPtr demandGroup)
+{
+    addSymmetricalGroupExtractors_ll(ds, sourceGroup, demandGroup);
+
+    // Zero
+    ds.extractors.push_back([=](const auto& s) { return (s.*sourceGroup).zero.magnitude; });
+    ds.maxExtractors.push_back([=](const auto& d) { return (d.*demandGroup).zero; });
 }
 
 // ==================================
@@ -161,25 +202,14 @@ DataSource DataSourceFactory::createVoltageFundamentalLLSource()
     llSource.name = "L-L";
     llSource.rowLabels = {"AB", "BC", "CA", "Average"};
 
-    // --- 기본 Extractor ---
-    llSource.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalVoltage_ll[0].rms; });
-    llSource.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalVoltage_ll[1].rms; });
-    llSource.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalVoltage_ll[2].rms; });
-    llSource.extractors.push_back([](const OneSecondSummaryData& s) {
-        return (s.fundamentalVoltage_ll[0].rms + s.fundamentalVoltage_ll[1].rms + s.fundamentalVoltage_ll[2].rms) / 3.0;
-    });
+    auto extractRms = [](const HarmonicAnalysisResult &h) { return h.rms; };
 
-    // --- Max Extractor ---
-    llSource.maxExtractors.push_back([](const DemandData& d) { return d.fundamentalVoltageRMS_ll.ab.max; });
-    llSource.maxExtractors.push_back([](const DemandData& d) { return d.fundamentalVoltageRMS_ll.bc.max; });
-    llSource.maxExtractors.push_back([](const DemandData& d) { return d.fundamentalVoltageRMS_ll.ca.max; });
-    llSource.maxExtractors.push_back([](const DemandData& d) { return d.averageFundamentalVoltageRms_ll.max; });
-
-    // --- Mix Extractor ---
-    llSource.minExtractors.push_back([](const DemandData& d) { return d.fundamentalVoltageRMS_ll.ab.min; });
-    llSource.minExtractors.push_back([](const DemandData& d) { return d.fundamentalVoltageRMS_ll.bc.min; });
-    llSource.minExtractors.push_back([](const DemandData& d) { return d.fundamentalVoltageRMS_ll.ca.min; });
-    llSource.minExtractors.push_back([](const DemandData& d) { return d.averageFundamentalVoltageRms_ll.min; });
+    addLinetoLineGroupExtractors(llSource, &OneSecondSummaryData::fundamentalVoltage_ll, &DemandData::fundamentalVoltageRMS_ll, extractRms);
+    addAverageExtractors<double>(
+        llSource,
+        [](const OneSecondSummaryData& s) { return (s.fundamentalVoltage_ll.ab.rms + s.fundamentalVoltage_ll.bc.rms + s.fundamentalVoltage_ll.ca.rms) / 3.0; },
+        &DemandData::averageFundamentalVoltageRms_ll
+    );
 
     return llSource;
 }
@@ -190,25 +220,14 @@ DataSource DataSourceFactory::createVoltageFundamentalLNSource()
     lnSource.name = "L-N";
     lnSource.rowLabels = {"A", "B", "C", "Average"};
 
-    // --- 기본 Extractor ---
-    lnSource.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalVoltage[0].rms; });
-    lnSource.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalVoltage[1].rms; });
-    lnSource.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalVoltage[2].rms; });
-    lnSource.extractors.push_back([](const OneSecondSummaryData& s) {
-        return (s.fundamentalVoltage[0].rms + s.fundamentalVoltage[1].rms + s.fundamentalVoltage[2].rms) / 3.0;
-    });
+    auto extractRms = [](const HarmonicAnalysisResult &h) { return h.rms; };
 
-    // --- Max Extractor ---
-    lnSource.maxExtractors.push_back([](const DemandData& d) { return d.fundamentalVoltageRMS.a.max; });
-    lnSource.maxExtractors.push_back([](const DemandData& d) { return d.fundamentalVoltageRMS.b.max; });
-    lnSource.maxExtractors.push_back([](const DemandData& d) { return d.fundamentalVoltageRMS.c.max; });
-    lnSource.maxExtractors.push_back([](const DemandData& d) { return d.averageFundamentalVoltageRms.max; });
-
-    // --- Mix Extractor ---
-    lnSource.minExtractors.push_back([](const DemandData& d) { return d.fundamentalVoltageRMS.a.min; });
-    lnSource.minExtractors.push_back([](const DemandData& d) { return d.fundamentalVoltageRMS.b.min; });
-    lnSource.minExtractors.push_back([](const DemandData& d) { return d.fundamentalVoltageRMS.c.min; });
-    lnSource.minExtractors.push_back([](const DemandData& d) { return d.averageFundamentalVoltageRms.min; });
+    addPhaseGroupExtractors(lnSource, &OneSecondSummaryData::fundamentalVoltage, &DemandData::fundamentalVoltageRMS, extractRms);
+    addAverageExtractors<double>(
+        lnSource,
+        [](const OneSecondSummaryData& s) { return (s.fundamentalVoltage.a.rms + s.fundamentalVoltage.b.rms + s.fundamentalVoltage.c.rms) / 3.0; },
+        &DemandData::averageFundamentalVoltageRms
+    );
 
     return lnSource;
 }
@@ -276,27 +295,16 @@ DataSource DataSourceFactory::createCurrentFundamentalSource()
 {
     DataSource ds;
     ds.name = "";
-    ds.rowLabels = {"AB", "BC", "CA", "Average"};
+    ds.rowLabels = {"A", "B", "C", "Average"};
 
-    // --- 기본 Extractor ---
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalCurrent[0].rms; });
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalCurrent[1].rms; });
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.fundamentalCurrent[2].rms; });
-    ds.extractors.push_back([](const OneSecondSummaryData& s) {
-        return (s.fundamentalCurrent[0].rms + s.fundamentalCurrent[1].rms + s.fundamentalCurrent[2].rms) / 3.0;
-    });
+    auto extractRms = [](const HarmonicAnalysisResult &h) { return h.rms; };
 
-    // --- Max Extractor ---
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.fundamentalCurrentRMS.a.max; });
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.fundamentalCurrentRMS.b.max; });
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.fundamentalCurrentRMS.c.max; });
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.averageFundamentalCurrentRms.max; });
-
-    // --- Mix Extractor ---
-    ds.minExtractors.push_back([](const DemandData& d) { return d.fundamentalCurrentRMS.a.min; });
-    ds.minExtractors.push_back([](const DemandData& d) { return d.fundamentalCurrentRMS.b.min; });
-    ds.minExtractors.push_back([](const DemandData& d) { return d.fundamentalCurrentRMS.c.min; });
-    ds.minExtractors.push_back([](const DemandData& d) { return d.averageFundamentalCurrentRms.min; });
+    addPhaseGroupExtractors(ds, &OneSecondSummaryData::fundamentalCurrent, &DemandData::fundamentalCurrentRMS, extractRms);
+    addAverageExtractors<double>(
+        ds,
+        [](const OneSecondSummaryData& s) { return (s.fundamentalCurrent.a.rms + s.fundamentalCurrent.b.rms + s.fundamentalCurrent.c.rms) / 3.0; },
+        &DemandData::averageFundamentalCurrentRms
+        );
 
     return ds;
 }
@@ -389,13 +397,9 @@ DataSource DataSourceFactory::createVoltageSymmetricalLLSource()
     ds.name = "L-L";
     ds.rowLabels = {"Positive-\nSequence", "Negative-\nSequence"};
 
-    // Default Extractor
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.voltageSymmetricalComponents_ll.positive.magnitude; });
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.voltageSymmetricalComponents_ll.negative.magnitude; });
-
-    // Max Extractor
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.voltageSymmetricalPositive_ll; });
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.voltageSymmetricalNegative_ll; });
+    addSymmetricalGroupExtractors_ll(ds,
+                                  &OneSecondSummaryData::voltageSymmetricalComponents_ll,
+                                  &DemandData::voltageSymmetricalComponents_ll);
 
     return ds;
 }
@@ -406,15 +410,9 @@ DataSource DataSourceFactory::createVoltageSymmetricalLNSource()
     ds.name = "L-N";
     ds.rowLabels = {"Positive-\nSequence", "Negative-\nSequence", "Zero-\nSequence"};
 
-    // Default Extractor
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.voltageSymmetricalComponents.positive.magnitude; });
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.voltageSymmetricalComponents.negative.magnitude; });
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.voltageSymmetricalComponents.zero.magnitude; });
-
-    // Max Extractor
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.voltageSymmetricalPositive; });
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.voltageSymmetricalNegative; });
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.voltageSymmetricalZero; });
+    addSymmetricalGroupExtractors(ds,
+                                  &OneSecondSummaryData::voltageSymmetricalComponents,
+                                  &DemandData::voltageSymmetricalComponents);
 
     return ds;
 }
@@ -425,17 +423,10 @@ DataSource DataSourceFactory::createVoltageUnbalanceSource()
     ds.name = "";
     ds.rowLabels = {"NEMA", "NEMA", "Negative-\nSequence", "Zero-\nSequence"};
 
-    // Default Extractor
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.nemaVoltageUnbalance_ll; });
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.nemaVoltageUnbalance; });
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.voltageU2Unbalance; });
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.voltageU0Unbalance; });
-
-    // Max Extractor
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.nemaVoltageUnbalance_ll; });
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.nemaVoltageUnbalance; });
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.voltageU2Unbalance; });
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.voltageU0Unbalance; });
+    addMaxOnlyExtractors(ds, &OneSecondSummaryData::nemaVoltageUnbalance_ll, &DemandData::nemaVoltageUnbalance_ll);
+    addMaxOnlyExtractors(ds, &OneSecondSummaryData::nemaVoltageUnbalance, &DemandData::nemaVoltageUnbalance);
+    addMaxOnlyExtractors(ds, &OneSecondSummaryData::voltageU2Unbalance, &DemandData::voltageU2Unbalance);
+    addMaxOnlyExtractors(ds, &OneSecondSummaryData::voltageU0Unbalance, &DemandData::voltageU0Unbalance);
 
     return ds;
 }
@@ -447,15 +438,9 @@ DataSource DataSourceFactory::createCurrentSymmetricalSource()
     ds.name = "";
     ds.rowLabels = {"Positive-\nSequence", "Negative-\nSequence", "Zero-\nSequence"};
 
-    // Default Extractor
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.currentSymmetricalComponents.positive.magnitude; });
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.currentSymmetricalComponents.negative.magnitude; });
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.currentSymmetricalComponents.zero.magnitude; });
-
-    // Max Extractor
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.currentSymmetricalPositive; });
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.currentSymmetricalNegative; });
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.currentSymmetricalZero; });
+    addSymmetricalGroupExtractors(ds,
+                                  &OneSecondSummaryData::currentSymmetricalComponents,
+                                  &DemandData::currentSymmetricalComponents);
 
     return ds;
 }
@@ -466,14 +451,9 @@ DataSource DataSourceFactory::createCurrentUnbalanceSource()
     ds.name = "";
     ds.rowLabels = {"NEMA", "Negative-\nSequence", "Zero-\nSequence"};
 
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.nemaCurrentUnbalance; });
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.currentU2Unbalance; });
-    ds.extractors.push_back([](const OneSecondSummaryData& s) { return s.currentU0Unbalance; });
-
-    // Max Extractor
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.nemaCurrentUnbalance; });
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.currentU2Unbalance; });
-    ds.maxExtractors.push_back([](const DemandData& d) { return d.currentU0Unbalance; });
+    addMaxOnlyExtractors(ds, &OneSecondSummaryData::nemaCurrentUnbalance, &DemandData::nemaCurrentUnbalance);
+    addMaxOnlyExtractors(ds, &OneSecondSummaryData::currentU2Unbalance, &DemandData::currentU2Unbalance);
+    addMaxOnlyExtractors(ds, &OneSecondSummaryData::currentU0Unbalance, &DemandData::currentU0Unbalance);
 
     return ds;
 }
