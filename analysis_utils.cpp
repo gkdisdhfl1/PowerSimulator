@@ -219,57 +219,54 @@ const HarmonicAnalysisResult* AnalysisUtils::getDominantHarmonic(const std::vect
 
 std::expected<AnalysisUtils::Spectrum, AnalysisUtils::SpectrumError> AnalysisUtils::calculateSpectrum(const std::vector<DataPoint>& samples, DataType type, int phase, bool useWindow)
 {
+    // 유효성 검사
     if(samples.size() == 0) {
         qWarning() << "Input Data is empty!!!";
         return std::unexpected(SpectrumError::InvalidInput);
     }
-
-    size_t N = samples.size();
-
-    // 1. 입력 데이터 준비 (Hann 윈도우 적용 포함)
-    std::vector<kiss_fft_scalar> fft_in(N);
-
-    auto get_value = [&](const DataPoint& p) {
-        if(type == DataType::Voltage) {
-            return AnalysisUtils::getPhaseComponent(phase, p.voltage);
-        } else { // Current
-            return AnalysisUtils::getPhaseComponent(phase, p.current);
-        }
-    };
-
-    if(useWindow) {
-        const double two_pi_over_N_minus_1 = config::Math::TwoPi / (N - 1);
-        for(int i = 0; i < N; ++i) {
-            fft_in[i] = get_value(samples[i]) * 0.5 * (1.0 - std::cos(i * two_pi_over_N_minus_1));
-        }
-    } else {
-        for(int i = 0; i < N; ++i) {
-            fft_in[i] = get_value(samples[i]);
-        }
+    if(phase < 0 || phase > 2) {
+        qWarning() << "Invalid phase index:" << phase;
+        return std::unexpected(SpectrumError::InvalidInput);
     }
 
-    // 2. FFT 실행
+    size_t N = samples.size();
     const int num_freq_bins = N / 2 + 1;
+
+    // 입력 데이터 준비 (Hann 윈도우 적용 포함)
+    std::vector<kiss_fft_scalar> fft_in(N);
+    const double window_factor_base = (useWindow && N > 1) ? (config::Math::TwoPi / (N - 1)) : 0.0;
+
+    for(size_t i = 0; i < N; ++i) {
+        // 타입에 따른 값 추출
+        double value = (type == DataType::Voltage)
+            ? AnalysisUtils::getPhaseComponent(phase, samples[i].voltage)
+            : AnalysisUtils::getPhaseComponent(phase, samples[i].current);
+
+        // Window 적용
+        if(useWindow && N > 1) {
+            value *= 0.5 * (1.0 - std::cos(i * window_factor_base));
+        }
+        fft_in[i] = value;
+    }
+
+    // FFT 실행
+    auto getConfig = [&](auto& cache, auto alloc_func) {
+        // 락 범위 시작
+        std::lock_guard<std::mutex> lock(m_cacheMutex);
+        auto& fft_ptr = cache[N];
+        if(!fft_ptr) {
+            fft_ptr.reset(alloc_func(N, 0, nullptr, nullptr));
+        }
+        return fft_ptr.get();
+    };
+
     const double normFactor = std::sqrt(2.0) / N;
     Spectrum spectrum(num_freq_bins); // 최종 결과
 
+    // 짝수
     if(N % 2 == 0) {
-        // 짝수
-        kiss_fftr_cfg fft_cfg = nullptr;
-
-        {
-            // 락 범위 시작
-            std::lock_guard<std::mutex> lock(m_cacheMutex);
-            auto& fft_ptr = m_fftConfigCache[N]; // unique_ptr&
-
-            if(!fft_ptr) {
-                fft_ptr.reset(kiss_fftr_alloc(N, 0, nullptr, nullptr));
-            }
-            if(!fft_ptr) return std::unexpected(SpectrumError::AllocationFailed);
-
-            fft_cfg = fft_ptr.get();
-        }
-        // 락 해제됨
+        kiss_fftr_cfg fft_cfg = getConfig(m_fftConfigCache, kiss_fftr_alloc);
+        if(!fft_cfg) return std::unexpected(SpectrumError::AllocationFailed);
 
         std::vector<kiss_fft_cpx> fft_out(num_freq_bins);
         kiss_fftr(fft_cfg, fft_in.data(), fft_out.data());
@@ -286,19 +283,8 @@ std::expected<AnalysisUtils::Spectrum, AnalysisUtils::SpectrumError> AnalysisUti
         }
     } else {
         // 홀수
-        kiss_fft_cfg fft_cfg = nullptr;
-
-        {
-            std::lock_guard<std::mutex> lock(m_cacheMutex);
-            auto& fft_ptr = m_complexFFTConfigCache[N];
-
-            if(!fft_ptr) {
-                fft_ptr.reset(kiss_fft_alloc(N, 0, nullptr, nullptr));
-            }
-            if(!fft_ptr) return std::unexpected(SpectrumError::AllocationFailed);
-
-            fft_cfg = fft_ptr.get();
-        }
+        kiss_fft_cfg fft_cfg = getConfig(m_complexFFTConfigCache, kiss_fft_alloc);
+        if(!fft_cfg) return std::unexpected(SpectrumError::AllocationFailed);
 
         // 실수 -> 복소수 변환
         std::vector<kiss_fft_cpx> complex_in(N);

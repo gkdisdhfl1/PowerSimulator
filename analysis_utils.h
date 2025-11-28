@@ -32,7 +32,7 @@ public:
     using KissFftrUniquePtr = std::unique_ptr<std::remove_pointer_t<kiss_fftr_cfg>, KissFftrDeleter>;
 
     enum class SpectrumError {
-        InvalidInput,       // N=0 or N = odd
+        InvalidInput,       // N=0
         AllocationFailed    // kiss_fftr_alloc 실패
     };
     enum class WaveGenerateError {
@@ -45,7 +45,7 @@ public:
     inline static QString toQString(SpectrumError error) {
         switch (error) {
         case SpectrumError::InvalidInput:
-            return "Invalid Input (N = 0 or N is odd)";
+            return "Invalid Input (N = 0)";
         case SpectrumError::AllocationFailed:
             return "FFT Allocation Failed";
         default:
