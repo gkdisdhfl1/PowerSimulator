@@ -183,7 +183,9 @@ namespace {
     }
 }
 
-std::map<int, kiss_fftr_cfg> AnalysisUtils::m_fftConfigCache;
+std::mutex AnalysisUtils::m_cacheMutex;
+std::map<int, AnalysisUtils::KissFftrUniquePtr> AnalysisUtils::m_fftConfigCache;
+std::map<int, AnalysisUtils::KissFftUniquePtr> AnalysisUtils::m_complexFFTConfigCache;
 
 const HarmonicAnalysisResult* AnalysisUtils::getHarmonicComponent(const std::vector<HarmonicAnalysisResult>& harmonics, int order)
 {
@@ -215,81 +217,95 @@ const HarmonicAnalysisResult* AnalysisUtils::getDominantHarmonic(const std::vect
     return dominant;
 }
 
-std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> AnalysisUtils::calculateSpectrum(const std::vector<DataPoint>& samples, DataType type, int phase, bool useWindow)
+std::expected<AnalysisUtils::Spectrum, AnalysisUtils::SpectrumError> AnalysisUtils::calculateSpectrum(const std::vector<DataPoint>& samples, DataType type, int phase, bool useWindow)
 {
+    // 유효성 검사
     if(samples.size() == 0) {
         qWarning() << "Input Data is empty!!!";
         return std::unexpected(SpectrumError::InvalidInput);
     }
+    if(phase < 0 || phase > 2) {
+        qWarning() << "Invalid phase index:" << phase;
+        return std::unexpected(SpectrumError::InvalidInput);
+    }
 
     size_t N = samples.size();
-    bool isOdd = (N % 2 != 0);
-    if(isOdd)
-        N += 1; // 짝수로 만듬
 
-    // if(N % 2 != 0) {
-    //     // qWarning() << "Invalid Input failed for N = " << N;
-    //     return std::unexpected(SpectrumError::InvalidInput);
-    // }
-
-    // 1. FFT 설정 가져오기 (없으면 생성해서 캐시에 저장)
-    if(m_fftConfigCache.find(N) == m_fftConfigCache.end()) {
-        m_fftConfigCache[N] = kiss_fftr_alloc(N, 0, nullptr, nullptr);
-    }
-    kiss_fftr_cfg fft_cfg = m_fftConfigCache[N];
-    if(!fft_cfg) {
-        qWarning() << "kiss_fftr_alloc failed for N = " << N;
-        return std::unexpected(SpectrumError::AllocationFailed);
-    }
-
-    // 2. 입력 데이터 준비 (Hann 윈도우 적용 포함)
+    // 입력 데이터 준비 (Hann 윈도우 적용 포함)
     std::vector<kiss_fft_scalar> fft_in(N);
-    auto get_value = [&](const DataPoint& p) {
-        if(type == DataType::Voltage) {
-            if(phase == 0) return p.voltage.a;
-            if(phase == 1) return p.voltage.b;
-            return p.voltage.c;
-        } else { // Current
-            if(phase == 0) return p.current.a;
-            if(phase == 1) return p.current.b;
-            return p.current.c;
+    const double window_factor_base = (useWindow && N > 1) ? (config::Math::TwoPi / (N - 1)) : 0.0;
+
+    for(size_t i = 0; i < N; ++i) {
+        // 타입에 따른 값 추출
+        double value = (type == DataType::Voltage)
+            ? AnalysisUtils::getPhaseComponent(phase, samples[i].voltage)
+            : AnalysisUtils::getPhaseComponent(phase, samples[i].current);
+
+        // Window 적용
+        if(useWindow && N > 1) {
+            value *= 0.5 * (1.0 - std::cos(i * window_factor_base));
         }
+        fft_in[i] = value;
+    }
+
+    // FFT 실행
+    auto getConfig = [&](auto& cache, auto alloc_func) {
+        // 락 범위 시작
+        std::lock_guard<std::mutex> lock(m_cacheMutex);
+        auto& fft_ptr = cache[N];
+        if(!fft_ptr) {
+            fft_ptr.reset(alloc_func(N, 0, nullptr, nullptr));
+        }
+        return fft_ptr.get();
     };
 
-    if(useWindow) {
-        const double two_pi_over_N_minus_1 = config::Math::TwoPi / (N - 1);
-        for(int i = 0; i < N; ++i) {
-            fft_in[i] = get_value(samples[i]) * 0.5 * (1.0 - std::cos(i * two_pi_over_N_minus_1));
+    const size_t num_freq_bins = N / 2 + 1;
+    const double oneOverN = 1.0 / static_cast<double>(N);
+    const double normFactor = std::sqrt(2.0) / static_cast<double>(N);
+
+    Spectrum spectrum(num_freq_bins); // 최종 결과
+
+    // 짝수
+    if(N % 2 == 0) {
+        kiss_fftr_cfg fft_cfg = getConfig(m_fftConfigCache, kiss_fftr_alloc);
+        if(!fft_cfg) return std::unexpected(SpectrumError::AllocationFailed);
+
+        std::vector<kiss_fft_cpx> fft_out(num_freq_bins);
+        kiss_fftr(fft_cfg, fft_in.data(), fft_out.data());
+
+        // 정규화
+        spectrum[0] = {fft_out[0].r * oneOverN, 0.0}; // DC는 sqrt(2)로 나누지 않음
+        for(int k = 1; k < num_freq_bins; ++k) {
+            // 짝수 N일 때 Nyquist 주파수 성분은 DC와 동일하게 1/N 스케일링 적용
+            if(k == num_freq_bins - 1) {
+                spectrum[k] = {fft_out[k].r * oneOverN, 0.0};
+            } else {
+                spectrum[k] = {normFactor * fft_out[k].r, normFactor * fft_out[k].i};
+            }
         }
     } else {
-        for(int i = 0; i < N; ++i) {
-            fft_in[i] = get_value(samples[i]);
+        // 홀수
+        kiss_fft_cfg fft_cfg = getConfig(m_complexFFTConfigCache, kiss_fft_alloc);
+        if(!fft_cfg) return std::unexpected(SpectrumError::AllocationFailed);
+
+        // 실수 -> 복소수 변환
+        std::vector<kiss_fft_cpx> complex_in(N);
+        std::vector<kiss_fft_cpx> complex_out(N);
+        for(size_t i = 0; i < N; ++i) {
+            complex_in[i].r = fft_in[i];
+            complex_in[i].i = 0.0;
         }
-    }
 
-    // 홀수였다면 마지막에 추가된 요소를 0으로 채움
-    if(isOdd) {
-        fft_in[N - 1] = 0.0;
-    }
+        kiss_fft(fft_cfg, complex_in.data(), complex_out.data());
 
-    // 3. FFT 실행
-    const int num_freq_bins = N / 2 + 1;
-    std::vector<kiss_fft_cpx> fft_out(num_freq_bins);
-    kiss_fftr(fft_cfg, fft_in.data(), fft_out.data());
-
-    // 4. 결과 변환 및 정규화
-    std::vector<std::complex<double>> spectrum(num_freq_bins);
-    const double normFactor = std::sqrt(2.0) / N;
-
-    // DC 성분(k = 0)
-    spectrum[0] = {fft_out[0].r / static_cast<double>(N), 0.0}; // DC는 sqrt(2)로 나누지 않음
-
-    for(int k = 1; k < num_freq_bins; ++k) {
-        spectrum[k] = {normFactor * fft_out[k].r, normFactor * fft_out[k].i};
+        // 정규화
+        spectrum[0] = {complex_out[0].r * oneOverN, 0.0};
+        for(int k = 1; k < num_freq_bins; ++k) {
+            spectrum[k] = {normFactor * complex_out[k].r, normFactor * complex_out[k].i};
+        }
     }
 
     return spectrum;
-
 }
 
 std::expected<std::vector<double>, AnalysisUtils::WaveGenerateError> AnalysisUtils::generateFundamentalWave(const std::vector<DataPoint>& samples)
@@ -341,7 +357,7 @@ std::expected<std::vector<double>, AnalysisUtils::WaveGenerateError> AnalysisUti
     return clean_wave;
 }
 
-std::vector<HarmonicAnalysisResult> AnalysisUtils::findSignificantHarmonics(const std::vector<std::complex<double>>& spectrum) {
+std::vector<HarmonicAnalysisResult> AnalysisUtils::findSignificantHarmonics(const Spectrum& spectrum) {
     std::vector<HarmonicAnalysisResult> results;
     if(spectrum.size() < 2) return results;
 
@@ -388,7 +404,7 @@ std::vector<HarmonicAnalysisResult> AnalysisUtils::findSignificantHarmonics(cons
     return results;
 }
 
-std::vector<HarmonicAnalysisResult> AnalysisUtils::convertSpectrumToHarmonics(const std::vector<std::complex<double>>& spectrum)
+std::vector<HarmonicAnalysisResult> AnalysisUtils::convertSpectrumToHarmonics(const Spectrum& spectrum)
 {
     std::vector<HarmonicAnalysisResult> results;
     if(spectrum.empty()) {
