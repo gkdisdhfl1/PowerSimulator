@@ -4,6 +4,8 @@
 #include "measured_data.h"
 #include <QWidget>
 
+class QCheckBox;
+class QGridLayout;
 class OneSecondSummaryData;
 class QLabel;
 class QVBoxLayout;
@@ -27,7 +29,15 @@ private:
         std::array<QLabel*, 6> valueLabels;
         QHBoxLayout* headerLayout; // 제목 줄 레이아웃
     };
+
     TableWidgets createPhasorTable(QVBoxLayout* layout, const QString& title, const QStringList& labels, const QString& unit);
+    template <typename T>
+    void updatePhasorTable(std::array<QLabel*, 6>& table, const GenericPhaseData<T>& phaseData)    ;
+
+    void createTopBar(QVBoxLayout* mainLayout);
+    void createContentArea(QHBoxLayout* contentLayout);
+    void createTableSection(QVBoxLayout* tableLayout);
+    void setupConnections();
 
     PhasorView* m_phasorView;
     QWidget* m_voltageTableContainer;
@@ -40,6 +50,8 @@ private:
     QPushButton* m_vlnButton = nullptr;
     QPushButton* m_vllButton = nullptr;
     QButtonGroup* m_voltageModeGroup = nullptr; // 라디오 동작용
+    QCheckBox* m_voltageCheck;
+    QCheckBox* m_currentCheck;
 
 };
 
