@@ -17,8 +17,7 @@ namespace {
             .order = order,
             .rms = rms,
             .phase = std::arg(phasorRms),
-            .phasorX = phasorRms.real(),
-            .phasorY = phasorRms.imag()
+            .phasor = phasorRms
         };
     }
 
@@ -55,9 +54,9 @@ namespace {
         };
         auto sumPhasor = [&](const GenericPhaseData<HarmonicAnalysisResult>& phasePhasors) {
             std::complex<double> sum(0, 0);
-            sum += std::complex<double>(phasePhasors.a.phasorX, phasePhasors.a.phasorY);
-            sum += std::complex<double>(phasePhasors.b.phasorX, phasePhasors.b.phasorY);
-            sum += std::complex<double>(phasePhasors.c.phasorX, phasePhasors.c.phasorY);
+            sum += std::complex<double>(phasePhasors.a.phasor);
+            sum += std::complex<double>(phasePhasors.b.phasor);
+            sum += std::complex<double>(phasePhasors.c.phasor);
             return sum;
         };
 
@@ -363,8 +362,8 @@ std::vector<HarmonicAnalysisResult> AnalysisUtils::findSignificantHarmonics(cons
 
     // 1. 기본파는 항상 결과에 추가
     results.push_back(createHarmonicResult(spectrum, 1));
-    const double px = results.back().phasorX;
-    const double py = results.back().phasorY;
+    const double px = results.back().phasor.real();
+    const double py = results.back().phasor.imag();
     const double fundamentalMagSq = px * px + py + py;
 
     // 2. 평균 노이즈 레벨 계산
@@ -417,8 +416,7 @@ std::vector<HarmonicAnalysisResult> AnalysisUtils::convertSpectrumToHarmonics(co
     dc_result.order = 0;
     dc_result.rms = std::abs(spectrum[0].real());
     dc_result.phase = 0.0;
-    dc_result.phasorX = spectrum[0].real();
-    dc_result.phasorY = 0.0;
+    dc_result.phasor = {spectrum[0].real(), 0.0};
     results.push_back(dc_result);
 
     // 1차부터 나머지 고조파 성분 추가
@@ -603,9 +601,9 @@ SymmetricalComponents AnalysisUtils::calculateSymmetricalComponents(const Harmon
     SymmetricalComponents result;
 
     // 1. 3상 기본파 페이저를 복소수로 변환
-    const std::complex<double> V_a(p1.phasorX, p1.phasorY);
-    const std::complex<double> V_b(p2.phasorX, p2.phasorY);
-    const std::complex<double> V_c(p3.phasorX, p3.phasorY);
+    const std::complex<double> V_a(p1.phasor);
+    const std::complex<double> V_b(p2.phasor);
+    const std::complex<double> V_c(p3.phasor);
 
     // 2. 회전 연산자 'a' 정의(a = 120도)
     const std::complex<double> a = std::polar(1.0, utils::degreesToRadians((120.0)));
