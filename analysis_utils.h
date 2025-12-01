@@ -123,6 +123,9 @@ public:
     static double scaleValue(double value, ScaleUnit unit);
     static ScaleUnit updateAxis(QValueAxis* axis, QLabel* label, int scaleIndex, bool isVoltage);
 
+    // 소숫점 포함 4자리 출력
+    static QString formatValue(double value);
+
 private:
     static std::mutex m_cacheMutex;
 

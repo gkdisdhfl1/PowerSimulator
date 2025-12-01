@@ -681,3 +681,25 @@ ScaleUnit AnalysisUtils::updateAxis(QValueAxis* axis, QLabel* label, int scaleIn
 
     return unit;
 }
+
+QString AnalysisUtils::formatValue(double value)
+{
+    QString formattedValue;
+
+    if(value >= 100.0) {
+        formattedValue = QString::number(value, 'f', 1);
+    } else if(value >= 10.0) {
+        formattedValue = QString::number(value, 'f', 2);
+    } else if(value >= 1.0) {
+        formattedValue = QString::number(value, 'f', 3);
+    } else {
+        formattedValue = QString::number(value, 'f', 4);
+    }
+
+    // 전체 4자리 넘지 안도록 자르기
+    if(formattedValue.length() > 4 && formattedValue.contains('.')) {
+        formattedValue = formattedValue.left(5);
+    }
+
+    return formattedValue;
+}

@@ -45,7 +45,7 @@ void AnalysisPhasorPage::updateSummaryData(const OneSecondSummaryData& data)
         // L-L 데이터 매핑
         voltageData.a = data.fundamentalVoltage_ll.ab;
         voltageData.b = data.fundamentalVoltage_ll.bc;
-        voltageData.c = data.fundamentalVoltage_ll.ca;        
+        voltageData.c = data.fundamentalVoltage_ll.ca;
         voltageLabels = {"AB", "BC", "CA"};
     } else { // VLN 모드
         voltageData = data.fundamentalVoltage;
@@ -107,20 +107,28 @@ AnalysisPhasorPage::TableWidgets AnalysisPhasorPage::createPhasorTable(QVBoxLayo
         nameLabels[i] = nameLabel; // 이름 라벨 포인터 저장
 
         // Value Label
-        QLabel* valueLabel = createLabel("0.000", 70, "phasorValueLabel", Qt::AlignLeft | Qt::AlignVCenter);
+        QLabel* valueLabel = createLabel("0.000", 50, "phasorValueLabel", Qt::AlignLeft | Qt::AlignVCenter);
         valueLabels[i * 2 + 0] = valueLabel; // 값
 
         // Unit Label
         QLabel* unitLabel = createLabel(unit, 0, "phasorUnitLabel", Qt::AlignLeft | Qt::AlignVCenter);
+
+        auto valueUnitLayout = new QHBoxLayout();
+        valueUnitLayout->setContentsMargins(0,0,0,0);
+        valueUnitLayout->setSpacing(2);
+
+        valueUnitLayout->addWidget(valueLabel);
+        valueUnitLayout->addWidget(unitLabel);
+
+        valueUnitLayout->addStretch(); // 왼쪽 정렬 유지
 
         // Phase Label
         QLabel* phaseLabel = createLabel("0.0° ", 60, "phasorValueLabel", Qt::AlignRight | Qt::AlignVCenter);
         valueLabels[i * 2 + 1] = phaseLabel; // 위상
 
         // Layout 추가
-        rowLayout->addWidget(valueLabels[i * 2 + 0], 1);
-        rowLayout->addWidget(unitLabel);
-        rowLayout->addWidget(valueLabels[i * 2 + 1], 1);
+        rowLayout->addLayout(valueUnitLayout, 0);
+        rowLayout->addWidget(valueLabels[i * 2 + 1],1);
 
         layout->addLayout(rowLayout);
         layout->addSpacing(5);

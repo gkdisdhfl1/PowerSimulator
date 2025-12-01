@@ -121,28 +121,6 @@ double AnalysisHarmonicPage::calculateRawValue(const HarmonicDataSources& source
     return 0.0;
 }
 
-QString AnalysisHarmonicPage::formatValue(double value) const
-{
-    QString formattedValue;
-
-    if(value >= 100.0) {
-        formattedValue = QString::number(value, 'f', 1);
-    } else if(value >= 10.0) {
-        formattedValue = QString::number(value, 'f', 2);
-    } else if(value >= 1.0) {
-        formattedValue = QString::number(value, 'f', 3);
-    } else {
-        formattedValue = QString::number(value, 'f', 4);
-    }
-
-    // 전체 4자리 넘지 안도록 자르기
-    if(formattedValue.length() > 4 && formattedValue.contains('.')) {
-        formattedValue = formattedValue.left(5);
-    }
-
-    return formattedValue;
-}
-
 void AnalysisHarmonicPage::updateGraph()
 {
     if(!m_hasData) return;
@@ -219,7 +197,7 @@ void AnalysisHarmonicPage::updateText()
         double rawValue = calculateRawValue(sources, order, phaseIndex);
 
         // 4. rawValue를 포맷에 맞게 QString으로 변환
-        QString formattedValue = formatValue(rawValue);
+        QString formattedValue = AnalysisUtils::formatValue(rawValue);
         // 5. 테이블의 해당 셀에 값 업데이트
         int row = order % 9;
         int col = order / 9;
@@ -247,9 +225,9 @@ void AnalysisHarmonicPage::updateInfoLabels()
     m_thdValueLabels[1]->setText(QString::number(thdData->a, 'f', 1));
     m_thdValueLabels[2]->setText(QString::number(thdData->a, 'f', 1));
 
-    m_fundValueLabels[0]->setText(formatValue((*fundData).a.rms));
-    m_fundValueLabels[1]->setText(formatValue((*fundData).b.rms));
-    m_fundValueLabels[2]->setText(formatValue((*fundData).c.rms));
+    m_fundValueLabels[0]->setText(AnalysisUtils::formatValue((*fundData).a.rms));
+    m_fundValueLabels[1]->setText(AnalysisUtils::formatValue((*fundData).b.rms));
+    m_fundValueLabels[2]->setText(AnalysisUtils::formatValue((*fundData).c.rms));
 }
 
 void AnalysisHarmonicPage::setupTopBar(QVBoxLayout* mainLayout)
