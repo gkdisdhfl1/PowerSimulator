@@ -1,11 +1,12 @@
 #ifndef ANALYSIS_PHASOR_PAGE_H
 #define ANALYSIS_PHASOR_PAGE_H
 
+#include "analysis_utils.h"
 #include "measured_data.h"
 #include <QWidget>
+#include <QLabel>
 
 class QCheckBox;
-class QGridLayout;
 class OneSecondSummaryData;
 class QLabel;
 class QVBoxLayout;
@@ -30,10 +31,17 @@ private:
         QHBoxLayout* headerLayout; // 제목 줄 레이아웃
     };
 
-    TableWidgets createPhasorTable(QVBoxLayout* layout, const QString& title, const QStringList& labels, const QString& unit);
     template <typename T>
-    void updatePhasorTable(std::array<QLabel*, 6>& table, const GenericPhaseData<T>& phaseData)    ;
+    void updatePhasorTable(std::array<QLabel*, 6>& table, const GenericPhaseData<T>& phaseData)
+    {
+        for(int i{0}; i < 3; ++i) {
+            const auto& data = AnalysisUtils::getPhaseComponent(i, phaseData);
+            table[i * 2 + 0]->setText(QString::number(data.rms, 'f', 3));
+            table[i * 2 + 1]->setText(QString::number(utils::radiansToDegrees(data.phase), 'f', 1) + "°");
+        }
+    }
 
+    TableWidgets createPhasorTable(QVBoxLayout* layout, const QString& title, const QStringList& labels, const QString& unit);
     void createTopBar(QVBoxLayout* mainLayout);
     void createContentArea(QHBoxLayout* contentLayout);
     void createTableSection(QVBoxLayout* tableLayout);

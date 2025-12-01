@@ -1,6 +1,5 @@
 #include "analysis_phasor_page.h"
 
-#include "analysis_utils.h"
 #include "config.h"
 #include "phasor_view.h"
 
@@ -112,8 +111,7 @@ AnalysisPhasorPage::TableWidgets AnalysisPhasorPage::createPhasorTable(QVBoxLayo
         valueLabels[i * 2 + 0] = valueLabel; // 값
 
         // Unit Label
-        QLabel* unitLabel = new QLabel(unit, this);
-        unitLabel->setObjectName("phasorUnitLabel");
+        QLabel* unitLabel = createLabel(unit, 0, "phasorUnitLabel", Qt::AlignLeft | Qt::AlignVCenter);
 
         // Phase Label
         QLabel* phaseLabel = createLabel("0.0° ", 60, "phasorValueLabel", Qt::AlignRight | Qt::AlignVCenter);
@@ -128,16 +126,6 @@ AnalysisPhasorPage::TableWidgets AnalysisPhasorPage::createPhasorTable(QVBoxLayo
         layout->addSpacing(5);
     }
     return {nameLabels, valueLabels, headerLayout};
-}
-
-template <typename T>
-void AnalysisPhasorPage::updatePhasorTable(std::array<QLabel*, 6>& table, const GenericPhaseData<T>& phaseData)
-{
-    for(int i{0}; i < 3; ++i) {
-        const auto& data = AnalysisUtils::getPhaseComponent(i, phaseData);
-        table[i * 2 + 0]->setText(QString::number(data.rms, 'f', 3));
-        table[i * 2 + 1]->setText(QString::number(utils::radiansToDegrees(data.phase), 'f', 1) + "°");
-    }
 }
 
 void AnalysisPhasorPage::createTopBar(QVBoxLayout* mainLayout)
@@ -266,15 +254,15 @@ void AnalysisPhasorPage::setupConnections()
 
     // 체크박스와 PhasorView 가시성 연결
     connect(m_voltageCheck, &QCheckBox::toggled, this, [this](bool checked) {
-        m_phasorView->onVisibilityChanged(0, checked); // V(A)
-        m_phasorView->onVisibilityChanged(1, checked); // V(B)
-        m_phasorView->onVisibilityChanged(2, checked); // V(C)
+        for(int i{0}; i < 3; ++i) {
+            m_phasorView->onVisibilityChanged(i, checked);
+        }
         m_voltageTableContainer->setVisible(checked);
     });
     connect(m_currentCheck, &QCheckBox::toggled, this, [this](bool checked) {
-        m_phasorView->onVisibilityChanged(3, checked); // I(A)
-        m_phasorView->onVisibilityChanged(4, checked); // I(B)
-        m_phasorView->onVisibilityChanged(5, checked); // I(C)
+        for(int i{3}; i < 6; ++i) {
+            m_phasorView->onVisibilityChanged(i, checked);
+        }
         m_currentTableContainer->setVisible(checked);
     });
 }
