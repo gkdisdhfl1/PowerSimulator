@@ -89,7 +89,9 @@ QLabel#phasorUnitLabel {
 }
 
 QLabel#phasorNameLabel {
-
+    color: white;
+    padding:2px 6px;
+    font: 11px bold;
 }
 
 QLabel#waveformLabel{
@@ -255,6 +257,17 @@ QPushButton#modeButton {
 }
 QPushButton#modeButton:checked {
     background-color: #008CFF;
+}
+
+QPushButton#phasorButton {
+    border-radius: 0px;
+    padding: 2px 10px;
+    background-color: #c0c0c0; /* silver */
+    font: 11px bold;
+}
+QPushButton#phasorButton:checked {
+    background-color: #008CFF;
+    color:white;
 }
 
 /* -------------------------------------- */
