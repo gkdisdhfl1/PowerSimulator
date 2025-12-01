@@ -57,7 +57,7 @@ AnalysisPhasorPage::AnalysisPhasorPage(QWidget *parent)
 
     // GridLayout을 감쌀 컨테이너 위젯
     auto* gridContainer = new QWidget(this);
-    auto tableLayout = new QGridLayout(gridContainer);
+    auto tableLayout = new QVBoxLayout(gridContainer);
     tableLayout->setContentsMargins(0, 0, 0, 0);
     tableLayout->setSpacing(5);
 
@@ -105,7 +105,7 @@ AnalysisPhasorPage::AnalysisPhasorPage(QWidget *parent)
         updateSummaryData(m_lastSummaryData);
     });
 
-    tableLayout->addWidget(m_voltageTableContainer, 0, 0); // 0번 행
+    tableLayout->addWidget(m_voltageTableContainer);
 
     // 전류 섹션
     m_currentTableContainer = new QWidget(this);
@@ -120,16 +120,7 @@ AnalysisPhasorPage::AnalysisPhasorPage(QWidget *parent)
     auto currentData = createPhasorTable(currentSectionLayout, "Current", {"A", "B", "C"}, "A");
     m_currentNameLabels = currentData.nameLabels;
     m_currentTable = currentData.valueLabels;
-    tableLayout->addWidget(m_currentTableContainer, 2, 0); // 2번 행
-
-    // 스페이서 위젯 추가
-    auto spacerWidget = new QWidget(this);
-    tableLayout->addWidget(spacerWidget, 1, 0); // 1번 행
-
-    // 행 스트레치 비율 설정
-    tableLayout->setRowStretch(0, 0); // 전압 섹션은 늘어나지 않음
-    tableLayout->setRowStretch(1, 1); // 스페이서 위젯이 남은 모든 공간 차지
-    tableLayout->setRowStretch(2, 0); // 전류 섹션은 늘어나지 않음
+    tableLayout->addWidget(m_currentTableContainer);
 
     contentLayout->addWidget(gridContainer, 0, Qt::AlignCenter);
     mainLayout->addLayout(contentLayout, 1);
