@@ -20,11 +20,13 @@ DataRowWidget::DataRowWidget(const QString& name, const QString& unit, bool hasL
 
     m_timestampLabel = new QLabel("", this);
     m_timestampLabel->setObjectName("timestampLabel");
-    m_timestampLabel->setAlignment(Qt::AlignCenter);
+    m_timestampLabel->setAlignment(Qt::AlignCenter | Qt::AlignVCenter);
+    m_timestampLabel->setFixedWidth(140);
     m_timestampLabel->hide(); // 기본적으로 숨김
 
     m_valueLabel = new QLabel("0.000", this);
     m_valueLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_valueLabel->setFixedWidth(140);
     m_valueLabel->setObjectName("valueLabel");
 
     QLabel* unitLabel = new QLabel(unit, this);
