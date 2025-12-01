@@ -39,7 +39,7 @@ private:
     OneSecondSummaryData m_lastSummaryData; // 데이터 캐싱
     QPushButton* m_vlnButton = nullptr;
     QPushButton* m_vllButton = nullptr;
-    QButtonGroup* m_voltageModeGroup; // 라디오 동작용
+    QButtonGroup* m_voltageModeGroup = nullptr; // 라디오 동작용
 
 };
 

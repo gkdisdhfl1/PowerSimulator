@@ -101,7 +101,7 @@ AnalysisPhasorPage::AnalysisPhasorPage(QWidget *parent)
     voltageHeaderLayout->addWidget(m_vllButton);
 
     // 버튼 클릭 시 업데이트 연결
-    connect(m_voltageModeGroup, &QButtonGroup::buttonClicked, this, [this](QAbstractButton*){
+    connect(m_voltageModeGroup, &QButtonGroup::buttonClicked, this, [this] {
         updateSummaryData(m_lastSummaryData);
     });
 
@@ -155,22 +155,21 @@ void AnalysisPhasorPage::updateSummaryData(const OneSecondSummaryData& data)
     m_lastSummaryData = data;
 
     GenericPhaseData<HarmonicAnalysisResult> voltageData;
+    QStringList voltageLabels;
 
     if(m_vllButton->isChecked()) { // VLL 모드
         // L-L 데이터 매핑
         voltageData.a = data.fundamentalVoltage_ll.ab;
         voltageData.b = data.fundamentalVoltage_ll.bc;
-        voltageData.c = data.fundamentalVoltage_ll.ca;
-
-        m_voltageNameLabels[0]->setText("AB");
-        m_voltageNameLabels[1]->setText("BC");
-        m_voltageNameLabels[2]->setText("CA");
+        voltageData.c = data.fundamentalVoltage_ll.ca;        
+        voltageLabels = {"AB", "BC", "CA"};
     } else { // VLN 모드
         voltageData = data.fundamentalVoltage;
+        voltageLabels = {"A", "B", "C"};
+    }
 
-        m_voltageNameLabels[0]->setText("A");
-        m_voltageNameLabels[1]->setText("B");
-        m_voltageNameLabels[2]->setText("C");
+    for(int i{0}; i < 3; ++i) {
+        m_voltageNameLabels[i]->setText(voltageLabels[i]);
     }
 
     // PhasorView 업데이트
