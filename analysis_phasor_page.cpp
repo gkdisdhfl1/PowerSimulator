@@ -35,7 +35,8 @@ AnalysisPhasorPage::AnalysisPhasorPage(QWidget *parent)
     QFrame* titleLine = new QFrame(this);
     titleLine->setFrameShape(QFrame::HLine);
     titleLine->setObjectName("titleLine");
-    titleLine->setFixedHeight(2);
+    titleLine->setFixedHeight(1);
+    titleLine->setStyleSheet("background:#444");
     mainLayout->addWidget(titleLine);
 
     // 컨텐츠 (페이저 _ 데이터 테이블)
@@ -43,7 +44,7 @@ AnalysisPhasorPage::AnalysisPhasorPage(QWidget *parent)
 
     // PhasorView 위젯 사용
     m_phasorView = new PhasorView(this);
-    m_phasorView->setMinimumSize(180, 180);
+    m_phasorView->setMinimumSize(170, 170);
     m_phasorView->setInfoLabelVisibility(false);
 
     // 처음에 모든 페이저 표시
@@ -51,20 +52,24 @@ AnalysisPhasorPage::AnalysisPhasorPage(QWidget *parent)
         m_phasorView->onVisibilityChanged(i, true);
     }
 
-    contentLayout->addWidget(m_phasorView, 1);
+    contentLayout->addWidget(m_phasorView);
 
 
     // GridLayout을 감쌀 컨테이너 위젯
     auto* gridContainer = new QWidget(this);
     auto tableLayout = new QGridLayout(gridContainer);
     tableLayout->setContentsMargins(0, 0, 0, 0);
-    tableLayout->setSpacing(0);
+    tableLayout->setSpacing(5);
 
     // 전압 섹션
     m_voltageTableContainer = new QWidget(this);
+    QSizePolicy spV = m_voltageTableContainer->sizePolicy();
+    spV.setRetainSizeWhenHidden(true);
+    m_voltageTableContainer->setSizePolicy(spV);
+
     auto voltageSectionLayout = new QVBoxLayout(m_voltageTableContainer);
     voltageSectionLayout->setContentsMargins(0, 0, 0, 0);
-    voltageSectionLayout->setSpacing(5);
+    voltageSectionLayout->setSpacing(0);
 
     // createPhasorTable 호출 및 반환값 받기
     auto voltageData = createPhasorTable(voltageSectionLayout, "Voltage", {"A", "B", "C"}, "V");
@@ -78,11 +83,13 @@ AnalysisPhasorPage::AnalysisPhasorPage(QWidget *parent)
     m_vlnButton = new QPushButton("VLN");
     m_vlnButton->setCheckable(true);
     m_vlnButton->setChecked(true);
-    m_vlnButton->setFixedWidth(40);
+    m_vlnButton->setFixedWidth(50);
+    m_vlnButton->setObjectName("phasorButton");
 
     m_vllButton = new QPushButton("VLL");
     m_vllButton->setCheckable(true);
-    m_vllButton->setFixedWidth(40);
+    m_vllButton->setFixedWidth(50);
+    m_vllButton->setObjectName("phasorButton");
 
     m_voltageModeGroup = new QButtonGroup(this);
     m_voltageModeGroup->addButton(m_vlnButton);
@@ -90,6 +97,7 @@ AnalysisPhasorPage::AnalysisPhasorPage(QWidget *parent)
     m_voltageModeGroup->setExclusive(true);
 
     voltageHeaderLayout->addWidget(m_vlnButton);
+    voltageHeaderLayout->addSpacing(3);
     voltageHeaderLayout->addWidget(m_vllButton);
 
     // 버튼 클릭 시 업데이트 연결
@@ -101,6 +109,10 @@ AnalysisPhasorPage::AnalysisPhasorPage(QWidget *parent)
 
     // 전류 섹션
     m_currentTableContainer = new QWidget(this);
+    QSizePolicy spC = m_currentTableContainer->sizePolicy();
+    spC.setRetainSizeWhenHidden(true);
+    m_currentTableContainer->setSizePolicy(spC);
+
     auto currentSectionLayout = new QVBoxLayout(m_currentTableContainer);
     currentSectionLayout->setContentsMargins(0, 0, 0, 0);
     currentSectionLayout->setSpacing(0);
@@ -123,10 +135,12 @@ AnalysisPhasorPage::AnalysisPhasorPage(QWidget *parent)
     mainLayout->addLayout(contentLayout, 1);
 
     for(int i{0}; i < 3; ++i) {
-        QString voltageStyle = QString("background-color: %1; color: white;").arg(config::View::PhaseColors::Voltage[i].name());
+        QString voltageStyle = QString(
+                                   "background-color: %1; ").arg(config::View::PhaseColors::Voltage[i].name());
         m_voltageNameLabels[i]->setStyleSheet(voltageStyle);
 
-        QString currentStyle = QString("background-color: %1; color: white;").arg(config::View::PhaseColors::Current[i].name());
+        QString currentStyle = QString(
+                                   "background-color: %1;").arg(config::View::PhaseColors::Current[i].name());
         m_currentNameLabels[i]->setStyleSheet(currentStyle);
     }
 
@@ -191,7 +205,7 @@ void AnalysisPhasorPage::updateSummaryData(const OneSecondSummaryData& data)
 AnalysisPhasorPage::TableWidgets AnalysisPhasorPage::createPhasorTable(QVBoxLayout* layout, const QString& title, const QStringList& labels, const QString& unit)
 {
     auto headerLayout = new QHBoxLayout();
-    headerLayout->setContentsMargins(0, 0, 0, 0);
+    headerLayout->setContentsMargins(0, 0, 0, 3);
 
     // 제목
     QLabel* titleLabel = new QLabel(title, this);
@@ -212,31 +226,31 @@ AnalysisPhasorPage::TableWidgets AnalysisPhasorPage::createPhasorTable(QVBoxLayo
     for(int i{0}; i < 3; ++i) {
         auto rowLayout = new QHBoxLayout();
         rowLayout->setContentsMargins(0, 0, 0, 0);
-        rowLayout->setSpacing(0);
+        rowLayout->setSpacing(4);
 
         QLabel* nameLabel = new QLabel(labels[i]);
         nameLabel->setMinimumHeight(20);
-        nameLabel->setMinimumWidth(20);
+        nameLabel->setMinimumWidth(26);
         nameLabel->setAlignment(Qt::AlignCenter);
         nameLabel->setObjectName("phasorNameLabel");
         rowLayout->addWidget(nameLabel, 0);
         nameLabels[i] = nameLabel; // 이름 라벨 포인터 저장
 
         QLabel* valueLabel = new QLabel("0.000", this);
-        valueLabel->setFixedWidth(60);
+        valueLabel->setFixedWidth(70);
         valueLabel->setObjectName("phasorValueLabel");
 
         QLabel* unitLabel = new QLabel(unit, this);
         unitLabel->setObjectName("phasorUnitLabel");
 
         QLabel* phaseLabel = new QLabel("0.0° ", this);
-        phaseLabel->setFixedWidth(50);
+        phaseLabel->setFixedWidth(60);
         phaseLabel->setObjectName("phasorValueLabel");
 
         valueLabels[i * 2 + 0] = valueLabel; // 값
         valueLabels[i * 2 + 1] = phaseLabel; // 위상
 
-        valueLabels[i * 2 + 0]->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        valueLabels[i * 2 + 0]->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
         valueLabels[i * 2 + 1]->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
         rowLayout->addWidget(valueLabels[i * 2 + 0], 1);
