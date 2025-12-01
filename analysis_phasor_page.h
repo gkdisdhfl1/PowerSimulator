@@ -58,8 +58,8 @@ private:
     QPushButton* m_vlnButton = nullptr;
     QPushButton* m_vllButton = nullptr;
     QButtonGroup* m_voltageModeGroup = nullptr; // 라디오 동작용
-    QCheckBox* m_voltageCheck;
-    QCheckBox* m_currentCheck;
+    QCheckBox* m_voltageCheck = nullptr;
+    QCheckBox* m_currentCheck = nullptr;
 
 };
 

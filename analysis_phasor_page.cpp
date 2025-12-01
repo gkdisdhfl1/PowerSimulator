@@ -107,7 +107,7 @@ AnalysisPhasorPage::TableWidgets AnalysisPhasorPage::createPhasorTable(QVBoxLayo
         nameLabels[i] = nameLabel; // 이름 라벨 포인터 저장
 
         // Value Label
-        QLabel* valueLabel = createLabel("0.000", 70, "phasorValueLabel", Qt::AlignRight | Qt::AlignVCenter);
+        QLabel* valueLabel = createLabel("0.000", 70, "phasorValueLabel", Qt::AlignLeft | Qt::AlignVCenter);
         valueLabels[i * 2 + 0] = valueLabel; // 값
 
         // Unit Label
