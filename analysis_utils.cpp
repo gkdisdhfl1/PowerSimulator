@@ -54,9 +54,9 @@ namespace {
         };
         auto sumPhasor = [&](const GenericPhaseData<HarmonicAnalysisResult>& phasePhasors) {
             std::complex<double> sum(0, 0);
-            sum += std::complex<double>(phasePhasors.a.phasor);
-            sum += std::complex<double>(phasePhasors.b.phasor);
-            sum += std::complex<double>(phasePhasors.c.phasor);
+            sum += phasePhasors.a.phasor;
+            sum += phasePhasors.b.phasor;
+            sum += phasePhasors.c.phasor;
             return sum;
         };
 
@@ -364,7 +364,7 @@ std::vector<HarmonicAnalysisResult> AnalysisUtils::findSignificantHarmonics(cons
     results.push_back(createHarmonicResult(spectrum, 1));
     const double px = results.back().phasor.real();
     const double py = results.back().phasor.imag();
-    const double fundamentalMagSq = px * px + py + py;
+    const double fundamentalMagSq = px * px + py * py;
 
     // 2. 평균 노이즈 레벨 계산
     double noiseSumSq = 0.0;
@@ -601,9 +601,9 @@ SymmetricalComponents AnalysisUtils::calculateSymmetricalComponents(const Harmon
     SymmetricalComponents result;
 
     // 1. 3상 기본파 페이저를 복소수로 변환
-    const std::complex<double> V_a(p1.phasor);
-    const std::complex<double> V_b(p2.phasor);
-    const std::complex<double> V_c(p3.phasor);
+    const auto V_a(p1.phasor);
+    const auto V_b(p2.phasor);
+    const auto V_c(p3.phasor);
 
     // 2. 회전 연산자 'a' 정의(a = 120도)
     const std::complex<double> a = std::polar(1.0, utils::degreesToRadians((120.0)));

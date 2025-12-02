@@ -372,9 +372,9 @@ void SimulationEngine::calculateCycleData()
     }
 
     // 2. --- 선간 전압 기본파 계산 ---
-    const std::complex<double> Va_fund(newData.fundamentalVoltage.a.phasor);
-    const std::complex<double> Vb_fund(newData.fundamentalVoltage.b.phasor);
-    const std::complex<double> Vc_fund(newData.fundamentalVoltage.c.phasor);
+    const auto Va_fund{newData.fundamentalVoltage.a.phasor};
+    const auto Vb_fund{newData.fundamentalVoltage.b.phasor};
+    const auto Vc_fund{newData.fundamentalVoltage.c.phasor};
 
     const std::complex<double> Vab_fund = Va_fund - Vb_fund;
     const std::complex<double> Vbc_fund = Vb_fund - Vc_fund;
