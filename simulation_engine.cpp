@@ -380,9 +380,9 @@ void SimulationEngine::calculateCycleData()
     const std::complex<double> Vbc_fund = Vb_fund - Vc_fund;
     const std::complex<double> Vca_fund = Vc_fund - Va_fund;
 
-    newData.fundamentalVoltage_ll.ab = {1, std::abs(Vab_fund), std::arg(Vab_fund), Vab_fund};
-    newData.fundamentalVoltage_ll.bc = {1, std::abs(Vbc_fund), std::arg(Vbc_fund), Vbc_fund};
-    newData.fundamentalVoltage_ll.ca = {1, std::abs(Vca_fund), std::arg(Vca_fund), Vca_fund};
+    newData.fundamentalVoltage_ll.ab = {.order = 1, .rms = std::abs(Vab_fund), .phase = std::arg(Vab_fund), .phasor = Vab_fund};
+    newData.fundamentalVoltage_ll.bc = {.order = 1, .rms = std::abs(Vbc_fund), .phase = std::arg(Vbc_fund), .phasor = Vbc_fund};
+    newData.fundamentalVoltage_ll.ca = {.order = 1, .rms = std::abs(Vca_fund), .phase = std::arg(Vca_fund), .phasor = Vca_fund};
 
     // 3. --- 전체 cycle data 계산 ---
     newData.voltageRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Voltage);

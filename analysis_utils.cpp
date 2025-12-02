@@ -54,9 +54,7 @@ namespace {
         };
         auto sumPhasor = [&](const GenericPhaseData<HarmonicAnalysisResult>& phasePhasors) {
             std::complex<double> sum(0, 0);
-            sum += phasePhasors.a.phasor;
-            sum += phasePhasors.b.phasor;
-            sum += phasePhasors.c.phasor;
+            sum += phasePhasors.a.phasor + phasePhasors.b.phasor + phasePhasors.c.phasor;
             return sum;
         };
 
@@ -362,9 +360,7 @@ std::vector<HarmonicAnalysisResult> AnalysisUtils::findSignificantHarmonics(cons
 
     // 1. 기본파는 항상 결과에 추가
     results.push_back(createHarmonicResult(spectrum, 1));
-    const double px = results.back().phasor.real();
-    const double py = results.back().phasor.imag();
-    const double fundamentalMagSq = px * px + py * py;
+    const double fundamentalMagSq = std::norm(results.back().phasor);
 
     // 2. 평균 노이즈 레벨 계산
     double noiseSumSq = 0.0;
