@@ -372,17 +372,17 @@ void SimulationEngine::calculateCycleData()
     }
 
     // 2. --- 선간 전압 기본파 계산 ---
-    const std::complex<double> Va_fund(newData.fundamentalVoltage.a.phasorX, newData.fundamentalVoltage.a.phasorY);
-    const std::complex<double> Vb_fund(newData.fundamentalVoltage.b.phasorX, newData.fundamentalVoltage.b.phasorY);
-    const std::complex<double> Vc_fund(newData.fundamentalVoltage.c.phasorX, newData.fundamentalVoltage.c.phasorY);
+    const auto Va_fund{newData.fundamentalVoltage.a.phasor};
+    const auto Vb_fund{newData.fundamentalVoltage.b.phasor};
+    const auto Vc_fund{newData.fundamentalVoltage.c.phasor};
 
     const std::complex<double> Vab_fund = Va_fund - Vb_fund;
     const std::complex<double> Vbc_fund = Vb_fund - Vc_fund;
     const std::complex<double> Vca_fund = Vc_fund - Va_fund;
 
-    newData.fundamentalVoltage_ll.ab = {1, std::abs(Vab_fund), std::arg(Vab_fund), Vab_fund.real(), Vab_fund.imag()};
-    newData.fundamentalVoltage_ll.bc = {1, std::abs(Vbc_fund), std::arg(Vbc_fund), Vbc_fund.real(), Vbc_fund.imag()};
-    newData.fundamentalVoltage_ll.ca = {1, std::abs(Vca_fund), std::arg(Vca_fund), Vca_fund.real(), Vca_fund.imag()};
+    newData.fundamentalVoltage_ll.ab = {.order = 1, .rms = std::abs(Vab_fund), .phase = std::arg(Vab_fund), .phasor = Vab_fund};
+    newData.fundamentalVoltage_ll.bc = {.order = 1, .rms = std::abs(Vbc_fund), .phase = std::arg(Vbc_fund), .phasor = Vbc_fund};
+    newData.fundamentalVoltage_ll.ca = {.order = 1, .rms = std::abs(Vca_fund), .phase = std::arg(Vca_fund), .phasor = Vca_fund};
 
     // 3. --- 전체 cycle data 계산 ---
     newData.voltageRms = AnalysisUtils::calculateTotalRms(m_cycleSampleBuffer, AnalysisUtils::DataType::Voltage);

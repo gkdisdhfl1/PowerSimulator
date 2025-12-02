@@ -5,14 +5,14 @@
 #include "shared_data_types.h"
 #include <QMetaType>
 #include <chrono>
+#include <complex>
 
 // 단일 고조파 성분의 분석 결과를 담는 구조체
 struct HarmonicAnalysisResult {
     int order = 0;      // 차수
     double rms = 0.0;     // RMS 크기
     double phase = 0.0;   // 위상(라디안)
-    double phasorX = 0.0;  // cos 성분(실수)
-    double phasorY = 0.0;  // sin 성분(허수)
+    std::complex<double> phasor; // cos(실수) + j*sin(허수) 성분
 };
 
 // 한 사이클 동안 연산 결과를 담는 구조체

@@ -67,7 +67,7 @@ void PhasorView::updateData(const GenericPhaseData<HarmonicAnalysisResult>& fund
     // 공통 처리 로직을 람다로 정의
     auto processPhasor = [](const HarmonicAnalysisResult& src, PhasorInfo& dest) {
         if(src.order > 0) {
-            dest.components = QPointF(src.phasorX, src.phasorY);
+            dest.components = QPointF(src.phasor.real(), src.phasor.imag());
             dest.magnitude = src.rms;
             dest.phaseDegrees = utils::radiansToDegrees(src.phase);
         } else {
@@ -90,7 +90,7 @@ void PhasorView::updateData(const GenericPhaseData<HarmonicAnalysisResult>& fund
     const auto* i_harm = AnalysisUtils::getDominantHarmonic(currentHarmonics);
 
     if(v_harm) {
-        m_harmonicVoltage.components = QPointF(v_harm->phasorX, v_harm->phasorY);
+        m_harmonicVoltage.components = QPointF(v_harm->phasor.real(), v_harm->phasor.imag());
         m_harmonicVoltage.magnitude = v_harm->rms;
         m_harmonicVoltage.phaseDegrees = utils::radiansToDegrees(v_harm->phase);
     } else {
@@ -98,7 +98,7 @@ void PhasorView::updateData(const GenericPhaseData<HarmonicAnalysisResult>& fund
     }
 
     if(i_harm) {
-        m_harmonicCurrent.components = QPointF(i_harm->phasorX, i_harm->phasorY);
+        m_harmonicCurrent.components = QPointF(i_harm->phasor.real(), i_harm->phasor.imag());
         m_harmonicCurrent.magnitude = i_harm->rms;
         m_harmonicCurrent.phaseDegrees = utils::radiansToDegrees(i_harm->phase);
     } else {
