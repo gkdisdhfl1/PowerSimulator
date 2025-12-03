@@ -14,28 +14,33 @@
 
 class FrequencyTracker;
 
+// SimulationEngine 클래스
+// PowerSimulator의 핵심 로직 담당.
+// 시뮬레이션 루프 관리, 3상 전압/전류 신호 생성,
+// 실시간 분석(RMS, 전력, 고조파 등) 수행.
+// 타이머(m_captureTimer)에 의해 주기적으로 데이터 포인트 생성하고 UI 신호 보냄.
 class SimulationEngine : public QObject
 {
     Q_OBJECT
 public:
-   // 시뮬레이션 매개변수를 담는 구조체
-    Property<double> m_amplitude;
-    Property<double> m_currentAmplitude;
-    Property<double> m_frequency;
-    Property<double> m_phaseRadians;
-    Property<double> m_currentPhaseOffsetRadians;
-    Property<double> m_timeScale;
-    Property<double> m_samplingCycles;
-    Property<int> m_samplesPerCycle;
-    Property<int> m_maxDataSize;
-    Property<double> m_graphWidthSec;
-    Property<UpdateMode> m_updateMode;
+    // --- 시뮬레이션 매개변수 (Properties) ---
+    Property<double> m_amplitude;               // 기본 진폭
+    Property<double> m_currentAmplitude;        // 기본 전류 진폭
+    Property<double> m_frequency;               // 기본 주파수 (Hz)
+    Property<double> m_phaseRadians;            // 전체 위상 변화 (라디안)
+    Property<double> m_currentPhaseOffsetRadians; // 전압 대비 전류 위상 오프셋
+    Property<double> m_timeScale;               // 시간 스케일 비율
+    Property<double> m_samplingCycles;          // 샘플링할 주기 수
+    Property<int> m_samplesPerCycle;            // 주기당 샘플 수
+    Property<int> m_maxDataSize;                // 데이터 포인트 버퍼 최대 크기
+    Property<double> m_graphWidthSec;           // 그래프 가로 폭 (초 단위)
+    Property<UpdateMode> m_updateMode;          // 데이터 업데이트 모드
 
-    // 고조파 설정
-    Property<HarmonicComponent> m_voltageHarmonic;
-    Property<HarmonicComponent> m_currentHarmonic;
+    // --- 고조파 설정 ---
+    Property<HarmonicComponent> m_voltageHarmonic; // 전압 고조파 설정
+    Property<HarmonicComponent> m_currentHarmonic; // 전류 고조파 설정
 
-    // 3상 설정
+    // --- 3상 설정 ---
     // 전압
     Property<double> m_voltage_B_amplitude;
     Property<double> m_voltage_B_phase_deg;
@@ -51,33 +56,50 @@ public:
 
     explicit SimulationEngine();
 
+    // 시뮬레이션이 현재 실행 중인지 확인
     bool isRunning() const;
+
+    // 현재 데이터 버퍼의 크기 반환
     int getDataSize() const;
 
     FrequencyTracker* getFrequencyTracker() const;
 
 public slots:
+    // 시뮬레이션 루프 시작
     void start();
+
+    // 시뮬레이션 루프 정지
     void stop();
+
     void onRedrawRequest();
     void onRedrawAnalysisRequest();
-    void onMaxDataSizeChanged(int newSize); // 추후 정리
+    void onMaxDataSizeChanged(int newSize);
     void updateCaptureTimer();
     void recalculateCaptureInterval();
     void enableFrequencyTracking(bool enabled);
 
 signals:
+    // 새로운 원시 파형 데이터가 준비되었을 때 발생
     void dataUpdated(const std::deque<DataPoint>& data);
+
+    // 실행 상태가 변경되었을 때 발생 (시작/정지)
     void runningStateChanged(bool isRunning);
+
+    // 계산된 측정 데이터(RMS, 전력 등)가 업데이트되었을 때 발생
     void measuredDataUpdated(const std::deque<MeasuredData>& data);
-    // void samplingCyclesUpdated(double newFrequency); // 추후 정리
+      
+    // 1초마다 요약된 데이터가 업데이트되었을 때 발생
     void oneSecondDataUpdated(const OneSecondSummaryData& data);
+
+    // 페이저 분석 데이터가 업데이트되었을 때 발생
     void phasorUpdated(const GenericPhaseData<HarmonicAnalysisResult>& fundamentalVoltage,
                        const GenericPhaseData<HarmonicAnalysisResult>& fundamentalCurrent,
                        const std::vector<HarmonicAnalysisResult>& voltageHarmonics,
                        const std::vector<HarmonicAnalysisResult>& currentHarmonics);
 
 private slots:
+    // 메인 시뮬레이션 단계. m_captureTimer에 의해 호출됨.
+    // 새로운 데이터 포인트를 생성하고 처리.
     void captureData();
     void handleMaxDataSizeChange(int newSize);
 
@@ -94,7 +116,10 @@ private:
     PhaseData calculateCurrentVoltage() const;
     PhaseData calculateCurrentAmperage() const;
     void addNewDataPoint(PhaseData voltage, PhaseData current);
-    void calculateCycleData(); // RMS, 전력 계산 함수
+    
+    // 현재 주기에 대한 RMS, 전력 및 기타 지표를 계산
+    void calculateCycleData(); 
+    
     void processUpdateByMode(bool resetCounter);
     void processOneSecondData(const MeasuredData& latestCycleData);
 

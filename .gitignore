@@ -83,5 +83,6 @@ CMakeLists.txt.user*
 build/
 CMakeLists.txt.user
 .gemini/
+.github/
 
 test/build/
