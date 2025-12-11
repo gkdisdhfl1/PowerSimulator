@@ -485,7 +485,6 @@ void ControlPanel::setFrequency(double value)
 void ControlPanel::setCurrentPhase(int degrees)
 {
     QSignalBlocker blocker(m_currentPhaseDial);
-    qDebug() << "Setting current phase to:" << degrees;
     m_currentPhaseDial->setValue(degrees);
     updateCurrentPhaseLabel(degrees);
 }

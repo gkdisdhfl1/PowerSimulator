@@ -6,7 +6,6 @@
 #include "simulation_engine.h"
 #include "three_phase_dialog.h"
 #include <QInputDialog>
-#include <QMessageBox>
 #include <QStatusBar>
 
 namespace {
@@ -197,23 +196,21 @@ void SettingsUiController::onHarmonicsChanged()
 
 void SettingsUiController::onThreePhaseValueChanged(int type, double value)
 {
-    Property<double>* targetProperty = nullptr;
+    static const std::unordered_map<int, Property<double> SimulationEngine::*> propertyMap = {
+        {ThreePhaseDialog::VoltageBAmplitude, &SimulationEngine::m_voltage_B_amplitude},
+        {ThreePhaseDialog::VoltageBPhase, &SimulationEngine::m_voltage_B_phase_deg},
+        {ThreePhaseDialog::VoltageCAmplitude, &SimulationEngine::m_voltage_C_amplitude},
+        {ThreePhaseDialog::VoltageCPhase, &SimulationEngine::m_voltage_C_phase_deg},
+        {ThreePhaseDialog::CurrentBAmplitude, &SimulationEngine::m_current_B_amplitude},
+        {ThreePhaseDialog::CurrentBPhase, &SimulationEngine::m_current_B_phase_deg},
+        {ThreePhaseDialog::CurrentCAmplitude, &SimulationEngine::m_current_C_amplitude},
+        {ThreePhaseDialog::CurrentCPhase, &SimulationEngine::m_current_C_phase_deg}
+    };
 
-    switch(static_cast<ThreePhaseDialog::ParamType>(type))
-    {
-        case ThreePhaseDialog::VoltageBAmplitude:   targetProperty = &m_engine->m_voltage_B_amplitude; break;
-        case ThreePhaseDialog::VoltageBPhase:       targetProperty = &m_engine->m_voltage_B_phase_deg; break;
-        case ThreePhaseDialog::VoltageCAmplitude:   targetProperty = &m_engine->m_voltage_C_amplitude; break;
-        case ThreePhaseDialog::VoltageCPhase:       targetProperty = &m_engine->m_voltage_C_phase_deg; break;
-        case ThreePhaseDialog::CurrentBAmplitude:   targetProperty = &m_engine->m_current_B_amplitude; break;
-        case ThreePhaseDialog::CurrentBPhase:       targetProperty = &m_engine->m_current_B_phase_deg; break;
-        case ThreePhaseDialog::CurrentCAmplitude:   targetProperty = &m_engine->m_current_C_amplitude; break;
-        case ThreePhaseDialog::CurrentCPhase:       targetProperty = &m_engine->m_current_C_phase_deg; break;
-        default : break;
-    }
-
-    if(targetProperty && targetProperty->value() != value) {
-        targetProperty->setValue(value);
+    auto it = propertyMap.find(type);
+    if(it != propertyMap.end()) {
+        // 멤버 포인터를 통해 인스턴스의 멤버에 접근
+        (m_engine->*(it->second)).setValue(value);
     }
 }
 
@@ -226,11 +223,10 @@ void SettingsUiController::initializeSettingsMap()
     m_settingsMap["voltageAmplitude"] = {&m_engine->m_amplitude, config::Source::Amplitude::Default, "진폭 (Voltage)"};
     m_settingsMap["currentAmplitude"] = {&m_engine->m_currentAmplitude, config::Source::Current::DefaultAmplitude, "진폭 (Current)"};
     m_settingsMap["frequency"] = {&m_engine->m_frequency, config::Source::Frequency::Default, "주파수"};
-    m_settingsMap["currentPhaseOffset"] = {&m_engine->m_currentPhaseOffsetRadians, config::Source::Current::DefaultPhaseOffset, "위상차"};
+    m_settingsMap["currentPhaseOffset"] = {&m_engine->m_currentPhaseOffsetRadians, config::Source::Current::DefaultPhaseOffset, "위상차", true};
     m_settingsMap["timeScale"] = {&m_engine->m_timeScale, config::TimeScale::Default, "시간 배율"};
     m_settingsMap["samplingCycles"] = {&m_engine->m_samplingCycles, config::Sampling::DefaultSamplingCycles, "초당 cycle"};
     m_settingsMap["samplesPerCycle"] = {&m_engine->m_samplesPerCycle, config::Sampling::DefaultSamplesPerCycle, "cycle당 sample"};
-    // m_settingsMap["maxDataSize"] = {&m_engine->m_maxDataSize, config::Simulation::MaxDataSize, "데이터 최대 개수"};
     m_settingsMap["graphWidthSec"] = {&m_engine->m_graphWidthSec, config::View::GraphWidth::Default, "그래프 시간 폭"};
     m_settingsMap["updateMode"] = {&m_engine->m_updateMode, 0, "갱신 모드"};
 
@@ -254,7 +250,7 @@ void SettingsUiController::initializeSettingsMap()
     m_settingsMap["currentCPhase"] = {&m_engine->m_current_C_phase_deg, config::Source::ThreePhase::DefaultCurrentPhaseC_deg, "C상 전류 위상"};
 }
 
-void SettingsUiController::requestMaxSizeChange(int newSize)
+bool SettingsUiController::requestMaxSizeChange(int newSize)
 {
     const int currentDataSize = m_engine->getDataSize();
 
@@ -262,10 +258,11 @@ void SettingsUiController::requestMaxSizeChange(int newSize)
     if(newSize < currentDataSize) {
         bool ok = false;
         emit requestDataLossConfirmation(currentDataSize, newSize, &ok);
-        if(!ok) return;
+        if(!ok) return false; // 사용자가 취소함
     }
 
     emit maxDataSizeChangeRequested(newSize);
+    return true;
 }
 
 std::expected<void, std::string> SettingsUiController::applySettingsToEngine(std::string_view presetName)
@@ -289,7 +286,7 @@ std::expected<void, std::string> SettingsUiController::applySettingsToEngine(std
         QVariant loadedValue(QString::fromStdString(*loadResult));
 
         // 위상은 Degree -> Radian 변환
-        if(key == "currentPhaseOffset") {
+        if(info.isAngle) {
             double degrees = loadedValue.toDouble();
             double radians = utils::degreesToRadians(degrees);
             loadedValue = radians;
@@ -313,14 +310,13 @@ std::expected<void, std::string> SettingsUiController::applySettingsToEngine(std
 
 std::expected<void, std::string> SettingsUiController::saveEngineToSettings(std::string_view presetName)
 {
-
     // 맵을 순회하며 각 getter를 호출하여 값을 DB에 저장
     for(auto const& [key, info] : m_settingsMap) {
         // 1. Property 인터페이스를 통해 현재 값을 QVariant로 가져옴
         QVariant valueToSave = info.property->getVariantValue();
 
         // 위상 값은 Radian -> Degree 변환
-        if(key == "currentPhaseOffset") {
+        if(info.isAngle) {
             double radians = valueToSave.toDouble();
             double degrees = utils::radiansToDegrees(radians);
             valueToSave = degrees;
