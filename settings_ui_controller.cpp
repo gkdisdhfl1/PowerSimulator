@@ -116,7 +116,8 @@ void SettingsUiController::onApplyDialogSettings(const int maxDatasize, const in
 {
     if(!m_engine) return;
 
-    requestMaxSizeChange(maxDatasize);
+    if(!requestMaxSizeChange(maxDatasize)) return;
+    emit maxDataSizeChangeRequested(maxDatasize);
     m_engine->m_graphWidthSec.setValue(graphWidth);
 }
 
@@ -261,13 +262,25 @@ bool SettingsUiController::requestMaxSizeChange(int newSize)
         if(!ok) return false; // 사용자가 취소함
     }
 
-    emit maxDataSizeChangeRequested(newSize);
     return true;
 }
 
 std::expected<void, std::string> SettingsUiController::applySettingsToEngine(std::string_view presetName)
 {
     m_blockUiSignals = true; // 프리셋 적용 시 슬롯 호출 잠시 무시
+
+    // 미리 최대 데이터 크기 변경 요청
+    if(auto res = m_settingsManager.loadSetting(presetName, "maxDataSize", m_engine->m_maxDataSize.value()); res) {
+        if(requestMaxSizeChange(*res)) {
+            emit maxDataSizeChangeRequested(*res);
+        } else {
+            m_blockUiSignals = false;
+            return std::unexpected("사용자가 최대 데이터 크기 변경을 취소했습니다.");
+        }
+    } else {
+        m_blockUiSignals = false;
+        return std::unexpected(res.error());
+    }
 
     // 맵을 순회하면 DB에서 값을 불러와 각 Property에 적용
     for(auto const& [key, info] : m_settingsMap) {
@@ -294,11 +307,6 @@ std::expected<void, std::string> SettingsUiController::applySettingsToEngine(std
             
         // 3. Property 인터페이서를 통해 값 설정
         info.property->setVariantValue(loadedValue);
-    }
-
-    // UI와 별개인 엔진 파라미터 업데이트
-    if(auto res = m_settingsManager.loadSetting(presetName, "maxDataSize", m_engine->m_maxDataSize.value()); res) {
-        requestMaxSizeChange(*res);
     }
 
     m_blockUiSignals = false;
