@@ -21,6 +21,7 @@ signals:
     void taskFinished(const std::expected<void, std::string>& result, const QString& successMessage);
     void presetListChanged(const std::vector<std::string>& presetList);;
     void presetValuesFetched(const QVariantMap& data);
+    void requestDataLossConfirmation(const int currentDataSize, int newSize, bool* ok);
     void maxDataSizeChangeRequested(int maxSize);
     void presetApplied();
 
@@ -86,7 +87,6 @@ private:
 
     // 헬퍼 함수들
     void initializeSettingsMap();
-    // void initializeKeyNameMap();
     void requestMaxSizeChange(int newSize);
     std::expected<void, std::string> applySettingsToEngine(std::string_view presetName); // 특정 프리셋을 UI에 적용하는 함수
     std::expected<void, std::string> saveEngineToSettings(std::string_view presetName); // 현재 UI 상태를 특정 프리셋으로 저장하는 함수

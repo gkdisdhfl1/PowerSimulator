@@ -84,5 +84,5 @@ build/
 CMakeLists.txt.user
 .gemini/
 .github/
-
+.cache/
 test/build/

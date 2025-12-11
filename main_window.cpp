@@ -23,6 +23,7 @@
 #include <QApplication>
 #include <QLabel>
 #include <QTimer>
+#include <QMessageBox>
 
 MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     : QMainWindow(parent)
@@ -202,6 +203,14 @@ void MainWindow::createSignalSlotConnections()
     connect(m_actionA3700, &QAction::triggered, this, &MainWindow::showA3700Window);
     connect(m_fpsTimer, &QTimer::timeout, this, &MainWindow::updateFpsLabel);
 
+    connect(m_settingsUiController.get(), &SettingsUiController::requestDataLossConfirmation, this, [this](int currentSize, int newSize, bool* ok) {
+        QMessageBox::StandardButtons reply;
+        reply = QMessageBox::question(this, "데이터 축소 경고",
+            QString("데이터 최대 개수를 %1개에서 %2개로 줄이면 이전 데이터 일부가 영구적으로 삭제됩니다. \n\n계속하시겠습니까?").arg(currentSize).arg(newSize),
+            QMessageBox::Yes | QMessageBox::No);
+
+        *ok = (reply == QMessageBox::Yes);
+    }, Qt::DirectConnection);
     connect(m_settingsUiController.get(), &SettingsUiController::maxDataSizeChangeRequested, m_engine, &SimulationEngine::onMaxDataSizeChanged);
 
     // ---- ControlPanel 이벤트 -> Controller or Model(engine) 슬롯 ----
