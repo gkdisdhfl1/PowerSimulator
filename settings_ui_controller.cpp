@@ -6,7 +6,6 @@
 #include "simulation_engine.h"
 #include "three_phase_dialog.h"
 #include <QInputDialog>
-#include <QMessageBox>
 #include <QStatusBar>
 
 namespace {
@@ -30,7 +29,6 @@ SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsM
 
     m_settingsDialog = std::make_unique<SettingsDialog>(this, m_parent);
 
-    // connect(m_pidTuningDialog.get(), &PidTuningDialog::settingsApplied, this, &SettingsUiController::onCoefficientsChanged);
 }
 
 // --- public slot 구현 ---
@@ -118,7 +116,8 @@ void SettingsUiController::onApplyDialogSettings(const int maxDatasize, const in
 {
     if(!m_engine) return;
 
-    m_engine->m_maxDataSize.setValue(maxDatasize);
+    if(!requestMaxSizeChange(maxDatasize)) return;
+    emit maxDataSizeChangeRequested(maxDatasize);
     m_engine->m_graphWidthSec.setValue(graphWidth);
 }
 
@@ -169,16 +168,6 @@ void SettingsUiController::onUpdateModeChanged()
 void SettingsUiController::showSettingsDialog()
 {
     m_settingsDialog->openWithValues(m_engine);
-    // if (m_settingsDialog->exec() == QDialog::Accepted) {
-        // // Dialog가 닫혔을 때, 이유를 확인
-        // if(m_settingsDialog->getResultState() == SettingsDialog::DialogResult::Accepted) {
-        //     int newMaxSize = m_settingsDialog->getMaxSize();
-        //     double newGraphWidth = m_settingsDialog->getGraphWidth();
-
-        //     requestMaxSizeChange(newMaxSize);
-        //     m_engine->m_params.graphWidthSec = newGraphWidth;
-        // }
-    // }
 }
 
 void SettingsUiController::onTrackingToggled(bool enabled)
@@ -208,36 +197,21 @@ void SettingsUiController::onHarmonicsChanged()
 
 void SettingsUiController::onThreePhaseValueChanged(int type, double value)
 {
-    auto& params = m_engine;
+    static const std::unordered_map<int, Property<double> SimulationEngine::*> propertyMap = {
+        {ThreePhaseDialog::VoltageBAmplitude, &SimulationEngine::m_voltage_B_amplitude},
+        {ThreePhaseDialog::VoltageBPhase, &SimulationEngine::m_voltage_B_phase_deg},
+        {ThreePhaseDialog::VoltageCAmplitude, &SimulationEngine::m_voltage_C_amplitude},
+        {ThreePhaseDialog::VoltageCPhase, &SimulationEngine::m_voltage_C_phase_deg},
+        {ThreePhaseDialog::CurrentBAmplitude, &SimulationEngine::m_current_B_amplitude},
+        {ThreePhaseDialog::CurrentBPhase, &SimulationEngine::m_current_B_phase_deg},
+        {ThreePhaseDialog::CurrentCAmplitude, &SimulationEngine::m_current_C_amplitude},
+        {ThreePhaseDialog::CurrentCPhase, &SimulationEngine::m_current_C_phase_deg}
+    };
 
-    switch(static_cast<ThreePhaseDialog::ParamType>(type))
-    {
-    case ThreePhaseDialog::VoltageBAmplitude:
-        if(params->m_voltage_B_amplitude.value() != value) params->m_voltage_B_amplitude.setValue(value);
-        break;
-    case ThreePhaseDialog::VoltageBPhase:
-        if(params->m_voltage_B_phase_deg.value() != value) params->m_voltage_B_phase_deg.setValue(value);
-        break;
-    case ThreePhaseDialog::VoltageCAmplitude:
-        if(params->m_voltage_C_amplitude.value() != value) params->m_voltage_C_amplitude.setValue(value);
-        break;
-    case ThreePhaseDialog::VoltageCPhase:
-        if(params->m_voltage_C_phase_deg.value() != value) params->m_voltage_C_phase_deg.setValue(value);
-        break;
-    case ThreePhaseDialog::CurrentBAmplitude:
-        if(params->m_current_B_amplitude.value() != value) params->m_current_B_amplitude.setValue(value);
-        break;
-    case ThreePhaseDialog::CurrentBPhase:
-        if(params->m_current_B_phase_deg.value() != value) params->m_current_B_phase_deg.setValue(value);
-        break;
-    case ThreePhaseDialog::CurrentCAmplitude:
-        if(params->m_current_C_amplitude.value() != value) params->m_current_C_amplitude.setValue(value);
-        break;
-    case ThreePhaseDialog::CurrentCPhase:
-        if(params->m_current_C_phase_deg.value() != value) params->m_current_C_phase_deg.setValue(value);
-        break;
-    default:
-        break;
+    auto it = propertyMap.find(type);
+    if(it != propertyMap.end()) {
+        // 멤버 포인터를 통해 인스턴스의 멤버에 접근
+        (m_engine->*(it->second)).setValue(value);
     }
 }
 
@@ -250,11 +224,10 @@ void SettingsUiController::initializeSettingsMap()
     m_settingsMap["voltageAmplitude"] = {&m_engine->m_amplitude, config::Source::Amplitude::Default, "진폭 (Voltage)"};
     m_settingsMap["currentAmplitude"] = {&m_engine->m_currentAmplitude, config::Source::Current::DefaultAmplitude, "진폭 (Current)"};
     m_settingsMap["frequency"] = {&m_engine->m_frequency, config::Source::Frequency::Default, "주파수"};
-    m_settingsMap["currentPhaseOffset"] = {&m_engine->m_currentPhaseOffsetRadians, config::Source::Current::DefaultPhaseOffset, "위상차"};
+    m_settingsMap["currentPhaseOffset"] = {&m_engine->m_currentPhaseOffsetRadians, config::Source::Current::DefaultPhaseOffset, "위상차", true};
     m_settingsMap["timeScale"] = {&m_engine->m_timeScale, config::TimeScale::Default, "시간 배율"};
     m_settingsMap["samplingCycles"] = {&m_engine->m_samplingCycles, config::Sampling::DefaultSamplingCycles, "초당 cycle"};
     m_settingsMap["samplesPerCycle"] = {&m_engine->m_samplesPerCycle, config::Sampling::DefaultSamplesPerCycle, "cycle당 sample"};
-    m_settingsMap["maxDataSize"] = {&m_engine->m_maxDataSize, config::Simulation::MaxDataSize, "데이터 최대 개수"};
     m_settingsMap["graphWidthSec"] = {&m_engine->m_graphWidthSec, config::View::GraphWidth::Default, "그래프 시간 폭"};
     m_settingsMap["updateMode"] = {&m_engine->m_updateMode, 0, "갱신 모드"};
 
@@ -278,30 +251,36 @@ void SettingsUiController::initializeSettingsMap()
     m_settingsMap["currentCPhase"] = {&m_engine->m_current_C_phase_deg, config::Source::ThreePhase::DefaultCurrentPhaseC_deg, "C상 전류 위상"};
 }
 
-void SettingsUiController::requestMaxSizeChange(int newSize)
+bool SettingsUiController::requestMaxSizeChange(int newSize)
 {
     const int currentDataSize = m_engine->getDataSize();
-    bool applyChange = true;
 
     // 새 최대 크기가 현재 데이터 개수보다 작을 경우
     if(newSize < currentDataSize) {
-        QMessageBox::StandardButton reply;
-        reply = QMessageBox::question(m_parent, "데이터 축소 경고",
-                                      QString("데이터 최대 개수를 %1개에서 %2개로 줄이면 이전 데이터 일부가 영구적으로 삭제됩니다. \n\n계속하시겠습니까?").arg(currentDataSize).arg(newSize),
-                                      QMessageBox::Yes | QMessageBox::No);
-        if(reply == QMessageBox::No)
-            applyChange = false;
+        bool ok = false;
+        emit requestDataLossConfirmation(currentDataSize, newSize, &ok);
+        if(!ok) return false; // 사용자가 취소함
     }
 
-    if(applyChange) {
-        emit maxDataSizeChangeRequested(newSize);
-    }
-
+    return true;
 }
 
 std::expected<void, std::string> SettingsUiController::applySettingsToEngine(std::string_view presetName)
 {
     m_blockUiSignals = true; // 프리셋 적용 시 슬롯 호출 잠시 무시
+
+    // 미리 최대 데이터 크기 변경 요청
+    if(auto res = m_settingsManager.loadSetting(presetName, "maxDataSize", m_engine->m_maxDataSize.value()); res) {
+        if(requestMaxSizeChange(*res)) {
+            emit maxDataSizeChangeRequested(*res);
+        } else {
+            m_blockUiSignals = false;
+            return std::unexpected("사용자가 최대 데이터 크기 변경을 취소했습니다.");
+        }
+    } else {
+        m_blockUiSignals = false;
+        return std::unexpected(res.error());
+    }
 
     // 맵을 순회하면 DB에서 값을 불러와 각 Property에 적용
     for(auto const& [key, info] : m_settingsMap) {
@@ -316,19 +295,18 @@ std::expected<void, std::string> SettingsUiController::applySettingsToEngine(std
             return std::unexpected(loadResult.error());
         }
 
-        // 2. 불러온 문자열을 QVariant로 변황
+        // 2. 불러온 문자열을 QVariant로 변환
         QVariant loadedValue(QString::fromStdString(*loadResult));
 
+        // 위상은 Degree -> Radian 변환
+        if(info.isAngle) {
+            double degrees = loadedValue.toDouble();
+            double radians = utils::degreesToRadians(degrees);
+            loadedValue = radians;
+        }
+            
         // 3. Property 인터페이서를 통해 값 설정
         info.property->setVariantValue(loadedValue);
-    }
-
-    // UI와 별개인 엔진 파라미터들도 업데이트
-    if(auto res = m_settingsManager.loadSetting(presetName, "maxDataSize", m_engine->m_maxDataSize.value()); res) {
-        requestMaxSizeChange(*res);
-    }
-    if(auto res = m_settingsManager.loadSetting(presetName, "graphWidthSec", m_engine->m_graphWidthSec.value()); res) {
-        m_engine->m_graphWidthSec.setValue(*res);
     }
 
     m_blockUiSignals = false;
@@ -340,11 +318,17 @@ std::expected<void, std::string> SettingsUiController::applySettingsToEngine(std
 
 std::expected<void, std::string> SettingsUiController::saveEngineToSettings(std::string_view presetName)
 {
-
     // 맵을 순회하며 각 getter를 호출하여 값을 DB에 저장
     for(auto const& [key, info] : m_settingsMap) {
         // 1. Property 인터페이스를 통해 현재 값을 QVariant로 가져옴
         QVariant valueToSave = info.property->getVariantValue();
+
+        // 위상 값은 Radian -> Degree 변환
+        if(info.isAngle) {
+            double radians = valueToSave.toDouble();
+            double degrees = utils::radiansToDegrees(radians);
+            valueToSave = degrees;
+        }
 
         // 2. QVariant를 DB에 저장할 수 있는 형태로 변환
         std::string valueStr = valueToSave.toString().toStdString();
@@ -357,7 +341,6 @@ std::expected<void, std::string> SettingsUiController::saveEngineToSettings(std:
 
     // UI와 별개인 엔진 파라미터들도 저장
     if(auto res = m_settingsManager.saveSetting(presetName, "maxDataSize", m_engine->m_maxDataSize.value()); !res) return res;
-    if(auto res = m_settingsManager.saveSetting(presetName, "graphWidthSec", m_engine->m_graphWidthSec.value()); !res) return res;
 
     m_parent->findChild<QStatusBar*>()->showMessage(QString("'%1' 이름으로 설정을 저장했습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), StatusBarTimeOut);
     return {};

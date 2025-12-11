@@ -467,14 +467,6 @@ void ControlPanel::setAutoScroll(bool enabled)
     m_autoScrollCheckBox->setChecked(enabled);
 }
 
-// void ControlPanel::onEngineSamplingCyclesChanged(double newFrequency)
-// {
-//     // 이 슬롯은 엔진의 상태를 UI에 반영하는 역할
-//     // valueChanged 시그널이 다시 발생하여 로직이 꼬이면 안됨
-//     QSignalBlocker blocker(m_samplingCyclesControlWidget);
-//     m_samplingCyclesControlWidget->setValue(newFrequency);
-// }
-
 void ControlPanel::setAmplitude(double value)
 {
     QSignalBlocker blocker(m_voltageControlWidget);
