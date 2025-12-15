@@ -95,8 +95,8 @@ void TestAnalysisUtils::testConvertSpectrumToHarmonics()
     // Phase: 90도 (pi / 2)
     QCOMPARE_LE(std::abs(results[1].phase - (std::numbers::pi / 2.0)), 0.001);
     // Phasor check
-    QCOMPARE(results[1].phasor.real(), 0.0);
-    QCOMPARE(results[1].phasor.imag(), 100.0);
+    QVERIFY(std::abs(results[1].phasor.real() - 0.0) < 0.001);
+    QCOMPARE_LE(std::abs(results[1].phasor.imag() - 100.0), 0.001);
 }
 
 void TestAnalysisUtils::testSymmetricalComponents_Balanced()

@@ -83,7 +83,7 @@ add_library(PowerSimulatorCore STATIC ${CORE_SOURCES})
 # Core 라이브러리의 의존성 (UI 제외)
 target_link_libraries(PowerSimulatorCore PUBLIC
     Qt${QT_VERSION_MAJOR}::Core
-    Qt${QT_VERSION_Major}::Widgets
+    Qt${QT_VERSION_MAJOR}::Widgets
     Qt${QT_VERSION_MAJOR}::Charts
     sqlite_modern_cpp
     sqlite3_lib
