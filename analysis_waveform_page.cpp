@@ -332,18 +332,18 @@ void AnalysisWaveformPage::updatePage()
         const auto& v = point.voltage;
         const auto& i = point.current;
 
-        vPoints[0].append(QPointF(timeSec, UiUtils::scaleValue(v.a, m_voltageUnit)));
-        vPoints[1].append(QPointF(timeSec, UiUtils::scaleValue(v.b, m_voltageUnit)));
-        vPoints[2].append(QPointF(timeSec, UiUtils::scaleValue(v.c, m_voltageUnit)));
+        vPoints[0].append(QPointF(timeSec, UIutils::scaleValue(v.a, m_voltageUnit)));
+        vPoints[1].append(QPointF(timeSec, UIutils::scaleValue(v.b, m_voltageUnit)));
+        vPoints[2].append(QPointF(timeSec, UIutils::scaleValue(v.c, m_voltageUnit)));
 
-        iPoints[0].append(QPointF(timeSec, UiUtils::scaleValue(i.a, m_currentUnit)));
-        iPoints[1].append(QPointF(timeSec, UiUtils::scaleValue(i.b, m_currentUnit)));
-        iPoints[2].append(QPointF(timeSec, UiUtils::scaleValue(i.c, m_currentUnit)));
+        iPoints[0].append(QPointF(timeSec, UIutils::scaleValue(i.a, m_currentUnit)));
+        iPoints[1].append(QPointF(timeSec, UIutils::scaleValue(i.b, m_currentUnit)));
+        iPoints[2].append(QPointF(timeSec, UIutils::scaleValue(i.c, m_currentUnit)));
 
-        minV = std::min({minV, UiUtils::scaleValue(v.a, m_voltageUnit), UiUtils::scaleValue(v.b, m_voltageUnit), UiUtils::scaleValue(v.c, m_voltageUnit)});
-        maxV = std::max({maxV, UiUtils::scaleValue(v.a, m_voltageUnit), UiUtils::scaleValue(v.b, m_voltageUnit), UiUtils::scaleValue(v.c, m_voltageUnit)});
-        minA = std::min({minA, UiUtils::scaleValue(i.a, m_currentUnit), UiUtils::scaleValue(i.b, m_currentUnit), UiUtils::scaleValue(i.c, m_currentUnit)});
-        maxA = std::max({maxA, UiUtils::scaleValue(i.a, m_currentUnit), UiUtils::scaleValue(i.b, m_currentUnit), UiUtils::scaleValue(i.c, m_currentUnit)});
+        minV = std::min({minV, UIutils::scaleValue(v.a, m_voltageUnit), UIutils::scaleValue(v.b, m_voltageUnit), UIutils::scaleValue(v.c, m_voltageUnit)});
+        maxV = std::max({maxV, UIutils::scaleValue(v.a, m_voltageUnit), UIutils::scaleValue(v.b, m_voltageUnit), UIutils::scaleValue(v.c, m_voltageUnit)});
+        minA = std::min({minA, UIutils::scaleValue(i.a, m_currentUnit), UIutils::scaleValue(i.b, m_currentUnit), UIutils::scaleValue(i.c, m_currentUnit)});
+        maxA = std::max({maxA, UIutils::scaleValue(i.a, m_currentUnit), UIutils::scaleValue(i.b, m_currentUnit), UIutils::scaleValue(i.c, m_currentUnit)});
     }
 
     // 시리즈 및 축 업데이트
@@ -421,9 +421,9 @@ ScaleUnit AnalysisWaveformPage::updateUnit(QValueAxis* axis, QLabel* label, int 
     if(!axis || !label) return ScaleUnit::Base;
 
     double newRange = View::RANGE_TABLE[scaleIndex];
-    ScaleUnit unit = UiUtils::updateScaleUnit(newRange);
+    ScaleUnit unit = UIutils::updateScaleUnit(newRange);
 
-    double displayRange = UiUtils::scaleValue(newRange, unit);
+    double displayRange = UIutils::scaleValue(newRange, unit);
     axis->setRange(-displayRange, displayRange);
 
     const char* baseUnit = isVoltage ? "V" : "A";

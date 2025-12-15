@@ -37,7 +37,7 @@ private:
     {
         for(int i{0}; i < 3; ++i) {
             const auto& data = AnalysisUtils::getPhaseComponent(i, phaseData);
-            table[i * 2 + 0]->setText(UiUtils::formatValue(data.rms));
+            table[i * 2 + 0]->setText(UIutils::formatValue(data.rms));
             table[i * 2 + 1]->setText(QString::number(utils::radiansToDegrees(data.phase), 'f', 1) + "°");
         }
     }

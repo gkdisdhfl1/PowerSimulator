@@ -147,7 +147,7 @@ void AnalysisHarmonicPage::updateGraph()
         for(int order{0}; order <= 50; ++order) {
             double rawValue = calculateRawValue(sources, order, i);
             double displayValue = (sources.dataTypeIndex == 0) ?
-                                      UiUtils::scaleValue(rawValue, m_scaleUnit) : rawValue;
+                                      UIutils::scaleValue(rawValue, m_scaleUnit) : rawValue;
 
             if(order == 1  && !m_isFundVisible) {
                 displayValue = 0.0;
@@ -199,7 +199,7 @@ void AnalysisHarmonicPage::updateText()
         double rawValue = calculateRawValue(sources, order, phaseIndex);
 
         // 4. rawValue를 포맷에 맞게 QString으로 변환
-        QString formattedValue = UiUtils::formatValue(rawValue);
+        QString formattedValue = UIutils::formatValue(rawValue);
         // 5. 테이블의 해당 셀에 값 업데이트
         int row = order % 9;
         int col = order / 9;
@@ -227,9 +227,9 @@ void AnalysisHarmonicPage::updateInfoLabels()
     m_thdValueLabels[1]->setText(QString::number(thdData->a, 'f', 1));
     m_thdValueLabels[2]->setText(QString::number(thdData->a, 'f', 1));
 
-    m_fundValueLabels[0]->setText(UiUtils::formatValue((*fundData).a.rms));
-    m_fundValueLabels[1]->setText(UiUtils::formatValue((*fundData).b.rms));
-    m_fundValueLabels[2]->setText(UiUtils::formatValue((*fundData).c.rms));
+    m_fundValueLabels[0]->setText(UIutils::formatValue((*fundData).a.rms));
+    m_fundValueLabels[1]->setText(UIutils::formatValue((*fundData).b.rms));
+    m_fundValueLabels[2]->setText(UIutils::formatValue((*fundData).c.rms));
 }
 
 void AnalysisHarmonicPage::setupTopBar(QVBoxLayout* mainLayout)
@@ -240,7 +240,7 @@ void AnalysisHarmonicPage::setupTopBar(QVBoxLayout* mainLayout)
     topLayout->addWidget(titleLabel);
     topLayout->addStretch(); // 제목과 버튼 사이 공간
 
-    // Voltage/Current 토글 버튼
+    // UIutilsCurrent 토글 버튼
     m_voltageButton = new QPushButton("Voltage");
     m_currentButton = new QPushButton("Current");
     m_voltageButton->setCheckable(true);
@@ -566,7 +566,7 @@ void AnalysisHarmonicPage::updateChartAxis()
 
     // 2. 현재 범위와 단위를 계산
     double currentRange = View::RANGE_TABLE[m_scaleIndex];
-    m_scaleUnit = UiUtils::updateScaleUnit(currentRange);
+    m_scaleUnit = UIutils::updateScaleUnit(currentRange);
 
     // 3. 단위 텍스트 설정
     if(dataTypeIndex == 0) { // Voltage or Current
@@ -589,7 +589,7 @@ void AnalysisHarmonicPage::updateChartAxis()
     m_unitLabel->setText(QString("[%1]").arg(unitText));
 
     // 4. Y축 범위 설정
-    double displayRange = UiUtils::scaleValue(currentRange, m_scaleUnit);
+    double displayRange = UIutils::scaleValue(currentRange, m_scaleUnit);
     m_axisY->setRange(0, displayRange);
     updateGraph();
     updateText();

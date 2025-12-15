@@ -20,6 +20,12 @@ private slots:
     // 4. 대칭 성분 테스트
     // Balanced System -> Positive Sequence만 존재해야 함
     void testSymmetricalComponents_Balanced();
+
+    // 5. 복합 파형 (Fundamental + Harmonic) FFT 테스트
+    void testComplexWaveformFFT();
+
+    // 6. 유효 전력 위상차 테스트
+    void testActivePowerPhaseShift();
 };
 
 void TestAnalysisUtils::testCalculateTotalRms_DC()
@@ -119,6 +125,87 @@ void TestAnalysisUtils::testSymmetricalComponents_Balanced()
     QCOMPARE_LE(std::abs(sym.zero.magnitude), 0.001);
     // Negative Sequence: 0
     QCOMPARE_LE(std::abs(sym.negative.magnitude), 0.001);
+}
+
+void TestAnalysisUtils::testComplexWaveformFFT()
+{
+    const int N = 1024;
+    const double fs = 1024.0; // 샘플링 주파수
+
+    // Signal: 100V, 60Hz + 20V, 180Hz (3rd) + 10V, 300Hz (5th)
+    std::vector<DataPoint> samples;
+    samples.reserve(N);
+    for(int i{0}; i < N; ++i) {
+        double t = i / fs;
+        double val = 100.0 * std::sin(2.0 * std::numbers::pi * 60.0 * t) +
+                     20.0 * std::sin(2.0 * std::numbers::pi * 180.0 * t) +
+                     10.0 * std::sin(2.0 * std::numbers::pi * 300.0 * t);
+        DataPoint p;
+        p.voltage.a = val;
+        samples.push_back(p);
+    }
+
+    auto result = AnalysisUtils::calculateSpectrum(samples, AnalysisUtils::DataType::Voltage, 0, false);
+    QVERIFY(result.has_value());
+    const auto& spectrum = result.value();
+
+    // 60Hz 성분 확인 (Fund)
+    double rms1 = std::abs(spectrum[60]);
+    QVERIFY(std::abs(rms1 - (100.0 / std::sqrt(2.0))) < 0.001);
+
+    // 180Hz 성분 확인 (3rd)
+    double rms3 = std::abs(spectrum[180]);
+    QVERIFY(std::abs(rms3 - (20.0 / std::sqrt(2.0))) < 0.001);
+
+    // 300Hz 성분 확인 (5th)
+    double rms5 = std::abs(spectrum[300]);
+    QVERIFY(std::abs(rms5 - (10.0 / std::sqrt(2.0))) < 0.001);
+}
+
+void TestAnalysisUtils::testActivePowerPhaseShift()
+{
+    const int N = 100;
+    std::vector<DataPoint> samples;
+    double v_mag = 100.0; // Voltage amplitude
+    double i_mag = 10.0;  // Current amplitude
+    
+    // Case 1: 0도 위상차 (Resistive) -> p = V * I
+    // Case 2: 60도 위상차 -> p = V * I * cos(60) = VI * 0.5
+    // Case 3: 90도 위상차 (Inductive) -> p = 0
+
+    auto createSamples = [&](double phaseDiffRad) {
+        std::vector<DataPoint> s;
+        for(int i{0}; i < N; ++i) {
+            double t = i / 100.0; // dummy time
+            double v = v_mag * std::sin(2.0 * std::numbers::pi * t);
+            double c = i_mag * std::sin(2.0 * std::numbers::pi * t - phaseDiffRad); // Current lags Voltage
+            DataPoint p;
+            p.voltage.a = v;
+            p.current.a = c;
+            s.push_back(p);
+        }
+        return s;
+    };
+
+    // 이론적 p = Vrms * Irms * cos(theta)
+    // Vrms = 100/sqrt(2), Irms = 10/sqrt(2)
+    // Vrms * Irms = (100*10)/2 = 500
+
+    // Case 1: 0도
+    auto s1 = createSamples(0.0);
+    PhaseData p1 = AnalysisUtils::calculateActivePower(s1);
+
+    QVERIFY(std::abs(p1.a - 500.0) < 0.001);
+
+    // Case 2: 60도 (pi/3) -> cos(60) = 0.5 -> p = 250
+    auto s2 = createSamples(std::numbers::pi / 3.0);
+    PhaseData p2 = AnalysisUtils::calculateActivePower(s2);
+    QVERIFY(std::abs(p2.a - 250.0) < 0.001);
+
+    // Case 3: 90도 (pi/2) -> cos(90) = 0 -> p = 0
+    auto s3 = createSamples(std::numbers::pi / 2.0);
+    PhaseData p3 = AnalysisUtils::calculateActivePower(s3);
+    QVERIFY(std::abs(p3.a) < 0.001);
 }
 
 QTEST_MAIN(TestAnalysisUtils)
