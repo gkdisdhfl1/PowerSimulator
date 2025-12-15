@@ -1,13 +1,13 @@
 #include "UIutils.h"
 
-ScaleUnit UiUtils::updateScaleUnit(double range)
+ScaleUnit UIutils::updateScaleUnit(double range)
 {
     if(range < 1.0) return ScaleUnit::Milli;
     if(range >= 1000.0) return ScaleUnit::Kilo;
     return ScaleUnit::Base;
 }
 
-double UiUtils::scaleValue(double value, ScaleUnit unit)
+double UIutils::scaleValue(double value, ScaleUnit unit)
 {
     switch(unit)
     {
@@ -20,7 +20,7 @@ double UiUtils::scaleValue(double value, ScaleUnit unit)
     }
 }
 
-QString UiUtils::formatValue(double value)
+QString UIutils::formatValue(double value)
 {
     QString formattedValue;
 
@@ -34,7 +34,7 @@ QString UiUtils::formatValue(double value)
         formattedValue = QString::number(value, 'f', 4);
     }
 
-    // 전체 4자리 넘지 안도록 자르기
+    // 소수점 포함 최대 5글자 표시
     if(formattedValue.length() > 4 && formattedValue.contains('.')) {
         formattedValue = formattedValue.left(5);
     }

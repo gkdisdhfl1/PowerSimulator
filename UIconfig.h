@@ -50,8 +50,8 @@ struct View {
             QColor(0, 100, 0),    // dark green
             QColor(255, 165, 0),  // orange
             QColor(135, 206, 235)   // sky blue
+        };
     };
-};
 };
 
 #endif // UICONFIG_H

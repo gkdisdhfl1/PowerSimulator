@@ -3,13 +3,13 @@
 
 #include "UIconfig.h"
 
-class UiUtils
+class UIutils
 {
 public:
     static ScaleUnit updateScaleUnit(double range);
     static double scaleValue(double value, ScaleUnit unit);
 
-    // 소숫점 포함 4자리 출력
+    // double 값을 유효 숫자 4자리로 포맷팅하여 반환(예: 12.34, 1.234, 0.123)
     static QString formatValue(double value);
 };
 
