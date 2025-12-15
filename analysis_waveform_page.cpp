@@ -85,7 +85,6 @@ void AnalysisWaveformPage::setupTopBar(QVBoxLayout* mainLayout)
 
     // All체크박스와 Waveform 가시성 연결
     connect(voltageAllCheck, &QCheckBox::toggled, this, [this](bool checked) {
-        qDebug() << "All voltage chckbox:: checked: " << checked;
         for(int i{0}; i < 3; ++i) {
             m_voltagePhaseChecks[i]->setChecked(checked);
             m_voltagePhaseChecks[i]->setEnabled(checked);
@@ -93,7 +92,6 @@ void AnalysisWaveformPage::setupTopBar(QVBoxLayout* mainLayout)
         !checked ? m_axisV->setLabelsColor(Qt::transparent) : m_axisV->setLabelsColor(Qt::black);
     });
     connect(currentAllCheck, &QCheckBox::toggled, this, [this](bool checked) {
-        qDebug() << "All current chckbox:: checked: " << checked;
         for(int i{0}; i < 3; ++i) {
             m_currentPhaseChecks[i]->setChecked(checked);
             m_currentPhaseChecks[i]->setEnabled(checked);
@@ -367,10 +365,7 @@ void AnalysisWaveformPage::onStartStopToggled(bool checked)
 
 void AnalysisWaveformPage::onScaleAutoToggled(bool checked)
 {
-    qDebug() << "onScaleAutoToggled process";
     m_isAutoScaling = checked;
-    qDebug() << "current m_isAutoScaling Value: " << m_isAutoScaling;
-    qDebug() << "---------------------------";
 }
 
 void AnalysisWaveformPage::onScaleTargetToggled(bool checked)
@@ -386,13 +381,11 @@ void AnalysisWaveformPage::onScaleTargetToggled(bool checked)
 
 void AnalysisWaveformPage::onScaleInClicked()
 {
-    qDebug() << "InClicked";
     applyScaleStep(true, m_isTargetVoltage);
 }
 
 void AnalysisWaveformPage::onScaleOutClicked()
 {
-    qDebug() << "OutClicked";
     applyScaleStep(false, m_isTargetVoltage);
 }
 
@@ -402,14 +395,11 @@ void AnalysisWaveformPage::applyScaleStep(bool zoomIn, bool isVoltage)
         m_scaleButtons[0]->setChecked(false);
 
     int& index =(isVoltage) ? m_voltageScaleIndex : m_currentScaleIndex; // 멤버 인덱스 값 변경 가능
-    qDebug() << "zoomIn: " << zoomIn;
-    qDebug() << "before index: " << index;
 
     if(zoomIn && index < (int)config::View::RANGE_TABLE.size() - 1)
         ++index;
     else if(!zoomIn && index > 0)
         --index;
-    qDebug() << "after index: " << index;
 
     updateAxis(isVoltage);
     updatePage();
@@ -423,24 +413,16 @@ void AnalysisWaveformPage::updateAxis(bool isVoltageAxis)
     QLabel* targetLabel = isVoltageAxis ? m_voltageScaleLabel : m_currentScaleLabel;
 
     unit = updateUnit(targetAxis, targetLabel, index, isVoltageAxis);
-    qDebug() << "index: " << index;
-    qDebug() << "targetLabel: " << targetLabel->text();;
-    qDebug() << "isVoltageAxis: " << isVoltageAxis;
-    qDebug() << "---------------------------";
 }
 
 ScaleUnit AnalysisWaveformPage::updateUnit(QValueAxis* axis, QLabel* label, int scaleIndex, bool isVoltage)
 {
     if(!axis || !label) return ScaleUnit::Base;
-    qDebug() << "updateAxis in";
 
     double newRange = config::View::RANGE_TABLE[scaleIndex];
-    qDebug() << "newRange: " << newRange;
     ScaleUnit unit = AnalysisUtils::updateScaleUnit(newRange);
 
     double displayRange = AnalysisUtils::scaleValue(newRange, unit);
-    qDebug() << "displayRange: " << displayRange;
-    qDebug() << "---------------------------------------";
     axis->setRange(-displayRange, displayRange);
 
     const char* baseUnit = isVoltage ? "V" : "A";

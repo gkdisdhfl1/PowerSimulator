@@ -1,5 +1,4 @@
 #include "settings_manager.h"
-#include <QDebug>
 
 SettingsManager::SettingsManager(std::string_view dp_path) : db(std::string(dp_path)) {
     try {
@@ -21,7 +20,6 @@ std::expected<std::vector<std::string>, SettingsManager::Error> SettingsManager:
         // DISTINCT를 사용해 중복되지 않는 preset_name 목록을 가져옴
         db << "SELECT DISTINCT preset_name FROM Settings;" >>
             [&](std::string name) {
-                // qDebug() << "name: " << name;
                 names.push_back(name);
             };
         return names;

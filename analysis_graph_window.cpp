@@ -4,7 +4,6 @@
 #include <QLineSeries>
 #include <QValueAxis>
 #include <QChart>
-#include <QDebug>
 #include <QPen>
 
 using utils::FpSeconds;
@@ -171,7 +170,6 @@ void AnalysisGraphWindow::onWaveformVisibilityChanged(int type, bool isVisible)
 {
     // type 인덱스가 유효한 범위 내에 있는지 확인
     if(type >= 0 && type < m_seriesInfoList.size()) {
-        // qDebug() << "onWaveformVisibilityChanged: type = " << type << ", isVisible = " << isVisible;
         m_seriesInfoList[type].isVisible = isVisible;
         m_seriesInfoList[type].series->setVisible(isVisible);
 

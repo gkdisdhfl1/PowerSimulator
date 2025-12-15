@@ -2,8 +2,6 @@
 #include "config.h"
 #include <complex>
 #include <QDebug>
-// #include <QValueAxis>
-// #include <QLabel>
 
 namespace {
     HarmonicAnalysisResult createHarmonicResult(const std::vector<std::complex<double>>& spectrum, int order)
@@ -624,7 +622,6 @@ SymmetricalComponents AnalysisUtils::calculateSymmetricalComponents(const Harmon
 
 ScaleUnit AnalysisUtils::updateScaleUnit(double range)
 {
-    qDebug() << "range: " << range;
     if(range < 1.0) return ScaleUnit::Milli;
     if(range >= 1000.0) return ScaleUnit::Kilo;
     return ScaleUnit::Base;
@@ -632,17 +629,13 @@ ScaleUnit AnalysisUtils::updateScaleUnit(double range)
 
 double AnalysisUtils::scaleValue(double value, ScaleUnit unit)
 {
-    // qDebug() << "value: " << value;
     switch(unit)
     {
     case ScaleUnit::Milli:
-        // qDebug() << "unit: Milli";
         return value * 1000.0;
     case ScaleUnit::Kilo:
-        // qDebug() << "unit: Kilo";
         return value / 1000.0;
     default:
-        // qDebug() << "unit: default";
         return value;
     }
 }

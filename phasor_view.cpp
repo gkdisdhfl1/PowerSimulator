@@ -238,7 +238,6 @@ void PhasorView::drawPhasor(QPainter& painter, const PhasorInfo& phasor, const Q
 
 void PhasorView::onVisibilityChanged(int type, bool isVisible)
 {
-    qDebug() << "onVisibilityChanged(" << type << ", " << isVisible << ")";
     if(type >= 0 && type < m_phasorIsVisible.size()) {
         m_phasorIsVisible[type] = isVisible;
         update();

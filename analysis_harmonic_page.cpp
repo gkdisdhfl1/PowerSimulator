@@ -561,34 +561,22 @@ void AnalysisHarmonicPage::updateChartAxis()
     // Y축 단위 결정
     QString unitText;
     bool isVoltage = m_voltageButton->isChecked();
-    qDebug() << "isVoltage: " << isVoltage;
-
     int dataTypeIndex = m_dataTypeComboBox->currentIndex();
-    qDebug() << "dataTypeIndex: " << dataTypeIndex;
-
 
     // 2. 현재 범위와 단위를 계산
     double currentRange = config::View::RANGE_TABLE[m_scaleIndex];
     m_scaleUnit = AnalysisUtils::updateScaleUnit(currentRange);
 
-    qDebug() << "m_scaleIndex; " << m_scaleIndex;
-    qDebug() << "currentRange: " << currentRange;
-
-
     // 3. 단위 텍스트 설정
     if(dataTypeIndex == 0) { // Voltage or Current
         QString baseUnit = isVoltage ? "V" : "A";
-        // qDebug() << "baseUnit: " << baseUnit;
         if(m_scaleUnit == ScaleUnit::Milli) {
-            // qDebug() << "m_scaleUnit: Milli";
             unitText = QString("m%1").arg(baseUnit);
         }
         else if(m_scaleUnit == ScaleUnit::Kilo) {
-            // qDebug() << "m_scaleUnit: Kilo";
             unitText = QString("k%1").arg(baseUnit);
         }
         else {
-            // qDebug() << "m_scaleUnit: normal";
             unitText = baseUnit;
         }
     } else if(dataTypeIndex == 1){
@@ -597,18 +585,13 @@ void AnalysisHarmonicPage::updateChartAxis()
         unitText = "%Fund";
     }
 
-    // qDebug() << "unitText: " << unitText;
     m_unitLabel->setText(QString("[%1]").arg(unitText));
-    // qDebug() << "m_unitLabel: " << m_unitLabel->text();
 
     // 4. Y축 범위 설정
     double displayRange = AnalysisUtils::scaleValue(currentRange, m_scaleUnit);
-    // qDebug() << "displayRange: " << displayRange;
     m_axisY->setRange(0, displayRange);
     updateGraph();
     updateText();
-    qDebug() << "-----------------------------------";
-
 }
 
 

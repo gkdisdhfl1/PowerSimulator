@@ -40,7 +40,6 @@ void SettingsUiController::onSaveAsPresetRequested(const QString& presetName)
 void SettingsUiController::onLoadPresetRequested(const QString& presetName)
 {
     auto result = applySettingsToEngine(presetName.toStdString());
-    // qDebug() << "[Debug] SettingsUiController: Emitting presetLoaded signal.";
     emit taskFinished(result, "프리셋을 성공적으로 적용했습니다.");
 }
 void SettingsUiController::onDeletePresetRequested(const QString& presetName)
@@ -58,7 +57,6 @@ void SettingsUiController::onRequestPresetList()
 {
     auto result = m_settingsManager.getAllPresetNames();
     if(result) {
-        // qDebug() << "result value: " << result.value();
         emit presetListChanged(result.value());
     }
     else {
@@ -180,10 +178,6 @@ void SettingsUiController::onCoefficientsChanged(const FrequencyTracker::PidCoef
 {
     m_engine->getFrequencyTracker()->setFllCoefficients(fllCoeffs);
     m_engine->getFrequencyTracker()->setZcCoefficients(zcCoeffs);
-
-    qDebug() << "PID 계수 설정 완료";
-    qDebug() << "pllCoeffs : " << fllCoeffs.Kd << ", " << fllCoeffs.Ki << ", " << fllCoeffs.Kd;
-    qDebug() << "zclCoeffs : " << zcCoeffs.Kd << ", " << zcCoeffs.Ki << ", " << zcCoeffs.Kd;
 }
 
 void SettingsUiController::onHarmonicsChanged()
