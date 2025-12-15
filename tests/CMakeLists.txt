@@ -23,5 +23,5 @@ foreach(TEST_SOURCE ${TEST_SOURCES})
     # 4. CTest에 등록
     add_test(NAME ${TEST_NAME} COMMAND ${TEST_NAME})
 
-    message(STATUS "Test added": ${TEST_NAME})
+    message(STATUS "Test added: ${TEST_NAME}")
 endforeach()

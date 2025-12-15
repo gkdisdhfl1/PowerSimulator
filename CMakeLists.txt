@@ -21,7 +21,7 @@ set(CMAKE_AUTORCC ON)
 
 # 2.1 Qt 라이브러리 찾기
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Charts Core Test)
-find_package(Qt${QT_VERSION_MAJOR} NAMES Qt6 Qt5 REQUIRED COMPONENTS Widgets Charts Core Test)
+find_package(Qt${QT_VERSION_MAJOR} REQUIRED COMPONENTS Widgets Charts Core Test)
 
 # 2.2 외부 라이브러리 (SQLite, sqlite_modern_cpp) - FetchContent
 include(FetchContent)
@@ -179,7 +179,7 @@ target_include_directories(PowerSimulator PRIVATE
 
 # 4.3 속성 설정 (Bundle ID, Version 등)
 set_target_properties(PowerSimulator PROPERTIES
-    MAXOSX_BUNDLE_IDENTIFIER com.example.PowerSimulator
+    MACOSX_BUNDLE_IDENTIFIER com.example.PowerSimulator
     MACOSX_BUNDLE_BUNDLE_VERSION ${PROJECT_VERSION}
     MACOSX_BUNDLE_SHORT_VERSION_STRING ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}
     MACOSX_BUNDLE TRUE
