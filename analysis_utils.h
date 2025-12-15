@@ -118,13 +118,6 @@ public:
         }
     }
 
-    // 스케일링 유틸리티 함수
-    static ScaleUnit updateScaleUnit(double range);
-    static double scaleValue(double value, ScaleUnit unit);
-
-    // 소숫점 포함 4자리 출력
-    static QString formatValue(double value);
-
 private:
     static std::mutex m_cacheMutex;
 

@@ -244,11 +244,11 @@ void AnalysisPhasorPage::createTableSection(QVBoxLayout* tableLayout)
 
     for(int i{0}; i < 3; ++i) {
         QString voltageStyle = QString(
-                                   "background-color: %1; ").arg(PhaseColors::Voltage[i].name());
+                                   "background-color: %1; ").arg(View::PhaseColors::Voltage[i].name());
         m_voltageNameLabels[i]->setStyleSheet(voltageStyle);
 
         QString currentStyle = QString(
-                                   "background-color: %1;").arg(PhaseColors::Current[i].name());
+                                   "background-color: %1;").arg(View::PhaseColors::Current[i].name());
         m_currentNameLabels[i]->setStyleSheet(currentStyle);
     }
 }

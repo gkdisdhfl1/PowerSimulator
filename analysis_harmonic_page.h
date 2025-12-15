@@ -1,7 +1,7 @@
 #ifndef ANALYSIS_HARMONIC_PAGE_H
 #define ANALYSIS_HARMONIC_PAGE_H
 
-#include "config.h"
+#include "UIconfig.h"
 #include "measured_data.h"
 #include <QStyledItemDelegate>
 #include <QWidget>

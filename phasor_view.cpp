@@ -162,7 +162,7 @@ void PhasorView::paintEvent(QPaintEvent *event)
         for(int i{0}; i < 3; ++i) {
             if(m_phasorIsVisible[i]) {
                 double ratio = m_fundVoltage[i].magnitude / maxVoltageMagnitude;
-                drawPhasor(painter, m_fundVoltage[i], PhaseColors::Voltage[i], getPhasorDisplayLength(ratio, ctx, true));
+                drawPhasor(painter, m_fundVoltage[i], View::PhaseColors::Voltage[i], getPhasorDisplayLength(ratio, ctx, true));
             }
         }
         // 고조파 전압
@@ -177,7 +177,7 @@ void PhasorView::paintEvent(QPaintEvent *event)
         for(int i{0}; i < 3; ++i) {
             if(m_phasorIsVisible[i + 3]) {
                 double ratio  = m_fundCurrent[i].magnitude / maxCurrentMagnitude;
-                drawPhasor(painter, m_fundCurrent[i], PhaseColors::Current[i], getPhasorDisplayLength(ratio, ctx, false));
+                drawPhasor(painter, m_fundCurrent[i], View::PhaseColors::Current[i], getPhasorDisplayLength(ratio, ctx, false));
             }
         }
         // 고조파 전류

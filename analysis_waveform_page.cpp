@@ -1,3 +1,4 @@
+#include "UIutils.h"
 #include "analysis_utils.h"
 #include "analysis_waveform_page.h"
 #include <QButtonGroup>
@@ -167,7 +168,7 @@ QWidget* AnalysisWaveformPage::setupRightPanel()
         m_voltagePhaseChecks[i]->setChecked(true);
 
         m_voltagePhaseChecks[i]->setProperty("checkType", "phaseCheck");
-        QString voltageStyle = QString("QCheckBox:checked { background-color: %1; }").arg(PhaseColors::Voltage[i].name());
+        QString voltageStyle = QString("QCheckBox:checked { background-color: %1; }").arg(View::PhaseColors::Voltage[i].name());
         m_voltagePhaseChecks[i]->setStyleSheet(voltageStyle);
 
         controlBarLayout->addWidget(m_voltagePhaseChecks[i]);
@@ -180,7 +181,7 @@ QWidget* AnalysisWaveformPage::setupRightPanel()
         m_currentPhaseChecks[i]->setChecked(true);
 
         m_currentPhaseChecks[i]->setProperty("checkType", "phaseCheck");
-        QString currentStyle = QString("QCheckBox:checked { background-color: %1; }").arg(PhaseColors::Current[i].name());
+        QString currentStyle = QString("QCheckBox:checked { background-color: %1; }").arg(View::PhaseColors::Current[i].name());
         m_currentPhaseChecks[i]->setStyleSheet(currentStyle);
 
         controlBarLayout->addWidget(m_currentPhaseChecks[i]);
@@ -249,7 +250,7 @@ void AnalysisWaveformPage::setupChart()
     // 시리즈 생성 및 연결
     for(int i{0}; i < 3; ++i) {
         m_voltageSeries[i] = new QLineSeries();
-        QPen voltagePen(PhaseColors::Voltage[i]);
+        QPen voltagePen(View::PhaseColors::Voltage[i]);
         voltagePen.setWidth(1);
         m_voltageSeries[i]->setPen(voltagePen);
         m_chart->addSeries(m_voltageSeries[i]);
@@ -257,7 +258,7 @@ void AnalysisWaveformPage::setupChart()
         m_voltageSeries[i]->attachAxis(m_axisV);
 
         m_currentSeries[i] = new QLineSeries();
-        QPen currentPen(PhaseColors::Current[i]);
+        QPen currentPen(View::PhaseColors::Current[i]);
         currentPen.setWidth(1);
         m_currentSeries[i]->setPen(currentPen);
         m_chart->addSeries(m_currentSeries[i]);
@@ -288,8 +289,8 @@ void AnalysisWaveformPage::updatePage()
         }
 
         // voltage auto scaling
-        for(size_t i{0}; i < config::View::RANGE_TABLE.size(); ++i) {
-            if(v_abs_max <= config::View::RANGE_TABLE[i]) {
+        for(size_t i{0}; i < View::RANGE_TABLE.size(); ++i) {
+            if(v_abs_max <= View::RANGE_TABLE[i]) {
                 if(i != m_voltageScaleIndex) {
                     m_voltageScaleIndex = i;
                     updateAxis(true);
@@ -299,8 +300,8 @@ void AnalysisWaveformPage::updatePage()
         }
 
         // current auto scaling
-        for(size_t i{0}; i < config::View::RANGE_TABLE.size(); ++i) {
-            if(a_abs_max <= config::View::RANGE_TABLE[i]) {
+        for(size_t i{0}; i < View::RANGE_TABLE.size(); ++i) {
+            if(a_abs_max <= View::RANGE_TABLE[i]) {
                 if(i != m_currentScaleIndex) {
                     m_currentScaleIndex=  i;
                     updateAxis(false);
@@ -331,18 +332,18 @@ void AnalysisWaveformPage::updatePage()
         const auto& v = point.voltage;
         const auto& i = point.current;
 
-        vPoints[0].append(QPointF(timeSec, AnalysisUtils::scaleValue(v.a, m_voltageUnit)));
-        vPoints[1].append(QPointF(timeSec, AnalysisUtils::scaleValue(v.b, m_voltageUnit)));
-        vPoints[2].append(QPointF(timeSec, AnalysisUtils::scaleValue(v.c, m_voltageUnit)));
+        vPoints[0].append(QPointF(timeSec, UiUtils::scaleValue(v.a, m_voltageUnit)));
+        vPoints[1].append(QPointF(timeSec, UiUtils::scaleValue(v.b, m_voltageUnit)));
+        vPoints[2].append(QPointF(timeSec, UiUtils::scaleValue(v.c, m_voltageUnit)));
 
-        iPoints[0].append(QPointF(timeSec, AnalysisUtils::scaleValue(i.a, m_currentUnit)));
-        iPoints[1].append(QPointF(timeSec, AnalysisUtils::scaleValue(i.b, m_currentUnit)));
-        iPoints[2].append(QPointF(timeSec, AnalysisUtils::scaleValue(i.c, m_currentUnit)));
+        iPoints[0].append(QPointF(timeSec, UiUtils::scaleValue(i.a, m_currentUnit)));
+        iPoints[1].append(QPointF(timeSec, UiUtils::scaleValue(i.b, m_currentUnit)));
+        iPoints[2].append(QPointF(timeSec, UiUtils::scaleValue(i.c, m_currentUnit)));
 
-        minV = std::min({minV, AnalysisUtils::scaleValue(v.a, m_voltageUnit), AnalysisUtils::scaleValue(v.b, m_voltageUnit), AnalysisUtils::scaleValue(v.c, m_voltageUnit)});
-        maxV = std::max({maxV, AnalysisUtils::scaleValue(v.a, m_voltageUnit), AnalysisUtils::scaleValue(v.b, m_voltageUnit), AnalysisUtils::scaleValue(v.c, m_voltageUnit)});
-        minA = std::min({minA, AnalysisUtils::scaleValue(i.a, m_currentUnit), AnalysisUtils::scaleValue(i.b, m_currentUnit), AnalysisUtils::scaleValue(i.c, m_currentUnit)});
-        maxA = std::max({maxA, AnalysisUtils::scaleValue(i.a, m_currentUnit), AnalysisUtils::scaleValue(i.b, m_currentUnit), AnalysisUtils::scaleValue(i.c, m_currentUnit)});
+        minV = std::min({minV, UiUtils::scaleValue(v.a, m_voltageUnit), UiUtils::scaleValue(v.b, m_voltageUnit), UiUtils::scaleValue(v.c, m_voltageUnit)});
+        maxV = std::max({maxV, UiUtils::scaleValue(v.a, m_voltageUnit), UiUtils::scaleValue(v.b, m_voltageUnit), UiUtils::scaleValue(v.c, m_voltageUnit)});
+        minA = std::min({minA, UiUtils::scaleValue(i.a, m_currentUnit), UiUtils::scaleValue(i.b, m_currentUnit), UiUtils::scaleValue(i.c, m_currentUnit)});
+        maxA = std::max({maxA, UiUtils::scaleValue(i.a, m_currentUnit), UiUtils::scaleValue(i.b, m_currentUnit), UiUtils::scaleValue(i.c, m_currentUnit)});
     }
 
     // 시리즈 및 축 업데이트
@@ -396,7 +397,7 @@ void AnalysisWaveformPage::applyScaleStep(bool zoomIn, bool isVoltage)
 
     int& index =(isVoltage) ? m_voltageScaleIndex : m_currentScaleIndex; // 멤버 인덱스 값 변경 가능
 
-    if(zoomIn && index < (int)config::View::RANGE_TABLE.size() - 1)
+    if(zoomIn && index < (int)View::RANGE_TABLE.size() - 1)
         ++index;
     else if(!zoomIn && index > 0)
         --index;
@@ -419,10 +420,10 @@ ScaleUnit AnalysisWaveformPage::updateUnit(QValueAxis* axis, QLabel* label, int 
 {
     if(!axis || !label) return ScaleUnit::Base;
 
-    double newRange = config::View::RANGE_TABLE[scaleIndex];
-    ScaleUnit unit = AnalysisUtils::updateScaleUnit(newRange);
+    double newRange = View::RANGE_TABLE[scaleIndex];
+    ScaleUnit unit = UiUtils::updateScaleUnit(newRange);
 
-    double displayRange = AnalysisUtils::scaleValue(newRange, unit);
+    double displayRange = UiUtils::scaleValue(newRange, unit);
     axis->setRange(-displayRange, displayRange);
 
     const char* baseUnit = isVoltage ? "V" : "A";

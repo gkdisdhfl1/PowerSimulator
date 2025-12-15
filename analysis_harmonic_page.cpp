@@ -1,4 +1,5 @@
 #include "UIconfig.h"
+#include "UIutils.h"
 #include "analysis_harmonic_page.h"
 #include "analysis_utils.h"
 
@@ -146,7 +147,7 @@ void AnalysisHarmonicPage::updateGraph()
         for(int order{0}; order <= 50; ++order) {
             double rawValue = calculateRawValue(sources, order, i);
             double displayValue = (sources.dataTypeIndex == 0) ?
-                                      AnalysisUtils::scaleValue(rawValue, m_scaleUnit) : rawValue;
+                                      UiUtils::scaleValue(rawValue, m_scaleUnit) : rawValue;
 
             if(order == 1  && !m_isFundVisible) {
                 displayValue = 0.0;
@@ -166,8 +167,8 @@ void AnalysisHarmonicPage::updateGraph()
     // 자동 스케일링
     if(m_isAutoScaling) {
         int newScaleIndex = m_scaleIndex;
-        for(size_t i{0}; i < config::View::RANGE_TABLE.size(); ++i) {
-            if(maxVal <= config::View::RANGE_TABLE[i]) {
+        for(size_t i{0}; i < View::RANGE_TABLE.size(); ++i) {
+            if(maxVal <= View::RANGE_TABLE[i]) {
                 newScaleIndex = i;
                 break;
             }
@@ -198,7 +199,7 @@ void AnalysisHarmonicPage::updateText()
         double rawValue = calculateRawValue(sources, order, phaseIndex);
 
         // 4. rawValue를 포맷에 맞게 QString으로 변환
-        QString formattedValue = AnalysisUtils::formatValue(rawValue);
+        QString formattedValue = UiUtils::formatValue(rawValue);
         // 5. 테이블의 해당 셀에 값 업데이트
         int row = order % 9;
         int col = order / 9;
@@ -226,9 +227,9 @@ void AnalysisHarmonicPage::updateInfoLabels()
     m_thdValueLabels[1]->setText(QString::number(thdData->a, 'f', 1));
     m_thdValueLabels[2]->setText(QString::number(thdData->a, 'f', 1));
 
-    m_fundValueLabels[0]->setText(AnalysisUtils::formatValue((*fundData).a.rms));
-    m_fundValueLabels[1]->setText(AnalysisUtils::formatValue((*fundData).b.rms));
-    m_fundValueLabels[2]->setText(AnalysisUtils::formatValue((*fundData).c.rms));
+    m_fundValueLabels[0]->setText(UiUtils::formatValue((*fundData).a.rms));
+    m_fundValueLabels[1]->setText(UiUtils::formatValue((*fundData).b.rms));
+    m_fundValueLabels[2]->setText(UiUtils::formatValue((*fundData).c.rms));
 }
 
 void AnalysisHarmonicPage::setupTopBar(QVBoxLayout* mainLayout)
@@ -305,7 +306,7 @@ void AnalysisHarmonicPage::setupControlBar(QVBoxLayout* mainLayout)
         m_phaseCheckBoxes[i]->setChecked(true);
         m_phaseCheckBoxes[i]->setProperty("checkType", "phaseCheck");
         QString phaseStyle = QString("QCheckBox::checked { background-color: %1; }")
-                                 .arg(PhaseColors::Voltage[i].name());
+                                 .arg(View::PhaseColors::Voltage[i].name());
         m_phaseCheckBoxes[i]->setStyleSheet(phaseStyle);
 
         m_phaseButtonGroup->addButton(m_phaseCheckBoxes[i], i);
@@ -383,7 +384,7 @@ QWidget* AnalysisHarmonicPage::createGraphView()
         int col = 1 + (i * 3); // A, B, C 각 그룹의 시작 컬럼
         auto phaseLabel = new QLabel(phaseNames[i]);
         phaseLabel->setProperty("harmonicLabelType", "phase");
-        QString phaseStyle = QString("color: %1;").arg(PhaseColors::Voltage[i].name());
+        QString phaseStyle = QString("color: %1;").arg(View::PhaseColors::Voltage[i].name());
         phaseLabel->setStyleSheet(phaseStyle);
         infoLayout->addWidget(phaseLabel, 0, col);
 
@@ -408,7 +409,7 @@ QWidget* AnalysisHarmonicPage::createGraphView()
 
         auto phaseLabel = new QLabel(phaseNames[i]);
         phaseLabel->setProperty("harmonicLabelType", "phase");
-        QString phaseStyle = QString("color: %1;").arg(PhaseColors::Voltage[i].name());
+        QString phaseStyle = QString("color: %1;").arg(View::PhaseColors::Voltage[i].name());
         phaseLabel->setStyleSheet(phaseStyle);
         infoLayout->addWidget(phaseLabel, 1, col);
 
@@ -456,7 +457,7 @@ QWidget* AnalysisHarmonicPage::createGraphView()
     // Y축 생성
     m_axisY = new QValueAxis();
     m_axisY->setLabelsFont(axisFont);
-    m_axisY->setRange(0, config::View::RANGE_TABLE[m_scaleIndex]);
+    m_axisY->setRange(0, View::RANGE_TABLE[m_scaleIndex]);
     m_chart->addAxis(m_axisY, Qt::AlignLeft);
 
     // X축 생성
@@ -483,7 +484,7 @@ QWidget* AnalysisHarmonicPage::createGraphView()
         for(int j{0}; j <= 50; ++j) {
             *m_barSets[i] << 0.0;
         }
-        m_barSets[i]->setColor(PhaseColors::Voltage[i]);
+        m_barSets[i]->setColor(View::PhaseColors::Voltage[i]);
         m_barSeries->append(m_barSets[i]);
     }
     m_chart->addSeries(m_barSeries);
@@ -564,8 +565,8 @@ void AnalysisHarmonicPage::updateChartAxis()
     int dataTypeIndex = m_dataTypeComboBox->currentIndex();
 
     // 2. 현재 범위와 단위를 계산
-    double currentRange = config::View::RANGE_TABLE[m_scaleIndex];
-    m_scaleUnit = AnalysisUtils::updateScaleUnit(currentRange);
+    double currentRange = View::RANGE_TABLE[m_scaleIndex];
+    m_scaleUnit = UiUtils::updateScaleUnit(currentRange);
 
     // 3. 단위 텍스트 설정
     if(dataTypeIndex == 0) { // Voltage or Current
@@ -588,7 +589,7 @@ void AnalysisHarmonicPage::updateChartAxis()
     m_unitLabel->setText(QString("[%1]").arg(unitText));
 
     // 4. Y축 범위 설정
-    double displayRange = AnalysisUtils::scaleValue(currentRange, m_scaleUnit);
+    double displayRange = UiUtils::scaleValue(currentRange, m_scaleUnit);
     m_axisY->setRange(0, displayRange);
     updateGraph();
     updateText();
@@ -617,7 +618,7 @@ void AnalysisHarmonicPage::onScaleAutoToggled(bool checked)
 
 void AnalysisHarmonicPage::onScaleInClicked()
 {
-    if(m_scaleIndex < (int)config::View::RANGE_TABLE.size() - 1) {
+    if(m_scaleIndex < (int)View::RANGE_TABLE.size() - 1) {
         ++m_scaleIndex;
         m_scaleButtons[0]->setChecked(false);
         updateChartAxis();

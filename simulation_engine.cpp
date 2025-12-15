@@ -22,7 +22,7 @@ SimulationEngine::SimulationEngine()
     , m_samplingCycles(config::Sampling::DefaultSamplingCycles, this)
     , m_samplesPerCycle(config::Sampling::DefaultSamplesPerCycle, this)
     , m_maxDataSize(config::Simulation::DefaultDataSize, this)
-    , m_graphWidthSec(config::View::GraphWidth::Default, this)
+    , m_graphWidthSec(1.0, this)
     , m_updateMode(UpdateMode::PerSample, this)
 
     , m_voltageHarmonic({config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase}, this)

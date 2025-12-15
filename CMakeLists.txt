@@ -105,6 +105,7 @@ set (APP_UI_SOURCES
         UIconfig.h
         datasource_types.h
         resources.qrc
+        UIutils.h UIutils.cpp
 
         # UI Components & Dialogs
         graph_window.h graph_window.cpp

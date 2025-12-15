@@ -1,6 +1,6 @@
 #include "settings_dialog.h"
 #include "settings_ui_controller.h"
-#include "config.h"
+#include "UIconfig.h"
 #include <QDebug>
 #include <QInputDialog>
 #include <QMessageBox>
@@ -25,8 +25,8 @@ SettingsDialog::SettingsDialog(SettingsUiController* controller ,QWidget *parent
     m_maxDataSizeSpinBox->setRange(config::Simulation::MinDataSize, config::Simulation::MaxDataSize);
 
     m_graphWidthSpinBox->setSuffix(" s");
-    m_graphWidthSpinBox->setRange(config::View::GraphWidth::Min, config::View::GraphWidth::Max);
-    m_graphWidthSpinBox->setValue(config::View::GraphWidth::Default);
+    m_graphWidthSpinBox->setRange(View::GraphWidth::Min, View::GraphWidth::Max);
+    m_graphWidthSpinBox->setValue(View::GraphWidth::Default);
 
     // dialog -> controller
     connect(this, &SettingsDialog::saveAsPresetRequested, m_controller, &SettingsUiController::onSaveAsPresetRequested);
@@ -106,7 +106,7 @@ void SettingsDialog::setupUi()
 
     auto graphWidthLabel = new QLabel("그래프 폭");
     m_graphWidthSpinBox = new QDoubleSpinBox();
-    m_graphWidthSpinBox->setRange(config::View::GraphWidth::Min, config::View::GraphWidth::Max);
+    m_graphWidthSpinBox->setRange(View::GraphWidth::Min, View::GraphWidth::Max);
     m_graphWidthSpinBox->setSingleStep(0.1);
     m_graphWidthSpinBox->setDecimals(2);
 

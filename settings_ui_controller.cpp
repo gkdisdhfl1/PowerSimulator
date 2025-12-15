@@ -1,6 +1,6 @@
- #include "settings_ui_controller.h"
+#include "settings_ui_controller.h"
 #include "control_panel.h"
-#include "config.h"
+#include "UIconfig.h"
 #include "settings_dialog.h"
 #include "settings_manager.h"
 #include "simulation_engine.h"
@@ -27,6 +27,7 @@ SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsM
 {
     initializeSettingsMap();
 
+    engine->m_graphWidthSec.setValue(View::GraphWidth::Default);
     m_settingsDialog = std::make_unique<SettingsDialog>(this, m_parent);
 
 }
@@ -222,7 +223,7 @@ void SettingsUiController::initializeSettingsMap()
     m_settingsMap["timeScale"] = {&m_engine->m_timeScale, config::TimeScale::Default, "시간 배율"};
     m_settingsMap["samplingCycles"] = {&m_engine->m_samplingCycles, config::Sampling::DefaultSamplingCycles, "초당 cycle"};
     m_settingsMap["samplesPerCycle"] = {&m_engine->m_samplesPerCycle, config::Sampling::DefaultSamplesPerCycle, "cycle당 sample"};
-    m_settingsMap["graphWidthSec"] = {&m_engine->m_graphWidthSec, config::View::GraphWidth::Default, "그래프 시간 폭"};
+    m_settingsMap["graphWidthSec"] = {&m_engine->m_graphWidthSec, View::GraphWidth::Default, "그래프 시간 폭"};
     m_settingsMap["updateMode"] = {&m_engine->m_updateMode, 0, "갱신 모드"};
 
     // 고조파 관련 설정
