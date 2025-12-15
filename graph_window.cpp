@@ -1,7 +1,8 @@
 #include "graph_window.h"
-#include "config.h"
 #include "custom_chart_view.h"
 #include "simulation_engine.h"
+#include "config.h"
+#include "UIconfig.h"
 
 #include <QValueAxis>
 #include <QLineSeries>
@@ -55,7 +56,7 @@ void GraphWindow::setupSeries()
         true, {}
     });
     m_seriesInfoList.back().series->setName("Voltage");
-    m_seriesInfoList.back().series->setColor(config::View::PhaseColors::Voltage[0]);
+    m_seriesInfoList.back().series->setColor(PhaseColors::Voltage[0]);
 
     m_seriesInfoList.emplace_back(SeriesInfo{
         new QLineSeries(this),
@@ -64,7 +65,7 @@ void GraphWindow::setupSeries()
         true, {}
     });
     m_seriesInfoList.back().series->setName("Current");
-    m_seriesInfoList.back().series->setColor(config::View::PhaseColors::Current[0]);
+    m_seriesInfoList.back().series->setColor(PhaseColors::Current[0]);
 
     // B상
     m_seriesInfoList.emplace_back(SeriesInfo{
@@ -74,7 +75,7 @@ void GraphWindow::setupSeries()
         false, {}
     });
     m_seriesInfoList.back().series->setName("Voltage B");
-    m_seriesInfoList.back().series->setColor(config::View::PhaseColors::Voltage[1]);
+    m_seriesInfoList.back().series->setColor(PhaseColors::Voltage[1]);
 
     m_seriesInfoList.emplace_back(SeriesInfo{
         new QLineSeries(this),
@@ -83,7 +84,7 @@ void GraphWindow::setupSeries()
         false, {}
     });
     m_seriesInfoList.back().series->setName("Current B");
-    m_seriesInfoList.back().series->setColor(config::View::PhaseColors::Current[1]);
+    m_seriesInfoList.back().series->setColor(PhaseColors::Current[1]);
 
     // C상
     m_seriesInfoList.emplace_back(SeriesInfo{
@@ -93,7 +94,7 @@ void GraphWindow::setupSeries()
         false, {}
     });
     m_seriesInfoList.back().series->setName("Voltage C");
-    m_seriesInfoList.back().series->setColor(config::View::PhaseColors::Voltage[2]);
+    m_seriesInfoList.back().series->setColor(PhaseColors::Voltage[2]);
 
     m_seriesInfoList.emplace_back(SeriesInfo{
         new QLineSeries(this),
@@ -102,7 +103,7 @@ void GraphWindow::setupSeries()
         false, {}
     });
     m_seriesInfoList.back().series->setName("Current C");
-    m_seriesInfoList.back().series->setColor(config::View::PhaseColors::Current[2]);
+    m_seriesInfoList.back().series->setColor(PhaseColors::Current[2]);
 
     // ----------------------------
 
@@ -116,7 +117,7 @@ void GraphWindow::setupSeries()
         info.series->setPointsVisible(true);
     }
 
-    m_seriesInfoList[0].series->setColor(config::View::PhaseColors::Voltage[0]);
+    m_seriesInfoList[0].series->setColor(PhaseColors::Voltage[0]);
 }
 
 // --- public slot ----

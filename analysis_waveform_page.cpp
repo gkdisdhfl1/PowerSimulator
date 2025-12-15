@@ -169,7 +169,7 @@ QWidget* AnalysisWaveformPage::setupRightPanel()
         m_voltagePhaseChecks[i]->setChecked(true);
 
         m_voltagePhaseChecks[i]->setProperty("checkType", "phaseCheck");
-        QString voltageStyle = QString("QCheckBox:checked { background-color: %1; }").arg(config::View::PhaseColors::Voltage[i].name());
+        QString voltageStyle = QString("QCheckBox:checked { background-color: %1; }").arg(PhaseColors::Voltage[i].name());
         m_voltagePhaseChecks[i]->setStyleSheet(voltageStyle);
 
         controlBarLayout->addWidget(m_voltagePhaseChecks[i]);
@@ -182,7 +182,7 @@ QWidget* AnalysisWaveformPage::setupRightPanel()
         m_currentPhaseChecks[i]->setChecked(true);
 
         m_currentPhaseChecks[i]->setProperty("checkType", "phaseCheck");
-        QString currentStyle = QString("QCheckBox:checked { background-color: %1; }").arg(config::View::PhaseColors::Current[i].name());
+        QString currentStyle = QString("QCheckBox:checked { background-color: %1; }").arg(PhaseColors::Current[i].name());
         m_currentPhaseChecks[i]->setStyleSheet(currentStyle);
 
         controlBarLayout->addWidget(m_currentPhaseChecks[i]);
@@ -251,7 +251,7 @@ void AnalysisWaveformPage::setupChart()
     // 시리즈 생성 및 연결
     for(int i{0}; i < 3; ++i) {
         m_voltageSeries[i] = new QLineSeries();
-        QPen voltagePen(config::View::PhaseColors::Voltage[i]);
+        QPen voltagePen(PhaseColors::Voltage[i]);
         voltagePen.setWidth(1);
         m_voltageSeries[i]->setPen(voltagePen);
         m_chart->addSeries(m_voltageSeries[i]);
@@ -259,7 +259,7 @@ void AnalysisWaveformPage::setupChart()
         m_voltageSeries[i]->attachAxis(m_axisV);
 
         m_currentSeries[i] = new QLineSeries();
-        QPen currentPen(config::View::PhaseColors::Current[i]);
+        QPen currentPen(PhaseColors::Current[i]);
         currentPen.setWidth(1);
         m_currentSeries[i]->setPen(currentPen);
         m_chart->addSeries(m_currentSeries[i]);
@@ -422,11 +422,37 @@ void AnalysisWaveformPage::updateAxis(bool isVoltageAxis)
     QValueAxis* targetAxis = isVoltageAxis ? m_axisV : m_axisA;
     QLabel* targetLabel = isVoltageAxis ? m_voltageScaleLabel : m_currentScaleLabel;
 
-    unit = AnalysisUtils::updateAxis(targetAxis, targetLabel, index, isVoltageAxis);
+    unit = updateUnit(targetAxis, targetLabel, index, isVoltageAxis);
     qDebug() << "index: " << index;
     qDebug() << "targetLabel: " << targetLabel->text();;
     qDebug() << "isVoltageAxis: " << isVoltageAxis;
     qDebug() << "---------------------------";
 }
 
+ScaleUnit AnalysisWaveformPage::updateUnit(QValueAxis* axis, QLabel* label, int scaleIndex, bool isVoltage)
+{
+    if(!axis || !label) return ScaleUnit::Base;
+    qDebug() << "updateAxis in";
 
+    double newRange = config::View::RANGE_TABLE[scaleIndex];
+    qDebug() << "newRange: " << newRange;
+    ScaleUnit unit = AnalysisUtils::updateScaleUnit(newRange);
+
+    double displayRange = AnalysisUtils::scaleValue(newRange, unit);
+    qDebug() << "displayRange: " << displayRange;
+    qDebug() << "---------------------------------------";
+    axis->setRange(-displayRange, displayRange);
+
+    const char* baseUnit = isVoltage ? "V" : "A";
+    QString unitString;
+    if(unit == ScaleUnit::Milli)
+        unitString = QString("m%1").arg(baseUnit);
+    else if(unit == ScaleUnit::Kilo)
+        unitString = QString("k%1").arg(baseUnit);
+    else
+        unitString = baseUnit;
+
+    label->setText(QString("[%1]").arg(unitString));
+
+    return unit;
+}

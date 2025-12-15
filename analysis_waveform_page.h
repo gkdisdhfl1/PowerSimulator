@@ -2,6 +2,7 @@
 #define ANALYSIS_WAVEFORM_PAGE_H
 
 #include "config.h"
+#include "UIconfig.h"
 #include "measured_data.h"
 
 #include <QWidget>
@@ -46,6 +47,8 @@ private:
     void applyScaleStep(bool zoomIn, bool voltage);
     void updateAxis(bool isVoltageAxis);
     void updatePage();
+
+    ScaleUnit updateUnit(QValueAxis* axis, QLabel* label, int scaleIndex, bool isVoltage);
 
     // UI 위젯
     QPushButton* m_startButton;

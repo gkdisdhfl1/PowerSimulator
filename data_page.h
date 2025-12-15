@@ -3,6 +3,7 @@
 
 #include "demand_data.h"
 #include "measured_data.h"
+#include "datasource_types.h"
 #include <QWidget>
 
 class OneSecondSummaryData;
@@ -10,20 +11,6 @@ class DataRowWidget;
 class QButtonGroup;
 class QPushButton;
 class QLabel;
-
-
-using Extractor = std::function<double(const OneSecondSummaryData&)>;
-using MinMaxExtractor = std::function<ValueWithTimestamp<double>(const DemandData&)>;
-
-struct DataSource {
-    QString name; // 버튼 이름
-    QStringList rowLabels;
-    std::vector<Extractor> extractors;
-
-    // Min/Max용 Extractor
-    std::vector<MinMaxExtractor> maxExtractors;
-    std::vector<MinMaxExtractor> minExtractors;
-};
 
 class DataPage : public QWidget
 {

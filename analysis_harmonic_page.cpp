@@ -1,3 +1,4 @@
+#include "UIconfig.h"
 #include "analysis_harmonic_page.h"
 #include "analysis_utils.h"
 
@@ -304,7 +305,7 @@ void AnalysisHarmonicPage::setupControlBar(QVBoxLayout* mainLayout)
         m_phaseCheckBoxes[i]->setChecked(true);
         m_phaseCheckBoxes[i]->setProperty("checkType", "phaseCheck");
         QString phaseStyle = QString("QCheckBox::checked { background-color: %1; }")
-                                 .arg(config::View::PhaseColors::Voltage[i].name());
+                                 .arg(PhaseColors::Voltage[i].name());
         m_phaseCheckBoxes[i]->setStyleSheet(phaseStyle);
 
         m_phaseButtonGroup->addButton(m_phaseCheckBoxes[i], i);
@@ -382,7 +383,7 @@ QWidget* AnalysisHarmonicPage::createGraphView()
         int col = 1 + (i * 3); // A, B, C 각 그룹의 시작 컬럼
         auto phaseLabel = new QLabel(phaseNames[i]);
         phaseLabel->setProperty("harmonicLabelType", "phase");
-        QString phaseStyle = QString("color: %1;").arg(config::View::PhaseColors::Voltage[i].name());
+        QString phaseStyle = QString("color: %1;").arg(PhaseColors::Voltage[i].name());
         phaseLabel->setStyleSheet(phaseStyle);
         infoLayout->addWidget(phaseLabel, 0, col);
 
@@ -407,7 +408,7 @@ QWidget* AnalysisHarmonicPage::createGraphView()
 
         auto phaseLabel = new QLabel(phaseNames[i]);
         phaseLabel->setProperty("harmonicLabelType", "phase");
-        QString phaseStyle = QString("color: %1;").arg(config::View::PhaseColors::Voltage[i].name());
+        QString phaseStyle = QString("color: %1;").arg(PhaseColors::Voltage[i].name());
         phaseLabel->setStyleSheet(phaseStyle);
         infoLayout->addWidget(phaseLabel, 1, col);
 
@@ -482,7 +483,7 @@ QWidget* AnalysisHarmonicPage::createGraphView()
         for(int j{0}; j <= 50; ++j) {
             *m_barSets[i] << 0.0;
         }
-        m_barSets[i]->setColor(config::View::PhaseColors::Voltage[i]);
+        m_barSets[i]->setColor(PhaseColors::Voltage[i]);
         m_barSeries->append(m_barSets[i]);
     }
     m_chart->addSeries(m_barSeries);

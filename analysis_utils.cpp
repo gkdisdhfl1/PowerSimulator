@@ -2,8 +2,8 @@
 #include "config.h"
 #include <complex>
 #include <QDebug>
-#include <QValueAxis>
-#include <QLabel>
+// #include <QValueAxis>
+// #include <QLabel>
 
 namespace {
     HarmonicAnalysisResult createHarmonicResult(const std::vector<std::complex<double>>& spectrum, int order)
@@ -622,7 +622,6 @@ SymmetricalComponents AnalysisUtils::calculateSymmetricalComponents(const Harmon
     return result;
 }
 
-
 ScaleUnit AnalysisUtils::updateScaleUnit(double range)
 {
     qDebug() << "range: " << range;
@@ -646,34 +645,6 @@ double AnalysisUtils::scaleValue(double value, ScaleUnit unit)
         // qDebug() << "unit: default";
         return value;
     }
-}
-
-ScaleUnit AnalysisUtils::updateAxis(QValueAxis* axis, QLabel* label, int scaleIndex, bool isVoltage)
-{
-    if(!axis || !label) return ScaleUnit::Base;
-    qDebug() << "updateAxis in";
-
-    double newRange = config::View::RANGE_TABLE[scaleIndex];
-    qDebug() << "newRange: " << newRange;
-    ScaleUnit unit = updateScaleUnit(newRange);
-
-    double displayRange = scaleValue(newRange, unit);
-    qDebug() << "displayRange: " << displayRange;
-    qDebug() << "---------------------------------------";
-    axis->setRange(-displayRange, displayRange);
-
-    const char* baseUnit = isVoltage ? "V" : "A";
-    QString unitString;
-    if(unit == ScaleUnit::Milli)
-        unitString = QString("m%1").arg(baseUnit);
-    else if(unit == ScaleUnit::Kilo)
-        unitString = QString("k%1").arg(baseUnit);
-    else
-        unitString = baseUnit;
-
-    label->setText(QString("[%1]").arg(unitString));
-
-    return unit;
 }
 
 QString AnalysisUtils::formatValue(double value)

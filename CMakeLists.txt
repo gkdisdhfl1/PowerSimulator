@@ -61,6 +61,7 @@ set(CORE_SOURCES
     a3700n_datasource_factory.h a3700n_datasource_factory.cpp
 
     # Data
+    config.h
     data_point.h
     measured_data.h
     demand_data.h
@@ -72,7 +73,7 @@ set(CORE_SOURCES
     analysis_utils.h analysis_utils.cpp
     min_max_tracker.h
     demand_calculator.h demand_calculator.cpp
-    
+
     # Third-Party
     kiss_fft/kiss_fft.c kiss_fft/kiss_fftr.c
 )
@@ -83,8 +84,6 @@ add_library(PowerSimulatorCore STATIC ${CORE_SOURCES})
 # Core 라이브러리의 의존성 (UI 제외)
 target_link_libraries(PowerSimulatorCore PUBLIC
     Qt${QT_VERSION_MAJOR}::Core
-    Qt${QT_VERSION_MAJOR}::Widgets
-    Qt${QT_VERSION_MAJOR}::Charts
     sqlite_modern_cpp
     sqlite3_lib
 )
@@ -103,7 +102,8 @@ set (APP_UI_SOURCES
         # Core & Main
         main.cpp
         main_window.h main_window.cpp
-        config.h
+        UIconfig.h
+        datasource_types.h
         resources.qrc
 
         # UI Components & Dialogs
@@ -130,7 +130,7 @@ set (APP_UI_SOURCES
         one_second_summary_window.h one_second_summary_window.cpp
         additional_metrics_window.h additional_metrics_window.cpp
         a3700n_window.h a3700n_window.cpp
-        
+
         # Pages
         data_page.h data_page.cpp
         analysis_phasor_page.h analysis_phasor_page.cpp
