@@ -4,6 +4,7 @@ cmake_minimum_required(VERSION 3.16)
 set(TEST_SOURCES
     test_min_max.cpp
     test_analysis_utils.cpp
+    test_demand_calculator.cpp
 )
 
 foreach(TEST_SOURCE ${TEST_SOURCES})
