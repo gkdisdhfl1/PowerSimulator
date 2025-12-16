@@ -2,8 +2,6 @@
 #include "config.h"
 #include <complex>
 #include <QDebug>
-#include <QValueAxis>
-#include <QLabel>
 
 namespace {
     HarmonicAnalysisResult createHarmonicResult(const std::vector<std::complex<double>>& spectrum, int order)
@@ -620,80 +618,4 @@ SymmetricalComponents AnalysisUtils::calculateSymmetricalComponents(const Harmon
     result.negative.magnitude = std::abs(V_negative);
     result.negative.phase_deg = utils::radiansToDegrees(std::arg(V_negative));
     return result;
-}
-
-
-ScaleUnit AnalysisUtils::updateScaleUnit(double range)
-{
-    qDebug() << "range: " << range;
-    if(range < 1.0) return ScaleUnit::Milli;
-    if(range >= 1000.0) return ScaleUnit::Kilo;
-    return ScaleUnit::Base;
-}
-
-double AnalysisUtils::scaleValue(double value, ScaleUnit unit)
-{
-    // qDebug() << "value: " << value;
-    switch(unit)
-    {
-    case ScaleUnit::Milli:
-        // qDebug() << "unit: Milli";
-        return value * 1000.0;
-    case ScaleUnit::Kilo:
-        // qDebug() << "unit: Kilo";
-        return value / 1000.0;
-    default:
-        // qDebug() << "unit: default";
-        return value;
-    }
-}
-
-ScaleUnit AnalysisUtils::updateAxis(QValueAxis* axis, QLabel* label, int scaleIndex, bool isVoltage)
-{
-    if(!axis || !label) return ScaleUnit::Base;
-    qDebug() << "updateAxis in";
-
-    double newRange = config::View::RANGE_TABLE[scaleIndex];
-    qDebug() << "newRange: " << newRange;
-    ScaleUnit unit = updateScaleUnit(newRange);
-
-    double displayRange = scaleValue(newRange, unit);
-    qDebug() << "displayRange: " << displayRange;
-    qDebug() << "---------------------------------------";
-    axis->setRange(-displayRange, displayRange);
-
-    const char* baseUnit = isVoltage ? "V" : "A";
-    QString unitString;
-    if(unit == ScaleUnit::Milli)
-        unitString = QString("m%1").arg(baseUnit);
-    else if(unit == ScaleUnit::Kilo)
-        unitString = QString("k%1").arg(baseUnit);
-    else
-        unitString = baseUnit;
-
-    label->setText(QString("[%1]").arg(unitString));
-
-    return unit;
-}
-
-QString AnalysisUtils::formatValue(double value)
-{
-    QString formattedValue;
-
-    if(value >= 100.0) {
-        formattedValue = QString::number(value, 'f', 1);
-    } else if(value >= 10.0) {
-        formattedValue = QString::number(value, 'f', 2);
-    } else if(value >= 1.0) {
-        formattedValue = QString::number(value, 'f', 3);
-    } else {
-        formattedValue = QString::number(value, 'f', 4);
-    }
-
-    // 전체 4자리 넘지 안도록 자르기
-    if(formattedValue.length() > 4 && formattedValue.contains('.')) {
-        formattedValue = formattedValue.left(5);
-    }
-
-    return formattedValue;
 }

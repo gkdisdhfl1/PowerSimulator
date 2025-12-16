@@ -1,6 +1,6 @@
 #include "phasor_view.h"
 #include "analysis_utils.h"
-#include "config.h"
+#include "UIconfig.h"
 
 #include <QCheckBox>
 #include <QVBoxLayout>
@@ -162,7 +162,7 @@ void PhasorView::paintEvent(QPaintEvent *event)
         for(int i{0}; i < 3; ++i) {
             if(m_phasorIsVisible[i]) {
                 double ratio = m_fundVoltage[i].magnitude / maxVoltageMagnitude;
-                drawPhasor(painter, m_fundVoltage[i], config::View::PhaseColors::Voltage[i], getPhasorDisplayLength(ratio, ctx, true));
+                drawPhasor(painter, m_fundVoltage[i], View::PhaseColors::Voltage[i], getPhasorDisplayLength(ratio, ctx, true));
             }
         }
         // 고조파 전압
@@ -177,7 +177,7 @@ void PhasorView::paintEvent(QPaintEvent *event)
         for(int i{0}; i < 3; ++i) {
             if(m_phasorIsVisible[i + 3]) {
                 double ratio  = m_fundCurrent[i].magnitude / maxCurrentMagnitude;
-                drawPhasor(painter, m_fundCurrent[i], config::View::PhaseColors::Current[i], getPhasorDisplayLength(ratio, ctx, false));
+                drawPhasor(painter, m_fundCurrent[i], View::PhaseColors::Current[i], getPhasorDisplayLength(ratio, ctx, false));
             }
         }
         // 고조파 전류
@@ -238,7 +238,6 @@ void PhasorView::drawPhasor(QPainter& painter, const PhasorInfo& phasor, const Q
 
 void PhasorView::onVisibilityChanged(int type, bool isVisible)
 {
-    qDebug() << "onVisibilityChanged(" << type << ", " << isVisible << ")";
     if(type >= 0 && type < m_phasorIsVisible.size()) {
         m_phasorIsVisible[type] = isVisible;
         update();

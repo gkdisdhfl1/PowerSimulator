@@ -1,12 +1,11 @@
 #include "graph_window.h"
-#include "config.h"
 #include "custom_chart_view.h"
 #include "simulation_engine.h"
+#include "UIconfig.h"
 
 #include <QValueAxis>
 #include <QLineSeries>
 #include <QChart>
-#include <QDebug>
 #include <QGridLayout>
 
 using utils::FpSeconds;
@@ -55,7 +54,7 @@ void GraphWindow::setupSeries()
         true, {}
     });
     m_seriesInfoList.back().series->setName("Voltage");
-    m_seriesInfoList.back().series->setColor(config::View::PhaseColors::Voltage[0]);
+    m_seriesInfoList.back().series->setColor(View::PhaseColors::Voltage[0]);
 
     m_seriesInfoList.emplace_back(SeriesInfo{
         new QLineSeries(this),
@@ -64,7 +63,7 @@ void GraphWindow::setupSeries()
         true, {}
     });
     m_seriesInfoList.back().series->setName("Current");
-    m_seriesInfoList.back().series->setColor(config::View::PhaseColors::Current[0]);
+    m_seriesInfoList.back().series->setColor(View::PhaseColors::Current[0]);
 
     // B상
     m_seriesInfoList.emplace_back(SeriesInfo{
@@ -74,7 +73,7 @@ void GraphWindow::setupSeries()
         false, {}
     });
     m_seriesInfoList.back().series->setName("Voltage B");
-    m_seriesInfoList.back().series->setColor(config::View::PhaseColors::Voltage[1]);
+    m_seriesInfoList.back().series->setColor(View::PhaseColors::Voltage[1]);
 
     m_seriesInfoList.emplace_back(SeriesInfo{
         new QLineSeries(this),
@@ -83,7 +82,7 @@ void GraphWindow::setupSeries()
         false, {}
     });
     m_seriesInfoList.back().series->setName("Current B");
-    m_seriesInfoList.back().series->setColor(config::View::PhaseColors::Current[1]);
+    m_seriesInfoList.back().series->setColor(View::PhaseColors::Current[1]);
 
     // C상
     m_seriesInfoList.emplace_back(SeriesInfo{
@@ -93,7 +92,7 @@ void GraphWindow::setupSeries()
         false, {}
     });
     m_seriesInfoList.back().series->setName("Voltage C");
-    m_seriesInfoList.back().series->setColor(config::View::PhaseColors::Voltage[2]);
+    m_seriesInfoList.back().series->setColor(View::PhaseColors::Voltage[2]);
 
     m_seriesInfoList.emplace_back(SeriesInfo{
         new QLineSeries(this),
@@ -102,7 +101,7 @@ void GraphWindow::setupSeries()
         false, {}
     });
     m_seriesInfoList.back().series->setName("Current C");
-    m_seriesInfoList.back().series->setColor(config::View::PhaseColors::Current[2]);
+    m_seriesInfoList.back().series->setColor(View::PhaseColors::Current[2]);
 
     // ----------------------------
 
@@ -116,25 +115,18 @@ void GraphWindow::setupSeries()
         info.series->setPointsVisible(true);
     }
 
-    m_seriesInfoList[0].series->setColor(config::View::PhaseColors::Voltage[0]);
+    m_seriesInfoList[0].series->setColor(View::PhaseColors::Voltage[0]);
 }
 
 // --- public slot ----
 void GraphWindow::stretchGraph(double factor)
 {
-    // if(!m_isAutoScrollEnabled)
-    //     return;
-
     // 현재 그래프 폭에 팩터를 곱하여 새로운 폭을 계산
     double currentWidth = m_engine->m_graphWidthSec.value();
     m_engine->m_graphWidthSec.setValue(currentWidth / factor);
-    // m_engine->m_params.graphWidthSec /= factor;
 
     // 그래프 폭이 너무 크거나 작아지지 않도록 범위 제한
-    m_engine->m_graphWidthSec.setValue(std::clamp(m_engine->m_graphWidthSec.value() , config::View::GraphWidth::Min, config::View::GraphWidth::Max));
-
-    // updateGraph를 즉시 호출하지 않음.
-    qDebug() << "new graph width: " << m_engine->m_graphWidthSec.value()  << "s";
+    m_engine->m_graphWidthSec.setValue(std::clamp(m_engine->m_graphWidthSec.value() , View::GraphWidth::Min, View::GraphWidth::Max));
 }
 
 void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
@@ -199,7 +191,7 @@ void GraphWindow::findNearestPoint(const QPointF& chartPos)
     }
 
     // 임계값 이내면 선택
-    if(nearestPoint && minDistance <= config::View::Interaction::Proximity::Threshold) {
+    if(nearestPoint && minDistance <= View::Interaction::Proximity::Threshold) {
         emit pointHovered(*nearestPoint);
     }
 }
@@ -313,9 +305,9 @@ void GraphWindow::updateAxes(const std::deque<DataPoint> &data)
 void GraphWindow::updateYAxisRange(double minY, double maxY)
 {
     // 위아래 여백 계산
-    double padding = (maxY - minY) * config::View::Padding::Ratio;
-    if(padding < config::View::Padding::Min) {
-        padding = config::View::Padding::Min; // 최소 여백 보장
+    double padding = (maxY - minY) * View::Padding::Ratio;
+    if(padding < View::Padding::Min) {
+        padding = View::Padding::Min; // 최소 여백 보장
     }
 
     m_axisY->setRange(minY - padding, maxY + padding);

@@ -73,10 +73,6 @@ void ThreePhaseDialog::setupUi()
 
 void ThreePhaseDialog::setInitialValues(const SimulationEngine* engine)
 {
-    // qDebug() << "[DBG] setInitialValues this=" << this
-    //          << " dialog visible=" << this->isVisible()
-    //          << " windowTitle=" << windowTitle();
-    // qDebug() << "[DBG] VbPhase param =" << params.voltage_B_phase_deg;
     QSignalBlocker b0(m_amplitudeControls[0]);
     QSignalBlocker b1(m_phaseDials[0]);
     m_amplitudeControls[0]->setRange(config::Source::Amplitude::Min, config::Source::Amplitude::Max);

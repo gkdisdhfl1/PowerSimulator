@@ -1,7 +1,8 @@
 #ifndef A37__N_DATASOURCE_FACTORY_H
 #define A37__N_DATASOURCE_FACTORY_H
 
-#include "data_page.h"
+#include "datasource_types.h"
+
 class DataSourceFactory
 {
 public:

@@ -1,6 +1,6 @@
- #include "settings_ui_controller.h"
+#include "settings_ui_controller.h"
 #include "control_panel.h"
-#include "config.h"
+#include "UIconfig.h"
 #include "settings_dialog.h"
 #include "settings_manager.h"
 #include "simulation_engine.h"
@@ -27,6 +27,7 @@ SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsM
 {
     initializeSettingsMap();
 
+    engine->m_graphWidthSec.setValue(View::GraphWidth::Default);
     m_settingsDialog = std::make_unique<SettingsDialog>(this, m_parent);
 
 }
@@ -40,7 +41,6 @@ void SettingsUiController::onSaveAsPresetRequested(const QString& presetName)
 void SettingsUiController::onLoadPresetRequested(const QString& presetName)
 {
     auto result = applySettingsToEngine(presetName.toStdString());
-    // qDebug() << "[Debug] SettingsUiController: Emitting presetLoaded signal.";
     emit taskFinished(result, "프리셋을 성공적으로 적용했습니다.");
 }
 void SettingsUiController::onDeletePresetRequested(const QString& presetName)
@@ -58,7 +58,6 @@ void SettingsUiController::onRequestPresetList()
 {
     auto result = m_settingsManager.getAllPresetNames();
     if(result) {
-        // qDebug() << "result value: " << result.value();
         emit presetListChanged(result.value());
     }
     else {
@@ -180,10 +179,6 @@ void SettingsUiController::onCoefficientsChanged(const FrequencyTracker::PidCoef
 {
     m_engine->getFrequencyTracker()->setFllCoefficients(fllCoeffs);
     m_engine->getFrequencyTracker()->setZcCoefficients(zcCoeffs);
-
-    qDebug() << "PID 계수 설정 완료";
-    qDebug() << "pllCoeffs : " << fllCoeffs.Kd << ", " << fllCoeffs.Ki << ", " << fllCoeffs.Kd;
-    qDebug() << "zclCoeffs : " << zcCoeffs.Kd << ", " << zcCoeffs.Ki << ", " << zcCoeffs.Kd;
 }
 
 void SettingsUiController::onHarmonicsChanged()
@@ -228,7 +223,7 @@ void SettingsUiController::initializeSettingsMap()
     m_settingsMap["timeScale"] = {&m_engine->m_timeScale, config::TimeScale::Default, "시간 배율"};
     m_settingsMap["samplingCycles"] = {&m_engine->m_samplingCycles, config::Sampling::DefaultSamplingCycles, "초당 cycle"};
     m_settingsMap["samplesPerCycle"] = {&m_engine->m_samplesPerCycle, config::Sampling::DefaultSamplesPerCycle, "cycle당 sample"};
-    m_settingsMap["graphWidthSec"] = {&m_engine->m_graphWidthSec, config::View::GraphWidth::Default, "그래프 시간 폭"};
+    m_settingsMap["graphWidthSec"] = {&m_engine->m_graphWidthSec, View::GraphWidth::Default, "그래프 시간 폭"};
     m_settingsMap["updateMode"] = {&m_engine->m_updateMode, 0, "갱신 모드"};
 
     // 고조파 관련 설정

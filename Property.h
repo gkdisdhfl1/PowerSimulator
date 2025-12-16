@@ -3,7 +3,6 @@
 
 #include <QObject>
 #include "shared_data_types.h"
-#include <QDebug>
 #include <QVariant>
 
 // 템플릿이 아닌 부모 클래스에 모든 타입의 시그널/슬롯을 미리 정의
@@ -66,10 +65,8 @@ public:
     // 값을 변경하는 Setter
     void setValue(const T& newValue) override
     {
-        // qDebug() << "Property::setValue: 들어온 값: " << newValue;
         if(m_value != newValue) {
             m_value = newValue;
-            // qDebug() << "Property::setValue: 값이 변경됨: " << m_value;
             emit valueChanged(newValue); // T 타입에 맞는 오버로딩된 시그널을 자동으로 호출
         }
     }

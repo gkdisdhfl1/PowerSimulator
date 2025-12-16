@@ -1,5 +1,4 @@
 #include "value_control_widget.h"
-#include <QDebug>
 #include <QStyle>
 #include <QDoubleSpinBox>
 #include <QSlider>
@@ -50,7 +49,6 @@ void ValueControlWidget::setValue(double value)
     // 값의 범위를 위젯의 min/max 값으로 제한
     const double clampedValue = std::clamp(value, m_spinBox->minimum(), m_spinBox->maximum());
     m_spinBox->setValue(clampedValue);
-    // qDebug() << "[Debug] ValueControlWidget: setValue called with value: " << m_spinBox->value();
     syncSliderToValue(); // 값 설정 후 슬라이더 위치 동기화
 }
 
@@ -149,12 +147,10 @@ void ValueControlWidget::updateUiAppearance()
 {
     switch (m_currentMode) {
     case Mode::Normal:
-        // qDebug() << "UI Mode: Normal";
         m_spinBox->setSingleStep(m_singleStep);
         m_slider->setRange(m_fineTuningRangeMin, m_fineTuningRangeMax);
         break;
     case Mode::FineTuning:
-        // qDebug() << "UI Mode: Fine-tuning";
         m_spinBox->setSingleStep(m_fineStep);
         m_slider->setRange(0, FineTuningSliderSteps - 1);
         break;
