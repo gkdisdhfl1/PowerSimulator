@@ -73,6 +73,7 @@ set(CORE_SOURCES
     analysis_utils.h analysis_utils.cpp
     min_max_tracker.h
     demand_calculator.h demand_calculator.cpp
+    pid_controller.h pid_controller.cpp
 
     # Third-Party
     kiss_fft/kiss_fft.c kiss_fft/kiss_fftr.c
@@ -117,7 +118,6 @@ set (APP_UI_SOURCES
         fine_tuning_dial.h fine_tuning_dial.cpp
         collapsible_groupbox.h collapsible_groupbox.cpp
         three_phase_dialog.h three_phase_dialog.cpp
-        pid_controller.h pid_controller.cpp
         pid_tuning_dialog.h pid_tuning_dialog.cpp
         data_row_widget.h data_row_widget.cpp
 
