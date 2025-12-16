@@ -66,6 +66,46 @@ private slots:
         QCOMPARE(demand.voltageSymmetricalComponents.positive.value, 95.0);
         QCOMPARE(demand.voltageSymmetricalComponents.negative.value, 3.0);
     }
+
+    void testNaNHandling()
+    {
+        DemandCalculator calculator;
+        const DemandData& demand = calculator.getDemandData();
+
+        OneSecondSummaryData data;
+        data.totalVoltageRms = {std::numeric_limits<double>::quiet_NaN(),
+                                std::numeric_limits<double>::quiet_NaN(),
+                                std::numeric_limits<double>::quiet_NaN()};
+
+        calculator.processOneSecondData(data);
+
+        // NaN 값이 들어왔을 때 MinMaxTracker가 올바르게 처리하는지 검증
+        // Nan 값은 무시되어야 함
+        QCOMPARE(demand.totalVoltageRms.a.min.value, std::numeric_limits<double>::max());
+        QCOMPARE(demand.totalVoltageRms.a.max.value, std::numeric_limits<double>::lowest());
+    }
+
+    void testTimestampPolicy()
+    {
+        DemandCalculator calculator;
+        const DemandData& demand = calculator.getDemandData();
+        OneSecondSummaryData data;
+
+        data.totalVoltageRms = {100.0, 100.0, 100.0};
+
+        // 1. 첫 번째 입력
+        calculator.processOneSecondData(data);
+        QDateTime firstTime = calculator.getDemandData().totalVoltageRms.a.max.timestamp;
+
+        QTest::qWait(100); // 타임스탬프 차이를 위해 잠시 대기
+
+        // 2. 동일한 값 다시 입력
+        calculator.processOneSecondData(data);
+        QDateTime secondTime = calculator.getDemandData().totalVoltageRms.a.max.timestamp;
+
+        // 검증: 동일한 값이므로 타임스탬프는 변경되지 않아야 함
+        QCOMPARE(firstTime, secondTime);
+    }
 };
 
 QTEST_MAIN(TestDemandCalculator)
