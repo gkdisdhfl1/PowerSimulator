@@ -26,6 +26,9 @@ private slots:
 
     // 6. 유효 전력 위상차 테스트
     void testActivePowerPhaseShift();
+
+    // 7. buildOneSecondSummary 전수 검사
+    void testBuildOneSecondSummary();
 };
 
 void TestAnalysisUtils::testCalculateTotalRms_DC()
@@ -206,6 +209,86 @@ void TestAnalysisUtils::testActivePowerPhaseShift()
     auto s3 = createSamples(std::numbers::pi / 2.0);
     PhaseData p3 = AnalysisUtils::calculateActivePower(s3);
     QVERIFY(std::abs(p3.a) < 0.001);
+}
+
+void TestAnalysisUtils::testBuildOneSecondSummary()
+{
+    // 1. 테스트 데이터 준비 (2 cycles)
+    std::vector<MeasuredData> cycleBuffer;
+
+    // Cycle 1 : 100V, 10A, Phase 0
+    MeasuredData d1;
+    d1.timestamp = std::chrono::nanoseconds(1'000'000'000);
+    d1.voltageRms = {100.0, 100.0, 100.0};
+    d1.currentRms = {10.0, 10.0, 10.0};
+    d1.activePower = {1000.0, 1000.0, 1000.0};
+    d1.voltageRms_ll = {173.2, 173.2, 173.2}; // sqrt(3)*100
+    d1.residualVoltageRms = 1.0;
+
+    d1.fundamentalVoltage.a.rms = 100.0;
+    d1.fundamentalVoltage.a.order = 60;
+    // Dominant Harmonic 3rd
+    d1.dominantVoltage.a = {3, 10.0, 0.0, std::complex<double>(10.0, 0.0)};
+
+    // Cycle 2 : 220V, 20A
+    MeasuredData d2;
+    d2.timestamp = std::chrono::nanoseconds(2'000'000'000);
+    d2.voltageRms = {200.0, 200.0, 200.0};
+    d2.currentRms = {20.0, 20.0, 20.0};
+    d2.activePower = {4000.0, 4000.0, 4000.0};
+    d2.voltageRms_ll = {346.4, 346.4, 346.4}; // sqrt(3)*200
+    d2.residualVoltageRms = 3.0;
+
+    d2.fundamentalVoltage.a.rms = 200.0;
+    d2.fundamentalVoltage.a.order = 60;
+    // Dominant Harmonic 3rd
+    d2.dominantVoltage.a = {3, 20.0, 0.0, std::complex<double>(20.0, 0.0)};
+
+    // Harmonic Vector (마지막 사이클 복사 확인용)
+    d2.voltageHarmonics.a = {
+        {1, 200.0, 0.0, std::complex<double>(200.0, 0.0)},
+        {3, 20.0, 0.0, std::complex<double>(20.0, 0.0)}
+    };
+
+    cycleBuffer.push_back(d1);
+    cycleBuffer.push_back(d2);
+
+    // 실행
+    OneSecondSummaryData summary = AnalysisUtils::buildOneSecondSummary(cycleBuffer);
+
+    // 검증
+
+    // 1. RMS
+    // sqrt((100^2 + 200^2)/2) = 158.11388...
+    double expectedRms = std::sqrt((100.0*100.0 + 200.0*200.0) / 2.0);
+    QVERIFY(std::abs(summary.totalVoltageRms.a - expectedRms) < 0.001);
+
+    // 2. Active Power
+    // (1000 + 4000) / 2 = 2500
+    double expectedPower = (1000.0 + 4000.0) / 2.0;
+    QVERIFY(std::abs(summary.activePower.a - expectedPower) < 0.001);
+
+    // 3. Voltage LL RMS
+    double expectedRmsLL = std::sqrt((173.2*173.2 + 346.4*346.4) / 2.0);
+    QVERIFY(std::abs(summary.totalVoltageRms_ll.ab - expectedRmsLL) < 0.001);
+
+    // 4. Frequency
+    // Duration = 1s, Order = 60 -> 60Hz
+    QVERIFY(std::abs(summary.frequency - 60.0) < 0.001);
+
+    // 5. Dominant Harmonic
+    // 3rd Harmonic RMS = sqrt((10^2 + 20^2)/2) = 15.811388...
+    QVERIFY(std::abs(summary.dominantHarmonicVoltageRms - std::sqrt(250.0)) < 0.001);
+    QCOMPARE(summary.dominantHarmonicVoltageOrder, 3);
+
+    // 6. Residual Average
+    // (1.0 + 3.0) / 2 = 2.0
+    QVERIFY(std::abs(summary.residualVoltageRms - 2.0) < 0.001);
+
+    // 7. Harmonics 복사 확인
+    QCOMPARE(summary.lastCycleVoltageHarmonics.a.size(), 2);
+    QCOMPARE(summary.lastCycleVoltageHarmonics.a[1].order, 3);
+    QCOMPARE(summary.lastCycleVoltageHarmonics.a[1].rms, 20.0);
 }
 
 QTEST_MAIN(TestAnalysisUtils)

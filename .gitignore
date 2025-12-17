@@ -86,4 +86,8 @@ CMakeLists.txt.user
 .github/
 .cache/
 test/build/
+test/Testing/
+Testing/
 .vscode/
+
+/Testing/Temporary/*.txt
