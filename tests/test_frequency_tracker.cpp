@@ -175,11 +175,12 @@ void TestFrequencyTracker::testPLLTracking()
 {
     SimulationEngine engine;
     engine.m_samplingCycles.setValue(60.0);
-    engine.m_samplingCycles.setValue(16);
+    engine.m_samplesPerCycle.setValue(16);
     engine.recalculateCaptureInterval();
 
     FrequencyTracker tracker(&engine);
     QSignalSpy spy(&tracker, &FrequencyTracker::samplingCyclesUpdated);
+    std::vector<DataPoint> dummy(16);
 
     // 1. PLL 상태 강제 진입
     tracker.startTracking();
@@ -195,22 +196,19 @@ void TestFrequencyTracker::testPLLTracking()
 
         tracker.process(dp, {}, {});
 
-        if(tracker.currentState() == FrequencyTracker::TrackingState::FLL_Acquisition) {
-            break;
-        }
+        if(tracker.currentState() == FrequencyTracker::TrackingState::FLL_Acquisition) break;
     }
 
     // FLL Pass
-    // 1. 첫 번째 데이터: 위상 0.1
+    // 1. 첫 번째 데이터: 위상 0.1 (초기화용)
     MeasuredData md_init;
-    md_init.fundamentalVoltage.a = {1, 100.0, 0.1, {}};
-    std::vector<DataPoint> dummy(16);
+    md_init.fundamentalVoltage.a = {.order = 1, .rms = 100.0, .phase = 0.1, .phasor = {}};
     tracker.process({}, md_init, dummy);
 
-    // 2. 이후 데이터: 위상 0.1 (고정) -> 위상차 0 -> 주파수 오차
+    // 2. 이후 데이터: 위상 0.1 (고정) -> 위상차 0 -> 주파수 오차 0
     for(int i = 0; i < 50; ++i) {
         MeasuredData md;
-        md.fundamentalVoltage.a = {1, 100.0, 0.1, {}}; // 위상 고정
+        md.fundamentalVoltage.a = {.order = 1, .rms = 100.0, .phase = 0.1, .phasor = {}}; // 위상 고정
         tracker.process({}, md, dummy);
 
         if(tracker.currentState() == FrequencyTracker::TrackingState::FineTune) break;
@@ -220,20 +218,20 @@ void TestFrequencyTracker::testPLLTracking()
     // 2. PLL 동작 검증 (위상차 주입)
     // 위상을 0.1 라디안 틀어서 주입
     double injectedPhase = 0.1;
-    double currentFrequency = 60.0;
 
     // 초기 samplingCycles 값 저장
     double initialCycles = engine.m_samplingCycles.value();
+    spy.clear();
 
     // 한 번 실행
     MeasuredData md;
     md.fundamentalVoltage.a.rms = 100.0;
     md.fundamentalVoltage.a.phase = injectedPhase;
     md.fundamentalVoltage.a.order = 1;
-
+    tracker.process({}, md, dummy);
     tracker.process({}, md, dummy);
 
-    // 검증: 위상차가 양수(+)이면, 트래커는 이를 줄이기 위해 주파수르 높여야함.
+    // 검증: 위상차가 양수(+)이면, 트래커는 이를 줄이기 위해 주파수를 높여야함.
     QVERIFY(spy.count() > 0);
     double newCycles = spy.takeLast().at(0).toDouble();
 

@@ -6,6 +6,7 @@ set(TEST_SOURCES
     test_analysis_utils.cpp
     test_demand_calculator.cpp
     test_frequency_tracker.cpp
+    test_simulation_engine.cpp
 )
 
 foreach(TEST_SOURCE ${TEST_SOURCES})
