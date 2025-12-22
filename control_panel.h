@@ -44,13 +44,9 @@ public slots:
     void setSamplingCycles(double value);
     void setSamplesPerCycle(int value);
     void setUpdateMode(UpdateMode mode);
-    void setVoltageHarmonic(const HarmonicComponent& hc);
-    void setCurrentHarmonic(const HarmonicComponent& hc);
 
 private slots:
     void updateCurrentPhaseLabel(int value);
-    void updateVoltageHarmonicPhaseLabel(int value);
-    void updateCurrentHarmonicPhaseLabel(int value);
 
 signals:
     // ui control의 이벤트를 외부로 전달하는 시그널들
@@ -71,7 +67,7 @@ signals:
     void samplingCyclesChanged(double value);
     void samplesPerCycleChanged(int value);
     void updateModeChanged();
-    void harmonicChanged();
+    void harmonicsSettingsRequested();
 
 private:
     // UI 생성 및 초기화를 위한 헬퍼 함수들
@@ -91,15 +87,7 @@ private:
     ValueControlWidget* m_samplesPerCycleControlWidget;
 
     // 고조파 UI
-    QTabWidget* m_harmonicsTabWidget;
-    ValueControlWidget* m_voltageHarmonicOrder;
-    ValueControlWidget* m_voltageHarmonicMagnitude;
-    FineTuningDial* m_voltageHarmonicPhaseDial;
-    QLabel* m_voltageHarmonicPhaseLabel;
-    ValueControlWidget* m_currentHarmonicOrder;
-    ValueControlWidget* m_currentHarmonicMagnitude;
-    FineTuningDial* m_currentHarmonicPhaseDial;
-    QLabel* m_currentHarmonicPhaseLabel;
+    QPushButton* m_harmonicsButton;
 
     FineTuningDial* m_currentPhaseDial;
     QLabel* m_currentPhaseLabel;

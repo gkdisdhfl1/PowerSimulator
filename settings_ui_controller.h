@@ -4,6 +4,7 @@
 #include <QVariantMap>
 #include <expected>
 #include "frequency_tracker.h"
+#include "harmonics_dialog.h"
 #include "settings_dialog.h"
 
 class ControlPanel;
@@ -52,7 +53,7 @@ public slots:
     // PID 튜닝 다이얼로그 관련 슬롯
     void onCoefficientsChanged(const FrequencyTracker::PidCoefficients& fllCoeffs, const FrequencyTracker::PidCoefficients& zcCoeffs);
 
-    // void onHarmonicsChanged();
+    void onHarmonicsSettingsRequested();
 
     // 3상 변경 관련 슬롯
     void onThreePhaseValueChanged(int type, double value);
@@ -73,6 +74,7 @@ private:
     SimulationEngine* m_engine;
     QWidget* m_parent;
     std::unique_ptr<SettingsDialog> m_settingsDialog; // SettingsDialog 소유권 이전
+    std::unique_ptr<HarmonicsDialog> m_harmonicsDialog;
 
     std::unordered_map<std::string, SettingInfo> m_settingsMap;
 

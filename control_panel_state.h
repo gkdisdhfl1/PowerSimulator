@@ -16,8 +16,8 @@ struct ControlPanelState {
     int samplesPerCycle;
 
     // 고조파 성분
-    HarmonicComponent voltageHarmonic;
-    HarmonicComponent currentHarmonic;
+    HarmonicList voltageHarmonics;
+    HarmonicList currentHarmonics;
 
     // UI 상태
     bool isRunning;

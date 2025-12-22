@@ -29,7 +29,14 @@ SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsM
 
     engine->m_graphWidthSec.setValue(View::GraphWidth::Default);
     m_settingsDialog = std::make_unique<SettingsDialog>(this, m_parent);
+    m_harmonicsDialog = std::make_unique<HarmonicsDialog>(m_parent);
 
+    connect(m_harmonicsDialog.get(), &HarmonicsDialog::voltageHarmonicsChanged, this, [this](const HarmonicList& list) {
+        m_engine->m_voltageHarmonic.setValue(list);
+    });
+    connect(m_harmonicsDialog.get(), &HarmonicsDialog::currentHarmonicsChanged, this, [this](const HarmonicList& list) {
+        m_engine->m_currentHarmonic.setValue(list);
+    });
 }
 
 // --- public slot 구현 ---
@@ -189,6 +196,18 @@ void SettingsUiController::onCoefficientsChanged(const FrequencyTracker::PidCoef
 //     params->m_voltageHarmonic.setValue(state.voltageHarmonic);
 //     params->m_currentHarmonic.setValue(state.currentHarmonic);
 // }
+
+void SettingsUiController::onHarmonicsSettingsRequested()
+{
+    if(!m_engine || !m_harmonicsDialog) return;
+
+    // 다이얼로그를 열기 전에 인진의 현재 고조파 리스트로 UI 동기화
+    m_harmonicsDialog->setHarmonics(m_engine->m_voltageHarmonic.value(), m_engine->m_currentHarmonic.value());
+
+    m_harmonicsDialog->show();
+    m_harmonicsDialog->raise();
+    m_harmonicsDialog->activateWindow();
+}
 
 void SettingsUiController::onThreePhaseValueChanged(int type, double value)
 {
