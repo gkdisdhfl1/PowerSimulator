@@ -5,6 +5,7 @@
 #include "settings_manager.h"
 #include "simulation_engine.h"
 #include "three_phase_dialog.h"
+#include "UIutils.h"
 #include <QInputDialog>
 #include <QStatusBar>
 
@@ -188,15 +189,6 @@ void SettingsUiController::onCoefficientsChanged(const FrequencyTracker::PidCoef
     m_engine->getFrequencyTracker()->setZcCoefficients(zcCoeffs);
 }
 
-// void SettingsUiController::onHarmonicsChanged()
-// {
-//     const auto state = m_controlPanel->getState();
-//     auto& params = m_engine;
-
-//     params->m_voltageHarmonic.setValue(state.voltageHarmonic);
-//     params->m_currentHarmonic.setValue(state.currentHarmonic);
-// }
-
 void SettingsUiController::onHarmonicsSettingsRequested()
 {
     if(!m_engine || !m_harmonicsDialog) return;
@@ -322,6 +314,13 @@ std::expected<void, std::string> SettingsUiController::applySettingsToEngine(std
         // 3. Property 인터페이서를 통해 값 설정
         info.property->setVariantValue(loadedValue);
     }
+    // 고조파 리스트 로드
+    auto voltageRes = m_settingsManager.loadSetting(presetName, "voltageHarmonicsJson", std::string(""));
+    if(voltageRes)
+        m_engine->m_voltageHarmonic.setValue(UIutils::jsonToHarmonicList(QString::fromStdString(*voltageRes)));
+    auto currentRes = m_settingsManager.loadSetting(presetName, "currentHarmonicsJson", std::string(""));
+    if(currentRes)
+        m_engine->m_currentHarmonic.setValue(UIutils::jsonToHarmonicList(QString::fromStdString(*currentRes)));
 
     m_blockUiSignals = false;
     emit presetApplied();
@@ -352,6 +351,12 @@ std::expected<void, std::string> SettingsUiController::saveEngineToSettings(std:
 
         if(!result) return result; // 오류 발생 시 즉시 전파
     }
+    // 고조파 리스트 저장
+    QString voltageJson = UIutils::harmonicListToJson(m_engine->m_voltageHarmonic.value());
+    QString currentJson = UIutils::harmonicListToJson(m_engine->m_currentHarmonic.value());
+
+    if(auto res = m_settingsManager.saveSetting(presetName, "voltageHarmonicsJson", voltageJson.toStdString()); !res) return res;
+    if(auto res = m_settingsManager.saveSetting(presetName, "currentHarmonicsJson", currentJson.toStdString()); !res) return res;
 
     // UI와 별개인 엔진 파라미터들도 저장
     if(auto res = m_settingsManager.saveSetting(presetName, "maxDataSize", m_engine->m_maxDataSize.value()); !res) return res;

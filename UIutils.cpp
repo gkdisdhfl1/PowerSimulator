@@ -1,4 +1,7 @@
 #include "UIutils.h"
+#include <QJsonObject>
+#include <QJsonArray>
+
 
 ScaleUnit UIutils::updateScaleUnit(double range)
 {
@@ -40,4 +43,38 @@ QString UIutils::formatValue(double value)
     }
 
     return formattedValue;
+}
+
+QString UIutils::harmonicListToJson(const HarmonicList& list) {
+    QJsonArray jsonArray;
+    for(const auto& h : list) {
+        QJsonObject obj;
+        obj["order"] = h.order;
+        obj["mag"] = h.magnitude;
+        obj["phase"] = h.phase;
+        jsonArray.append(obj);
+    }
+    QJsonDocument doc(jsonArray);
+    return doc.toJson(QJsonDocument::Compact);
+}
+
+HarmonicList UIutils::jsonToHarmonicList(const QString& jsonStr)
+{
+    HarmonicList list;
+    QJsonDocument doc = QJsonDocument::fromJson(jsonStr.toUtf8());
+    if(!doc.isArray())
+        return list;
+
+    QJsonArray array = doc.array();
+    for(const auto& val : std::as_const(array)) {
+        if(val.isObject()) {
+            QJsonObject obj = val.toObject();
+            HarmonicComponent h;
+            h.order = obj["order"].toInt();
+            h.magnitude = obj["mag"].toDouble();
+            h.phase = obj["phase"].toDouble();
+            list.push_back(h);
+        }
+    }
+    return list;
 }
