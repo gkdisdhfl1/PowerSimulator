@@ -25,8 +25,8 @@ SimulationEngine::SimulationEngine()
     , m_graphWidthSec(1.0, this)
     , m_updateMode(UpdateMode::PerSample, this)
 
-    , m_voltageHarmonic({config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase}, this)
-    , m_currentHarmonic({config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase}, this)
+    , m_voltageHarmonic({{config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase}}, this)
+    , m_currentHarmonic({{config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase}}, this)
 
     , m_voltage_B_amplitude(config::Source::ThreePhase::DefaultAmplitudeB, this)
     , m_voltage_B_phase_deg(config::Source::ThreePhase::DefaultPhaseB_deg, this)
@@ -208,38 +208,23 @@ void SimulationEngine::advanceSimulationTime()
 
 PhaseData SimulationEngine::calculateCurrentVoltage() const
 {
+    // 기본파, 고조파 계산
     PhaseData result;
     const double fundamentalPhase = m_currentPhaseRadians + m_phaseRadians.value();
-    const auto& harmonic = m_voltageHarmonic.value();
-    const double harmonicPhaseOffset = utils::degreesToRadians(harmonic.phase) ;
+    const auto& harmonics = m_voltageHarmonic.value();
 
-    // 기본파, 고조파 계산
     // A상
-    result.a = m_amplitude.value() * sin(fundamentalPhase);
-    if(harmonic.magnitude > 0.0) {
-        const double harmonicPhase = harmonic.order * fundamentalPhase + harmonicPhaseOffset;
-        result.a += harmonic.magnitude * sin(harmonicPhase);
-    }
+    result.a = calculatePhaseData(m_amplitude.value(), fundamentalPhase, harmonics);
 
     // B상
     const double phase_B_offset = utils::degreesToRadians(m_voltage_B_phase_deg.value());
     const double fundamentalPhase_B = fundamentalPhase + phase_B_offset;
-
-    result.b = m_voltage_B_amplitude.value() * sin(fundamentalPhase_B);
-    if(harmonic.magnitude > 0.0) {
-        const double harmonicPhase = harmonic.order * fundamentalPhase_B + harmonicPhaseOffset;
-        result.b += harmonic.magnitude * sin(harmonicPhase);
-    }
+    result.b = calculatePhaseData(m_voltage_B_amplitude.value(), fundamentalPhase_B, harmonics);
 
     // C상
     const double phase_C_offset = utils::degreesToRadians(m_voltage_C_phase_deg.value());
     const double fundamentalPhase_C = fundamentalPhase + phase_C_offset;
-
-    result.c = m_voltage_C_amplitude.value() * sin(fundamentalPhase_C);
-    if(harmonic.magnitude > 0.0) {
-        const double harmonicPhase = harmonic.order * fundamentalPhase_C + harmonicPhaseOffset;
-        result.c += harmonic.magnitude * sin(harmonicPhase);
-    }
+    result.c = calculatePhaseData(m_voltage_C_amplitude.value(), fundamentalPhase_C, harmonics);
 
     return result;
 }
@@ -248,36 +233,21 @@ PhaseData SimulationEngine::calculateCurrentAmperage() const
 {
     PhaseData result;
     const double baseCurrentPhase = m_currentPhaseRadians + m_phaseRadians.value() + m_currentPhaseOffsetRadians.value();
-    const auto& harmonic = m_currentHarmonic.value();
-    const double harmonicPhaseOffset = utils::degreesToRadians(harmonic.phase) ;
+    const auto& harmonics = m_currentHarmonic.value();
 
     // 기본파, 고조파 계산
     // A상
-    result.a = m_currentAmplitude.value() * sin(baseCurrentPhase);
-    if(harmonic.magnitude > 0.0) {
-        const double harmonicPhase = harmonic.order * baseCurrentPhase + harmonicPhaseOffset;
-        result.a += harmonic.magnitude * sin(harmonicPhase);
-    }
+    result.a = calculatePhaseData(m_currentAmplitude.value(), baseCurrentPhase, harmonics);
 
     // B상
     const double phase_B_offset = utils::degreesToRadians(m_current_B_phase_deg.value());
-    const double currentSettignsFetched = baseCurrentPhase + phase_B_offset;
-
-    result.b = m_current_B_amplitude.value() * sin(currentSettignsFetched);
-    if(harmonic.magnitude > 0.0) {
-        const double harmonicPhase = harmonic.order * currentSettignsFetched + harmonicPhaseOffset;
-        result.b += harmonic.magnitude * sin(harmonicPhase);
-    }
+    const double fundamentalPhase_B = baseCurrentPhase + phase_B_offset;
+    result.b = calculatePhaseData(m_current_B_amplitude.value(), fundamentalPhase_B, harmonics);
 
     // C상
     const double phase_C_offset = utils::degreesToRadians(m_current_C_phase_deg.value());
     const double fundamentalPhase_C = baseCurrentPhase + phase_C_offset;
-
-    result.c = m_current_C_amplitude.value() * sin(fundamentalPhase_C);
-    if(harmonic.magnitude > 0.0) {
-        const double harmonicPhase = harmonic.order * fundamentalPhase_C + harmonicPhaseOffset;
-        result.c += harmonic.magnitude * sin(harmonicPhase);
-    }
+    result.c = calculatePhaseData(m_current_C_amplitude.value(), fundamentalPhase_C, harmonics);
 
     return result;
 }
@@ -285,9 +255,6 @@ PhaseData SimulationEngine::calculateCurrentAmperage() const
 void SimulationEngine::addNewDataPoint(PhaseData voltage, PhaseData current)
 {
     // DataPoint 객체를 생성하여 저장
-    // qDebug() << "m_simulationTimeNs: " << m_simulationTimeNs;
-    // qDebug() << "voltage: " << voltage;
-    // qDebug() << "current: " << current;
     LineToLineData voltage_ll;
     voltage_ll.ab = voltage.a - voltage.b;
     voltage_ll.bc = voltage.b - voltage.c;
@@ -297,7 +264,6 @@ void SimulationEngine::addNewDataPoint(PhaseData voltage, PhaseData current)
 
     // 최대 개수 관리
     if(m_data.size() > static_cast<size_t>(m_maxDataSize.value())) {
-        // qDebug() << " ---- data{" << m_simulationTimeNs << ", " << voltage << "} 삭제 ----";
         m_data.pop_front();
     }
 
@@ -478,4 +444,19 @@ void SimulationEngine::processOneSecondData(const MeasuredData& latestCycleDta)
     m_oneSecondCycleBuffer.clear();
 
     m_oneSecondBlockStartTime += elapsedNs;
+}
+
+double SimulationEngine::calculatePhaseData(double amplitude, double phaseOffset, const HarmonicList& harmonics) const
+{
+    double value = amplitude * sin(phaseOffset);
+    for(const auto& harmonic : harmonics) {
+        if(harmonic.magnitude > 0.0) {
+            const double harmonicPhaseOffset = utils::degreesToRadians(harmonic.phase);
+            // 고조파 계산: (차수 * 기본파 위상) + 위상 오프셋
+            // 기본파 위상에 상별 offset?
+            const double harmonicPhase = harmonic.order * phaseOffset + harmonicPhaseOffset;
+            value += harmonic.magnitude * sin(harmonicPhase);
+        }
+    }
+    return value;
 }

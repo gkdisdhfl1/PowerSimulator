@@ -18,12 +18,12 @@ SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsM
     ,m_settingsManager(settingsManager)
     ,m_engine(engine)
     ,m_parent(parent)
-    , m_voltageHarmonicOrderAdapter(engine->m_voltageHarmonic, &HarmonicComponent::order)
-    , m_voltageHarmonicMagnitudeAdapter(engine->m_voltageHarmonic, &HarmonicComponent::magnitude)
-    , m_voltageHarmonicPhaseAdapter(engine->m_voltageHarmonic, &HarmonicComponent::phase)
-    , m_currentHarmonicOrderAdapter(engine->m_currentHarmonic, &HarmonicComponent::order)
-    , m_currentHarmonicMagnitudeAdapter(engine->m_currentHarmonic, &HarmonicComponent::magnitude)
-    , m_currentHarmonicPhaseAdapter(engine->m_currentHarmonic, &HarmonicComponent::phase)
+    // ,m_voltageHarmonicOrderAdapter(engine->m_voltageHarmonic, &HarmonicComponent::order)
+    // ,m_voltageHarmonicMagnitudeAdapter(engine->m_voltageHarmonic, &HarmonicComponent::magnitude)
+    // ,m_voltageHarmonicPhaseAdapter(engine->m_voltageHarmonic, &HarmonicComponent::phase)
+    // ,m_currentHarmonicOrderAdapter(engine->m_currentHarmonic, &HarmonicComponent::order)
+    // ,m_currentHarmonicMagnitudeAdapter(engine->m_currentHarmonic, &HarmonicComponent::magnitude)
+    // ,m_currentHarmonicPhaseAdapter(engine->m_currentHarmonic, &HarmonicComponent::phase)
 {
     initializeSettingsMap();
 
@@ -181,14 +181,14 @@ void SettingsUiController::onCoefficientsChanged(const FrequencyTracker::PidCoef
     m_engine->getFrequencyTracker()->setZcCoefficients(zcCoeffs);
 }
 
-void SettingsUiController::onHarmonicsChanged()
-{
-    const auto state = m_controlPanel->getState();
-    auto& params = m_engine;
+// void SettingsUiController::onHarmonicsChanged()
+// {
+//     const auto state = m_controlPanel->getState();
+//     auto& params = m_engine;
 
-    params->m_voltageHarmonic.setValue(state.voltageHarmonic);
-    params->m_currentHarmonic.setValue(state.currentHarmonic);
-}
+//     params->m_voltageHarmonic.setValue(state.voltageHarmonic);
+//     params->m_currentHarmonic.setValue(state.currentHarmonic);
+// }
 
 void SettingsUiController::onThreePhaseValueChanged(int type, double value)
 {
@@ -227,12 +227,12 @@ void SettingsUiController::initializeSettingsMap()
     m_settingsMap["updateMode"] = {&m_engine->m_updateMode, 0, "갱신 모드"};
 
     // 고조파 관련 설정
-    m_settingsMap["voltHarmonicOrder"] = {&m_voltageHarmonicOrderAdapter, config::Harmonics::DefaultOrder, "전압 고조파 차수"};
-    m_settingsMap["voltHarmonicMagnitude"] = {&m_voltageHarmonicMagnitudeAdapter, config::Harmonics::DefaultMagnitude, "전압 고조파 크기"};
-    m_settingsMap["voltHarmonicPhase"] = {&m_voltageHarmonicPhaseAdapter, config::Harmonics::DefaultPhase, "전압 고조파 위상"};
-    m_settingsMap["currHarmonicOrder"] = {&m_currentHarmonicOrderAdapter, config::Harmonics::DefaultOrder, "전류 고조파 차수"};
-    m_settingsMap["currHarmonicMagnitude"] = {&m_currentHarmonicMagnitudeAdapter, config::Harmonics::DefaultMagnitude, "전류 고조파 크기"};
-    m_settingsMap["currHarmonicPhase"] = {&m_currentHarmonicPhaseAdapter, config::Harmonics::DefaultPhase, "전류 고조파 위상"};
+    // m_settingsMap["voltHarmonicOrder"] = {&m_voltageHarmonicOrderAdapter, config::Harmonics::DefaultOrder, "전압 고조파 차수"};
+    // m_settingsMap["voltHarmonicMagnitude"] = {&m_voltageHarmonicMagnitudeAdapter, config::Harmonics::DefaultMagnitude, "전압 고조파 크기"};
+    // m_settingsMap["voltHarmonicPhase"] = {&m_voltageHarmonicPhaseAdapter, config::Harmonics::DefaultPhase, "전압 고조파 위상"};
+    // m_settingsMap["currHarmonicOrder"] = {&m_currentHarmonicOrderAdapter, config::Harmonics::DefaultOrder, "전류 고조파 차수"};
+    // m_settingsMap["currHarmonicMagnitude"] = {&m_currentHarmonicMagnitudeAdapter, config::Harmonics::DefaultMagnitude, "전류 고조파 크기"};
+    // m_settingsMap["currHarmonicPhase"] = {&m_currentHarmonicPhaseAdapter, config::Harmonics::DefaultPhase, "전류 고조파 위상"};
 
     // 3상 관련 설정
     m_settingsMap["voltageBAmplitude"] = {&m_engine->m_voltage_B_amplitude, config::Source::ThreePhase::DefaultAmplitudeB, "B상 전압 크기"};

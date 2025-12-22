@@ -14,6 +14,7 @@ struct HarmonicComponent {
     // c++20 이상에서 defulat 비교 연산자를 사용하면 operator==와 <=>를 자동으로 생성해줌
     auto operator<=>(const HarmonicComponent&) const  = default;
 };
+using HarmonicList = std::vector<HarmonicComponent>;
 
 // 시뮬레이션 화면 갱신 모드
 enum class UpdateMode {

@@ -24,7 +24,7 @@ public slots:
     virtual void setValue(const double&){}
     virtual void setValue(const bool&){}
     virtual void setValue(const UpdateMode&){}
-    virtual void setValue(const HarmonicComponent&){}
+    virtual void setValue(const HarmonicList&){}
 
 signals:
     // 모든 필요한 타입에 대한 valueChanged 시그널을 오버로딩하여 선언
@@ -32,7 +32,7 @@ signals:
     void valueChanged(const double& newValue);
     void valueChanged(const bool& newValue);
     void valueChanged(const UpdateMode& newValue);
-    void valueChanged(const HarmonicComponent& newValue);
+    void valueChanged(const HarmonicList& newValue);
 };
 
 template <typename T>

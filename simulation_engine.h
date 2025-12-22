@@ -37,8 +37,8 @@ public:
     Property<UpdateMode> m_updateMode;          // 데이터 업데이트 모드
 
     // --- 고조파 설정 ---
-    Property<HarmonicComponent> m_voltageHarmonic; // 전압 고조파 설정
-    Property<HarmonicComponent> m_currentHarmonic; // 전류 고조파 설정
+    Property<HarmonicList> m_voltageHarmonic; // 전압 고조파 설정
+    Property<HarmonicList> m_currentHarmonic; // 전류 고조파 설정
 
     // --- 3상 설정 ---
     // 전압
@@ -119,6 +119,8 @@ private:
     
     // 현재 주기에 대한 RMS, 전력 및 기타 지표를 계산
     void calculateCycleData(); 
+    // PhaseData 계산
+    double calculatePhaseData(double amplitude, double phaseOffset, const HarmonicList& harmonics) const;
     
     void processUpdateByMode(bool resetCounter);
     void processOneSecondData(const MeasuredData& latestCycleData);

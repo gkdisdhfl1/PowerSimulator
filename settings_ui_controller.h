@@ -52,7 +52,7 @@ public slots:
     // PID 튜닝 다이얼로그 관련 슬롯
     void onCoefficientsChanged(const FrequencyTracker::PidCoefficients& fllCoeffs, const FrequencyTracker::PidCoefficients& zcCoeffs);
 
-    void onHarmonicsChanged();
+    // void onHarmonicsChanged();
 
     // 3상 변경 관련 슬롯
     void onThreePhaseValueChanged(int type, double value);
@@ -77,12 +77,12 @@ private:
     std::unordered_map<std::string, SettingInfo> m_settingsMap;
 
     // 어뎁터 멤버 변수
-    PropertyMemberAdapter<HarmonicComponent, int> m_voltageHarmonicOrderAdapter;
-    PropertyMemberAdapter<HarmonicComponent, double> m_voltageHarmonicMagnitudeAdapter;
-    PropertyMemberAdapter<HarmonicComponent, double> m_voltageHarmonicPhaseAdapter;
-    PropertyMemberAdapter<HarmonicComponent, int> m_currentHarmonicOrderAdapter;
-    PropertyMemberAdapter<HarmonicComponent, double> m_currentHarmonicMagnitudeAdapter;
-    PropertyMemberAdapter<HarmonicComponent, double> m_currentHarmonicPhaseAdapter;
+    // PropertyMemberAdapter<HarmonicComponent, int> m_voltageHarmonicOrderAdapter;
+    // PropertyMemberAdapter<HarmonicComponent, double> m_voltageHarmonicMagnitudeAdapter;
+    // PropertyMemberAdapter<HarmonicComponent, double> m_voltageHarmonicPhaseAdapter;
+    // PropertyMemberAdapter<HarmonicComponent, int> m_currentHarmonicOrderAdapter;
+    // PropertyMemberAdapter<HarmonicComponent, double> m_currentHarmonicMagnitudeAdapter;
+    // PropertyMemberAdapter<HarmonicComponent, double> m_currentHarmonicPhaseAdapter;
 
 
     // 헬퍼 함수들
