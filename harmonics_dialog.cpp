@@ -23,6 +23,8 @@ HarmonicsDialog::HarmonicsDialog(QWidget *parent) : QDialog(parent)
     m_currentEditor = new HarmonicEditor();
     m_tabWidget->addTab(m_currentEditor, "Current");
 
+    mainLayout->addWidget(m_tabWidget);
+
     // 하단 닫기 버튼
     auto* closeBtn = new QPushButton("Close");
     mainLayout->addWidget(closeBtn, 0, Qt::AlignRight);

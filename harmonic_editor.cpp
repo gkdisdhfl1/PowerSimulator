@@ -141,10 +141,16 @@ void HarmonicEditor::onAddClicked()
 
 void HarmonicEditor::onItemChanged()
 {
+    emit harmonicsChanged(getHarmonics());
+}
+
+void HarmonicEditor::onItemDeleted()
+{
     auto* itemWidget = qobject_cast<HarmonicItem*>(sender());
     if(itemWidget) {
+        m_listLayout->removeWidget(itemWidget);
         itemWidget->deleteLater();
-        // 삭제 후 다음 이벤트 루프에서 데이터 갱신 아님
+        // 삭제 후 다음 이벤트 루프에서 데이터 갱신 알림
         QTimer::singleShot(0, this, [this](){ emit harmonicsChanged(getHarmonics()); });
     }
 }
@@ -155,7 +161,7 @@ void HarmonicEditor::addRow(const HarmonicComponent& data)
     m_listLayout->addWidget(item);
 
     connect(item, &HarmonicItem::changed, this, &HarmonicEditor::onItemChanged);
-    connect(item, &HarmonicItem::deleteRequested, this, &HarmonicEditor::onItemChanged);
+    connect(item, &HarmonicItem::deleteRequested, this, &HarmonicEditor::onItemDeleted);
 }
 
 #include "harmonic_editor.moc"

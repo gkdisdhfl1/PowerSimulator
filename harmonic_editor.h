@@ -20,6 +20,7 @@ signals:
 private slots:
     void onAddClicked();
     void onItemChanged(); // 하위 아이템 변경 시 호출
+    void onItemDeleted();
 
 private:
     void rebuildList(); // UI 리스트 갱신
