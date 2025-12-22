@@ -1,5 +1,6 @@
 #include "harmonic_editor.h"
 
+#include "config.h"
 #include "value_control_widget.h"
 
 #include <QLabel>
@@ -7,6 +8,8 @@
 #include <QScrollArea>
 #include <QVBoxLayout>
 #include <QTimer>
+#include <QStyle>
+#include <QApplication>
 
 class HarmonicItem : public QWidget {
     Q_OBJECT
@@ -51,7 +54,9 @@ public:
        layout->addLayout(phaseBox);
 
        // 삭제 버튼
-       auto* delBtn = new QPushButton("❌");
+       auto* delBtn = new QPushButton();
+       QIcon closeIcon = QApplication::style()->standardIcon(QStyle::SP_DialogCloseButton);
+       delBtn->setIcon(closeIcon);
        delBtn->setFixedSize(30, 30);
        delBtn->setFlat(true);
        layout->addWidget(delBtn);
@@ -135,7 +140,7 @@ HarmonicList HarmonicEditor::getHarmonics() const
 
 void HarmonicEditor::onAddClicked()
 {
-    addRow({2, 10.0, 0.0});
+    addRow({config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase});
     emit harmonicsChanged(getHarmonics());
 }
 

@@ -258,8 +258,6 @@ void MainWindow::createSignalSlotConnections()
     connect(static_cast<PropertySignals*>(&m_engine->m_samplingCycles), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setSamplingCycles);
     connect(static_cast<PropertySignals*>(&m_engine->m_samplesPerCycle), static_cast<void (PropertySignals::*)(const int&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setSamplesPerCycle);
     connect(static_cast<PropertySignals*>(&m_engine->m_updateMode), static_cast<void (PropertySignals::*)(const UpdateMode&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setUpdateMode);
-    // connect(static_cast<PropertySignals*>(&m_engine->m_voltageHarmonic), static_cast<void (PropertySignals::*)(const HarmonicList&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setVoltageHarmonic);
-    // connect(static_cast<PropertySignals*>(&m_engine->m_currentHarmonic), static_cast<void (PropertySignals::*)(const HarmonicList&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setCurrentHarmonic);
     connect(static_cast<PropertySignals*>(&m_engine->m_currentPhaseOffsetRadians), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), this, [this](const double& radians) {
         m_controlPanel->setCurrentPhase(qRound(utils::radiansToDegrees(radians)));
     });

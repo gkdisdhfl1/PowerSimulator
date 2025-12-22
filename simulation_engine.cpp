@@ -450,10 +450,10 @@ double SimulationEngine::calculatePhaseData(double amplitude, double phaseOffset
 {
     double value = amplitude * sin(phaseOffset);
     for(const auto& harmonic : harmonics) {
-        if(harmonic.magnitude > 0.0) {
+        if(harmonic.magnitude != 0.0) {
             const double harmonicPhaseOffset = utils::degreesToRadians(harmonic.phase);
             // 고조파 계산: (차수 * 기본파 위상) + 위상 오프셋
-            // 기본파 위상에 상별 offset?
+            // 기본파 위상에 상별 offset
             const double harmonicPhase = harmonic.order * phaseOffset + harmonicPhaseOffset;
             value += harmonic.magnitude * sin(harmonicPhase);
         }

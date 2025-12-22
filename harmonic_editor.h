@@ -23,10 +23,8 @@ private slots:
     void onItemDeleted();
 
 private:
-    void rebuildList(); // UI 리스트 갱신
     void addRow(const HarmonicComponent& data);
 
-    HarmonicList m_data;
     QVBoxLayout* m_listLayout;
 };
 
