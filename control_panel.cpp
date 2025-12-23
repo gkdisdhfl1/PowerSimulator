@@ -28,23 +28,23 @@ ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
 ControlPanelState ControlPanel::getState() const
 {
     ControlPanelState state;
-    state.amplitude = m_voltageControlWidget->value();
-    state.currentAmplitude = m_currentAmplitudeControlWidget->value();
-    state.frequency = m_frequencyControlWidget->value();
-    state.currentPhaseDegrees = m_currentPhaseDial->value();
-    state.timeScale = m_timeScaleControlWidget->value();
-    state.samplingCycles = m_samplingCyclesControlWidget->value();
-    state.samplesPerCycle = static_cast<int>(m_samplesPerCycleControlWidget->value());
+    state.source.amplitude = m_voltageControlWidget->value();
+    state.source.currentAmplitude = m_currentAmplitudeControlWidget->value();
+    state.source.frequency = m_frequencyControlWidget->value();
+    state.source.currentPhaseDegrees = m_currentPhaseDial->value();
+    state.simulation.timeScale = m_timeScaleControlWidget->value();
+    state.simulation.samplingCycles = m_samplingCyclesControlWidget->value();
+    state.simulation.samplesPerCycle = static_cast<int>(m_samplesPerCycleControlWidget->value());
 
     if(m_perSampleRadioButton->isChecked()) {
-        state.updateMode = UpdateMode::PerSample;
+        state.simulation.updateMode = UpdateMode::PerSample;
     } else if(m_perHalfCycleRadioButton->isChecked()) {
-        state.updateMode = UpdateMode::PerHalfCycle;
+        state.simulation.updateMode = UpdateMode::PerHalfCycle;
     } else {
-        state.updateMode = UpdateMode::PerCycle;
+        state.simulation.updateMode = UpdateMode::PerCycle;
     }
 
-    state.isRunning = (m_startStopButton->text() == "일시정지");
+    state.view.isRunning = (m_startStopButton->text() == "일시정지");
 
     return state;
 }
@@ -52,23 +52,23 @@ ControlPanelState ControlPanel::getState() const
 void ControlPanel::setState(const ControlPanelState& state)
 {
     // ControlPanelState 객체의 값으로 모든 자식 위젯들의 상태를 업데이트
-    m_voltageControlWidget->setValue(state.amplitude);
-    m_currentAmplitudeControlWidget->setValue(state.currentAmplitude);
-    m_frequencyControlWidget->setValue(state.frequency);
-    m_currentPhaseDial->setValue(state.currentPhaseDegrees);
-    m_timeScaleControlWidget->setValue(state.timeScale);
-    m_samplingCyclesControlWidget->setValue(state.samplingCycles);
-    m_samplesPerCycleControlWidget->setValue(state.samplesPerCycle);
+    m_voltageControlWidget->setValue(state.source.amplitude);
+    m_currentAmplitudeControlWidget->setValue(state.source.currentAmplitude);
+    m_frequencyControlWidget->setValue(state.source.frequency);
+    m_currentPhaseDial->setValue(state.source.currentPhaseDegrees);
+    m_timeScaleControlWidget->setValue(state.simulation.timeScale);
+    m_samplingCyclesControlWidget->setValue(state.simulation.samplingCycles);
+    m_samplesPerCycleControlWidget->setValue(state.simulation.samplesPerCycle);
 
-    if(state.updateMode == UpdateMode::PerSample) {
+    if(state.simulation.updateMode == UpdateMode::PerSample) {
         m_perSampleRadioButton->setChecked(true);
-    } else if(state.updateMode == UpdateMode::PerHalfCycle) {
+    } else if(state.simulation.updateMode == UpdateMode::PerHalfCycle) {
         m_perHalfCycleRadioButton->setChecked(true);
     } else {
         m_perCycleRadioButton->setChecked(true);
     }
 
-    setRunningState(state.isRunning);
+    setRunningState(state.view.isRunning);
 }
 
 void ControlPanel::setupUi()

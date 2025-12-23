@@ -50,7 +50,7 @@ MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
     m_pidTuningDialog = std::make_unique<PidTuningDialog>(this);
     m_a3700nWindow = std::make_unique<A3700N_Window>(nullptr);
 
-    m_settingsUiController = std::make_unique<SettingsUiController>(m_controlPanel, *m_settingsManager, m_engine, this);
+    m_settingsUiController = std::make_unique<SettingsUiController>(m_controlPanel, *m_settingsManager, this);
 
 
     // 시그널-슬롯 연결
@@ -211,7 +211,7 @@ void MainWindow::createSignalSlotConnections()
 
         *ok = (reply == QMessageBox::Yes);
     }, Qt::DirectConnection);
-    connect(m_settingsUiController.get(), &SettingsUiController::maxDataSizeChangeRequested, m_engine, &SimulationEngine::onMaxDataSizeChanged);
+    connect(m_settingsUiController.get(), &SettingsUiController::setMaxDataSize, m_engine, &SimulationEngine::onMaxDataSizeChanged);
 
     // ---- ControlPanel 이벤트 -> Controller or Model(engine) 슬롯 ----
     connect(m_controlPanel, &ControlPanel::startStopClicked, this, [this]() {

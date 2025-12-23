@@ -66,7 +66,7 @@ signals:
     void timeScaleChanged(double value);
     void samplingCyclesChanged(double value);
     void samplesPerCycleChanged(int value);
-    void updateModeChanged();
+    void updateModeChanged(UpdateMode mode);
     void harmonicsSettingsRequested();
 
 private:

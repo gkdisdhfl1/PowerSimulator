@@ -1,6 +1,5 @@
 #include "simulation_engine.h"
 #include "analysis_utils.h"
-#include "frequency_tracker.h"
 #include <QDebug>
 
 SimulationEngine::SimulationEngine()
@@ -147,6 +146,15 @@ void SimulationEngine::enableFrequencyTracking(bool enabled)
         m_frequencyTracker->stopTracking();
     }
 }
+
+void SimulationEngine::updateFrequencyTrackerCoefficients(const FrequencyTracker::PidCoefficients& fll, const FrequencyTracker::PidCoefficients& zc)
+{
+    if(m_frequencyTracker) {
+        m_frequencyTracker->setFllCoefficients(fll);
+        m_frequencyTracker->setZcCoefficients(zc);
+    }
+}
+
 // -----------------------
 
 

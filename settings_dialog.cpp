@@ -138,10 +138,10 @@ void SettingsDialog::setupUi()
     mainLayout->addLayout(rightLayout, 2);
 }
 
-int SettingsDialog::openWithValues(const SimulationEngine* params)
+int SettingsDialog::openWithValues(const ControlPanelState& state)
 {
-    m_maxDataSizeSpinBox->setValue(params->m_maxDataSize.value());
-    m_graphWidthSpinBox->setValue(params->m_graphWidthSec.value());
+    m_maxDataSizeSpinBox->setValue(state.simulation.maxDataSize);
+    m_graphWidthSpinBox->setValue(state.view.graphWidth);
     refreshPresetList();
     updateUiStates();
 

@@ -11,8 +11,7 @@
 #include "measured_data.h"
 #include "shared_data_types.h"
 #include "Property.h"
-
-class FrequencyTracker;
+#include "frequency_tracker.h"
 
 // SimulationEngine 클래스
 // PowerSimulator의 핵심 로직 담당.
@@ -77,6 +76,7 @@ public slots:
     void updateCaptureTimer();
     void recalculateCaptureInterval();
     void enableFrequencyTracking(bool enabled);
+    void updateFrequencyTrackerCoefficients(const FrequencyTracker::PidCoefficients& fll, const FrequencyTracker::PidCoefficients& zc);
 
 signals:
     // 새로운 원시 파형 데이터가 준비되었을 때 발생
