@@ -16,11 +16,11 @@ HarmonicsDialog::HarmonicsDialog(QWidget *parent) : QDialog(parent)
     m_tabWidget = new QTabWidget();
 
     // 전압 고조파 에디터
-    m_voltageEditor = new HarmonicEditor();
+    m_voltageEditor = new HarmonicEditor("V");
     m_tabWidget->addTab(m_voltageEditor, "Voltage");
 
     // 전류 고조파 에디터
-    m_currentEditor = new HarmonicEditor();
+    m_currentEditor = new HarmonicEditor("A");
     m_tabWidget->addTab(m_currentEditor, "Current");
 
     mainLayout->addWidget(m_tabWidget);
@@ -38,7 +38,7 @@ HarmonicsDialog::HarmonicsDialog(QWidget *parent) : QDialog(parent)
 
 void HarmonicsDialog::setHarmonics(const HarmonicList& voltageHarmonics, const HarmonicList& currentHarmonics)
 {
-    // 각 에디터에 초기 데이터 서렁
+    // 각 에디터에 초기 데이터 설정
     m_voltageEditor->setHarmonics(voltageHarmonics);
     m_currentEditor->setHarmonics(currentHarmonics);
 }

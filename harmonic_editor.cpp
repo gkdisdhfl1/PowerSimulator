@@ -15,7 +15,7 @@ class HarmonicItem : public QWidget {
     Q_OBJECT
 
 public:
-    explicit HarmonicItem(const HarmonicComponent& data, QWidget* parent = nullptr) : QWidget(parent) {
+    explicit HarmonicItem(const HarmonicComponent& data, const QString& unit, QWidget* parent = nullptr) : QWidget(parent) {
         auto* layout = new QHBoxLayout(this);
         layout->setContentsMargins(5, 5, 5, 5);
         layout->addSpacing(15);
@@ -34,7 +34,7 @@ public:
         // 크기 - double 타입
         m_magControl = new ValueControlWidget();
         m_magControl->setRange(0.0, 500.0);
-        m_magControl->setSuffix("V");
+        m_magControl->setSuffix(" " + unit);
         m_magControl->setValue(data.magnitude);
 
        auto* magBox = new QVBoxLayout();
@@ -86,8 +86,9 @@ private:
     ValueControlWidget* m_phaseControl;
 };
 
-HarmonicEditor::HarmonicEditor(QWidget *parent)
+HarmonicEditor::HarmonicEditor(const QString& unit, QWidget *parent)
     : QWidget{parent}
+    , m_unit(unit)
 {
     auto* mainLayout = new QVBoxLayout(this);
 
@@ -162,7 +163,7 @@ void HarmonicEditor::onItemDeleted()
 
 void HarmonicEditor::addRow(const HarmonicComponent& data)
 {
-    auto* item = new HarmonicItem(data);
+    auto* item = new HarmonicItem(data, m_unit);
     m_listLayout->addWidget(item);
 
     connect(item, &HarmonicItem::changed, this, &HarmonicEditor::onItemChanged);

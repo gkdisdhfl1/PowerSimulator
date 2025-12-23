@@ -9,7 +9,7 @@ class HarmonicEditor : public QWidget
 {
     Q_OBJECT
 public:
-    explicit HarmonicEditor(QWidget *parent = nullptr);
+    explicit HarmonicEditor(const QString& unit = "", QWidget *parent = nullptr);
 
     void setHarmonics(const HarmonicList& harmonics);
     HarmonicList getHarmonics() const;
@@ -26,6 +26,7 @@ private:
     void addRow(const HarmonicComponent& data);
 
     QVBoxLayout* m_listLayout;
+    QString m_unit;
 };
 
 #endif // HARMONIC_EDITOR_H
