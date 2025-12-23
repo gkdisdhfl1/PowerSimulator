@@ -78,17 +78,9 @@ private:
 
     std::unordered_map<std::string, SettingInfo> m_settingsMap;
 
-    // 어뎁터 멤버 변수
-    // PropertyMemberAdapter<HarmonicComponent, int> m_voltageHarmonicOrderAdapter;
-    // PropertyMemberAdapter<HarmonicComponent, double> m_voltageHarmonicMagnitudeAdapter;
-    // PropertyMemberAdapter<HarmonicComponent, double> m_voltageHarmonicPhaseAdapter;
-    // PropertyMemberAdapter<HarmonicComponent, int> m_currentHarmonicOrderAdapter;
-    // PropertyMemberAdapter<HarmonicComponent, double> m_currentHarmonicMagnitudeAdapter;
-    // PropertyMemberAdapter<HarmonicComponent, double> m_currentHarmonicPhaseAdapter;
-
-
     // 헬퍼 함수들
     void initializeSettingsMap();
+    void initializeControlPanelDefaultValues();
     bool requestMaxSizeChange(int newSize);
     std::expected<void, std::string> applySettingsToEngine(std::string_view presetName); // 특정 프리셋을 UI에 적용하는 함수
     std::expected<void, std::string> saveEngineToSettings(std::string_view presetName); // 현재 UI 상태를 특정 프리셋으로 저장하는 함수

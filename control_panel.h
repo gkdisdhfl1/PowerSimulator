@@ -72,13 +72,14 @@ signals:
 private:
     // UI 생성 및 초기화를 위한 헬퍼 함수들
     void setupUi();
-    void initializeUiValues();
+    void setupWidgetProperties();
     void createConnections();
 
     // UI 요소들을 멤버 변수로 소유
     QPushButton* m_startStopButton;
     QPushButton* m_settingButton;
 
+    // 기본 파라미터
     ValueControlWidget* m_voltageControlWidget;
     ValueControlWidget* m_currentAmplitudeControlWidget;
     ValueControlWidget* m_frequencyControlWidget;
@@ -89,16 +90,20 @@ private:
     // 고조파 UI
     QPushButton* m_harmonicsButton;
 
+    // 전류 위상차
     FineTuningDial* m_currentPhaseDial;
     QLabel* m_currentPhaseLabel;
 
+    // 자동 스크롤
+    QCheckBox* m_autoScrollCheckBox;
+    QPushButton* m_trackingButton;
+
+    // 화면 갱신
     QRadioButton* m_perSampleRadioButton;
     QRadioButton* m_perHalfCycleRadioButton;
     QRadioButton* m_perCycleRadioButton;
 
-    QCheckBox* m_autoScrollCheckBox;
-    QPushButton* m_trackingButton;
-
+    // 표시할 그래프 선택
     CollapsibleGroupBox* m_waveformSelectionGroup;
     std::array<QCheckBox*, 3> m_voltageCheckBox;
     std::array<QCheckBox*, 3> m_currentCheckBox;

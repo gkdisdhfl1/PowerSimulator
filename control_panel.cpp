@@ -21,7 +21,7 @@
 ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
 {
     setupUi();
-    initializeUiValues();
+    setupWidgetProperties();
     createConnections();
 }
 
@@ -233,32 +233,25 @@ void ControlPanel::setupUi()
     mainLayout->addSpacerItem(new QSpacerItem(20, 40, QSizePolicy::Minimum, QSizePolicy::MinimumExpanding));
 }
 
-void ControlPanel::initializeUiValues()
+void ControlPanel::setupWidgetProperties()
 {
     m_voltageControlWidget->setRange(config::Source::Amplitude::Min, config::Source::Amplitude::Max);
-    m_voltageControlWidget->setValue(config::Source::Amplitude::Default);
     m_voltageControlWidget->setSuffix(" V");
 
     m_currentAmplitudeControlWidget->setRange(config::Source::Current::MinAmplitude, config::Source::Current::MaxAmplitude);
-    m_currentAmplitudeControlWidget->setValue(config::Source::Current::DefaultAmplitude);
     m_currentAmplitudeControlWidget->setSuffix(" A");
 
     m_frequencyControlWidget->setRange(config::Source::Frequency::Min, config::Source::Frequency::Max);
-    m_frequencyControlWidget->setValue(config::Source::Frequency::Default);
     m_frequencyControlWidget->setSuffix(" Hz");
 
     m_timeScaleControlWidget->setRange(config::TimeScale::Min, config::TimeScale::Max);
-    m_timeScaleControlWidget->setValue(config::TimeScale::Default);
     m_timeScaleControlWidget->setSuffix(" x");
 
     m_samplingCyclesControlWidget->setRange(config::Sampling::MinValue, config::Sampling::maxValue);
-    m_samplingCyclesControlWidget->setValue(config::Sampling::DefaultSamplingCycles);
     m_samplesPerCycleControlWidget->setRange(config::Sampling::MinValue, config::Sampling::maxValue);
-    m_samplesPerCycleControlWidget->setValue(config::Sampling::DefaultSamplesPerCycle);
     m_samplesPerCycleControlWidget->setDataType(ValueControlWidget::DataType::Integer);
 
     m_currentPhaseDial->setRange(0, 359);
-    m_currentPhaseDial->setValue(config::Source::Current::DefaultPhaseOffset);
     m_currentPhaseDial->setWrapping(true);
     m_currentPhaseDial->setNotchesVisible(true);
     updateCurrentPhaseLabel(m_currentPhaseDial->value());

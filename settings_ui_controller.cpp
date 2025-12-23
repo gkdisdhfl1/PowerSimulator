@@ -19,14 +19,9 @@ SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsM
     ,m_settingsManager(settingsManager)
     ,m_engine(engine)
     ,m_parent(parent)
-    // ,m_voltageHarmonicOrderAdapter(engine->m_voltageHarmonic, &HarmonicComponent::order)
-    // ,m_voltageHarmonicMagnitudeAdapter(engine->m_voltageHarmonic, &HarmonicComponent::magnitude)
-    // ,m_voltageHarmonicPhaseAdapter(engine->m_voltageHarmonic, &HarmonicComponent::phase)
-    // ,m_currentHarmonicOrderAdapter(engine->m_currentHarmonic, &HarmonicComponent::order)
-    // ,m_currentHarmonicMagnitudeAdapter(engine->m_currentHarmonic, &HarmonicComponent::magnitude)
-    // ,m_currentHarmonicPhaseAdapter(engine->m_currentHarmonic, &HarmonicComponent::phase)
 {
     initializeSettingsMap();
+    initializeControlPanelDefaultValues();
 
     engine->m_graphWidthSec.setValue(View::GraphWidth::Default);
     m_settingsDialog = std::make_unique<SettingsDialog>(this, m_parent);
@@ -237,14 +232,6 @@ void SettingsUiController::initializeSettingsMap()
     m_settingsMap["graphWidthSec"] = {&m_engine->m_graphWidthSec, View::GraphWidth::Default, "그래프 시간 폭"};
     m_settingsMap["updateMode"] = {&m_engine->m_updateMode, 0, "갱신 모드"};
 
-    // 고조파 관련 설정
-    // m_settingsMap["voltHarmonicOrder"] = {&m_voltageHarmonicOrderAdapter, config::Harmonics::DefaultOrder, "전압 고조파 차수"};
-    // m_settingsMap["voltHarmonicMagnitude"] = {&m_voltageHarmonicMagnitudeAdapter, config::Harmonics::DefaultMagnitude, "전압 고조파 크기"};
-    // m_settingsMap["voltHarmonicPhase"] = {&m_voltageHarmonicPhaseAdapter, config::Harmonics::DefaultPhase, "전압 고조파 위상"};
-    // m_settingsMap["currHarmonicOrder"] = {&m_currentHarmonicOrderAdapter, config::Harmonics::DefaultOrder, "전류 고조파 차수"};
-    // m_settingsMap["currHarmonicMagnitude"] = {&m_currentHarmonicMagnitudeAdapter, config::Harmonics::DefaultMagnitude, "전류 고조파 크기"};
-    // m_settingsMap["currHarmonicPhase"] = {&m_currentHarmonicPhaseAdapter, config::Harmonics::DefaultPhase, "전류 고조파 위상"};
-
     // 3상 관련 설정
     m_settingsMap["voltageBAmplitude"] = {&m_engine->m_voltage_B_amplitude, config::Source::ThreePhase::DefaultAmplitudeB, "B상 전압 크기"};
     m_settingsMap["voltageBPhase"] = {&m_engine->m_voltage_B_phase_deg, config::Source::ThreePhase::DefaultPhaseB_deg, "B상 전압 위상"};
@@ -255,6 +242,26 @@ void SettingsUiController::initializeSettingsMap()
     m_settingsMap["currentBPhase"] = {&m_engine->m_current_B_phase_deg, config::Source::ThreePhase::DefaultCurrentPhaseB_deg, "B상 전류 위상"};
     m_settingsMap["currentCAmplitude"] = {&m_engine->m_current_C_amplitude, config::Source::ThreePhase::DefaultCurrentAmplitudeC, "C상 전류 크기"};
     m_settingsMap["currentCPhase"] = {&m_engine->m_current_C_phase_deg, config::Source::ThreePhase::DefaultCurrentPhaseC_deg, "C상 전류 위상"};
+}
+
+void SettingsUiController::initializeControlPanelDefaultValues()
+{
+    ControlPanelState state;
+
+    // config.h의 기본값들로 DTO 구성
+    state.amplitude = config::Source::Amplitude::Default;
+    state.currentAmplitude = config::Source::Current::DefaultAmplitude;
+    state.frequency = config::Source::Frequency::Default;
+    state.currentPhaseDegrees = config::Source::Current::DefaultPhaseOffset;
+    state.timeScale = config::TimeScale::Default;
+    state.samplingCycles = config::Sampling::DefaultSamplingCycles;
+    state.samplesPerCycle = config::Sampling::DefaultSamplesPerCycle;
+
+    state.updateMode = UpdateMode::PerSample;
+    state.isRunning  = false;
+
+    // DTO를 통한 일괄 주입
+    m_controlPanel->setState(state);
 }
 
 bool SettingsUiController::requestMaxSizeChange(int newSize)

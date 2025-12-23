@@ -15,10 +15,6 @@ struct ControlPanelState {
     double samplingCycles;
     int samplesPerCycle;
 
-    // 고조파 성분
-    HarmonicList voltageHarmonics;
-    HarmonicList currentHarmonics;
-
     // UI 상태
     bool isRunning;
     UpdateMode updateMode;
