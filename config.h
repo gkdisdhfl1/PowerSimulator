@@ -28,7 +28,7 @@ namespace config {
         struct Frequency {
             static constexpr double Min = 0.0;
             static constexpr double Max = 100.0;
-            static constexpr double Default = 1.0;
+            static constexpr double Default = 10.0;
         };
 
         // 전압 관련 설정
@@ -64,8 +64,8 @@ namespace config {
 
     // 샘플링 설정
     struct Sampling {
-        static constexpr double DefaultSamplingCycles = 1.0;
-        static constexpr int DefaultSamplesPerCycle = 10;
+        static constexpr double DefaultSamplingCycles = 10.0;
+        static constexpr int DefaultSamplesPerCycle = 20;
         static constexpr int MinValue = 1;
         static constexpr int maxValue = 100;
         static constexpr double MaxSamplesPerSecond = 1000.0;

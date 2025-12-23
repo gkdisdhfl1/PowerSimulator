@@ -5,6 +5,7 @@
 #include "settings_manager.h"
 #include "simulation_engine.h"
 #include "three_phase_dialog.h"
+#include "UIutils.h"
 #include <QInputDialog>
 #include <QStatusBar>
 
@@ -18,18 +19,20 @@ SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsM
     ,m_settingsManager(settingsManager)
     ,m_engine(engine)
     ,m_parent(parent)
-    , m_voltageHarmonicOrderAdapter(engine->m_voltageHarmonic, &HarmonicComponent::order)
-    , m_voltageHarmonicMagnitudeAdapter(engine->m_voltageHarmonic, &HarmonicComponent::magnitude)
-    , m_voltageHarmonicPhaseAdapter(engine->m_voltageHarmonic, &HarmonicComponent::phase)
-    , m_currentHarmonicOrderAdapter(engine->m_currentHarmonic, &HarmonicComponent::order)
-    , m_currentHarmonicMagnitudeAdapter(engine->m_currentHarmonic, &HarmonicComponent::magnitude)
-    , m_currentHarmonicPhaseAdapter(engine->m_currentHarmonic, &HarmonicComponent::phase)
 {
     initializeSettingsMap();
+    initializeControlPanelDefaultValues();
 
     engine->m_graphWidthSec.setValue(View::GraphWidth::Default);
     m_settingsDialog = std::make_unique<SettingsDialog>(this, m_parent);
+    m_harmonicsDialog = std::make_unique<HarmonicsDialog>(m_parent);
 
+    connect(m_harmonicsDialog.get(), &HarmonicsDialog::voltageHarmonicsChanged, this, [this](const HarmonicList& list) {
+        m_engine->m_voltageHarmonic.setValue(list);
+    });
+    connect(m_harmonicsDialog.get(), &HarmonicsDialog::currentHarmonicsChanged, this, [this](const HarmonicList& list) {
+        m_engine->m_currentHarmonic.setValue(list);
+    });
 }
 
 // --- public slot 구현 ---
@@ -181,13 +184,16 @@ void SettingsUiController::onCoefficientsChanged(const FrequencyTracker::PidCoef
     m_engine->getFrequencyTracker()->setZcCoefficients(zcCoeffs);
 }
 
-void SettingsUiController::onHarmonicsChanged()
+void SettingsUiController::onHarmonicsSettingsRequested()
 {
-    const auto state = m_controlPanel->getState();
-    auto& params = m_engine;
+    if(!m_engine || !m_harmonicsDialog) return;
 
-    params->m_voltageHarmonic.setValue(state.voltageHarmonic);
-    params->m_currentHarmonic.setValue(state.currentHarmonic);
+    // 다이얼로그를 열기 전에 인진의 현재 고조파 리스트로 UI 동기화
+    m_harmonicsDialog->setHarmonics(m_engine->m_voltageHarmonic.value(), m_engine->m_currentHarmonic.value());
+
+    m_harmonicsDialog->show();
+    m_harmonicsDialog->raise();
+    m_harmonicsDialog->activateWindow();
 }
 
 void SettingsUiController::onThreePhaseValueChanged(int type, double value)
@@ -226,14 +232,6 @@ void SettingsUiController::initializeSettingsMap()
     m_settingsMap["graphWidthSec"] = {&m_engine->m_graphWidthSec, View::GraphWidth::Default, "그래프 시간 폭"};
     m_settingsMap["updateMode"] = {&m_engine->m_updateMode, 0, "갱신 모드"};
 
-    // 고조파 관련 설정
-    m_settingsMap["voltHarmonicOrder"] = {&m_voltageHarmonicOrderAdapter, config::Harmonics::DefaultOrder, "전압 고조파 차수"};
-    m_settingsMap["voltHarmonicMagnitude"] = {&m_voltageHarmonicMagnitudeAdapter, config::Harmonics::DefaultMagnitude, "전압 고조파 크기"};
-    m_settingsMap["voltHarmonicPhase"] = {&m_voltageHarmonicPhaseAdapter, config::Harmonics::DefaultPhase, "전압 고조파 위상"};
-    m_settingsMap["currHarmonicOrder"] = {&m_currentHarmonicOrderAdapter, config::Harmonics::DefaultOrder, "전류 고조파 차수"};
-    m_settingsMap["currHarmonicMagnitude"] = {&m_currentHarmonicMagnitudeAdapter, config::Harmonics::DefaultMagnitude, "전류 고조파 크기"};
-    m_settingsMap["currHarmonicPhase"] = {&m_currentHarmonicPhaseAdapter, config::Harmonics::DefaultPhase, "전류 고조파 위상"};
-
     // 3상 관련 설정
     m_settingsMap["voltageBAmplitude"] = {&m_engine->m_voltage_B_amplitude, config::Source::ThreePhase::DefaultAmplitudeB, "B상 전압 크기"};
     m_settingsMap["voltageBPhase"] = {&m_engine->m_voltage_B_phase_deg, config::Source::ThreePhase::DefaultPhaseB_deg, "B상 전압 위상"};
@@ -244,6 +242,26 @@ void SettingsUiController::initializeSettingsMap()
     m_settingsMap["currentBPhase"] = {&m_engine->m_current_B_phase_deg, config::Source::ThreePhase::DefaultCurrentPhaseB_deg, "B상 전류 위상"};
     m_settingsMap["currentCAmplitude"] = {&m_engine->m_current_C_amplitude, config::Source::ThreePhase::DefaultCurrentAmplitudeC, "C상 전류 크기"};
     m_settingsMap["currentCPhase"] = {&m_engine->m_current_C_phase_deg, config::Source::ThreePhase::DefaultCurrentPhaseC_deg, "C상 전류 위상"};
+}
+
+void SettingsUiController::initializeControlPanelDefaultValues()
+{
+    ControlPanelState state;
+
+    // config.h의 기본값들로 DTO 구성
+    state.amplitude = config::Source::Amplitude::Default;
+    state.currentAmplitude = config::Source::Current::DefaultAmplitude;
+    state.frequency = config::Source::Frequency::Default;
+    state.currentPhaseDegrees = config::Source::Current::DefaultPhaseOffset;
+    state.timeScale = config::TimeScale::Default;
+    state.samplingCycles = config::Sampling::DefaultSamplingCycles;
+    state.samplesPerCycle = config::Sampling::DefaultSamplesPerCycle;
+
+    state.updateMode = UpdateMode::PerSample;
+    state.isRunning  = false;
+
+    // DTO를 통한 일괄 주입
+    m_controlPanel->setState(state);
 }
 
 bool SettingsUiController::requestMaxSizeChange(int newSize)
@@ -303,6 +321,13 @@ std::expected<void, std::string> SettingsUiController::applySettingsToEngine(std
         // 3. Property 인터페이서를 통해 값 설정
         info.property->setVariantValue(loadedValue);
     }
+    // 고조파 리스트 로드
+    auto voltageRes = m_settingsManager.loadSetting(presetName, "voltageHarmonicsJson", std::string(""));
+    if(voltageRes)
+        m_engine->m_voltageHarmonic.setValue(UIutils::jsonToHarmonicList(QString::fromStdString(*voltageRes)));
+    auto currentRes = m_settingsManager.loadSetting(presetName, "currentHarmonicsJson", std::string(""));
+    if(currentRes)
+        m_engine->m_currentHarmonic.setValue(UIutils::jsonToHarmonicList(QString::fromStdString(*currentRes)));
 
     m_blockUiSignals = false;
     emit presetApplied();
@@ -333,6 +358,12 @@ std::expected<void, std::string> SettingsUiController::saveEngineToSettings(std:
 
         if(!result) return result; // 오류 발생 시 즉시 전파
     }
+    // 고조파 리스트 저장
+    QString voltageJson = UIutils::harmonicListToJson(m_engine->m_voltageHarmonic.value());
+    QString currentJson = UIutils::harmonicListToJson(m_engine->m_currentHarmonic.value());
+
+    if(auto res = m_settingsManager.saveSetting(presetName, "voltageHarmonicsJson", voltageJson.toStdString()); !res) return res;
+    if(auto res = m_settingsManager.saveSetting(presetName, "currentHarmonicsJson", currentJson.toStdString()); !res) return res;
 
     // UI와 별개인 엔진 파라미터들도 저장
     if(auto res = m_settingsManager.saveSetting(presetName, "maxDataSize", m_engine->m_maxDataSize.value()); !res) return res;

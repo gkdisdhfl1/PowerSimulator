@@ -231,7 +231,7 @@ void MainWindow::createSignalSlotConnections()
     connect(m_controlPanel, &ControlPanel::samplingCyclesChanged, m_settingsUiController.get(), &SettingsUiController::onSamplingCyclesChanged);
     connect(m_controlPanel, &ControlPanel::samplesPerCycleChanged, m_settingsUiController.get(), &SettingsUiController::onSamplesPerCycleChanged);
     connect(m_controlPanel, &ControlPanel::updateModeChanged, m_settingsUiController.get(), &SettingsUiController::onUpdateModeChanged);
-    connect(m_controlPanel, &ControlPanel::harmonicChanged, m_settingsUiController.get(), &SettingsUiController::onHarmonicsChanged);
+    connect(m_controlPanel, &ControlPanel::harmonicsSettingsRequested, m_settingsUiController.get(), &SettingsUiController::onHarmonicsSettingsRequested);
 
     connect(m_controlPanel, &ControlPanel::autoScrollToggled, m_graphWindow, &GraphWindow::toggleAutoScroll);
     connect(m_controlPanel, &ControlPanel::autoScrollToggled, m_analysisGraphWindow, &AnalysisGraphWindow::toggleAutoScroll);
@@ -258,8 +258,6 @@ void MainWindow::createSignalSlotConnections()
     connect(static_cast<PropertySignals*>(&m_engine->m_samplingCycles), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setSamplingCycles);
     connect(static_cast<PropertySignals*>(&m_engine->m_samplesPerCycle), static_cast<void (PropertySignals::*)(const int&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setSamplesPerCycle);
     connect(static_cast<PropertySignals*>(&m_engine->m_updateMode), static_cast<void (PropertySignals::*)(const UpdateMode&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setUpdateMode);
-    connect(static_cast<PropertySignals*>(&m_engine->m_voltageHarmonic), static_cast<void (PropertySignals::*)(const HarmonicComponent&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setVoltageHarmonic);
-    connect(static_cast<PropertySignals*>(&m_engine->m_currentHarmonic), static_cast<void (PropertySignals::*)(const HarmonicComponent&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setCurrentHarmonic);
     connect(static_cast<PropertySignals*>(&m_engine->m_currentPhaseOffsetRadians), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), this, [this](const double& radians) {
         m_controlPanel->setCurrentPhase(qRound(utils::radiansToDegrees(radians)));
     });

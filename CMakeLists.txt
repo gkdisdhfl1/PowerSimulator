@@ -120,6 +120,8 @@ set (APP_UI_SOURCES
         three_phase_dialog.h three_phase_dialog.cpp
         pid_tuning_dialog.h pid_tuning_dialog.cpp
         data_row_widget.h data_row_widget.cpp
+        harmonic_editor.h harmonic_editor.cpp
+        harmonics_dialog.h harmonics_dialog.cpp
 
         # Charts & Visualization
         custom_chart_view.h custom_chart_view.cpp

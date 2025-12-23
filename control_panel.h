@@ -44,13 +44,9 @@ public slots:
     void setSamplingCycles(double value);
     void setSamplesPerCycle(int value);
     void setUpdateMode(UpdateMode mode);
-    void setVoltageHarmonic(const HarmonicComponent& hc);
-    void setCurrentHarmonic(const HarmonicComponent& hc);
 
 private slots:
     void updateCurrentPhaseLabel(int value);
-    void updateVoltageHarmonicPhaseLabel(int value);
-    void updateCurrentHarmonicPhaseLabel(int value);
 
 signals:
     // ui control의 이벤트를 외부로 전달하는 시그널들
@@ -71,18 +67,19 @@ signals:
     void samplingCyclesChanged(double value);
     void samplesPerCycleChanged(int value);
     void updateModeChanged();
-    void harmonicChanged();
+    void harmonicsSettingsRequested();
 
 private:
     // UI 생성 및 초기화를 위한 헬퍼 함수들
     void setupUi();
-    void initializeUiValues();
+    void setupWidgetProperties();
     void createConnections();
 
     // UI 요소들을 멤버 변수로 소유
     QPushButton* m_startStopButton;
     QPushButton* m_settingButton;
 
+    // 기본 파라미터
     ValueControlWidget* m_voltageControlWidget;
     ValueControlWidget* m_currentAmplitudeControlWidget;
     ValueControlWidget* m_frequencyControlWidget;
@@ -91,26 +88,22 @@ private:
     ValueControlWidget* m_samplesPerCycleControlWidget;
 
     // 고조파 UI
-    QTabWidget* m_harmonicsTabWidget;
-    ValueControlWidget* m_voltageHarmonicOrder;
-    ValueControlWidget* m_voltageHarmonicMagnitude;
-    FineTuningDial* m_voltageHarmonicPhaseDial;
-    QLabel* m_voltageHarmonicPhaseLabel;
-    ValueControlWidget* m_currentHarmonicOrder;
-    ValueControlWidget* m_currentHarmonicMagnitude;
-    FineTuningDial* m_currentHarmonicPhaseDial;
-    QLabel* m_currentHarmonicPhaseLabel;
+    QPushButton* m_harmonicsButton;
 
+    // 전류 위상차
     FineTuningDial* m_currentPhaseDial;
     QLabel* m_currentPhaseLabel;
 
+    // 자동 스크롤
+    QCheckBox* m_autoScrollCheckBox;
+    QPushButton* m_trackingButton;
+
+    // 화면 갱신
     QRadioButton* m_perSampleRadioButton;
     QRadioButton* m_perHalfCycleRadioButton;
     QRadioButton* m_perCycleRadioButton;
 
-    QCheckBox* m_autoScrollCheckBox;
-    QPushButton* m_trackingButton;
-
+    // 표시할 그래프 선택
     CollapsibleGroupBox* m_waveformSelectionGroup;
     std::array<QCheckBox*, 3> m_voltageCheckBox;
     std::array<QCheckBox*, 3> m_currentCheckBox;
