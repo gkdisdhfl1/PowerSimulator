@@ -16,9 +16,20 @@ namespace config {
 
     // Simulation 핵심 동작과 관련된 설정
     struct Simulation {
-        static constexpr int DefaultDataSize = 1000;
-        static constexpr int MinDataSize = 1;
-        static constexpr int MaxDataSize = 100000;
+        // 데이터 최대 개수 설정
+        struct DataSize {
+            static constexpr int DefaultDataSize = 1000;
+            static constexpr int MinDataSize = 1;
+            static constexpr int MaxDataSize = 100000;
+        };
+
+        // 그래프 폭 관련 설정
+        struct GraphWidth {
+            static constexpr double Default = 1.0;
+            static constexpr double Min = 0.01;
+            static constexpr double Max = 300.0;
+        };
+
         static constexpr UpdateMode DefaultMode = UpdateMode::PerCycle;
     };
 

@@ -17,12 +17,12 @@ SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsM
     ,m_settingsManager(settingsManager)
     ,m_parent(parent)
 {
+    m_settingsDialog = std::make_unique<SettingsDialog>(this, m_parent);
+    m_harmonicsDialog = std::make_unique<HarmonicsDialog>(m_parent);
+
     initializeSettingsMap();
     initializeControlPanelDefaultValues();
     initializeConnections();
-
-    m_settingsDialog = std::make_unique<SettingsDialog>(this, m_parent);
-    m_harmonicsDialog = std::make_unique<HarmonicsDialog>(m_parent);
 }
 
 // --- public slot 구현 ---
@@ -101,6 +101,12 @@ void SettingsUiController::onRequestPresetValues(const QString& presetName)
         }
     }
 
+    // maxDataSize 별도 처리
+    auto maxDataSizeRes = m_settingsManager.loadSetting(presetName.toStdString(), "maxDataSize", config::Simulation::DataSize::DefaultDataSize);
+    if(maxDataSizeRes) {
+        previewData["저장 크기"] = *maxDataSizeRes;
+    }
+
     emit presetValuesFetched(previewData);
 }
 
@@ -111,6 +117,9 @@ void SettingsUiController::onApplyDialogSettings(const int maxDatasize, const in
 
     m_state.simulation.maxDataSize = maxDatasize;
     m_state.view.graphWidth = graphWidth;
+
+    qDebug() << "state maxDataSize: " << m_state.simulation.maxDataSize;
+    qDebug() << "state graphWidth: " << m_state.view.graphWidth;
 
     emit setMaxDataSize(maxDatasize);
     emit setGraphWidth(graphWidth);
@@ -155,6 +164,7 @@ void SettingsUiController::onSamplingCyclesChanged(double value)
 void SettingsUiController::onSamplesPerCycleChanged(int value)
 {
     m_state.simulation.samplesPerCycle = value;
+    emit setSamplesPerCycle(value);
     if(!m_blockUiSignals)
         emit requestCaptureIntervalUpdate();
 }
@@ -234,7 +244,7 @@ void SettingsUiController::initializeSettingsMap()
     bind("timeScale", m_state.simulation.timeScale, &SettingsUiController::setTimeScale, config::TimeScale::Default, "시간 배율");
     bind("samplingCycles", m_state.simulation.samplingCycles, &SettingsUiController::setSamplingCycles, config::Sampling::DefaultSamplingCycles, "초당 cycle");
     bind("samplesPerCycle", m_state.simulation.samplesPerCycle, &SettingsUiController::setSamplesPerCycle, config::Sampling::DefaultSamplesPerCycle, "cycle당 sample");
-    bind("graphWidthSec", m_state.view.graphWidth, &SettingsUiController::setGraphWidth, 1.0, "그래프 시간 폭");
+    bind("graphWidthSec", m_state.view.graphWidth, &SettingsUiController::setGraphWidth, config::Simulation::GraphWidth::Default, "그래프 시간 폭");
     bind("updateMode", m_state.simulation.updateMode, &SettingsUiController::setUpdateMode, 2, "갱신 모드");
 
     // 3상 관련 설정
@@ -253,6 +263,9 @@ void SettingsUiController::initializeControlPanelDefaultValues()
 {
     // DTO를 통한 일괄 주입
     m_controlPanel->setState(m_state);
+
+    emit setVoltageHarmonics(m_state.harmonics.voltageList);
+    emit setVoltageHarmonics(m_state.harmonics.currentList);
 }
 
 void SettingsUiController::initializeConnections()
@@ -269,36 +282,37 @@ void SettingsUiController::initializeConnections()
     });
 }
 
-// bool SettingsUiController::requestMaxSizeChange(int newSize)
-// {
-//     const int currentDataSize = m_engine->getDataSize();
+bool SettingsUiController::requestMaxSizeChange(int newSize)
+{
+    const int currentDataSize = m_state.simulation.maxDataSize;
 
-//     // 새 최대 크기가 현재 데이터 개수보다 작을 경우
-//     if(newSize < currentDataSize) {
-//         bool ok = false;
-//         emit requestDataLossConfirmation(currentDataSize, newSize, &ok);
-//         if(!ok) return false; // 사용자가 취소함
-//     }
+    // 새 최대 크기가 현재 데이터 개수보다 작을 경우
+    if(newSize < currentDataSize) {
+        bool ok = false;
+        emit requestDataLossConfirmation(currentDataSize, newSize, &ok);
+        if(!ok) return false; // 사용자가 취소함
+    }
 
-//     return true;
-// }
+    return true;
+}
 
 std::expected<void, std::string> SettingsUiController::applySettingsToEngine(std::string_view presetName)
 {
     m_blockUiSignals = true; // 프리셋 적용 시 슬롯 호출 잠시 무시
 
     // 미리 최대 데이터 크기 변경 요청
-    // if(auto res = m_settingsManager.loadSetting(presetName, "maxDataSize", m_state.simulation.maxDataSize); res) {
-    //     if(requestMaxSizeChange(*res)) {
-    //         emit maxDataSizeChangeRequested(*res);
-    //     } else {
-    //         m_blockUiSignals = false;
-    //         return std::unexpected("사용자가 최대 데이터 크기 변경을 취소했습니다.");
-    //     }
-    // } else {
-    //     m_blockUiSignals = false;
-    //     return std::unexpected(res.error());
-    // }
+    if(auto res = m_settingsManager.loadSetting(presetName, "maxDataSize", m_state.simulation.maxDataSize); res) {
+        if(requestMaxSizeChange(*res)) {
+            m_state.simulation.maxDataSize = *res;
+            emit setMaxDataSize(*res);
+        } else {
+            m_blockUiSignals = false;
+            return std::unexpected("사용자가 최대 데이터 크기 변경을 취소했습니다.");
+        }
+    } else {
+        m_blockUiSignals = false;
+        return std::unexpected(res.error());
+    }
 
     // 맵을 순회하면 DB에서 값을 불러와 각 Property에 적용
     for(auto const& [key, info] : m_settingsMap) {
@@ -328,11 +342,17 @@ std::expected<void, std::string> SettingsUiController::applySettingsToEngine(std
     }
     // 고조파 리스트 로드
     auto voltageRes = m_settingsManager.loadSetting(presetName, "voltageHarmonicsJson", std::string(""));
-    if(voltageRes)
-        emit setVoltageHarmonics(UIutils::jsonToHarmonicList(QString::fromStdString(*voltageRes)));
+    if(voltageRes) {
+        const auto& voltageList = UIutils::jsonToHarmonicList(QString::fromStdString(*voltageRes));
+        m_state.harmonics.voltageList = voltageList;
+        emit setVoltageHarmonics(voltageList);
+    }
     auto currentRes = m_settingsManager.loadSetting(presetName, "currentHarmonicsJson", std::string(""));
-    if(currentRes)
-        emit setCurrentHarmonics(UIutils::jsonToHarmonicList(QString::fromStdString(*currentRes)));
+    if(currentRes) {
+        const auto& currentList = UIutils::jsonToHarmonicList(QString::fromStdString(*currentRes));
+        m_state.harmonics.currentList = currentList;
+        emit setCurrentHarmonics(currentList);
+    }
 
     m_blockUiSignals = false;
     emit presetApplied();

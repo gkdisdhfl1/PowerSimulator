@@ -115,7 +115,7 @@ private:
     void initializeSettingsMap();
     void initializeControlPanelDefaultValues();
     void initializeConnections();
-    // bool requestMaxSizeChange(int newSize);
+    bool requestMaxSizeChange(int newSize);
     std::expected<void, std::string> applySettingsToEngine(std::string_view presetName); // 특정 프리셋을 UI에 적용하는 함수
     std::expected<void, std::string> saveEngineToSettings(std::string_view presetName); // 현재 UI 상태를 특정 프리셋으로 저장하는 함수
 
@@ -132,7 +132,7 @@ private:
             // Setter: 값 갱신 후 시그널 발생
             [this, &stateVariable, signal](const QVariant& v) {
                 T val = v.value<T>();
-                // 값이 다를 대만 업데이트
+                // 값이 다를 때만 업데이트
                 if(stateVariable != val) {
                     stateVariable = val;
                     emit(this->*signal)(val); // 멤버 함수 포인터로 시그널 호출

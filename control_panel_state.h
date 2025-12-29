@@ -32,7 +32,7 @@ struct ControlPanelState {
         double samplingCycles = config::Sampling::DefaultSamplingCycles;
         int samplesPerCycle = config::Sampling::DefaultSamplesPerCycle;
         UpdateMode updateMode = UpdateMode::PerCycle;
-        int maxDataSize = config::Simulation::DefaultDataSize;
+        int maxDataSize = config::Simulation::DataSize::DefaultDataSize;
     } simulation;
 
     // harmonics
@@ -44,7 +44,7 @@ struct ControlPanelState {
     // UI
     struct View {
         bool isRunning = false;
-        double graphWidth = 10.0;
+        double graphWidth = config::Simulation::GraphWidth::Default;
     } view;
 };
 

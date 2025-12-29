@@ -126,7 +126,7 @@ void GraphWindow::stretchGraph(double factor)
     m_engine->m_graphWidthSec.setValue(currentWidth / factor);
 
     // 그래프 폭이 너무 크거나 작아지지 않도록 범위 제한
-    m_engine->m_graphWidthSec.setValue(std::clamp(m_engine->m_graphWidthSec.value() , View::GraphWidth::Min, View::GraphWidth::Max));
+    m_engine->m_graphWidthSec.setValue(std::clamp(m_engine->m_graphWidthSec.value() , config::Simulation::GraphWidth::Min, config::Simulation::GraphWidth::Max));
 }
 
 void GraphWindow::updateGraph(const std::deque<DataPoint> &data)

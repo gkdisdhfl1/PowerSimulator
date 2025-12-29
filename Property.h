@@ -75,35 +75,35 @@ private:
     T m_value;
 };
 
-template <typename Struct, typename MemberType>
-class PropertyMemberAdapter : public PropertySignals
-{
-public:
-    PropertyMemberAdapter(Property<Struct>& parentProperty, MemberType Struct::*memberPtr)
-        : m_parentProperty(parentProperty), m_memberPtr(memberPtr)
-    {
+// template <typename Struct, typename MemberType>
+// class PropertyMemberAdapter : public PropertySignals
+// {
+// public:
+//     PropertyMemberAdapter(Property<Struct>& parentProperty, MemberType Struct::*memberPtr)
+//         : m_parentProperty(parentProperty), m_memberPtr(memberPtr)
+//     {
 
-    }
+//     }
 
-    QVariant getVariantValue() const override {
-        // 부모 Property 값에서 지정된 멤버의 값을 가져옴
-        return QVariant::fromValue(m_parentProperty.value().*m_memberPtr);
-    }
+//     QVariant getVariantValue() const override {
+//         // 부모 Property 값에서 지정된 멤버의 값을 가져옴
+//         return QVariant::fromValue(m_parentProperty.value().*m_memberPtr);
+//     }
 
-    void setVariantValue(const QVariant& val) override {
-        if(val.isValid() && val.canConvert<MemberType>()) {
-            // 부모 Property 값을 복사해와서
-            Struct temp = m_parentProperty.value();
-            // 지정된 멤버의 값을 수정한 뒤
-            temp.*m_memberPtr = val.value<MemberType>();
-            // 수정된 구조체로 부모 Property를 업데이트
-            m_parentProperty.setValue(temp);
-        }
-    }
+//     void setVariantValue(const QVariant& val) override {
+//         if(val.isValid() && val.canConvert<MemberType>()) {
+//             // 부모 Property 값을 복사해와서
+//             Struct temp = m_parentProperty.value();
+//             // 지정된 멤버의 값을 수정한 뒤
+//             temp.*m_memberPtr = val.value<MemberType>();
+//             // 수정된 구조체로 부모 Property를 업데이트
+//             m_parentProperty.setValue(temp);
+//         }
+//     }
 
-private:
-    Property<Struct>& m_parentProperty;
-    MemberType Struct::*m_memberPtr;
-};
+// private:
+//     Property<Struct>& m_parentProperty;
+//     MemberType Struct::*m_memberPtr;
+// };
 
 #endif // PROPERTY_H
