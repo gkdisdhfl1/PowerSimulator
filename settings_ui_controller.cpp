@@ -113,13 +113,10 @@ void SettingsUiController::onRequestPresetValues(const QString& presetName)
 void SettingsUiController::onApplyDialogSettings(const int maxDatasize, const int graphWidth)
 {
     // 데이터 유실 확인
-    // if(!requestMaxSizeChange(maxDatasize)) return;
+    if(!requestMaxSizeChange(maxDatasize)) return;
 
     m_state.simulation.maxDataSize = maxDatasize;
     m_state.view.graphWidth = graphWidth;
-
-    qDebug() << "state maxDataSize: " << m_state.simulation.maxDataSize;
-    qDebug() << "state graphWidth: " << m_state.view.graphWidth;
 
     emit setMaxDataSize(maxDatasize);
     emit setGraphWidth(graphWidth);

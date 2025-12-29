@@ -93,6 +93,7 @@ void SimulationEngine::onMaxDataSizeChanged(int newSize)
     }
 
     emit dataUpdated(m_data);
+    emit measuredDataUpdated(m_measuredData);
 }
 
 void SimulationEngine::updateCaptureTimer()
@@ -353,6 +354,10 @@ void SimulationEngine::calculateCycleData()
 
     // 4. 완성된 데이터를 컨테이너에 추가
     m_measuredData.push_back(newData);
+
+    // 최대 개수 관리
+    if(m_measuredData.size() > static_cast<size_t>(m_maxDataSize.value()))
+        m_measuredData.pop_front();
 
     // 5. 1초 데이터 처리 로직 호출
     processOneSecondData(m_measuredData.back());
