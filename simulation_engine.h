@@ -109,8 +109,7 @@ private:
     using FpNanoseconds = utils::FpNanoseconds;
     using Nanoseconds = utils::Nanoseconds;
     using FpSeconds = utils::FpSeconds;
-
-    std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> analyzeSpectrum(AnalysisUtils::DataType type, int phase) const;
+    std::expected<AnalysisUtils::Spectrum, AnalysisUtils::SpectrumError> analyzeSpectrum(AnalysisUtils::DataType type, int phase) const;
 
     void advanceSimulationTime();
     PhaseData calculateCurrentVoltage() const;

@@ -22,7 +22,7 @@ SimulationEngine::SimulationEngine()
     , m_samplesPerCycle(config::Sampling::DefaultSamplesPerCycle, this)
     , m_maxDataSize(config::Simulation::DefaultDataSize, this)
     , m_graphWidthSec(1.0, this)
-    , m_updateMode(UpdateMode::PerSample, this)
+    , m_updateMode(config::Simulation::DefaultMode, this)
 
     , m_voltageHarmonic({{config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase}}, this)
     , m_currentHarmonic({{config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase}}, this)

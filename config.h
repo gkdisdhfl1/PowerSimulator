@@ -19,7 +19,7 @@ namespace config {
         static constexpr int DefaultDataSize = 1000;
         static constexpr int MinDataSize = 1;
         static constexpr int MaxDataSize = 100000;
-
+        static constexpr UpdateMode DefaultMode = UpdateMode::PerCycle;
     };
 
     // 데이터 source(파형)의 특성과 관련된 설정

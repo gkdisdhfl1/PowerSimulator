@@ -17,6 +17,7 @@
 #include <QCheckBox>
 #include <QScrollArea>
 #include <QTabWidget>
+#include <QButtonGroup>
 
 ControlPanel::ControlPanel(QWidget *parent) : QWidget(parent)
 {
@@ -153,6 +154,11 @@ void ControlPanel::setupUi()
 
     auto updateModeGroupBox = new QGroupBox("화면 갱신");
     updateModeGroupBox->setLayout(updateModeLayout);
+
+    m_updateModeGroup = new QButtonGroup(this);
+    m_updateModeGroup->addButton(m_perSampleRadioButton, static_cast<int>(UpdateMode::PerSample));
+    m_updateModeGroup->addButton(m_perHalfCycleRadioButton, static_cast<int>(UpdateMode::PerHalfCycle));
+    m_updateModeGroup->addButton(m_perCycleRadioButton, static_cast<int>(UpdateMode::PerCycle));
 
     // 그래프 표시 그룹박스 레이아웃
     m_waveformSelectionGroup = new CollapsibleGroupBox("waveform 그래프 표시 선택");
@@ -303,9 +309,9 @@ void ControlPanel::createConnections()
     connect(m_harmonicsButton, &QPushButton::clicked, this, &ControlPanel::harmonicsSettingsRequested);
 
     // 라디오 버튼 연결
-    connect(m_perSampleRadioButton, &QRadioButton::toggled, this, &ControlPanel::updateModeChanged);
-    connect(m_perHalfCycleRadioButton, &QRadioButton::toggled, this, &ControlPanel::updateModeChanged);
-    connect(m_perCycleRadioButton, &QRadioButton::toggled, this, &ControlPanel::updateModeChanged);
+    connect(m_updateModeGroup, &QButtonGroup::idClicked, this, [this](int id) {
+        emit updateModeChanged(static_cast<UpdateMode>(id));
+    });
 
     // 내부 UI 업데이트 연결
     connect(m_currentPhaseDial, &FineTuningDial::valueChanged, this, &ControlPanel::updateCurrentPhaseLabel);

@@ -197,12 +197,12 @@ void MainWindow::setupUiComponents()
 void MainWindow::createSignalSlotConnections()
 {
     // 메뉴바 액션 연결
-    connect(m_actionSettings, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showSettingsDialog);
     connect(m_actionPidTuning, &QAction::triggered, this, &MainWindow::showPidTuningDialog);
     connect(m_actionThreePhaseSettings, &QAction::triggered, this, &MainWindow::showThreePhaseDialog);
     connect(m_actionA3700, &QAction::triggered, this, &MainWindow::showA3700Window);
     connect(m_fpsTimer, &QTimer::timeout, this, &MainWindow::updateFpsLabel);
 
+    connect(m_actionSettings, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showSettingsDialog);
     connect(m_settingsUiController.get(), &SettingsUiController::requestDataLossConfirmation, this, [this](int currentSize, int newSize, bool* ok) {
         QMessageBox::StandardButtons reply;
         reply = QMessageBox::question(this, "데이터 축소 경고",
@@ -211,7 +211,6 @@ void MainWindow::createSignalSlotConnections()
 
         *ok = (reply == QMessageBox::Yes);
     }, Qt::DirectConnection);
-    connect(m_settingsUiController.get(), &SettingsUiController::setMaxDataSize, m_engine, &SimulationEngine::onMaxDataSizeChanged);
 
     // ---- ControlPanel 이벤트 -> Controller or Model(engine) 슬롯 ----
     connect(m_controlPanel, &ControlPanel::startStopClicked, this, [this]() {
@@ -249,7 +248,36 @@ void MainWindow::createSignalSlotConnections()
 
 
     // ----------------------
+    // Controller -> Model
+    connect(m_settingsUiController.get(), &SettingsUiController::setAmplitude, &m_engine->m_amplitude, &Property<double>::setValue);
+    connect(m_settingsUiController.get(), &SettingsUiController::setCurrentAmplitude, &m_engine->m_currentAmplitude, &Property<double>::setValue);
+    connect(m_settingsUiController.get(), &SettingsUiController::setFrequency, &m_engine->m_frequency, &Property<double>::setValue);
+    connect(m_settingsUiController.get(), &SettingsUiController::setCurrentPhase, &m_engine->m_currentPhaseOffsetRadians, &Property<double>::setValue);
+    connect(m_settingsUiController.get(), &SettingsUiController::setTimeScale, &m_engine->m_timeScale, &Property<double>::setValue);
+    connect(m_settingsUiController.get(), &SettingsUiController::setSamplingCycles, &m_engine->m_samplingCycles, &Property<double>::setValue);
+    connect(m_settingsUiController.get(), &SettingsUiController::setSamplesPerCycle, &m_engine->m_samplesPerCycle, &Property<int>::setValue);
+    connect(m_settingsUiController.get(), &SettingsUiController::setUpdateMode, &m_engine->m_updateMode, &Property<UpdateMode>::setValue);
 
+    connect(m_settingsUiController.get(), &SettingsUiController::setVoltageHarmonics, &m_engine->m_voltageHarmonic, &Property<HarmonicList>::setValue);
+    connect(m_settingsUiController.get(), &SettingsUiController::setCurrentHarmonics, &m_engine->m_currentHarmonic, &Property<HarmonicList>::setValue);
+
+    connect(m_settingsUiController.get(), &SettingsUiController::setVoltageBAmplitude, &m_engine->m_voltage_B_amplitude, &Property<double>::setValue);
+    connect(m_settingsUiController.get(), &SettingsUiController::setVoltageBPhase, &m_engine->m_voltage_B_phase_deg, &Property<double>::setValue);
+    connect(m_settingsUiController.get(), &SettingsUiController::setVoltageCAmplitude, &m_engine->m_voltage_C_amplitude, &Property<double>::setValue);
+    connect(m_settingsUiController.get(), &SettingsUiController::setVoltageCPhase, &m_engine->m_voltage_C_phase_deg, &Property<double>::setValue);
+    connect(m_settingsUiController.get(), &SettingsUiController::setCurrentBAmplitude, &m_engine->m_current_B_amplitude, &Property<double>::setValue);
+    connect(m_settingsUiController.get(), &SettingsUiController::setCurrentBPhase, &m_engine->m_current_B_phase_deg, &Property<double>::setValue);
+    connect(m_settingsUiController.get(), &SettingsUiController::setCurrentCAmplitude, &m_engine->m_current_C_amplitude, &Property<double>::setValue);
+    connect(m_settingsUiController.get(), &SettingsUiController::setCurrentCPhase, &m_engine->m_current_C_phase_deg, &Property<double>::setValue);
+
+    connect(m_settingsUiController.get(), &SettingsUiController::setGraphWidth, &m_engine->m_graphWidthSec, &Property<double>::setValue);
+
+    connect(m_settingsUiController.get(), &SettingsUiController::requestCaptureIntervalUpdate, m_engine, &SimulationEngine::recalculateCaptureInterval);
+    connect(m_settingsUiController.get(), &SettingsUiController::setMaxDataSize, m_engine, &SimulationEngine::onMaxDataSizeChanged);
+    connect(m_settingsUiController.get(), &SettingsUiController::enableTracking, m_engine, &SimulationEngine::enableFrequencyTracking);
+    connect(m_settingsUiController.get(), &SettingsUiController::setFrequencyTrackerCoefficients, m_engine, &SimulationEngine::updateFrequencyTrackerCoefficients);
+
+    // ----------------------
     // Model(engine) 시그널 -> View
     connect(static_cast<PropertySignals*>(&m_engine->m_amplitude), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setAmplitude);
     connect(static_cast<PropertySignals*>(&m_engine->m_currentAmplitude), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setCurrentAmplitude);

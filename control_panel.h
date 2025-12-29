@@ -7,6 +7,7 @@
 
 // 클래스 전방 선언
 class QPushButton;
+class QButtonGroup;
 class QCheckBox;
 class ValueControlWidget;
 class FineTuningDial;
@@ -99,6 +100,7 @@ private:
     QPushButton* m_trackingButton;
 
     // 화면 갱신
+    QButtonGroup* m_updateModeGroup;
     QRadioButton* m_perSampleRadioButton;
     QRadioButton* m_perHalfCycleRadioButton;
     QRadioButton* m_perCycleRadioButton;
