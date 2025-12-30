@@ -73,7 +73,7 @@ void SystemController::createConnections()
                                       QMessageBox::Yes | QMessageBox::No);
 
         *ok = (reply == QMessageBox::Yes);
-    }, Qt::BlockingQueuedConnection);
+    }, Qt::DirectConnection);
 
     // ControlPanel -> Engine (start/stop)
     connect(cp, &ControlPanel::startStopClicked, m_engine, [this]() {
