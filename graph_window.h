@@ -13,7 +13,7 @@ class GraphWindow : public BaseGraphWindow
     Q_OBJECT
 
 public:
-    explicit GraphWindow(SimulationEngine* engine, QWidget *parent = nullptr);
+    explicit GraphWindow(QWidget *parent = nullptr);
     ~GraphWindow();
 
 signals:

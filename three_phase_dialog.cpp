@@ -71,34 +71,34 @@ void ThreePhaseDialog::setupUi()
     setLayout(mainLayout);
 }
 
-void ThreePhaseDialog::setInitialValues(const SimulationEngine* engine)
+void ThreePhaseDialog::setInitialValues(const ControlPanelState::ThreePhase& state)
 {
     QSignalBlocker b0(m_amplitudeControls[0]);
     QSignalBlocker b1(m_phaseDials[0]);
     m_amplitudeControls[0]->setRange(config::Source::Amplitude::Min, config::Source::Amplitude::Max);
-    m_amplitudeControls[0]->setValue(engine->m_voltage_B_amplitude.value());
-    m_phaseDials[0]->setValue(engine->m_voltage_B_phase_deg.value());
+    m_amplitudeControls[0]->setValue(state.voltageBAmplitude);
+    m_phaseDials[0]->setValue(state.voltageBPhase);
 
     QSignalBlocker b2(m_amplitudeControls[1]);
     QSignalBlocker b3(m_phaseDials[1]);
     m_amplitudeControls[1]->setRange(config::Source::Amplitude::Min, config::Source::Amplitude::Max);
-    m_amplitudeControls[1]->setValue(engine->m_voltage_C_amplitude.value());
-    m_phaseDials[1]->setValue(engine->m_voltage_C_phase_deg.value());
+    m_amplitudeControls[1]->setValue(state.voltageCAmplitude);
+    m_phaseDials[1]->setValue(state.voltageCPhase);
 
     QSignalBlocker b4(m_amplitudeControls[2]);
     QSignalBlocker b5(m_phaseDials[2]);
     m_amplitudeControls[2]->setRange(config::Source::Current::MinAmplitude, config::Source::Current::MaxAmplitude);
-    m_amplitudeControls[2]->setValue(engine->m_current_B_amplitude.value());
-    m_phaseDials[2]->setValue(engine->m_current_B_phase_deg.value());
+    m_amplitudeControls[2]->setValue(state.currentBAmplitude);
+    m_phaseDials[2]->setValue(state.currentBPhase);
 
     QSignalBlocker b6(m_amplitudeControls[3]);
     QSignalBlocker b7(m_phaseDials[3]);
     m_amplitudeControls[3]->setRange(config::Source::Current::MinAmplitude, config::Source::Current::MaxAmplitude);
-    m_amplitudeControls[3]->setValue(engine->m_current_C_amplitude.value());
-    m_phaseDials[3]->setValue(engine->m_current_C_phase_deg.value());
+    m_amplitudeControls[3]->setValue(state.currentCAmplitude);
+    m_phaseDials[3]->setValue(state.currentCPhase);
 
-    m_phaseLabels[0]->setText(QString::number(engine->m_voltage_B_phase_deg.value()) + " °");
-    m_phaseLabels[1]->setText(QString::number(engine->m_voltage_C_phase_deg.value()) + " °");
-    m_phaseLabels[2]->setText(QString::number(engine->m_current_B_phase_deg.value()) + " °");
-    m_phaseLabels[3]->setText(QString::number(engine->m_current_C_phase_deg.value()) + " °");
+    m_phaseLabels[0]->setText(QString::number(state.voltageBPhase) + " °");
+    m_phaseLabels[1]->setText(QString::number(state.voltageCPhase) + " °");
+    m_phaseLabels[2]->setText(QString::number(state.currentBPhase) + " °");
+    m_phaseLabels[3]->setText(QString::number(state.currentCPhase) + " °");
 }

@@ -18,6 +18,7 @@ class SettingsUiController : public QObject
 public:
     explicit SettingsUiController(ControlPanel* controlPanel, SettingsManager& settingsManager, QWidget* parent);
 
+    const ControlPanelState& getState() const;
 
 signals:
     void taskFinished(const std::expected<void, std::string>& result, const QString& successMessage);

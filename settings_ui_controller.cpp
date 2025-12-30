@@ -24,6 +24,12 @@ SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsM
     initializeControlPanelDefaultValues();
     initializeConnections();
 }
+// --- public ---
+const ControlPanelState& SettingsUiController::getState() const
+{
+    return m_state;
+}
+
 
 // --- public slot 구현 ---
 void SettingsUiController::onSaveAsPresetRequested(const QString& presetName)

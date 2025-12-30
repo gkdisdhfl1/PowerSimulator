@@ -1,6 +1,5 @@
 #include "analysis_graph_window.h"
 #include "custom_chart_view.h"
-#include "simulation_engine.h"
 #include <QLineSeries>
 #include <QValueAxis>
 #include <QChart>
@@ -9,8 +8,8 @@
 using utils::FpSeconds;
 using utils::Nanoseconds;
 
-AnalysisGraphWindow::AnalysisGraphWindow(SimulationEngine *engine, QWidget *parent)
-    : BaseGraphWindow(engine, parent)
+AnalysisGraphWindow::AnalysisGraphWindow(QWidget *parent)
+    : BaseGraphWindow(parent)
     , m_axisY_voltage(new QValueAxis(this))
     , m_axisY_current(new QValueAxis(this))
     , m_axisY_power(new QValueAxis(this))
@@ -142,7 +141,7 @@ void AnalysisGraphWindow::setupSeries()
     // -------------------------
 
     // X축 설정
-    m_axisX->setRange(0, m_engine->m_graphWidthSec.value() ); // 초기 범위를 설정값으로
+    m_axisX->setRange(0, config::Simulation::GraphWidth::Default); // 초기 범위를 설정값으로
     for(const auto& info : m_seriesInfoList) {
         m_chart->addSeries(info.series);
         info.series->attachAxis(m_axisX);

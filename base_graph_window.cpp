@@ -1,7 +1,7 @@
 #include "base_graph_window.h"
 #include "custom_chart_view.h"
-#include "simulation_engine.h"
 #include "data_point.h"
+#include "measured_data.h"
 #include <QChart>
 #include <QValueAxis>
 #include <QGridLayout>
@@ -10,14 +10,13 @@ template std::pair<double, double> BaseGraphWindow::getVisibleXRange<std::deque<
 template std::pair<double, double> BaseGraphWindow::getVisibleXRange<std::deque<MeasuredData>>(const std::deque<MeasuredData>&);
 
 
-
-BaseGraphWindow::BaseGraphWindow(SimulationEngine *engine, QWidget *parent)
+BaseGraphWindow::BaseGraphWindow(QWidget *parent)
     :QWidget(parent)
     , m_chart(std::make_unique<QChart>())
     , m_axisX(new QValueAxis())
     , m_chartView(new CustomChartView(m_chart.get(), this))
-    , m_engine(engine)
     , m_isAutoScrollEnabled(true)
+    , m_graphWidth(1.0)
 {
     setupBaseChart();
 }
@@ -48,7 +47,7 @@ std::pair<double, double> BaseGraphWindow::getVisibleXRange(const Container& dat
 
     if(m_isAutoScrollEnabled) {
         if(data.empty()) {
-            return {0.0, m_engine->m_graphWidthSec.value()};
+            return {0.0, m_graphWidth};
         }
 
         // C++20 concept를 사용하여 일반화 가능
@@ -60,7 +59,7 @@ std::pair<double, double> BaseGraphWindow::getVisibleXRange(const Container& dat
             lastTimestamp = std::chrono::duration<double>(data.back().timestamp).count();
         }
 
-        const double graphWidth = m_engine->m_graphWidthSec.value();
+        const double graphWidth = m_graphWidth;
         minX = (lastTimestamp < graphWidth) ? 0 : lastTimestamp - graphWidth;
         maxX = (lastTimestamp < graphWidth) ? graphWidth : lastTimestamp;
     } else {
@@ -74,4 +73,9 @@ std::pair<double, double> BaseGraphWindow::getVisibleXRange(const Container& dat
 void BaseGraphWindow::toggleAutoScroll(bool enabled)
 {
     m_isAutoScrollEnabled = enabled;
+}
+
+void BaseGraphWindow::setGraphWidth(double width)
+{
+    m_graphWidth = width;
 }

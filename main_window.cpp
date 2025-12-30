@@ -1,20 +1,17 @@
 #include "main_window.h"
-#include "fundamental_analysis_graph_window.h"
-#include "harmonic_analysis_graph_window.h"
-#include "one_second_summary_window.h"
-#include "pid_tuning_dialog.h"
-#include "settings_dialog.h"
-#include "simulation_engine.h"
-#include "settings_manager.h"
-#include "settings_ui_controller.h"
 #include "control_panel.h"
 #include "graph_window.h"
 #include "analysis_graph_window.h"
 #include "phasor_view.h"
-#include "three_phase_dialog.h"
+#include "fundamental_analysis_graph_window.h"
+#include "harmonic_analysis_graph_window.h"
+#include "one_second_summary_window.h"
 #include "additional_metrics_window.h"
+#include "three_phase_dialog.h"
+#include "pid_tuning_dialog.h"
 #include "a3700n_window.h"
 #include "demand_calculator.h"
+#include "simulation_engine.h"
 
 #include <QDockWidget>
 #include <QStatusBar>
@@ -25,45 +22,31 @@
 #include <QTimer>
 #include <QMessageBox>
 
-MainWindow::MainWindow(SimulationEngine *engine, QWidget *parent)
+MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , m_engine(engine)
     , m_fpsLabel(new QLabel("FPS: 0", this))
     , m_fpsTimer(new QTimer(this))
     , m_frameCount(0)
 {
     m_demandCalculator = std::make_unique<DemandCalculator>(this);
 
-    // 메뉴바 생성
-    createMenus();
-
-    // 데이터 베이스 설정
-    QString dbPath = QApplication::applicationDirPath() + "/settings.db";
-    m_settingsManager = std::make_unique<SettingsManager>(dbPath.toStdString());
-
-
-    // UI 컴포넌트 생성 및 도킹
-    setupUiComponents();
-
-    // 컨트롤러 생성 (UI 컴포넌트가 생성된 후)
+    // 다이얼로그 생성
     m_threePhaseDialog = std::make_unique<ThreePhaseDialog>(this);
     m_pidTuningDialog = std::make_unique<PidTuningDialog>(this);
     m_a3700nWindow = std::make_unique<A3700N_Window>(nullptr);
 
-    m_settingsUiController = std::make_unique<SettingsUiController>(m_controlPanel, *m_settingsManager, this);
-
+    createMenus(); // 메뉴바 생성
+    setupUiComponents(); // UI 컴포넌트 생성 및 도킹
+    setupConnections();
 
     // 시그널-슬롯 연결
-    createSignalSlotConnections();
     statusBar()->showMessage("Ready");
     statusBar()->addPermanentWidget(m_fpsLabel);
     m_fpsTimer->start(1000);
     resize(1500,870);
 }
 
-MainWindow::~MainWindow()
-{
-}
+MainWindow::~MainWindow() {}
 
 void MainWindow::createMenus()
 {
@@ -114,12 +97,12 @@ void MainWindow::setupUiComponents()
     m_placeholderDock->setMaximumWidth(0); // 너비를 0으로 고정
 
     // 그래프 창
-    m_graphWindow = new GraphWindow(m_engine, this);
+    m_graphWindow = new GraphWindow(this);
     QDockWidget *graphDock = new QDockWidget("Real-time Waveform", this);
     graphDock->setWidget(m_graphWindow);
 
     // 분석 그래프 창
-    m_analysisGraphWindow = new AnalysisGraphWindow(m_engine, this);
+    m_analysisGraphWindow = new AnalysisGraphWindow(this);
     QDockWidget *analysisGraphDock = new QDockWidget("Cycle Analysis", this);
     analysisGraphDock->setWidget(m_analysisGraphWindow);
 
@@ -129,12 +112,12 @@ void MainWindow::setupUiComponents()
     phasorDock->setWidget(m_phasorView);
 
     // 기본파 RMS 그래프
-    m_fundamentalAnalysisGraphWindow = new FundamentalAnalysisGraphWindow(m_engine, this);
+    m_fundamentalAnalysisGraphWindow = new FundamentalAnalysisGraphWindow(this);
     QDockWidget *fundamentalRmsDock = new QDockWidget("fundamental Analysis", this);
     fundamentalRmsDock->setWidget(m_fundamentalAnalysisGraphWindow);
 
     // 고조파 RMS 그래프
-    m_harmonicAnalysisGraphWindow = new HarmonicAnalysisGraphWindow(m_engine, this) ;
+    m_harmonicAnalysisGraphWindow = new HarmonicAnalysisGraphWindow(this) ;
     QDockWidget *harmonicRmsDock = new QDockWidget("Harmonic Analysis", this);
     harmonicRmsDock->setWidget(m_harmonicAnalysisGraphWindow);
 
@@ -189,12 +172,9 @@ void MainWindow::setupUiComponents()
     rightSizes << 600 << 200;
     resizeDocks({graphDock, oneSecondSummaryDock}, rightSizes, Qt::Horizontal);
 
-    // 6. 컨트롤 패널의 도킹 상태 변경 시그널 연결
-    connect(m_controlDock, &QDockWidget::dockLocationChanged, this, &MainWindow::updatePlaceholderVisibility);
-    connect(m_controlDock, &QDockWidget::topLevelChanged, this, &MainWindow::updatePlaceholderVisibility);
 }
 
-void MainWindow::createSignalSlotConnections()
+void MainWindow::setupConnections()
 {
     // 메뉴바 액션 연결
     connect(m_actionPidTuning, &QAction::triggered, this, &MainWindow::showPidTuningDialog);
@@ -202,108 +182,11 @@ void MainWindow::createSignalSlotConnections()
     connect(m_actionA3700, &QAction::triggered, this, &MainWindow::showA3700Window);
     connect(m_fpsTimer, &QTimer::timeout, this, &MainWindow::updateFpsLabel);
 
-    connect(m_actionSettings, &QAction::triggered, m_settingsUiController.get(), &SettingsUiController::showSettingsDialog);
-    connect(m_settingsUiController.get(), &SettingsUiController::requestDataLossConfirmation, this, [this](int currentSize, int newSize, bool* ok) {
-        QMessageBox::StandardButtons reply;
-        reply = QMessageBox::question(this, "데이터 축소 경고",
-            QString("데이터 최대 개수를 %1개에서 %2개로 줄이면 이전 데이터 일부가 영구적으로 삭제됩니다. \n\n계속하시겠습니까?").arg(currentSize).arg(newSize),
-            QMessageBox::Yes | QMessageBox::No);
+    // 컨트롤 패널의 도킹 이벤트 연결
+    connect(m_controlDock, &QDockWidget::dockLocationChanged, this, &MainWindow::updatePlaceholderVisibility);
+    connect(m_controlDock, &QDockWidget::topLevelChanged, this, &MainWindow::updatePlaceholderVisibility);
 
-        *ok = (reply == QMessageBox::Yes);
-    }, Qt::DirectConnection);
-
-    // ---- ControlPanel 이벤트 -> Controller or Model(engine) 슬롯 ----
-    connect(m_controlPanel, &ControlPanel::startStopClicked, this, [this]() {
-        if (m_engine->isRunning()) {
-            m_engine->stop();
-        } else {
-            m_engine->start();
-        }
-    });
-    connect(m_controlPanel, &ControlPanel::settingsClicked, m_settingsUiController.get(), &SettingsUiController::showSettingsDialog);
-
-    connect(m_controlPanel, &ControlPanel::amplitudeChanged, m_settingsUiController.get(), &SettingsUiController::onAmplitudeChanged);
-    connect(m_controlPanel, &ControlPanel::currentAmplitudeChanged, m_settingsUiController.get(), &SettingsUiController::onCurrentAmplitudeChanged);
-    connect(m_controlPanel, &ControlPanel::frequencyChanged, m_settingsUiController.get(), &SettingsUiController::onFrequencyChanged);
-    connect(m_controlPanel, &ControlPanel::currentPhaseChanged, m_settingsUiController.get(), &SettingsUiController::onCurrentPhaseChanged);
-    connect(m_controlPanel, &ControlPanel::timeScaleChanged, m_settingsUiController.get(), &SettingsUiController::onTimeScaleChanged);
-    connect(m_controlPanel, &ControlPanel::samplingCyclesChanged, m_settingsUiController.get(), &SettingsUiController::onSamplingCyclesChanged);
-    connect(m_controlPanel, &ControlPanel::samplesPerCycleChanged, m_settingsUiController.get(), &SettingsUiController::onSamplesPerCycleChanged);
-    connect(m_controlPanel, &ControlPanel::updateModeChanged, m_settingsUiController.get(), &SettingsUiController::onUpdateModeChanged);
-    connect(m_controlPanel, &ControlPanel::harmonicsSettingsRequested, m_settingsUiController.get(), &SettingsUiController::onHarmonicsSettingsRequested);
-
-    connect(m_controlPanel, &ControlPanel::autoScrollToggled, m_graphWindow, &GraphWindow::toggleAutoScroll);
-    connect(m_controlPanel, &ControlPanel::autoScrollToggled, m_analysisGraphWindow, &AnalysisGraphWindow::toggleAutoScroll);
-    connect(m_controlPanel, &ControlPanel::autoScrollToggled, m_fundamentalAnalysisGraphWindow, &FundamentalAnalysisGraphWindow::toggleAutoScroll);
-    connect(m_controlPanel, &ControlPanel::autoScrollToggled, m_harmonicAnalysisGraphWindow, &HarmonicAnalysisGraphWindow::toggleAutoScroll);
-    connect(m_controlPanel, &ControlPanel::trackingToggled, m_settingsUiController.get(), &SettingsUiController::onTrackingToggled);
-    connect(m_controlPanel, &ControlPanel::waveformVisibilityChanged, m_graphWindow, &GraphWindow::onWaveformVisibilityChanged);
-    connect(m_controlPanel, &ControlPanel::analysisWaveformVisibilityChanged, m_analysisGraphWindow, &AnalysisGraphWindow::onWaveformVisibilityChanged);
-    connect(m_controlPanel, &ControlPanel::phasorVisibilityChanged, m_phasorView, &PhasorView::onVisibilityChanged);
-
-    //  --- Dialog -> Controller 연결 ---
-    connect(m_threePhaseDialog.get(), &ThreePhaseDialog::valueChanged, m_settingsUiController.get(), &SettingsUiController::onThreePhaseValueChanged);
-    connect(m_pidTuningDialog.get(), &PidTuningDialog::settingsApplied, m_settingsUiController.get(), &SettingsUiController::onCoefficientsChanged);
-
-
-
-    // ----------------------
-    // Controller -> Model
-    connect(m_settingsUiController.get(), &SettingsUiController::setAmplitude, &m_engine->m_amplitude, &Property<double>::setValue);
-    connect(m_settingsUiController.get(), &SettingsUiController::setCurrentAmplitude, &m_engine->m_currentAmplitude, &Property<double>::setValue);
-    connect(m_settingsUiController.get(), &SettingsUiController::setFrequency, &m_engine->m_frequency, &Property<double>::setValue);
-    connect(m_settingsUiController.get(), &SettingsUiController::setCurrentPhase, &m_engine->m_currentPhaseOffsetRadians, &Property<double>::setValue);
-    connect(m_settingsUiController.get(), &SettingsUiController::setTimeScale, &m_engine->m_timeScale, &Property<double>::setValue);
-    connect(m_settingsUiController.get(), &SettingsUiController::setSamplingCycles, &m_engine->m_samplingCycles, &Property<double>::setValue);
-    connect(m_settingsUiController.get(), &SettingsUiController::setSamplesPerCycle, &m_engine->m_samplesPerCycle, &Property<int>::setValue);
-    connect(m_settingsUiController.get(), &SettingsUiController::setUpdateMode, &m_engine->m_updateMode, &Property<UpdateMode>::setValue);
-
-    connect(m_settingsUiController.get(), &SettingsUiController::setVoltageHarmonics, &m_engine->m_voltageHarmonic, &Property<HarmonicList>::setValue);
-    connect(m_settingsUiController.get(), &SettingsUiController::setCurrentHarmonics, &m_engine->m_currentHarmonic, &Property<HarmonicList>::setValue);
-
-    connect(m_settingsUiController.get(), &SettingsUiController::setVoltageBAmplitude, &m_engine->m_voltage_B_amplitude, &Property<double>::setValue);
-    connect(m_settingsUiController.get(), &SettingsUiController::setVoltageBPhase, &m_engine->m_voltage_B_phase_deg, &Property<double>::setValue);
-    connect(m_settingsUiController.get(), &SettingsUiController::setVoltageCAmplitude, &m_engine->m_voltage_C_amplitude, &Property<double>::setValue);
-    connect(m_settingsUiController.get(), &SettingsUiController::setVoltageCPhase, &m_engine->m_voltage_C_phase_deg, &Property<double>::setValue);
-    connect(m_settingsUiController.get(), &SettingsUiController::setCurrentBAmplitude, &m_engine->m_current_B_amplitude, &Property<double>::setValue);
-    connect(m_settingsUiController.get(), &SettingsUiController::setCurrentBPhase, &m_engine->m_current_B_phase_deg, &Property<double>::setValue);
-    connect(m_settingsUiController.get(), &SettingsUiController::setCurrentCAmplitude, &m_engine->m_current_C_amplitude, &Property<double>::setValue);
-    connect(m_settingsUiController.get(), &SettingsUiController::setCurrentCPhase, &m_engine->m_current_C_phase_deg, &Property<double>::setValue);
-
-    connect(m_settingsUiController.get(), &SettingsUiController::setGraphWidth, &m_engine->m_graphWidthSec, &Property<double>::setValue);
-
-    connect(m_settingsUiController.get(), &SettingsUiController::requestCaptureIntervalUpdate, m_engine, &SimulationEngine::recalculateCaptureInterval);
-    connect(m_settingsUiController.get(), &SettingsUiController::setMaxDataSize, m_engine, &SimulationEngine::onMaxDataSizeChanged);
-    connect(m_settingsUiController.get(), &SettingsUiController::enableTracking, m_engine, &SimulationEngine::enableFrequencyTracking);
-    connect(m_settingsUiController.get(), &SettingsUiController::setFrequencyTrackerCoefficients, m_engine, &SimulationEngine::updateFrequencyTrackerCoefficients);
-
-    // ----------------------
-    // Model(engine) 시그널 -> View
-    connect(static_cast<PropertySignals*>(&m_engine->m_amplitude), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setAmplitude);
-    connect(static_cast<PropertySignals*>(&m_engine->m_currentAmplitude), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setCurrentAmplitude);
-    connect(static_cast<PropertySignals*>(&m_engine->m_frequency), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setFrequency);
-    connect(static_cast<PropertySignals*>(&m_engine->m_timeScale), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setTimeScale);
-    connect(static_cast<PropertySignals*>(&m_engine->m_samplingCycles), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setSamplingCycles);
-    connect(static_cast<PropertySignals*>(&m_engine->m_samplesPerCycle), static_cast<void (PropertySignals::*)(const int&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setSamplesPerCycle);
-    connect(static_cast<PropertySignals*>(&m_engine->m_updateMode), static_cast<void (PropertySignals::*)(const UpdateMode&)>(&PropertySignals::valueChanged), m_controlPanel, &ControlPanel::setUpdateMode);
-    connect(static_cast<PropertySignals*>(&m_engine->m_currentPhaseOffsetRadians), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), this, [this](const double& radians) {
-        m_controlPanel->setCurrentPhase(qRound(utils::radiansToDegrees(radians)));
-    });
-
-    connect(m_engine, &SimulationEngine::dataUpdated, m_graphWindow, &GraphWindow::updateGraph);
-    connect(m_engine, &SimulationEngine::runningStateChanged, m_controlPanel, &ControlPanel::setRunningState);
-    connect(m_engine, &SimulationEngine::measuredDataUpdated, m_analysisGraphWindow, &AnalysisGraphWindow::updateGraph);
-    connect(m_engine, &SimulationEngine::phasorUpdated, m_phasorView, &PhasorView::updateData);
-    connect(m_engine, &SimulationEngine::measuredDataUpdated, m_fundamentalAnalysisGraphWindow, &FundamentalAnalysisGraphWindow::updateGraph);
-    connect(m_engine, &SimulationEngine::measuredDataUpdated, m_harmonicAnalysisGraphWindow, &HarmonicAnalysisGraphWindow::updateGraph);
-    connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_oneSecondSummaryWindow, &OneSecondSummaryWindow::updateData);
-    connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_additionalMetricsWindow, &AdditionalMetricsWindow::updateData);
-    connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_a3700nWindow.get(), &A3700N_Window::updateSummaryData);
-    connect(m_engine, &SimulationEngine::oneSecondDataUpdated, m_demandCalculator.get(), &DemandCalculator::processOneSecondData);
-
-    connect(m_demandCalculator.get(), &DemandCalculator::demandDataUpdated, m_a3700nWindow.get(), &A3700N_Window::updateDemandData);
-
-    // ---- GraphWindow 시그널 -> UI 슬롯 ----
+    // GraphWindow 내부 이벤트
     connect(m_graphWindow, &GraphWindow::pointHovered, this, [this](const DataPoint& point) {
         const double timeSec = std::chrono::duration<double>(point.timestamp).count();
         QString status = QString::asprintf("Time: %.3f s, Voltage: %.3f V, Current: %.3f A",
@@ -312,21 +195,13 @@ void MainWindow::createSignalSlotConnections()
                                            point.current.a);
         statusBar()->showMessage(status);
     });
-    connect(m_graphWindow, &GraphWindow::autoScrollToggled, m_controlPanel, &ControlPanel::setAutoScroll);
-    connect(m_analysisGraphWindow, &AnalysisGraphWindow::autoScrollToggled, m_controlPanel, &ControlPanel::setAutoScroll);
-    connect(m_fundamentalAnalysisGraphWindow, &FundamentalAnalysisGraphWindow::autoScrollToggled, m_controlPanel, &ControlPanel::setAutoScroll);
-    // --------------------------
-
-    // ---- GraphWindow 시그널 -> engine 슬롯
-    connect(m_graphWindow, &GraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawRequest);
     connect(m_graphWindow, &GraphWindow::framePainted, this, [this](){
         ++m_frameCount;
     });
-    connect(m_analysisGraphWindow, &AnalysisGraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawAnalysisRequest);
-    connect(m_fundamentalAnalysisGraphWindow, &FundamentalAnalysisGraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawAnalysisRequest);
-    connect(m_harmonicAnalysisGraphWindow, &HarmonicAnalysisGraphWindow::redrawNeeded, m_engine, &SimulationEngine::onRedrawAnalysisRequest);
 
-    connect(m_settingsUiController.get(), &SettingsUiController::presetApplied, this, &MainWindow::onPresetLoaded);
+    connect(m_graphWindow, &GraphWindow::autoScrollToggled, m_controlPanel, &ControlPanel::setAutoScroll);
+    connect(m_analysisGraphWindow, &AnalysisGraphWindow::autoScrollToggled, m_controlPanel, &ControlPanel::setAutoScroll);
+    connect(m_fundamentalAnalysisGraphWindow, &FundamentalAnalysisGraphWindow::autoScrollToggled, m_controlPanel, &ControlPanel::setAutoScroll);
 }
 
 void MainWindow::updatePlaceholderVisibility()
@@ -352,19 +227,16 @@ void MainWindow::updateFpsLabel()
     m_frameCount = 0;
 }
 
-void MainWindow::onPresetLoaded()
+void MainWindow::onPresetLoaded(const ControlPanelState& state)
 {
     if(m_threePhaseDialog) {
-        m_threePhaseDialog->setInitialValues(m_engine);
+        m_threePhaseDialog->setInitialValues(state.threePhase);
         m_threePhaseDialog->update();
     }
 }
 
 void MainWindow::showThreePhaseDialog()
 {
-    const auto& currentParams = m_engine;
-    m_threePhaseDialog->setInitialValues(currentParams);
-
     m_threePhaseDialog->show();
     m_threePhaseDialog->raise();
     m_threePhaseDialog->activateWindow();
@@ -372,11 +244,6 @@ void MainWindow::showThreePhaseDialog()
 
 void MainWindow::showPidTuningDialog()
 {
-    // FrequencyTracker로부터 현재 PID 계수를 가져옴
-    auto fllCoeffs = m_engine->getFrequencyTracker()->getFllCoefficients();
-    auto zcCoeffs = m_engine->getFrequencyTracker()->getZcCoefficients();
-    // 다이얼로그 현재 값 설정
-    m_pidTuningDialog->setInitialValues(fllCoeffs, zcCoeffs);
     m_pidTuningDialog->show();
     m_pidTuningDialog->raise();
     m_pidTuningDialog->activateWindow();
