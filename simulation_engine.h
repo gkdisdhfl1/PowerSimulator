@@ -4,7 +4,6 @@
 #include <QObject>
 #include <QChronoTimer>
 #include <deque>
-#include <complex>
 #include "analysis_utils.h"
 #include "data_point.h"
 #include "config.h"
@@ -124,7 +123,7 @@ private:
     void processUpdateByMode(bool resetCounter);
     void processOneSecondData(const MeasuredData& latestCycleData);
 
-    QChronoTimer m_captureTimer;
+    QChronoTimer* m_captureTimer;
     std::deque<DataPoint> m_data;
 
     double m_currentPhaseRadians; // 현재 누적 위상

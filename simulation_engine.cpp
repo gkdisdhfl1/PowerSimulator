@@ -46,9 +46,11 @@ SimulationEngine::SimulationEngine()
 
     // --- 나머지 초기화 로직 ---
     using namespace std::chrono_literals;
-    m_captureTimer.setTimerType(Qt::PreciseTimer);
+
+    m_captureTimer = new QChronoTimer(this); // 부모 설정
+    m_captureTimer->setTimerType(Qt::PreciseTimer);
     recalculateCaptureInterval(); // m_captureIntervalNs 초기 계산
-    connect(&m_captureTimer, &QChronoTimer::timeout, this, &SimulationEngine::captureData);
+    connect(m_captureTimer, &QChronoTimer::timeout, this, &SimulationEngine::captureData);
 
     // FrequencyTracker 생성 및 시그널 연결
     m_frequencyTracker = std::make_unique<FrequencyTracker>(this, this);
@@ -56,7 +58,7 @@ SimulationEngine::SimulationEngine()
 }
 
 // ---- public -----
-bool SimulationEngine::isRunning() const { return m_captureTimer.isActive(); }
+bool SimulationEngine::isRunning() const { return m_captureTimer->isActive(); }
 int SimulationEngine::getDataSize() const { return m_data.size(); }
 FrequencyTracker* SimulationEngine::getFrequencyTracker() const { return m_frequencyTracker.get(); }
 // -----------------
@@ -66,7 +68,7 @@ void SimulationEngine::start()
 {
     if (isRunning()) return;
 
-    m_captureTimer.start();
+    m_captureTimer->start();
     emit runningStateChanged(true);
     qDebug() << "Engine started.";
 }
@@ -75,7 +77,7 @@ void SimulationEngine::stop()
 {
     if (!isRunning()) return;
 
-    m_captureTimer.stop();
+    m_captureTimer->stop();
 
     emit runningStateChanged(false);
     qDebug() << "Engine stopped.";
@@ -102,7 +104,7 @@ void SimulationEngine::updateCaptureTimer()
     const auto scaledIntervalNs = m_captureIntervalsNs * m_timeScale.value();
 
     // QChornoTimer는 std::chrono::duration을 직접 인자로 받음
-    m_captureTimer.setInterval(std::chrono::duration_cast<Nanoseconds>(scaledIntervalNs));
+    m_captureTimer->setInterval(std::chrono::duration_cast<Nanoseconds>(scaledIntervalNs));
 
     // qDebug() << "m_captureTimer.interval()" << m_captureTimer.interval();
 }
@@ -410,7 +412,7 @@ void SimulationEngine::processUpdateByMode(bool resetCounter)
     }
 }
 
-std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> SimulationEngine::analyzeSpectrum(AnalysisUtils::DataType type, int phase) const
+std::expected<AnalysisUtils::Spectrum, AnalysisUtils::SpectrumError> SimulationEngine::analyzeSpectrum(AnalysisUtils::DataType type, int phase) const
 {
     return AnalysisUtils::calculateSpectrum(m_cycleSampleBuffer, type, phase, false);
 }

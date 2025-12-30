@@ -268,7 +268,7 @@ void SettingsUiController::initializeControlPanelDefaultValues()
     m_controlPanel->setState(m_state);
 
     emit setVoltageHarmonics(m_state.harmonics.voltageList);
-    emit setVoltageHarmonics(m_state.harmonics.currentList);
+    emit setCurrentHarmonics(m_state.harmonics.currentList);
 }
 
 void SettingsUiController::initializeConnections()

@@ -172,7 +172,7 @@ private:
             [this, &stateVariable, signal](const QVariant& v) {
                 auto mode = static_cast<EnumType>(v.toInt());
                 if(stateVariable != mode) {
-                    stateVariable - mode;
+                    stateVariable = mode;
                     emit (this->*signal)(mode);
                 }
             },

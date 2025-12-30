@@ -135,8 +135,6 @@ void SettingsDialog::setupUi()
 
 int SettingsDialog::openWithValues(const ControlPanelState& state)
 {
-    qDebug() << "state maxDataSize: " << state.simulation.maxDataSize;
-    qDebug() << "state graphWidth: " << state.view.graphWidth;
     m_maxDataSizeSpinBox->setValue(state.simulation.maxDataSize);
     m_graphWidthSpinBox->setValue(state.view.graphWidth);
     refreshPresetList();
