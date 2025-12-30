@@ -7,6 +7,7 @@ SimulationEngine::SimulationEngine()
     , m_currentPhaseRadians(0.0)
     , m_captureIntervalsNs(0)
     , m_simulationTimeNs(0)
+    , m_accumulatedTimeNs(0)
     , m_sampleCounterForUpdate(0)
     , m_oneSecondBlockStartTime(0)
     , m_totalEngeryWh(0.0)
@@ -100,13 +101,16 @@ void SimulationEngine::onMaxDataSizeChanged(int newSize)
 
 void SimulationEngine::updateCaptureTimer()
 {
-    // 기본 캡처 간격에 시간 비율을 곱해서 실제 타이머 주기를 계산
-    const auto scaledIntervalNs = m_captureIntervalsNs * m_timeScale.value();
+    // 배치 처리에서는 타이머 주기를 TimeScale에 따라 변경하지 않음.
+    m_captureTimer->setInterval(std::chrono::milliseconds(10));
 
-    // QChornoTimer는 std::chrono::duration을 직접 인자로 받음
-    m_captureTimer->setInterval(std::chrono::duration_cast<Nanoseconds>(scaledIntervalNs));
+    // // 기본 캡처 간격에 시간 비율을 곱해서 실제 타이머 주기를 계산
+    // const auto scaledIntervalNs = m_captureIntervalsNs * m_timeScale.value();
 
-    // qDebug() << "m_captureTimer.interval()" << m_captureTimer.interval();
+    // // QChornoTimer는 std::chrono::duration을 직접 인자로 받음
+    // m_captureTimer->setInterval(std::chrono::duration_cast<Nanoseconds>(scaledIntervalNs));
+
+    // // qDebug() << "m_captureTimer.interval()" << m_captureTimer.interval();
 }
 
 void SimulationEngine::recalculateCaptureInterval()
@@ -115,6 +119,7 @@ void SimulationEngine::recalculateCaptureInterval()
 
     double totalSamplesPerSecond = m_samplingCycles.value() * m_samplesPerCycle.value();
     if(totalSamplesPerSecond > 0) {
+        // 실제 시뮬레이션 상의 1샘플 간격 (시간 계산용)
         m_captureIntervalsNs = 1.0s / totalSamplesPerSecond;
     } else {
         m_captureIntervalsNs = FpNanoseconds(1.0e9);
@@ -164,36 +169,51 @@ void SimulationEngine::updateFrequencyTrackerCoefficients(const FrequencyTracker
 // ---- private slots ----
 void SimulationEngine::captureData()
 {
-    PhaseData currentVoltage = calculateCurrentVoltage();
-    PhaseData currentAmperage = calculateCurrentAmperage();
-    addNewDataPoint(currentVoltage, currentAmperage);
+    // 이번 틱에서 처리해야 할 시뮬레이션 시간 계산
+    // (타이머 실제 주기 * 타임스케일) + 지난번 잔여 시간
+    FpNanoseconds processDurationNs = (FpNanoseconds(m_captureTimer->interval()) * m_timeScale.value()) + m_accumulatedTimeNs;
+
+    // 생성해야 할 샘플 개수 산출 (버림 처리)
+    int samplesToGenerate = static_cast<int>(std::floor(processDurationNs / m_captureIntervalsNs));
+
+    // 소수점 이하의 잔여 시간은 다음 틱으로 이월
+    m_accumulatedTimeNs = processDurationNs - (m_captureIntervalsNs * samplesToGenerate);
+
+    // 안전장치. 설정 오류 등으로 샘플이 폭주하는 것을 방지
+    if(samplesToGenerate > 10000) samplesToGenerate = 10000;
+
+    // 배치 루프 수행
+    for(int i{0}; i < samplesToGenerate; ++i) {
+        PhaseData currentVoltage = calculateCurrentVoltage();
+        PhaseData currentAmperage = calculateCurrentAmperage();
+        addNewDataPoint(currentVoltage, currentAmperage);
 
 
-    // 사이클 계산을 위해 버퍼 채우기
-    m_cycleSampleBuffer.push_back(m_data.back());
-    if(m_cycleSampleBuffer.size() > static_cast<size_t>(m_samplesPerCycle.value())) {
-        m_cycleSampleBuffer.erase(m_cycleSampleBuffer.begin());
+        // 사이클 계산을 위해 버퍼 채우기
+        m_cycleSampleBuffer.push_back(m_data.back());
+        if(m_cycleSampleBuffer.size() > static_cast<size_t>(m_samplesPerCycle.value())) {
+            m_cycleSampleBuffer.erase(m_cycleSampleBuffer.begin());
+        }
+
+        // 주파수, 위상 자동 추적
+        m_frequencyTracker->process(m_data.back(), m_measuredData.empty() ? MeasuredData{} : m_measuredData.back(), m_cycleSampleBuffer);
+
+        // 사이클이 꽉 찼으면 사이클 단위 연산 수행
+        if(m_cycleSampleBuffer.size() >= static_cast<size_t>(m_samplesPerCycle.value())) {
+            calculateCycleData();
+        }
+
+        // 다음 스텝을 위해 현재 진행 위상 업데이트
+        const double phaseDelta = config::Math::TwoPi * m_frequency.value() * (std::chrono::duration_cast<FpSeconds>(m_captureIntervalsNs)).count();
+        m_currentPhaseRadians = std::fmod(m_currentPhaseRadians + phaseDelta, config::Math::TwoPi);
+
+        // UI 갱신 및 사이클 계산을 위한 누적 위상 업데이트
+        ++m_sampleCounterForUpdate;
+
+        // 누적된 위상을 보고 Mode에 맞춰 업데이트
+        processUpdateByMode(true); // 누적 위상 리셋
+        advanceSimulationTime();
     }
-
-    // 주파수, 위상 자동 추적
-    m_frequencyTracker->process(m_data.back(), m_measuredData.empty() ? MeasuredData{} : m_measuredData.back(), m_cycleSampleBuffer);
-
-    // 사이클이 꽉 찼으면 사이클 단위 연산 수행
-    if(m_cycleSampleBuffer.size() >= static_cast<size_t>(m_samplesPerCycle.value())) {
-        calculateCycleData();
-    }
-
-    // 다음 스텝을 위해 현재 진행 위상 업데이트
-    const FpSeconds timeDelta = m_captureIntervalsNs;
-    const double phaseDelta = config::Math::TwoPi * m_frequency.value() * timeDelta.count();
-    m_currentPhaseRadians = std::fmod(m_currentPhaseRadians + phaseDelta, config::Math::TwoPi);
-
-    // UI 갱신 및 사이클 계산을 위한 누적 위상 업데이트
-    ++m_sampleCounterForUpdate;
-
-    // 누적된 위상을 보고 Mode에 맞춰 업데이트
-    processUpdateByMode(true); // 누적 위상 리셋
-    advanceSimulationTime();
 }
 
 void SimulationEngine::handleMaxDataSizeChange(int newSize)

@@ -128,8 +128,10 @@ private:
 
     double m_currentPhaseRadians; // 현재 누적 위상
     int m_sampleCounterForUpdate;
-    FpNanoseconds m_captureIntervalsNs; // 기본 캡처 간격 (double, ns)
+
+    FpNanoseconds m_captureIntervalsNs; // 기본 캡처 간격 (1샘플 간격) (double, ns)
     Nanoseconds m_simulationTimeNs; // 시뮬레이션 누적 시간 (정수, ns)
+    FpNanoseconds m_accumulatedTimeNs; // 이번 틱에서 처리하지 못한 잔여 나노초
 
     // measuredData 관련 변수
     std::deque<MeasuredData> m_measuredData; // 계산된 데이터를 저장할 컨테이너
