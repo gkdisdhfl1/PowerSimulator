@@ -73,7 +73,7 @@ public slots:
     // SettingsDialog가 프리셋 목록이나 상세 값을 요청할 때 호출될 슬롯
     void onRequestPresetList();
     void onRequestPresetValues(const QString& presetName);
-    void onApplyDialogSettings(const int maxDatasize, const int graphWidth);
+    void onApplyDialogSettings(const int maxDatasize, const double graphWidth);
 
     // ControlPanel의 실시간 변경에 반응하는 슬롯들
     void onAmplitudeChanged(double value);
@@ -93,6 +93,8 @@ public slots:
 
     // 3상 변경 관련 슬롯
     void onThreePhaseValueChanged(int type, double value);
+
+    void onGraphWidthChangedFromView(double width);
 private:
     struct SettingInfo {
         std::function<QVariant()> getter;

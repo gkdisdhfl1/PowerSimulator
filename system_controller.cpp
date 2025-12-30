@@ -138,6 +138,13 @@ void SystemController::createConnections()
     connect(sc, &SettingsUiController::enableTracking, m_engine, &SimulationEngine::enableFrequencyTracking);
     connect(sc, &SettingsUiController::setFrequencyTrackerCoefficients, m_engine, &SimulationEngine::updateFrequencyTrackerCoefficients);
 
+    // Controller -> View (Grpah Width 동기화)
+    connect(sc, &SettingsUiController::setGraphWidth, mw->getGraphWindow(), &GraphWindow::setGraphWidth);
+    connect(sc, &SettingsUiController::setGraphWidth, mw->getAnalysisGraphWindow(), &AnalysisGraphWindow::setGraphWidth);
+    connect(sc, &SettingsUiController::setGraphWidth, mw->getFundamentalGraphWindow(), &FundamentalAnalysisGraphWindow::setGraphWidth);
+    connect(sc, &SettingsUiController::setGraphWidth, mw->getHarmonicGraphWindow(), &HarmonicAnalysisGraphWindow::setGraphWidth);
+
+
     // Engine -> UI (Property Update)
     connect(static_cast<PropertySignals*>(&m_engine->m_amplitude), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), cp, &ControlPanel::setAmplitude);
     connect(static_cast<PropertySignals*>(&m_engine->m_currentAmplitude), static_cast<void (PropertySignals::*)(const double&)>(&PropertySignals::valueChanged), cp, &ControlPanel::setCurrentAmplitude);
@@ -173,4 +180,6 @@ void SystemController::createConnections()
         m_mainWindow->onPresetLoaded(m_settingsController->getState());
     });
 
+    // GraphWindow -> Controller
+    connect(mw->getGraphWindow(), &GraphWindow::graphWidthChanged, sc, &SettingsUiController::onGraphWidthChangedFromView);
 }

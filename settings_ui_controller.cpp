@@ -116,7 +116,7 @@ void SettingsUiController::onRequestPresetValues(const QString& presetName)
     emit presetValuesFetched(previewData);
 }
 
-void SettingsUiController::onApplyDialogSettings(const int maxDatasize, const int graphWidth)
+void SettingsUiController::onApplyDialogSettings(const int maxDatasize, const double graphWidth)
 {
     // 데이터 유실 확인
     if(!requestMaxSizeChange(maxDatasize)) return;
@@ -228,6 +228,15 @@ void SettingsUiController::onThreePhaseValueChanged(int type, double value)
         (m_state.threePhase.*(it->second.memberPtr)) = value;
         it->second.signalEmitter(value);
     }
+}
+
+void SettingsUiController::onGraphWidthChangedFromView(double width)
+{
+    // 무한 루프 방지
+    if(qFuzzyCompare(m_state.view.graphWidth, width)) return;
+
+    m_state.view.graphWidth = width;
+    emit setGraphWidth(width);
 }
 
 // -------------------------
