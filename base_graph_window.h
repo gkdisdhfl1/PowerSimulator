@@ -9,7 +9,6 @@
 class QChart;
 class QValueAxis;
 class CustomChartView;
-class SimulationEngine;
 class QLineSeries;
 
 using utils::FpSeconds;
@@ -18,11 +17,15 @@ class BaseGraphWindow : public QWidget
 {
     Q_OBJECT
 public:
-    explicit BaseGraphWindow(SimulationEngine *engine, QWidget *parent = nullptr);
+    explicit BaseGraphWindow(QWidget *parent = nullptr);
     virtual ~BaseGraphWindow() = default;
 
 public slots:
     void toggleAutoScroll(bool enabled);
+    void setGraphWidth(double width); // 외부(Controller)에서 폭을 변경했을 때
+
+signals:
+    void graphWidthChanged(double width); // 사용자가 줌/스트레치로 폭을 변경했을 때
 
 protected:
     struct SeriesInfo {
@@ -36,15 +39,14 @@ protected:
 
     using Nanoseconds = std::chrono::nanoseconds;
 
-
     virtual void setupSeries() = 0; // 순수 가상 함수
 
     // 멤버 변수들을 protected로 이동하여 자식 클래스에서 접근 가능하도록 함
     std::unique_ptr<QChart> m_chart;
     QValueAxis *m_axisX;
     CustomChartView *m_chartView;
-    SimulationEngine* m_engine;
     bool m_isAutoScrollEnabled;
+    double m_graphWidth = 1.0;
 
     // X축의 현재 보이는 범위를 계산하는 헬퍼 함수
     template<typename Container>

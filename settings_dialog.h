@@ -1,7 +1,7 @@
 #ifndef SETTINGS_DIALOG_H
 #define SETTINGS_DIALOG_H
 
-#include "simulation_engine.h"
+#include "control_panel_state.h"
 
 #include <QDialog>
 #include <expected>
@@ -27,7 +27,7 @@ public:
 
     enum class DialogResult { Accepted, PresetLoaded, Cancled };
 
-    int openWithValues(const SimulationEngine* engine); // 다이얼 열고 초기화하는 함수
+    int openWithValues(const ControlPanelState& state); // 다이얼 열고 초기화하는 함수
     DialogResult getResultState() const;
 
     int getMaxSize() const;

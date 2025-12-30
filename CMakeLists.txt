@@ -102,6 +102,7 @@ target_include_directories(PowerSimulatorCore PUBLIC
 set (APP_UI_SOURCES
         # Core & Main
         main.cpp
+        system_controller.h system_controller.cpp
         main_window.h main_window.cpp
         UIconfig.h
         datasource_types.h

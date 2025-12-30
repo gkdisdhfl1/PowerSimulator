@@ -1,9 +1,7 @@
 #include "settings_ui_controller.h"
 #include "control_panel.h"
-#include "UIconfig.h"
 #include "settings_dialog.h"
 #include "settings_manager.h"
-#include "simulation_engine.h"
 #include "three_phase_dialog.h"
 #include "UIutils.h"
 #include <QInputDialog>
@@ -13,27 +11,25 @@ namespace {
 constexpr int StatusBarTimeOut = 3000;
 }
 
-SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsManager& settingsManager, SimulationEngine* engine, QWidget* parent)
+SettingsUiController::SettingsUiController(ControlPanel* controlPanel, SettingsManager& settingsManager, QWidget* parent)
     : QObject(parent)
     ,m_controlPanel(controlPanel)
     ,m_settingsManager(settingsManager)
-    ,m_engine(engine)
     ,m_parent(parent)
 {
-    initializeSettingsMap();
-    initializeControlPanelDefaultValues();
-
-    engine->m_graphWidthSec.setValue(View::GraphWidth::Default);
     m_settingsDialog = std::make_unique<SettingsDialog>(this, m_parent);
     m_harmonicsDialog = std::make_unique<HarmonicsDialog>(m_parent);
 
-    connect(m_harmonicsDialog.get(), &HarmonicsDialog::voltageHarmonicsChanged, this, [this](const HarmonicList& list) {
-        m_engine->m_voltageHarmonic.setValue(list);
-    });
-    connect(m_harmonicsDialog.get(), &HarmonicsDialog::currentHarmonicsChanged, this, [this](const HarmonicList& list) {
-        m_engine->m_currentHarmonic.setValue(list);
-    });
+    initializeSettingsMap();
+    initializeControlPanelDefaultValues();
+    initializeConnections();
 }
+// --- public ---
+const ControlPanelState& SettingsUiController::getState() const
+{
+    return m_state;
+}
+
 
 // --- public slot 구현 ---
 void SettingsUiController::onSaveAsPresetRequested(const QString& presetName)
@@ -111,85 +107,97 @@ void SettingsUiController::onRequestPresetValues(const QString& presetName)
         }
     }
 
+    // maxDataSize 별도 처리
+    auto maxDataSizeRes = m_settingsManager.loadSetting(presetName.toStdString(), "maxDataSize", config::Simulation::DataSize::DefaultDataSize);
+    if(maxDataSizeRes) {
+        previewData["저장 크기"] = *maxDataSizeRes;
+    }
+
     emit presetValuesFetched(previewData);
 }
 
-void SettingsUiController::onApplyDialogSettings(const int maxDatasize, const int graphWidth)
+void SettingsUiController::onApplyDialogSettings(const int maxDatasize, const double graphWidth)
 {
-    if(!m_engine) return;
-
+    // 데이터 유실 확인
     if(!requestMaxSizeChange(maxDatasize)) return;
-    emit maxDataSizeChangeRequested(maxDatasize);
-    m_engine->m_graphWidthSec.setValue(graphWidth);
+
+    m_state.simulation.maxDataSize = maxDatasize;
+    m_state.view.graphWidth = graphWidth;
+
+    emit setMaxDataSize(maxDatasize);
+    emit setGraphWidth(graphWidth);
 }
 
 void SettingsUiController::onAmplitudeChanged(double value)
 {
-    m_engine->m_amplitude.setValue(value);
+    m_state.source.amplitude = value;
+    emit setAmplitude(value);
 }
 void SettingsUiController::onCurrentAmplitudeChanged(double value)
 {
-    m_engine->m_currentAmplitude.setValue(value);
+    m_state.source.currentAmplitude = value;
+    emit setCurrentAmplitude(value);
 }
 void SettingsUiController::onFrequencyChanged(double value)
 {
-    m_engine->m_frequency.setValue(value);
-    if(m_blockUiSignals) return;
-    m_engine->recalculateCaptureInterval();
+    m_state.source.frequency = value;
+    emit setFrequency(value);
+    if(!m_blockUiSignals)
+        requestCaptureIntervalUpdate();
 }
 void SettingsUiController::onCurrentPhaseChanged(int degrees)
 {
-    m_engine->m_currentPhaseOffsetRadians.setValue(utils::degreesToRadians(degrees));
+    m_state.source.currentPhaseDegrees = degrees;
+    emit setCurrentPhase(utils::degreesToRadians(degrees));
 }
 void SettingsUiController::onTimeScaleChanged(double value)
 {
-    m_engine->m_timeScale.setValue(value);
-    if(m_blockUiSignals) return;
-    m_engine->updateCaptureTimer();
+    m_state.simulation.timeScale = value;
+    emit setTimeScale(value);
+    if(!m_blockUiSignals)
+        emit requestCaptureIntervalUpdate();
 }
 void SettingsUiController::onSamplingCyclesChanged(double value)
 {
-    m_engine->m_samplingCycles.setValue(value);
-    if(m_blockUiSignals) return;
-    m_engine->recalculateCaptureInterval();
+    m_state.simulation.samplingCycles = value;
+    emit setSamplingCycles(value);
+    if(!m_blockUiSignals)
+        emit requestCaptureIntervalUpdate();
 }
 void SettingsUiController::onSamplesPerCycleChanged(int value)
 {
-    m_engine->m_samplesPerCycle.setValue(value);
-    if(m_blockUiSignals) return;
-    m_engine->recalculateCaptureInterval();
+    m_state.simulation.samplesPerCycle = value;
+    emit setSamplesPerCycle(value);
+    if(!m_blockUiSignals)
+        emit requestCaptureIntervalUpdate();
 }
-void SettingsUiController::onUpdateModeChanged()
+void SettingsUiController::onUpdateModeChanged(UpdateMode mode)
 {
-    ControlPanelState state = m_controlPanel->getState();
-
-    // state 객체에 담긴 updateMode 값을 엔진의 파라미터에 직접 설정
-    m_engine->m_updateMode.setValue(static_cast<UpdateMode>(state.updateMode));
-}
-
-void SettingsUiController::showSettingsDialog()
-{
-    m_settingsDialog->openWithValues(m_engine);
+    m_state.simulation.updateMode = mode;
+    emit setUpdateMode(mode);
 }
 
 void SettingsUiController::onTrackingToggled(bool enabled)
 {
-    m_engine->enableFrequencyTracking(enabled);
+    emit enableTracking(enabled);
 }
 
+void SettingsUiController::showSettingsDialog()
+{
+    m_settingsDialog->openWithValues(m_state);
+}
 
 void SettingsUiController::onCoefficientsChanged(const FrequencyTracker::PidCoefficients& fllCoeffs, const FrequencyTracker::PidCoefficients& zcCoeffs)
 {
-    m_engine->getFrequencyTracker()->setFllCoefficients(fllCoeffs);
-    m_engine->getFrequencyTracker()->setZcCoefficients(zcCoeffs);
+    emit setFrequencyTrackerCoefficients(fllCoeffs, zcCoeffs);
 }
 
 void SettingsUiController::onHarmonicsSettingsRequested()
 {
-    if(!m_engine || !m_harmonicsDialog) return;
+    if(!m_harmonicsDialog) return;
 
-    // 다이얼로그를 열기 전에 인진의 현재 고조파 리스트로 UI 동기화
-    m_harmonicsDialog->setHarmonics(m_engine->m_voltageHarmonic.value(), m_engine->m_currentHarmonic.value());
+    // 다이얼로그를 열기 전에 엔진의 현재 고조파 리스트로 UI 동기화
+    m_harmonicsDialog->setHarmonics(m_state.harmonics.voltageList, m_state.harmonics.currentList);
 
     m_harmonicsDialog->show();
     m_harmonicsDialog->raise();
@@ -198,22 +206,37 @@ void SettingsUiController::onHarmonicsSettingsRequested()
 
 void SettingsUiController::onThreePhaseValueChanged(int type, double value)
 {
-    static const std::unordered_map<int, Property<double> SimulationEngine::*> propertyMap = {
-        {ThreePhaseDialog::VoltageBAmplitude, &SimulationEngine::m_voltage_B_amplitude},
-        {ThreePhaseDialog::VoltageBPhase, &SimulationEngine::m_voltage_B_phase_deg},
-        {ThreePhaseDialog::VoltageCAmplitude, &SimulationEngine::m_voltage_C_amplitude},
-        {ThreePhaseDialog::VoltageCPhase, &SimulationEngine::m_voltage_C_phase_deg},
-        {ThreePhaseDialog::CurrentBAmplitude, &SimulationEngine::m_current_B_amplitude},
-        {ThreePhaseDialog::CurrentBPhase, &SimulationEngine::m_current_B_phase_deg},
-        {ThreePhaseDialog::CurrentCAmplitude, &SimulationEngine::m_current_C_amplitude},
-        {ThreePhaseDialog::CurrentCPhase, &SimulationEngine::m_current_C_phase_deg}
+    // 매핑 구조체 정의
+    struct Mapping {
+        double ControlPanelState::ThreePhase::*memberPtr; // State 멤버 포인터
+        std::function<void(double)> signalEmitter; // 시그널 방출 람다
+    };
+
+    static const std::unordered_map<int, Mapping> propertyMap = {
+        {ThreePhaseDialog::VoltageBAmplitude, {&ControlPanelState::ThreePhase::voltageBAmplitude, [this](double v) {emit setVoltageBAmplitude(v);}}},
+        {ThreePhaseDialog::VoltageBPhase, {&ControlPanelState::ThreePhase::voltageBPhase, [this](double v) {emit setVoltageBPhase(v);}}},
+        {ThreePhaseDialog::VoltageCAmplitude, {&ControlPanelState::ThreePhase::voltageCAmplitude, [this](double v) {emit setVoltageCAmplitude(v);}}},
+        {ThreePhaseDialog::VoltageCPhase, {&ControlPanelState::ThreePhase::voltageCPhase, [this](double v) {emit setVoltageCPhase(v);}}},
+        {ThreePhaseDialog::CurrentBAmplitude, {&ControlPanelState::ThreePhase::currentBAmplitude, [this](double v) {emit setCurrentBAmplitude(v);}}},
+        {ThreePhaseDialog::CurrentBPhase, {&ControlPanelState::ThreePhase::currentBPhase, [this](double v) {emit setCurrentBPhase(v);}}},
+        {ThreePhaseDialog::CurrentCAmplitude, {&ControlPanelState::ThreePhase::currentCAmplitude, [this](double v) {emit setCurrentCAmplitude(v);}}},
+        {ThreePhaseDialog::CurrentCPhase, {&ControlPanelState::ThreePhase::currentCPhase, [this](double v) {emit setCurrentCPhase(v);}}},
     };
 
     auto it = propertyMap.find(type);
     if(it != propertyMap.end()) {
-        // 멤버 포인터를 통해 인스턴스의 멤버에 접근
-        (m_engine->*(it->second)).setValue(value);
+        (m_state.threePhase.*(it->second.memberPtr)) = value;
+        it->second.signalEmitter(value);
     }
+}
+
+void SettingsUiController::onGraphWidthChangedFromView(double width)
+{
+    // 무한 루프 방지
+    if(qFuzzyCompare(m_state.view.graphWidth, width)) return;
+
+    m_state.view.graphWidth = width;
+    emit setGraphWidth(width);
 }
 
 // -------------------------
@@ -222,51 +245,58 @@ void SettingsUiController::onThreePhaseValueChanged(int type, double value)
 void SettingsUiController::initializeSettingsMap()
 {
     // 각 설정 항목의 정보를 맵에 등록
-    m_settingsMap["voltageAmplitude"] = {&m_engine->m_amplitude, config::Source::Amplitude::Default, "진폭 (Voltage)"};
-    m_settingsMap["currentAmplitude"] = {&m_engine->m_currentAmplitude, config::Source::Current::DefaultAmplitude, "진폭 (Current)"};
-    m_settingsMap["frequency"] = {&m_engine->m_frequency, config::Source::Frequency::Default, "주파수"};
-    m_settingsMap["currentPhaseOffset"] = {&m_engine->m_currentPhaseOffsetRadians, config::Source::Current::DefaultPhaseOffset, "위상차", true};
-    m_settingsMap["timeScale"] = {&m_engine->m_timeScale, config::TimeScale::Default, "시간 배율"};
-    m_settingsMap["samplingCycles"] = {&m_engine->m_samplingCycles, config::Sampling::DefaultSamplingCycles, "초당 cycle"};
-    m_settingsMap["samplesPerCycle"] = {&m_engine->m_samplesPerCycle, config::Sampling::DefaultSamplesPerCycle, "cycle당 sample"};
-    m_settingsMap["graphWidthSec"] = {&m_engine->m_graphWidthSec, View::GraphWidth::Default, "그래프 시간 폭"};
-    m_settingsMap["updateMode"] = {&m_engine->m_updateMode, 0, "갱신 모드"};
+
+    // 일반 값 바인딩
+    // bind("키", m_state 변수, &Controller::시그널, 기본값, "이름");
+
+    bind("voltageAmplitude", m_state.source.amplitude, &SettingsUiController::setAmplitude, config::Source::Amplitude::Default, "진폭 (Voltage)");
+    bind("currentAmplitude", m_state.source.currentAmplitude, &SettingsUiController::setCurrentAmplitude, config::Source::Current::DefaultAmplitude, "진폭 (Current)");
+    bind("frequency", m_state.source.frequency, &SettingsUiController::setFrequency, config::Source::Frequency::Default, "주파수");
+    bindAngle("currentPhaseOffset", m_state.source.currentPhaseDegrees, &SettingsUiController::setCurrentPhase, config::Source::Current::DefaultPhaseOffset, "위상차");
+    bind("timeScale", m_state.simulation.timeScale, &SettingsUiController::setTimeScale, config::TimeScale::Default, "시간 배율");
+    bind("samplingCycles", m_state.simulation.samplingCycles, &SettingsUiController::setSamplingCycles, config::Sampling::DefaultSamplingCycles, "초당 cycle");
+    bind("samplesPerCycle", m_state.simulation.samplesPerCycle, &SettingsUiController::setSamplesPerCycle, config::Sampling::DefaultSamplesPerCycle, "cycle당 sample");
+    bind("graphWidthSec", m_state.view.graphWidth, &SettingsUiController::setGraphWidth, config::Simulation::GraphWidth::Default, "그래프 시간 폭");
+    bind("updateMode", m_state.simulation.updateMode, &SettingsUiController::setUpdateMode, 2, "갱신 모드");
 
     // 3상 관련 설정
-    m_settingsMap["voltageBAmplitude"] = {&m_engine->m_voltage_B_amplitude, config::Source::ThreePhase::DefaultAmplitudeB, "B상 전압 크기"};
-    m_settingsMap["voltageBPhase"] = {&m_engine->m_voltage_B_phase_deg, config::Source::ThreePhase::DefaultPhaseB_deg, "B상 전압 위상"};
-    m_settingsMap["voltageCAmplitude"] = {&m_engine->m_voltage_C_amplitude, config::Source::ThreePhase::DefaultAmplitudeC, "C상 전압 크기"};
-    m_settingsMap["voltageCPhase"] = {&m_engine->m_voltage_C_phase_deg, config::Source::ThreePhase::DefaultPhaseC_deg, "C상 전압 위상"};
+    bind("voltageBAmplitude", m_state.threePhase.voltageBAmplitude, &SettingsUiController::setVoltageBAmplitude, config::Source::ThreePhase::DefaultAmplitudeB, "B상 전압 크기");
+    bindAngle("voltageBPhase", m_state.threePhase.voltageBPhase, &SettingsUiController::setVoltageBPhase, config::Source::ThreePhase::DefaultPhaseB_deg, "B상 전압 위상");
+    bind("voltageCAmplitude", m_state.threePhase.voltageCAmplitude, &SettingsUiController::setVoltageCAmplitude, config::Source::ThreePhase::DefaultAmplitudeC, "C상 전압 크기");
+    bindAngle("voltageCPhase", m_state.threePhase.voltageCPhase, &SettingsUiController::setVoltageCPhase, config::Source::ThreePhase::DefaultPhaseC_deg, "C상 전압 위상");
 
-    m_settingsMap["currentBAmplitude"] = {&m_engine->m_current_B_amplitude, config::Source::ThreePhase::DefaultCurrentAmplitudeB, "B상 전류 크기"};
-    m_settingsMap["currentBPhase"] = {&m_engine->m_current_B_phase_deg, config::Source::ThreePhase::DefaultCurrentPhaseB_deg, "B상 전류 위상"};
-    m_settingsMap["currentCAmplitude"] = {&m_engine->m_current_C_amplitude, config::Source::ThreePhase::DefaultCurrentAmplitudeC, "C상 전류 크기"};
-    m_settingsMap["currentCPhase"] = {&m_engine->m_current_C_phase_deg, config::Source::ThreePhase::DefaultCurrentPhaseC_deg, "C상 전류 위상"};
+    bind("currentBAmplitude", m_state.threePhase.currentBAmplitude, &SettingsUiController::setCurrentBAmplitude, config::Source::ThreePhase::DefaultCurrentAmplitudeB, "B상 전류 크기");
+    bindAngle("currentBPhase", m_state.threePhase.currentBPhase, &SettingsUiController::setCurrentBPhase, config::Source::ThreePhase::DefaultCurrentPhaseB_deg, "B상 전류 위상");
+    bind("currentCAmplitude", m_state.threePhase.currentCAmplitude, &SettingsUiController::setCurrentCAmplitude, config::Source::ThreePhase::DefaultCurrentAmplitudeC, "C상 전류 크기");
+    bindAngle("currentCPhase", m_state.threePhase.currentCPhase, &SettingsUiController::setCurrentCPhase, config::Source::ThreePhase::DefaultCurrentPhaseC_deg, "C상 전류 위상");
 }
 
 void SettingsUiController::initializeControlPanelDefaultValues()
 {
-    ControlPanelState state;
-
-    // config.h의 기본값들로 DTO 구성
-    state.amplitude = config::Source::Amplitude::Default;
-    state.currentAmplitude = config::Source::Current::DefaultAmplitude;
-    state.frequency = config::Source::Frequency::Default;
-    state.currentPhaseDegrees = config::Source::Current::DefaultPhaseOffset;
-    state.timeScale = config::TimeScale::Default;
-    state.samplingCycles = config::Sampling::DefaultSamplingCycles;
-    state.samplesPerCycle = config::Sampling::DefaultSamplesPerCycle;
-
-    state.updateMode = UpdateMode::PerSample;
-    state.isRunning  = false;
-
     // DTO를 통한 일괄 주입
-    m_controlPanel->setState(state);
+    m_controlPanel->setState(m_state);
+
+    emit setVoltageHarmonics(m_state.harmonics.voltageList);
+    emit setCurrentHarmonics(m_state.harmonics.currentList);
+}
+
+void SettingsUiController::initializeConnections()
+{
+    connect(m_harmonicsDialog.get(), &HarmonicsDialog::voltageHarmonicsChanged, this, [this](const HarmonicList& list) {
+        m_state.harmonics.voltageList = list; // 내부 state 업데이트
+        emit setVoltageHarmonics(list); // 엔진에게 변경 알림
+    });
+    connect(m_harmonicsDialog.get(), &HarmonicsDialog::currentHarmonicsChanged, this, [this](const HarmonicList& list) {
+        // 내부 state 업데이트
+        m_state.harmonics.currentList = list;
+        // 엔진에게 변경 알림
+        emit setCurrentHarmonics(list);
+    });
 }
 
 bool SettingsUiController::requestMaxSizeChange(int newSize)
 {
-    const int currentDataSize = m_engine->getDataSize();
+    const int currentDataSize = m_state.simulation.maxDataSize;
 
     // 새 최대 크기가 현재 데이터 개수보다 작을 경우
     if(newSize < currentDataSize) {
@@ -283,9 +313,10 @@ std::expected<void, std::string> SettingsUiController::applySettingsToEngine(std
     m_blockUiSignals = true; // 프리셋 적용 시 슬롯 호출 잠시 무시
 
     // 미리 최대 데이터 크기 변경 요청
-    if(auto res = m_settingsManager.loadSetting(presetName, "maxDataSize", m_engine->m_maxDataSize.value()); res) {
+    if(auto res = m_settingsManager.loadSetting(presetName, "maxDataSize", m_state.simulation.maxDataSize); res) {
         if(requestMaxSizeChange(*res)) {
-            emit maxDataSizeChangeRequested(*res);
+            m_state.simulation.maxDataSize = *res;
+            emit setMaxDataSize(*res);
         } else {
             m_blockUiSignals = false;
             return std::unexpected("사용자가 최대 데이터 크기 변경을 취소했습니다.");
@@ -317,21 +348,27 @@ std::expected<void, std::string> SettingsUiController::applySettingsToEngine(std
             double radians = utils::degreesToRadians(degrees);
             loadedValue = radians;
         }
-            
-        // 3. Property 인터페이서를 통해 값 설정
-        info.property->setVariantValue(loadedValue);
+
+        // setter
+        info.setter(loadedValue);
     }
     // 고조파 리스트 로드
     auto voltageRes = m_settingsManager.loadSetting(presetName, "voltageHarmonicsJson", std::string(""));
-    if(voltageRes)
-        m_engine->m_voltageHarmonic.setValue(UIutils::jsonToHarmonicList(QString::fromStdString(*voltageRes)));
+    if(voltageRes) {
+        const auto& voltageList = UIutils::jsonToHarmonicList(QString::fromStdString(*voltageRes));
+        m_state.harmonics.voltageList = voltageList;
+        emit setVoltageHarmonics(voltageList);
+    }
     auto currentRes = m_settingsManager.loadSetting(presetName, "currentHarmonicsJson", std::string(""));
-    if(currentRes)
-        m_engine->m_currentHarmonic.setValue(UIutils::jsonToHarmonicList(QString::fromStdString(*currentRes)));
+    if(currentRes) {
+        const auto& currentList = UIutils::jsonToHarmonicList(QString::fromStdString(*currentRes));
+        m_state.harmonics.currentList = currentList;
+        emit setCurrentHarmonics(currentList);
+    }
 
     m_blockUiSignals = false;
     emit presetApplied();
-    m_engine->recalculateCaptureInterval(); // 엔진 파라미터 재계산
+    emit requestCaptureIntervalUpdate(); // 엔진 파라미터 재계산 요청
     m_parent->findChild<QStatusBar*>()->showMessage(QString("'%1' 설정을 불러왔습니다.").arg(QString::fromUtf8(presetName.data() , presetName.size())), StatusBarTimeOut);
     return {};
 }
@@ -340,8 +377,8 @@ std::expected<void, std::string> SettingsUiController::saveEngineToSettings(std:
 {
     // 맵을 순회하며 각 getter를 호출하여 값을 DB에 저장
     for(auto const& [key, info] : m_settingsMap) {
-        // 1. Property 인터페이스를 통해 현재 값을 QVariant로 가져옴
-        QVariant valueToSave = info.property->getVariantValue();
+        // 1. Getter로 현재 값을 QVariant로 가져옴
+        QVariant valueToSave = info.getter();
 
         // 위상 값은 Radian -> Degree 변환
         if(info.isAngle) {
@@ -359,14 +396,14 @@ std::expected<void, std::string> SettingsUiController::saveEngineToSettings(std:
         if(!result) return result; // 오류 발생 시 즉시 전파
     }
     // 고조파 리스트 저장
-    QString voltageJson = UIutils::harmonicListToJson(m_engine->m_voltageHarmonic.value());
-    QString currentJson = UIutils::harmonicListToJson(m_engine->m_currentHarmonic.value());
+    QString voltageJson = UIutils::harmonicListToJson(m_state.harmonics.voltageList);
+    QString currentJson = UIutils::harmonicListToJson(m_state.harmonics.currentList);
 
     if(auto res = m_settingsManager.saveSetting(presetName, "voltageHarmonicsJson", voltageJson.toStdString()); !res) return res;
     if(auto res = m_settingsManager.saveSetting(presetName, "currentHarmonicsJson", currentJson.toStdString()); !res) return res;
 
     // UI와 별개인 엔진 파라미터들도 저장
-    if(auto res = m_settingsManager.saveSetting(presetName, "maxDataSize", m_engine->m_maxDataSize.value()); !res) return res;
+    if(auto res = m_settingsManager.saveSetting(presetName, "maxDataSize", m_state.simulation.maxDataSize); !res) return res;
 
     m_parent->findChild<QStatusBar*>()->showMessage(QString("'%1' 이름으로 설정을 저장했습니다.").arg(QString::fromUtf8(presetName.data(), presetName.size())), StatusBarTimeOut);
     return {};

@@ -1,6 +1,4 @@
-#include "frequency_tracker.h"
-#include "main_window.h"
-#include "simulation_engine.h"
+#include "system_controller.h"
 #include <QApplication>
 #include <QFile>
 
@@ -16,12 +14,9 @@ int main(int argc, char *argv[])
         styleFile.close();
     }
 
-    // SimulationEngine 객체를 main에서 생성하고 소유
-    std::unique_ptr<SimulationEngine> engine = std::make_unique<SimulationEngine>();
-
-    // MainWindow에 SimulationEngine 객체를 주입
-    MainWindow w(engine.get());
-    w.show();
+    // SystemController가 모든 것을 관리
+    SystemController system;
+    system.initialize();
 
     return a.exec();
 }

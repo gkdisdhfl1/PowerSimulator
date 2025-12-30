@@ -4,15 +4,13 @@
 #include <QObject>
 #include <QChronoTimer>
 #include <deque>
-#include <complex>
 #include "analysis_utils.h"
 #include "data_point.h"
 #include "config.h"
 #include "measured_data.h"
 #include "shared_data_types.h"
 #include "Property.h"
-
-class FrequencyTracker;
+#include "frequency_tracker.h"
 
 // SimulationEngine 클래스
 // PowerSimulator의 핵심 로직 담당.
@@ -77,6 +75,7 @@ public slots:
     void updateCaptureTimer();
     void recalculateCaptureInterval();
     void enableFrequencyTracking(bool enabled);
+    void updateFrequencyTrackerCoefficients(const FrequencyTracker::PidCoefficients& fll, const FrequencyTracker::PidCoefficients& zc);
 
 signals:
     // 새로운 원시 파형 데이터가 준비되었을 때 발생
@@ -109,8 +108,7 @@ private:
     using FpNanoseconds = utils::FpNanoseconds;
     using Nanoseconds = utils::Nanoseconds;
     using FpSeconds = utils::FpSeconds;
-
-    std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> analyzeSpectrum(AnalysisUtils::DataType type, int phase) const;
+    std::expected<AnalysisUtils::Spectrum, AnalysisUtils::SpectrumError> analyzeSpectrum(AnalysisUtils::DataType type, int phase) const;
 
     void advanceSimulationTime();
     PhaseData calculateCurrentVoltage() const;
@@ -125,7 +123,7 @@ private:
     void processUpdateByMode(bool resetCounter);
     void processOneSecondData(const MeasuredData& latestCycleData);
 
-    QChronoTimer m_captureTimer;
+    QChronoTimer* m_captureTimer;
     std::deque<DataPoint> m_data;
 
     double m_currentPhaseRadians; // 현재 누적 위상

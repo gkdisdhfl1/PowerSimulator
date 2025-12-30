@@ -1,6 +1,5 @@
 #include "simulation_engine.h"
 #include "analysis_utils.h"
-#include "frequency_tracker.h"
 #include <QDebug>
 
 SimulationEngine::SimulationEngine()
@@ -21,9 +20,9 @@ SimulationEngine::SimulationEngine()
     , m_timeScale(config::TimeScale::Default, this)
     , m_samplingCycles(config::Sampling::DefaultSamplingCycles, this)
     , m_samplesPerCycle(config::Sampling::DefaultSamplesPerCycle, this)
-    , m_maxDataSize(config::Simulation::DefaultDataSize, this)
-    , m_graphWidthSec(1.0, this)
-    , m_updateMode(UpdateMode::PerSample, this)
+    , m_maxDataSize(config::Simulation::DataSize::DefaultDataSize, this)
+    , m_graphWidthSec(config::Simulation::GraphWidth::Default, this)
+    , m_updateMode(config::Simulation::DefaultMode, this)
 
     , m_voltageHarmonic({{config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase}}, this)
     , m_currentHarmonic({{config::Harmonics::DefaultOrder, config::Harmonics::DefaultMagnitude, config::Harmonics::DefaultPhase}}, this)
@@ -47,9 +46,11 @@ SimulationEngine::SimulationEngine()
 
     // --- 나머지 초기화 로직 ---
     using namespace std::chrono_literals;
-    m_captureTimer.setTimerType(Qt::PreciseTimer);
+
+    m_captureTimer = new QChronoTimer(this); // 부모 설정
+    m_captureTimer->setTimerType(Qt::PreciseTimer);
     recalculateCaptureInterval(); // m_captureIntervalNs 초기 계산
-    connect(&m_captureTimer, &QChronoTimer::timeout, this, &SimulationEngine::captureData);
+    connect(m_captureTimer, &QChronoTimer::timeout, this, &SimulationEngine::captureData);
 
     // FrequencyTracker 생성 및 시그널 연결
     m_frequencyTracker = std::make_unique<FrequencyTracker>(this, this);
@@ -57,7 +58,7 @@ SimulationEngine::SimulationEngine()
 }
 
 // ---- public -----
-bool SimulationEngine::isRunning() const { return m_captureTimer.isActive(); }
+bool SimulationEngine::isRunning() const { return m_captureTimer->isActive(); }
 int SimulationEngine::getDataSize() const { return m_data.size(); }
 FrequencyTracker* SimulationEngine::getFrequencyTracker() const { return m_frequencyTracker.get(); }
 // -----------------
@@ -67,7 +68,7 @@ void SimulationEngine::start()
 {
     if (isRunning()) return;
 
-    m_captureTimer.start();
+    m_captureTimer->start();
     emit runningStateChanged(true);
     qDebug() << "Engine started.";
 }
@@ -76,7 +77,7 @@ void SimulationEngine::stop()
 {
     if (!isRunning()) return;
 
-    m_captureTimer.stop();
+    m_captureTimer->stop();
 
     emit runningStateChanged(false);
     qDebug() << "Engine stopped.";
@@ -94,6 +95,7 @@ void SimulationEngine::onMaxDataSizeChanged(int newSize)
     }
 
     emit dataUpdated(m_data);
+    emit measuredDataUpdated(m_measuredData);
 }
 
 void SimulationEngine::updateCaptureTimer()
@@ -102,7 +104,7 @@ void SimulationEngine::updateCaptureTimer()
     const auto scaledIntervalNs = m_captureIntervalsNs * m_timeScale.value();
 
     // QChornoTimer는 std::chrono::duration을 직접 인자로 받음
-    m_captureTimer.setInterval(std::chrono::duration_cast<Nanoseconds>(scaledIntervalNs));
+    m_captureTimer->setInterval(std::chrono::duration_cast<Nanoseconds>(scaledIntervalNs));
 
     // qDebug() << "m_captureTimer.interval()" << m_captureTimer.interval();
 }
@@ -147,6 +149,15 @@ void SimulationEngine::enableFrequencyTracking(bool enabled)
         m_frequencyTracker->stopTracking();
     }
 }
+
+void SimulationEngine::updateFrequencyTrackerCoefficients(const FrequencyTracker::PidCoefficients& fll, const FrequencyTracker::PidCoefficients& zc)
+{
+    if(m_frequencyTracker) {
+        m_frequencyTracker->setFllCoefficients(fll);
+        m_frequencyTracker->setZcCoefficients(zc);
+    }
+}
+
 // -----------------------
 
 
@@ -346,6 +357,10 @@ void SimulationEngine::calculateCycleData()
     // 4. 완성된 데이터를 컨테이너에 추가
     m_measuredData.push_back(newData);
 
+    // 최대 개수 관리
+    if(m_measuredData.size() > static_cast<size_t>(m_maxDataSize.value()))
+        m_measuredData.pop_front();
+
     // 5. 1초 데이터 처리 로직 호출
     processOneSecondData(m_measuredData.back());
 
@@ -397,7 +412,7 @@ void SimulationEngine::processUpdateByMode(bool resetCounter)
     }
 }
 
-std::expected<std::vector<std::complex<double>>, AnalysisUtils::SpectrumError> SimulationEngine::analyzeSpectrum(AnalysisUtils::DataType type, int phase) const
+std::expected<AnalysisUtils::Spectrum, AnalysisUtils::SpectrumError> SimulationEngine::analyzeSpectrum(AnalysisUtils::DataType type, int phase) const
 {
     return AnalysisUtils::calculateSpectrum(m_cycleSampleBuffer, type, phase, false);
 }

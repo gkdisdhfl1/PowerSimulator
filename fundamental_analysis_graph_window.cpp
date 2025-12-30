@@ -1,5 +1,4 @@
 #include "custom_chart_view.h"
-#include "simulation_engine.h"
 #include "fundamental_analysis_graph_window.h"
 #include "analysis_utils.h"
 #include <QChart>
@@ -8,8 +7,8 @@
 
 
 
-FundamentalAnalysisGraphWindow::FundamentalAnalysisGraphWindow(SimulationEngine *engine, QWidget *parent)
-    : BaseGraphWindow(engine, parent)
+FundamentalAnalysisGraphWindow::FundamentalAnalysisGraphWindow(QWidget *parent)
+    : BaseGraphWindow(parent)
     , m_voltageRmsSeries(new QLineSeries(this))
     , m_currentRmsSeries(new QLineSeries(this))
     , m_activePowerSeries(new QLineSeries(this))
@@ -58,7 +57,7 @@ void FundamentalAnalysisGraphWindow::setupSeries()
     m_chart->addSeries(m_currentRmsSeries);
     m_chart->addSeries(m_activePowerSeries);
 
-    m_axisX->setRange(0, m_engine->m_graphWidthSec.value() ); // 초기 범위를 설정값으로
+    m_axisX->setRange(0, config::Simulation::GraphWidth::Default); // 초기 범위를 설정값으로
 
 
     // y축 생성 및 설정

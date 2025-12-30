@@ -13,12 +13,7 @@ struct View {
         static constexpr double Ratio = 0.1;
         static constexpr double Min = 5.0;
     };
-    // 그래프 폭 관련 설정
-    struct GraphWidth {
-        static constexpr double Default = 1.0;
-        static constexpr double Min = 0.01;
-        static constexpr double Max = 300.0;
-    };
+
     // 사용자 상호작용 관련 상수
     struct Interaction {
         // 줌 팩터

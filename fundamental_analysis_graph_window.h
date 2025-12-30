@@ -10,7 +10,7 @@ class FundamentalAnalysisGraphWindow : public BaseGraphWindow
 {
     Q_OBJECT
 public:
-    explicit FundamentalAnalysisGraphWindow(SimulationEngine *engine, QWidget *parent = nullptr);
+    explicit FundamentalAnalysisGraphWindow(QWidget *parent = nullptr);
 
 signals:
     void autoScrollToggled(bool enabled); // 사용자가 그래프를 조작했을 때 ControlPanel에 알림

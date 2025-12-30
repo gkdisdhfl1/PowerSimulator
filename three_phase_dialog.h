@@ -2,7 +2,7 @@
 #define THREE_PHASE_DIALOG_H
 
 #include <QDialog>
-#include "simulation_engine.h"
+#include "control_panel_state.h"
 
 class ValueControlWidget;
 class FineTuningDial;
@@ -25,7 +25,7 @@ public:
         CurrentCPhase,
         ParamCount // 배열 크기를 위해 마지막 추가
     };
-    void setInitialValues(const SimulationEngine* engine);
+    void setInitialValues(const ControlPanelState::ThreePhase& state);
 
 signals:
     void valueChanged(int type, double value);

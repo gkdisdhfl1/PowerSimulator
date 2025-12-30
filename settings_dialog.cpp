@@ -1,6 +1,5 @@
 #include "settings_dialog.h"
 #include "settings_ui_controller.h"
-#include "UIconfig.h"
 #include <QDebug>
 #include <QInputDialog>
 #include <QMessageBox>
@@ -22,11 +21,6 @@ SettingsDialog::SettingsDialog(SettingsUiController* controller ,QWidget *parent
     , m_resultState(DialogResult::Cancled)
 {
     setupUi();
-    m_maxDataSizeSpinBox->setRange(config::Simulation::MinDataSize, config::Simulation::MaxDataSize);
-
-    m_graphWidthSpinBox->setSuffix(" s");
-    m_graphWidthSpinBox->setRange(View::GraphWidth::Min, View::GraphWidth::Max);
-    m_graphWidthSpinBox->setValue(View::GraphWidth::Default);
 
     // dialog -> controller
     connect(this, &SettingsDialog::saveAsPresetRequested, m_controller, &SettingsUiController::onSaveAsPresetRequested);
@@ -101,12 +95,13 @@ void SettingsDialog::setupUi()
     // --- 3. 오른쪽 패널 (상세 설정 및 확인/취소) ---
     auto detailsLabel = new QLabel("저장 크기");
     m_maxDataSizeSpinBox = new QSpinBox();
-    m_maxDataSizeSpinBox->setRange(config::Simulation::MinDataSize, config::Simulation::MaxDataSize);
+    m_maxDataSizeSpinBox->setRange(config::Simulation::DataSize::MinDataSize, config::Simulation::DataSize::MaxDataSize);
     m_maxDataSizeSpinBox->setSingleStep(100);
 
     auto graphWidthLabel = new QLabel("그래프 폭");
     m_graphWidthSpinBox = new QDoubleSpinBox();
-    m_graphWidthSpinBox->setRange(View::GraphWidth::Min, View::GraphWidth::Max);
+    m_graphWidthSpinBox->setSuffix(" s");
+    m_graphWidthSpinBox->setRange(config::Simulation::GraphWidth::Min, config::Simulation::GraphWidth::Max);
     m_graphWidthSpinBox->setSingleStep(0.1);
     m_graphWidthSpinBox->setDecimals(2);
 
@@ -138,10 +133,10 @@ void SettingsDialog::setupUi()
     mainLayout->addLayout(rightLayout, 2);
 }
 
-int SettingsDialog::openWithValues(const SimulationEngine* params)
+int SettingsDialog::openWithValues(const ControlPanelState& state)
 {
-    m_maxDataSizeSpinBox->setValue(params->m_maxDataSize.value());
-    m_graphWidthSpinBox->setValue(params->m_graphWidthSec.value());
+    m_maxDataSizeSpinBox->setValue(state.simulation.maxDataSize);
+    m_graphWidthSpinBox->setValue(state.view.graphWidth);
     refreshPresetList();
     updateUiStates();
 

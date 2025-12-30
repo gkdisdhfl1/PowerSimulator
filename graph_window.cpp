@@ -1,6 +1,5 @@
 #include "graph_window.h"
 #include "custom_chart_view.h"
-#include "simulation_engine.h"
 #include "UIconfig.h"
 
 #include <QValueAxis>
@@ -11,8 +10,8 @@
 using utils::FpSeconds;
 using utils::Nanoseconds;
 
-GraphWindow::GraphWindow(SimulationEngine* engine, QWidget *parent)
-    : BaseGraphWindow(engine, parent)
+GraphWindow::GraphWindow(QWidget *parent)
+    : BaseGraphWindow(parent)
     , m_axisY(new QValueAxis(this))
 {
     // CustomChartView가 보내는 신호를 받아서 자동 스크롤을 끔
@@ -106,7 +105,7 @@ void GraphWindow::setupSeries()
     // ----------------------------
 
     // X축 설정
-    m_axisX->setRange(0, m_engine->m_graphWidthSec.value() ); // 초기 범위를 설정값으로
+    m_axisX->setRange(0, config::Simulation::GraphWidth::Default); // 초기 범위를 설정값으로
     for(const auto& info : m_seriesInfoList) {
         m_chart->addSeries(info.series);
         info.series->attachAxis(m_axisX);
@@ -122,11 +121,14 @@ void GraphWindow::setupSeries()
 void GraphWindow::stretchGraph(double factor)
 {
     // 현재 그래프 폭에 팩터를 곱하여 새로운 폭을 계산
-    double currentWidth = m_engine->m_graphWidthSec.value();
-    m_engine->m_graphWidthSec.setValue(currentWidth / factor);
+    double currentWidth = m_graphWidth;
+    double newWidth = currentWidth / factor;
 
     // 그래프 폭이 너무 크거나 작아지지 않도록 범위 제한
-    m_engine->m_graphWidthSec.setValue(std::clamp(m_engine->m_graphWidthSec.value() , View::GraphWidth::Min, View::GraphWidth::Max));
+    newWidth = std::clamp(newWidth, config::Simulation::GraphWidth::Min, config::Simulation::GraphWidth::Max);
+
+    // SystemController가 받아서 엔진에 적용하도록 시그널 방출
+    emit graphWidthChanged(newWidth);
 }
 
 void GraphWindow::updateGraph(const std::deque<DataPoint> &data)
